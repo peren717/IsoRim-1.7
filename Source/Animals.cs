@@ -58,6 +58,7 @@ namespace IsoRim
             bool onSide = (dead || pawn.Downed) && !bellyUp;
             float lift = Carried.LiftOf(pawn, ref drawLoc) + Corpses.RestHeight(pawn);   // carried by a 3D pawn, or a corpse on a shelf
             float flight = FlightOf(pawn, ref drawLoc);       // in the air (before the facing: taking off is not a step north)
+            float air = dead ? 0f : AirborneFactor(pawn);      // flying or in mid-jump, 0..1: legs tucked, wings open
 
             float yaw;
             float phase = 0f;
@@ -127,11 +128,12 @@ namespace IsoRim
                 bodyPose = Matrix4x4.Translate(new Vector3(0f, -def.legLength * size * 0.78f, 0f));
                 drawLegs = false;
             }
-            else if (flight > 0f)
+            else if (air > 0f)
             {
-                // In the air: no stepping; the legs are tucked away once it is off the ground.
+                // In the air (flying, or in mid-jump in a PawnFlyer): no stepping; the legs are tucked away once it is
+                // off the ground.
                 bodyPose = Matrix4x4.identity;
-                drawLegs = flight < FlightHeight * 0.25f;
+                drawLegs = air < LegsTuckAt;
                 gait = 0f;
             }
             else
@@ -196,7 +198,7 @@ namespace IsoRim
 
             if (entry.wing != null)
             {
-                DrawWings(pawn, entry, def, position, yaw, bodyPose * sized, flight / FlightHeight);
+                DrawWings(pawn, entry, def, position, yaw, bodyPose * sized, air);
             }
 
             if (!lying && pawn.carryTracker != null && pawn.carryTracker.CarriedThing != null)
@@ -245,8 +247,56 @@ namespace IsoRim
 
         private static readonly Matrix4x4 Mirror = Matrix4x4.Scale(new Vector3(-1f, 1f, 1f));
 
-        // How far up (PositionOffsetFactor) the wings are fully open; the legs tuck away at 0.25.
+        // How far into the air (AirborneFactor) the wings are fully open, and where the legs tuck away.
         private const float WingOpenAt = 0.3f;
+        private const float LegsTuckAt = 0.25f;
+
+        // How far a pawn is into the air, 0 (on the ground) to 1 (fully up), one measure for the legs and the wings
+        // (Api.AirborneFactor):
+        //   - flying (Pawn_FlightTracker, 1.7 birds and locusts): the game's own take-off and landing curve,
+        //     PositionOffsetFactor;
+        //   - in mid-jump (carried by a PawnFlyer: jump abilities, jump packs, an addon's leap): eased in over the first
+        //     JumpEase of the flight and out over the last, 1 in between, so a jump opens and closes the wings as a
+        //     take-off and a landing do.
+        public static float AirborneFactor(Pawn pawn)
+        {
+            if (pawn == null)
+            {
+                return 0f;
+            }
+            try
+            {
+                if (pawn.flight != null && !pawn.Dead)
+                {
+                    float f = pawn.flight.PositionOffsetFactor;
+                    if (f > 0f)
+                    {
+                        return Mathf.Clamp01(f);
+                    }
+                }
+                PawnFlyer flyer = pawn.ParentHolder as PawnFlyer;
+                if (flyer != null)
+                {
+                    int total = flyerTotal(flyer);
+                    if (total <= 0)
+                    {
+                        return 0f;
+                    }
+                    float t = Mathf.Clamp01((float)flyerTicks(flyer) / total);
+                    return Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Mathf.Min(t, 1f - t) / JumpEase));
+                }
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Working out how far a pawn is in the air failed: " + e, 93611412);
+            }
+            return 0f;
+        }
+
+        // The share of a jump (PawnFlyer) over which the airborne factor rises from 0 to 1, and falls again at the end.
+        private const float JumpEase = 0.2f;
+        private static readonly AccessTools.FieldRef<PawnFlyer, int> flyerTicks = AccessTools.FieldRefAccess<PawnFlyer, int>("ticksFlying");
+        private static readonly AccessTools.FieldRef<PawnFlyer, int> flyerTotal = AccessTools.FieldRefAccess<PawnFlyer, int>("ticksFlightTime");
 
         // The same turning and stepping for anything else that walks (people). Gives back the
         // way it should face, where it is in its stride and how much of a stride it is in.

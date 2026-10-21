@@ -33,8 +33,19 @@ namespace IsoRim
         // on, apparel decals: AddApparelDecals, RemoveApparelDecals, RefreshApparelDecals, ApparelDecal; 11: wall tops, ModelDef.wallTop
         // (WallTopSpec, WallTopStrip, WallTopRule) and Form3D.Ground, WallTops.cs; 12: the upright drawing scope: BeginUpright,
         // EndUpright, Upright (UprightScope) and DrawMesh, Upright.cs; 14: animal wings, ModelDef.wingModel, wings, wingFold,
-        // wingDroop, wingFlap, wingBeat, Animals.cs).
+        // wingDroop, wingFlap, wingBeat, and AirborneFactor, Animals.cs).
         public static int Version => 14;
+
+        // ---- animals in the air (Version 14)
+
+        // How far the pawn is into the air, 0 (on the ground) to 1 (fully up): flying (Pawn_FlightTracker, eased by the
+        // game's take-off and landing curves) or in mid-jump (carried by a PawnFlyer, eased in and out over the first and
+        // last fifth of the jump). IsoRim opens animal wings and tucks legs by it; a mod drawing its own parts can follow
+        // the same blend. 0 for a dead pawn and for null.
+        public static float AirborneFactor(Pawn pawn)
+        {
+            return Animals.AirborneFactor(pawn);
+        }
 
         // ---- the view
 

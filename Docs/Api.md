@@ -1,7 +1,7 @@
 # IsoRim Waylith Api (for mod authors)
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`), the def `IsoRim.ApparelModelDef` (Api 9) and the `wallTop` field of `IsoRim.ModelDef` (Api 11, part 5) and its wing fields (Api 14, part 8). Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`), the def `IsoRim.ApparelModelDef` (Api 9) and the `wallTop` field of `IsoRim.ModelDef` (Api 11, part 5) and its animal wing fields (Api 14, part 8). Everything else in the assembly is internal detail and can change
 in any update. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -15,7 +15,7 @@ if (IsoRim.Api.Version >= 9) { /* IsoRim.ApparelModelDef is there */ }
 if (IsoRim.Api.Version >= 10) { /* apparel decals; DrawModel follows the peek fade */ }
 if (IsoRim.Api.Version >= 11) { /* ModelDef.wallTop (wall tops) and Form3D.Ground */ }
 if (IsoRim.Api.Version >= 12) { /* the upright drawing scope: BeginUpright, EndUpright, Upright, DrawMesh */ }
-if (IsoRim.Api.Version >= 14) { /* ModelDef wing fields: animal wings that fold and beat */ }
+if (IsoRim.Api.Version >= 14) { /* ModelDef wing fields (animal wings that fold and beat), AirborneFactor */ }
 ```
 
 Members are never removed or changed in meaning within a version. Version 8 adds parts 1 and 2 below, version 9 part 3,
@@ -383,45 +383,103 @@ make delegates for `BeginUpright(float)` and `EndUpright()` with `AccessTools.Me
 
 ## Part 8: animal wings (version 14)
 
-An animal model (`<animal>true</animal>` in an `IsoRim.ModelDef`) can have wings. One wing model is drawn at each hinge:
-folded on the ground, spread and beating while the animal flies (the game's `Pawn_FlightTracker`). They open as it takes
-off and close as it lands, following the game's own take-off and landing curves (`PositionOffsetFactor`), and stay folded
-when it sleeps, is downed or dead. Animals without wings cost nothing.
+Any animal drawn as an IsoRim model (an `IsoRim.ModelDef` with `<animal>true</animal>`, IsoRim's own or one in your
+mod's Defs) can have wings. IsoRim draws one wing model at each hinge: folded on the ground, spread and beating in the
+air. They open as the animal takes off and close as it lands, following the game's own take-off and landing curves
+(`Pawn_FlightTracker.PositionOffsetFactor`). They also open in mid-jump, while the animal rides in a `PawnFlyer` (jump
+abilities, an addon's leap). They stay folded when it sleeps, is downed or is dead. In the air the legs are tucked away.
+Animals without wings cost nothing and only get the leg tuck.
 
-| Field | What it does |
-|---|---|
-| `wingModel` | One wing, the right one, spread: hinge at the origin, span along +x, leading edge toward +z (the front). A left wing (hinge x < 0) is its mirror image. |
-| `wings` | The hinge points on the body, facing north like `legs` (cells, before the animal's size). List both sides. |
-| `wingFold` | On the ground: degrees the wings are swept back about the upright axis (90: tips straight back). Default 90. |
-| `wingDroop` | On the ground: degrees the tips are lowered, so they rest on the back (insects) or the flanks (birds). Default 0. |
-| `wingFlap` | In flight: degrees the wings beat up and down about the body's long axis, a sine. Default 50. |
-| `wingBeat` | In flight: beats per second at normal game speed (game ticks: frozen when paused, faster at higher speeds). Insects about 6, big birds about 2. Default 6. |
+### The wing OBJ
 
-Each animal beats at its own point in the cycle, so a swarm is not in step. A thin wing should still be a closed plate
-(about 0.01 thick or more): it then gets IsoRim's outline like the body. Plates thinner than 0.01, or pieces under
-`outlineMinSize`, get none.
+One file, the **right** wing, modelled **spread**:
 
-```xml
-<IsoRim.ModelDef>
-  <defName>R3D_Animal_Locust</defName>
-  <thingDef>Locust</thingDef>
-  <model>Models/animal_locust.obj</model>
-  <animal>true</animal>
-  <!-- legModel, legs, legLength ... as for any animal -->
-  <wingModel>Models/animal_locust_wing.obj</wingModel>
-  <wings>
-    <li>(-0.029, 0.320, 0.000)</li>
-    <li>(0.029, 0.320, 0.000)</li>
-  </wings>
-  <wingFold>92</wingFold>
-  <wingDroop>5</wingDroop>
-  <wingFlap>50</wingFlap>
-  <wingBeat>6</wingBeat>
-</IsoRim.ModelDef>
+- the hinge (where it joins the body) at the origin;
+- the span along **+x** (the tip at the largest x);
+- the leading edge toward **+z** (the animal's front; IsoRim flips the file's z as for every model, so in the file the
+  front is -z, as in IsoRim's own animal OBJs);
+- a thin **closed** plate, about 0.01 cells thick or more, so it gets the dark outline like the body (thinner plates and
+  pieces under `outlineMinSize` get none). Solid colours only (no transparency).
+
+IsoRim makes the left wing itself: the mirror image, used for every hinge with x < 0. Paths resolve against your own
+mod's folder, as for `model` and `legModel`, and `mtllib` lines resolve next to the OBJ: ship the `.mtl` files your
+OBJs name (copy `isorim.mtl` too if you use its colours).
+
+### Fields
+
+| Field | What it does | Default |
+|---|---|---|
+| `wingModel` | The wing OBJ above, relative to your mod's folder. | none (no wings) |
+| `wings` | The hinge points on the body, facing north like `legs`, in cells before the animal's size. List both sides; x < 0 is a left wing. | none (no wings) |
+| `wingFold` | On the ground: degrees the wings are swept back about the upright axis (90: tips straight back). | 90 |
+| `wingDroop` | On the ground: degrees the tips are lowered, so they rest on the back (insects) or the flanks (birds). | 0 |
+| `wingFlap` | In the air: degrees the wings beat up and down about the body's long axis (a sine). | 50 |
+| `wingBeat` | In the air: beats per second at normal game speed. It counts game ticks: frozen when paused, faster at higher speeds. Insects about 6, big birds about 2. | 6 |
+
+Each animal beats at its own point in the cycle, so a swarm or flock is not in step.
+
+### A pack's own animal
+
+Your mod (loaded after IsoRim) ships the OBJ files and a def:
+
+```
+YourMod/
+  Defs/IsoRimModels.xml
+  Models/my_bird.obj        body, facing north, standing on y = 0
+  Models/my_bird_leg.obj    one leg, hip at the top
+  Models/my_bird_wing.obj   the right wing, spread (above)
+  Models/my_bird.mtl        the materials the OBJs name
 ```
 
-A mod that adds wings to its own animals should check `IsoRim.Api.Version >= 14` before loading such defs (older IsoRim
-versions reject the unknown fields), for example by putting them in a patch folder loaded only with a new enough IsoRim.
+```xml
+<Defs>
+  <IsoRim.ModelDef>
+    <defName>MyMod_Animal_MyBird</defName>
+    <thingDef>MyBird</thingDef>
+    <model>Models/my_bird.obj</model>
+    <animal>true</animal>
+    <legModel>Models/my_bird_leg.obj</legModel>
+    <legs>
+      <li>(-0.03, 0.09, 0.00)</li>
+      <li>(0.03, 0.09, 0.00)</li>
+    </legs>
+    <legLength>0.09</legLength>
+    <stride>0.28</stride>
+    <bodyCentre>0.17</bodyCentre>
+    <bodyHalfWidth>0.07</bodyHalfWidth>
+    <bodyHalfLength>0.21</bodyHalfLength>
+    <wingModel>Models/my_bird_wing.obj</wingModel>
+    <wings>
+      <li>(-0.05, 0.22, 0.04)</li>
+      <li>(0.05, 0.22, 0.04)</li>
+    </wings>
+    <wingFold>95</wingFold>   <!-- tips back along the flanks -->
+    <wingDroop>25</wingDroop>
+    <wingFlap>55</wingFlap>
+    <wingBeat>3</wingBeat>
+  </IsoRim.ModelDef>
+</Defs>
+```
+
+IsoRim's own Locust (`Defs/Models.xml`, `R3D_Animal_Locust`) is a complete example with folded insect wings. The wing
+fields are new in version 14. An older IsoRim reports them as unknown XML fields, so put such defs in a folder that
+only loads with a new enough IsoRim (for example a LoadFolders entry), or require IsoRim 14 or later.
+
+### Api.AirborneFactor
+
+| Member | What it does |
+|---|---|
+| `Api.AirborneFactor(Pawn pawn)` | How far the pawn is into the air, 0 (on the ground) to 1 (fully up). Flying: the game's take-off and landing curve. In mid-jump (carried by a `PawnFlyer`): eased in over the first fifth of the jump and out over the last, 1 in between. 0 for a dead pawn and for null. |
+
+IsoRim opens the wings (fully from 0.3) and tucks the legs (from 0.25) by this value. A mod that draws its own parts on
+an animal (a rider, a harness, a glow) can follow the same blend:
+
+```csharp
+if (IsoRim.Api.Version >= 14)
+{
+    float air = IsoRim.Api.AirborneFactor(pawn);   // 0 on the ground .. 1 in the air
+}
+```
 
 ## Notes
 
