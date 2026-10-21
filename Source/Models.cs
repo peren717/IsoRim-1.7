@@ -240,6 +240,7 @@ namespace IsoRim
         public float bodyCentre = 0f;       // height of the middle of the trunk
         public float bodyHalfWidth = 0.2f;  // half the width of the trunk; where it rests when on its side
         public float bodyHalfLength = 0.4f; // half the length of the animal, for the shading under it
+        public float backHeight = -1f;      // top of the back at the trunk middle, model units (Api 13 anchor Back); -1 measures it
 
         // Mechanoids (Mechs.cs). thingDef is the mech's race; model is the body (everything that does not move),
         // facing north, standing on the ground; mechParts are the pieces that move, each built in the same space

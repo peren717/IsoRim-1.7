@@ -233,7 +233,7 @@ namespace IsoRim
                             continue;
                         }
                         float top = PickHeight(t);
-                        if (top >= h)
+                        if (top >= h && h >= PickBottom(t))
                         {
                             found.Add(t);
                         }
@@ -241,6 +241,15 @@ namespace IsoRim
                 }
             }
             return found;
+        }
+
+        // The bottom of what the pointer can pick of a thing: 0, but a pawn attached to a host (Api 13: a rider) starts at
+        // its place on the host, so the host's own body under it picks the host.
+        internal static float PickBottom(Thing t)
+        {
+            Pawn pawn = t as Pawn;
+            float bottom;
+            return pawn != null && Attachments.Any && Poses.AttachBottom(pawn, out bottom) ? bottom : 0f;
         }
 
         internal static float PickHeight(Thing t)
@@ -258,7 +267,9 @@ namespace IsoRim
                     Poses.DrawnSpot(pawn, out headRise);   // sitting: on the seat, the head a little lower
                     return 1.25f + headRise;
                 }
-                return Mathf.Clamp(0.35f + 0.45f * pawn.BodySize, 0.3f, 2.4f);
+                float onHost;
+                Poses.AttachRise(pawn, out onHost);   // attached to a host (Api 13): on its anchor
+                return Mathf.Clamp(0.35f + 0.45f * pawn.BodySize, 0.3f, 2.4f) + onHost;
             }
             if (t.def == null)
             {

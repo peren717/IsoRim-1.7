@@ -62,7 +62,20 @@ namespace IsoRim
             float yaw;
             float phase = 0f;
             float gait = 0f;
-            if (dead)
+            // Attached to a host (Api 13, Attachments): at its anchor, facing as the attachment says, still (its host steps).
+            Attachments.Placed att = default(Attachments.Placed);
+            bool attached = !dead && Attachments.Any && Attachments.Place(pawn, true, null, out att);
+            if (attached)
+            {
+                drawLoc.x = att.at.x;
+                drawLoc.z = att.at.z;
+                lift = att.at.y;
+                flight = 0f;
+                lying = att.a.pose == AttachPose.Lie;
+                onSide = false;
+                yaw = att.yaw;
+            }
+            else if (dead)
             {
                 // Each carcass lies at its own slight angle.
                 yaw = pawn.Rotation.AsAngle + (Hashing.Unit(pawn.thingIDNumber, 3, 9) - 0.5f) * 50f;
@@ -76,7 +89,7 @@ namespace IsoRim
             }
 
             float ground = 0f;
-            if (lying && !dead)
+            if (lying && !dead && !attached)
             {
                 Building_Bed bed = pawn.CurrentBed();
                 if (bed != null)
@@ -202,6 +215,165 @@ namespace IsoRim
                 Carried.Draw(pawn, new Vector3(position.x + front.x * reach, position.y + def.legLength * size, position.z + front.z * reach), yaw);
             }
             return true;
+        }
+
+        // ---- as a host (Api 13: Attachments, Api.ReadHost)
+
+        // Where the animal's model is drawn now, posed as Draw poses it (no drawing). advance: from a draw this frame (its
+        // step and turn are moved on, as its own Draw does; drawn twice in a frame they are not moved again). False if it has
+        // no model.
+        internal static bool HostPose(Pawn pawn, bool advance, ref HostTransform h)
+        {
+            ModelEntry entry;
+            if (pawn.def == null || !ModelLibrary.TryGet(pawn.def, out entry) || !entry.def.animal || !entry.HasModel || !Corpses.ShownAsModel(pawn))
+            {
+                return false;
+            }
+            ModelDef def = entry.def;
+            Model body = Corpses.Body(pawn, entry.Pick(pawn));
+            if (body == null)
+            {
+                return false;
+            }
+            float size = def.scale * SizeOf(pawn);
+            bool dead = pawn.Dead;
+            bool lying = dead || pawn.GetPosture() != PawnPosture.Standing;
+            Vector3 drawLoc = pawn.DrawPos;
+            float lift = Carried.LiftOf(pawn, ref drawLoc) + Corpses.RestHeight(pawn);
+            float flight = FlightOf(pawn, ref drawLoc);
+            float yaw = pawn.Rotation.AsAngle;
+            float phase = 0f;
+            float gait = 0f;
+            State st;
+            if (!dead && advance)
+            {
+                st = Advance(pawn, drawLoc, lying, def.stride * size);
+                yaw = st.yaw;
+                phase = st.phase;
+                gait = st.gait;
+            }
+            else if (!dead && states.TryGetValue(pawn.thingIDNumber, out st))
+            {
+                yaw = st.yaw;
+                phase = st.phase;
+                gait = st.gait;
+            }
+            float ground = 0f;
+            if (lying && !dead)
+            {
+                Building_Bed bed = pawn.CurrentBed();
+                if (bed != null)
+                {
+                    ground = Forms.HeightOf(bed);
+                }
+            }
+            float rise;
+            if (lying)
+            {
+                rise = dead || pawn.Downed ? 0f : -def.legLength * size * 0.78f;   // asleep on its belly; on its side: rough
+            }
+            else
+            {
+                rise = flight > 0f ? 0f : Mathf.Abs(Mathf.Sin(phase)) * 0.05f * def.legLength * size * gait;
+            }
+            Vector3 mid;
+            float back = BackHeight(def, body, out mid);
+            h.position = new Vector3(drawLoc.x, ground + lift + flight, drawLoc.z);
+            h.yaw = yaw;
+            h.bob = lying ? 0f : rise;
+            h.scale = size;
+            h.model = true;
+            h.back = back * size + rise;
+            h.backAt = new Vector3(mid.x * size, 0f, mid.z * size);
+            h.top = TopHeight(def, body) * size + rise;
+            return true;
+        }
+
+        private struct Back
+        {
+            public float height;
+            public Vector3 mid;
+            public float top;
+        }
+
+        private static readonly Dictionary<Model, Back> backs = new Dictionary<Model, Back>();
+
+        // The top of the back (model units, as posed: def.rotation applied): a ray straight down through the body at the
+        // middle of its trunk (between its hips), the highest face it meets; ModelDef.backHeight overrides it.
+        internal static float BackHeight(ModelDef def, Model body, out Vector3 mid)
+        {
+            Back b = Measure(def, body);
+            mid = b.mid;
+            return def.backHeight >= 0f ? def.backHeight : b.height;
+        }
+
+        internal static float TopHeight(ModelDef def, Model body)
+        {
+            return Measure(def, body).top;
+        }
+
+        private static Back Measure(ModelDef def, Model body)
+        {
+            Back b;
+            if (backs.TryGetValue(body, out b))
+            {
+                return b;
+            }
+            Vector3 mid = Vector3.zero;
+            if (def.legs != null && def.legs.Count > 0)
+            {
+                for (int i = 0; i < def.legs.Count; i++)
+                {
+                    mid += def.legs[i];
+                }
+                mid /= def.legs.Count;
+            }
+            mid.x = 0f;   // on the middle line
+            mid.y = 0f;
+            Quaternion turn = Quaternion.AngleAxis(def.rotation, Vector3.up);
+            Vector3[] v = body.positions;
+            float best = -1f;
+            float top = 0f;
+            for (int i = 0; v != null && i + 2 < v.Length; i += 3)
+            {
+                Vector3 a = turn * v[i];
+                Vector3 c1 = turn * v[i + 1];
+                Vector3 c2 = turn * v[i + 2];
+                top = Mathf.Max(top, Mathf.Max(a.y, Mathf.Max(c1.y, c2.y)));
+                float d = (c1.z - c2.z) * (a.x - c2.x) + (c2.x - c1.x) * (a.z - c2.z);
+                if (Mathf.Abs(d) < 1e-9f)
+                {
+                    continue;
+                }
+                float l1 = ((c1.z - c2.z) * (mid.x - c2.x) + (c2.x - c1.x) * (mid.z - c2.z)) / d;
+                float l2 = ((c2.z - a.z) * (mid.x - c2.x) + (a.x - c2.x) * (mid.z - c2.z)) / d;
+                float l3 = 1f - l1 - l2;
+                if (l1 < 0f || l2 < 0f || l3 < 0f)
+                {
+                    continue;
+                }
+                best = Mathf.Max(best, l1 * a.y + l2 * c1.y + l3 * c2.y);
+            }
+            b.height = best > 0f ? best : def.bodyCentre + def.bodyHalfWidth;
+            b.mid = mid;
+            b.top = top > 0f ? top : body.maxY;
+            backs[body] = b;
+            return b;
+        }
+
+        // The facing, step and stride last worked out for a pawn (false: none yet).
+        internal static bool LastState(Pawn pawn, out float yaw, out float phase, out float gait)
+        {
+            State st;
+            if (states.TryGetValue(pawn.thingIDNumber, out st))
+            {
+                yaw = st.yaw;
+                phase = st.phase;
+                gait = st.gait;
+                return true;
+            }
+            yaw = phase = gait = 0f;
+            return false;
         }
 
         // The same turning and stepping for anything else that walks (people). Gives back the
