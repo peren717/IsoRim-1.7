@@ -1,0 +1,25 @@
+# IsoRim model: chocolate a (Chocolate) (Claude, tools/make_produce.py)
+# One unit = one map cell, +Y up, -Z = north (as tools/make_models.py). Closed shells.
+mtllib produce.mtl
+v -0.1414 0.0000 0.1414
+v 0.1414 0.0000 0.1414
+v 0.1414 0.0000 -0.1414
+v -0.1414 0.0000 -0.1414
+v -0.1199 0.1521 0.1199
+v 0.1199 0.1521 0.1199
+v 0.1199 0.1521 -0.1199
+v -0.1199 0.1521 -0.1199
+usemtl produce_choc
+f 1 6 2
+f 1 5 6
+f 2 7 3
+f 2 6 7
+f 3 8 4
+f 3 7 8
+f 4 5 1
+f 4 8 5
+f 4 2 3
+f 4 1 2
+usemtl produce_choc_top
+f 5 7 6
+f 5 8 7

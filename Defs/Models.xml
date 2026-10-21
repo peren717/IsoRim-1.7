@@ -2902,58 +2902,160 @@
     <model>Models/meal_simple.obj</model>
   </IsoRim.ModelDef>
 
-  <IsoRim.ModelDef>
-    <defName>R3D_RawPotatoes</defName>
-    <thingDef>RawPotatoes</thingDef>
-    <model>Models/food_potato.obj</model>
-  </IsoRim.ModelDef>
+  <!-- Farm produce (make_produce.py) -->
 
   <IsoRim.ModelDef>
     <defName>R3D_RawRice</defName>
     <thingDef>RawRice</thingDef>
-    <model>Models/food_rice.obj</model>
+    <stackModels>
+      <li>Models/item_produce_rice_a.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_RawPotatoes</defName>
+    <thingDef>RawPotatoes</thingDef>
+    <stackModels>
+      <li>Models/item_produce_potatoes_a.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_RawCorn</defName>
     <thingDef>RawCorn</thingDef>
-    <model>Models/food_corn.obj</model>
+    <stackModels>
+      <li>Models/item_produce_corn_a.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_RawBerries</defName>
     <thingDef>RawBerries</thingDef>
-    <model>Models/food_berries.obj</model>
-  </IsoRim.ModelDef>
-
-  <IsoRim.ModelDef>
-    <defName>R3D_RawFungus</defName>
-    <thingDef>RawFungus</thingDef>
-    <model>Models/food_fungus.obj</model>
+    <stackModels>
+      <li>Models/item_produce_berries_a.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_RawAgave</defName>
     <thingDef>RawAgave</thingDef>
-    <model>Models/food_agave.obj</model>
+    <stackModels>
+      <li>Models/item_produce_agave_a.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_RawFungus</defName>
+    <thingDef>RawFungus</thingDef>
+    <stackModels>
+      <li>Models/item_produce_fungus_a.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_RawHops</defName>
     <thingDef>RawHops</thingDef>
-    <model>Models/food_hops.obj</model>
+    <stackModels>
+      <li>Models/item_produce_hops_a.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_SmokeleafLeaves</defName>
     <thingDef>SmokeleafLeaves</thingDef>
-    <model>Models/food_leaves.obj</model>
+    <stackModels>
+      <li>Models/item_produce_smokeleaf_a.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_PsychoidLeaves</defName>
     <thingDef>PsychoidLeaves</thingDef>
-    <model>Models/food_psychoid.obj</model>
+    <stackModels>
+      <li>Models/item_produce_psychoid_a.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_RawToxipotato</defName>
+    <thingDef>RawToxipotato</thingDef>
+    <stackModels>
+      <li>Models/item_produce_toxipotato_a.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Hay</defName>
+    <thingDef>Hay</thingDef>
+    <stackModels>
+      <li>Models/item_produce_hay_a.obj</li>
+      <li>Models/item_produce_hay_b.obj</li>
+      <li>Models/item_produce_hay_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Chocolate</defName>
+    <thingDef>Chocolate</thingDef>
+    <stackModels>
+      <li>Models/item_produce_chocolate_a.obj</li>
+      <li>Models/item_produce_chocolate_b.obj</li>
+      <li>Models/item_produce_chocolate_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Dye</defName>
+    <thingDef>Dye</thingDef>
+    <stackModels>
+      <li>Models/item_produce_dye_a.obj</li>
+      <li>Models/item_produce_dye_b.obj</li>
+      <li>Models/item_produce_dye_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_GauranlenSeed</defName>
+    <thingDef>GauranlenSeed</thingDef>
+    <stackModels>
+      <li>Models/item_produce_seed_a.obj</li>
+      <li>Models/item_produce_seed_b.obj</li>
+      <li>Models/item_produce_seed_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Ambrosia</defName>
+    <thingDef>Ambrosia</thingDef>
+    <stackModels>
+      <li>Models/item_produce_ambrosia_a.obj</li>
+      <li>Models/item_produce_ambrosia_b.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Drug_Psilocap</defName>
+    <thingDef>Drug_Psilocap</thingDef>
+    <stackModels>
+      <li>Models/item_produce_psilocap_a.obj</li>
+      <li>Models/item_produce_psilocap_b.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -2993,26 +3095,9 @@
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
-    <defName>R3D_Chocolate</defName>
-    <thingDef>Chocolate</thingDef>
-    <model>Models/food_chocolate.obj</model>
-  </IsoRim.ModelDef>
-
-  <IsoRim.ModelDef>
     <defName>R3D_Beer</defName>
     <thingDef>Beer</thingDef>
     <model>Models/food_beer.obj</model>
-  </IsoRim.ModelDef>
-
-  <IsoRim.ModelDef>
-    <defName>R3D_NoModel_Ambrosia</defName>
-    <thingDef>Ambrosia</thingDef>   <!-- not the beer crate or the Drugs pills: its own sprite, extruded -->
-  </IsoRim.ModelDef>
-
-  <IsoRim.ModelDef>
-    <defName>R3D_Hay</defName>
-    <thingDef>Hay</thingDef>
-    <model>Models/food_hay.obj</model>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
