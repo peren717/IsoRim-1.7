@@ -9737,6 +9737,52 @@
     <surfaceHeight>0.00</surfaceHeight>
     <builtFor>(1, 2)</builtFor>
   </IsoRim.ModelDef>
+  <!-- Ancient furniture (O3), phase 1 prototype: ruined copies of vanilla buildings reuse the vanilla model, drawn old and
+       rusty with ModelDef.aged (Aged.cs). Same footprints as the vanilla buildings. -->
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientTableMachining</defName>
+    <thingDef>AncientTableMachining</thingDef>
+    <model>Models/bench_machining.obj</model>
+    <surfaceHeight>0.62</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientTableStoveElectric</defName>
+    <thingDef>AncientTableStoveElectric</thingDef>
+    <model>Models/bench_stove.obj</model>
+    <surfaceHeight>0.62</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientSimpleResearchBench</defName>
+    <thingDef>AncientSimpleResearchBench</thingDef>
+    <model>Models/bench_research.obj</model>
+    <surfaceHeight>0.62</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientBasicRecharger</defName>
+    <thingDef>AncientBasicRecharger</thingDef>
+    <model>Models/basic_recharger.obj</model>
+    <builtFor>(3, 1)</builtFor>
+    <surfaceHeight>0.345</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientMechGestator</defName>
+    <thingDef>AncientMechGestator</thingDef>
+    <model>Models/mech_gestator.obj</model>
+    <builtFor>(3, 2)</builtFor>
+    <surfaceHeight>0.32</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientShelf</defName>
+    <thingDef>AncientShelf</thingDef>
+    <model>Models/shelf.obj</model>
+    <surfaceHeight>0.60</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
 
   <!-- Ideology archonexus structures (Graphic_Single, not rotatable). Glow traces are glow_archo plates 0.008 thick:
        outlineMinSize makes IsoRim leave them unoutlined as flat sheets. -->
