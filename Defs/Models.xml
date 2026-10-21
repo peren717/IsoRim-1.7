@@ -9785,4 +9785,35 @@
     <builtFor>(11, 11)</builtFor>
   </IsoRim.ModelDef>
 
+  <!-- Odyssey buildings (2026-10-21): fixed colours, Models/odyssey3.mtl (acb_*, scan_*, glow_scanner unlit).
+       AnticraftBeam: built facing north as its _north sprite; the game spawns it at all four rotations (map corners) and
+       the normal rotation matches the four sprites. LifeSupportUnit: Grok's model rebuilt from y=0, WallMount hangs it. -->
+  <IsoRim.ModelDef>
+    <defName>R3D_AnticraftBeam</defName>
+    <thingDef>AnticraftBeam</thingDef>
+    <model>Models/anticraft_beam.obj</model>
+    <surfaceHeight>0.00</surfaceHeight>
+    <outlineMinSize>0.05</outlineMinSize>
+    <builtFor>(9, 9)</builtFor>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_SurveyScanner</defName>
+    <thingDef>SurveyScanner</thingDef>
+    <model>Models/survey_scanner.obj</model>
+    <surfaceHeight>0.00</surfaceHeight>
+    <outlineMinSize>0.05</outlineMinSize>
+    <builtFor>(3, 3)</builtFor>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_LifeSupportUnit</defName>
+    <thingDef>LifeSupportUnit</thingDef>
+    <model>Models/life_support_unit.obj</model>
+    <surfaceHeight>0.00</surfaceHeight>
+    <wallMounted>true</wallMounted>
+    <groundShadow>false</groundShadow>
+    <builtFor>(1, 1)</builtFor>
+  </IsoRim.ModelDef>
+
 </Defs>
