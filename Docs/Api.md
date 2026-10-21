@@ -421,25 +421,7 @@ static void LeaveCamera()
 Call `LeaveCamera` on your camera's normal exit and error/cleanup paths. Automatic expiry is a safety net for map/game
 and followed-pawn changes; IsoRim cannot detect an arbitrary add-on camera's own exit. Content-only add-ons need no changes.
 
-### Verification
-
 For a full mod build, including where to obtain the RimWorld 1.7 and Harmony references, see [Building](Building.md).
-
-Run `dotnet run --project Tests/WallCutaway.Tests.csproj`. These tests compile the production request policy and native
-first-person lifecycle against minimal game/engine stand-ins. They check entry/exit, overlapping requests, invalid input,
-map/game changes, pawn loss, stale handles and redraw invalidation counts. They do not validate in-game drawing.
-
-In RimWorld 1.7, check these cases both with textured walls (shader cutaway) and without them (rebuilt geometry), alone
-and with ProjectZ:
-
-1. Enable pointer, colonist and room cutaway. Lower walls, then enter first person: whole walls must return, including
-   walls already lowered, damage marks and doors. Leave first person: the player's cutaway settings apply again.
-2. Repeat with those settings disabled and with a non-default remaining-wall height. Confirm the saved settings do not
-   change, including when settings are edited/saved while in first person.
-3. Hold two independent complete-wall requests and release them in both orders. Also overlap a request with native first
-   person. Only leaving the last active mode restores normal cutaway.
-4. Switch maps, lose the followed pawn, return to the menu and start/load another game. Old requests must stay expired;
-   disposing an old handle must not cancel a new request. Repeat while the game is paused.
 
 ## Notes
 

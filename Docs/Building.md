@@ -50,10 +50,7 @@ Expand-Archive -LiteralPath $harmony -DestinationPath (Join-Path $dependencies "
 $gameReferences = Join-Path $dependencies "rimref/ref/net10.0"
 $harmonyAssembly = Join-Path $dependencies "harmony/HarmonyMod/1.7/Assemblies/0Harmony.dll"
 dotnet build Source/IsoRim.csproj "-p:RimWorldDir=$gameReferences" "-p:HarmonyPath=$harmonyAssembly" -p:OutputPath=bin/validation
-dotnet run --project Tests/WallCutaway.Tests.csproj
 ```
 
-The headless tests cover the request policy and native first-person lifecycle with engine stand-ins. For in-game
-checks of both wall rendering paths and ProjectZ integration, see [the camera verification cases](Api.md#verification).
 The actual RimWorld 1.7 engine is available through Steam's `unstable` branch, as described in
 [Ludeon's announcement](https://ludeon.com/blog/2026/10/announcing-the-waylith-engine-and-update-1-7/).
