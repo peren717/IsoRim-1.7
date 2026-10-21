@@ -842,10 +842,7 @@ namespace IsoRim
             IsoCellMap.Rebuilt(map);
             if (!ShaderCut.On)
             {
-                bool shown = View3D.Shown(map);
-                MapSections.QueueAll(map, typeof(SectionLayer_IsoRimWalls), shown);
-                MapSections.QueueAll(map, typeof(SectionLayer_IsoRimDamage), shown);
-                MapSections.QueueAll(map, MapSections.ThingsLayer, shown);
+                MapSections.QueueWallCutaway(map);
             }
         }
 

@@ -223,6 +223,66 @@ namespace IsoRim
             queue.AddRange(later);
         }
 
+        // A camera-mode change must reach visible wall geometry before the ordinary backlog. Untextured walls live
+        // in ThingsLayer, not IsoRimWalls (whose hull corners also require textured walls). Replace pending work for
+        // these layers, keep other jobs in order, and leave the existing per-frame budget to Process.
+        internal static void QueueWallCutaway(Map map)
+        {
+            if (map == null || map.mapDrawer == null || FromLoader())
+            {
+                return;
+            }
+            Array sections = SectionsOf(map);
+            Type walls = IsoRimMod.Settings.texturedWalls ? typeof(SectionLayer_IsoRimWalls) : ThingsLayer;
+            if (sections == null || getLayer == null || walls == null)
+            {
+                return;
+            }
+            Type damage = IsoRimMod.Settings.damage3D ? typeof(SectionLayer_IsoRimDamage) : null;
+
+            // Drop the consumed prefix before removing duplicates, so head still points to the next pending job.
+            if (head > 0)
+            {
+                queue.RemoveRange(0, head);
+                head = 0;
+            }
+            queue.RemoveAll(job =>
+            {
+                Type layer = job.instance != null ? job.instance.GetType() : job.layer;
+                return job.map == map && (layer == walls || damage != null && layer == damage);
+            });
+
+            bool shown = View3D.Shown(map);
+            CellRect view = shown && Find.CameraDriver != null ? Find.CameraDriver.CurrentViewRect : CellRect.Empty;
+            List<Job> visibleWalls = new List<Job>();
+            List<Job> visibleDamage = new List<Job>();
+            List<Job> later = new List<Job>();
+            for (int x = 0; x < sections.GetLength(0); x++)
+            {
+                for (int z = 0; z < sections.GetLength(1); z++)
+                {
+                    object section = sections.GetValue(x, z);
+                    if (section == null)
+                    {
+                        continue;
+                    }
+                    bool seen = shown
+                        && x * SectionSize <= view.maxX && (x + 1) * SectionSize > view.minX
+                        && z * SectionSize <= view.maxZ && (z + 1) * SectionSize > view.minZ;
+                    Job wallJob = new Job { map = map, section = section, layer = walls };
+                    (seen ? visibleWalls : later).Add(wallJob);
+                    if (damage != null)
+                    {
+                        Job damageJob = new Job { map = map, section = section, layer = damage };
+                        (seen ? visibleDamage : later).Add(damageJob);
+                    }
+                }
+            }
+            visibleWalls.AddRange(visibleDamage);
+            queue.InsertRange(0, visibleWalls);
+            queue.AddRange(later);
+        }
+
         // Queues the given layers, those in view on the current map first.
         public static void QueueLayers(List<SectionLayer> layers)
         {
