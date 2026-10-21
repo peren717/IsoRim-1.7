@@ -1532,6 +1532,13 @@ namespace IsoRim
                         break;
                     }
 
+                    case Form3D.Ground:
+                        if (SectionLayer_IsoRimWalls.Handles(__0))
+                        {
+                            return false;   // (Api 11) drawn in the mod's own wall layer (WallBoxes.PrintGround)
+                        }
+                        break;   // without the mod's wall textures: the game's flat sprite
+
                     case Form3D.Extruded:
                         PrintContext.mode = PrintMode.Extrude;
                         PrintContext.baseHeight = resting;

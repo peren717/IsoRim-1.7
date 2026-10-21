@@ -30,8 +30,9 @@ namespace IsoRim
         // fog lid lock; 4: collapse debris, Debris.cs; 5: XrayDesignator; 6: model states and ModelStandsIn; 7: PeekUpperFloors;
         // 8: figure hooks (FigureFrame) and model drawing: LoadModel, DrawModel, DrawFigure, FigureBounds, the colour helpers;
         // 9: apparel model bindings (ApparelModelDef) and held shields; 10: DrawModel follows the peek fade of the floor it draws
-        // on, apparel decals: AddApparelDecals, RemoveApparelDecals, RefreshApparelDecals, ApparelDecal).
-        public static int Version => 10;
+        // on, apparel decals: AddApparelDecals, RemoveApparelDecals, RefreshApparelDecals, ApparelDecal; 11: wall tops, ModelDef.wallTop
+        // (WallTopSpec, WallTopStrip, WallTopRule) and Form3D.Ground, WallTops.cs).
+        public static int Version => 11;
 
         // ---- the view
 

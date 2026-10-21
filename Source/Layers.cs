@@ -507,7 +507,12 @@ namespace IsoRim
                 checkedTextures = true;
                 haveTextures = R3DTextures.Get("IsoRim/Walls/BricksTop") != null && R3DTextures.Get("IsoRim/Walls/RockTop") != null;
             }
-            return haveTextures && t.def.drawerType != DrawerType.RealtimeOnly && Forms.For(t.def).form == Form3D.Block;
+            if (!haveTextures || t.def.drawerType == DrawerType.RealtimeOnly)
+            {
+                return false;
+            }
+            Form3D form = Forms.For(t.def).form;
+            return form == Form3D.Block || form == Form3D.Ground;   // (Ground: Api 11, WallBoxes.PrintGround)
         }
 
         public override void Regenerate()
@@ -532,6 +537,11 @@ namespace IsoRim
                         continue;
                     }
                     ThingForm form = Forms.For(b.def);
+                    if (form.form == Form3D.Ground)
+                    {
+                        WallBoxes.PrintGround(this, b);   // (Api 11) rubble: a low shape on the ground, not a wall
+                        continue;
+                    }
                     float height = WallBoxes.HeightFor(b, form.height);
                     GroundShadows.AroundBlock(this, b);
                     WallBoxes.PrintBlock(this, b, height);

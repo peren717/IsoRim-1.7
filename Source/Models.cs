@@ -111,6 +111,9 @@ namespace IsoRim
         public float wallFit = 0f;          // > 0: the model was built for walls this tall (cells); its height follows the walls
                                             // drawn now (View3D.WallHeight / wallFit, in Fit), so things that close a wall line
                                             // (gravship thrusters) stay as tall as the walls; 0 = fixed height
+        public WallTopSpec wallTop;         // (Api 11) a one-cell linked wall drawn on IsoRim's own wall path (a block, as vanilla
+                                            // walls: no model needed) with its own height, side texture and a top shaped by a
+                                            // rule (merlons, ridge, ragged, rubble). See WallTops.cs and Docs/Api.md part 5
         // Doors wider than one cell (ornate door): model is the fixed frame over the doorway, doorLeafModel one
         // leaf (spanning x 0..1 from the doorway centre; the other leaf is the same turned half round),
         // doorTopModel an optional fixed piece on top (the arch). Drawn by Doors.DrawWide.
@@ -3124,6 +3127,32 @@ namespace IsoRim
             {
                 m = Make(SolidTexDef, curve == 1 ? "IsoRim_LitTexWall" : "IsoRim_LitTex", -1, ModeOf(curve));
             }
+            if (m != null)
+            {
+                m.mainTexture = tex;
+                m.color = new Color(baseColor.r, baseColor.g, baseColor.b, 1f);
+                IsoGlow.Use(m, IsoGlow.OwnCell);
+            }
+            litByKey[key] = m;
+            return m;
+        }
+
+        // The same for a texture made at run time (WallTops: a side texture cut from another mod's atlas), named by key.
+        public static Material LitTexture(Texture2D tex, string name, Color baseColor, int curve = 0)
+        {
+            if (tex == null)
+            {
+                return null;
+            }
+            curve = curve == 1 ? 1 : 0;
+            Color32 c = baseColor;
+            string key = "#" + name + "|" + c.r + "," + c.g + "," + c.b + "|" + curve;
+            Material m;
+            if (litByKey.TryGetValue(key, out m))
+            {
+                return m;
+            }
+            m = Make(SolidTexDef, curve == 1 ? "IsoRim_LitTexWall" : "IsoRim_LitTex", -1, ModeOf(curve));
             if (m != null)
             {
                 m.mainTexture = tex;

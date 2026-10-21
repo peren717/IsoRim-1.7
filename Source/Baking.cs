@@ -17,7 +17,9 @@ namespace IsoRim
         Flat,       // the normal sprite, lying on the ground
         Model,      // a hand-made model from Models/
         Block,      // walls and rock: a cell-sized block with the sprite as its lid
-        Extruded    // everything else: the sprite raised up, with sides following its outline
+        Extruded,   // everything else: the sprite raised up, with sides following its outline
+        Ground      // (Api 11) a standable linked thing drawn by the walls layer as a low shape on the ground (ModelDef.wallTop
+                    // rule Rubble: a damaged low wall's rubble); not a wall: no wall height, never cut, rooms see through it
     }
 
     public class ThingForm
@@ -26,6 +28,7 @@ namespace IsoRim
         public float height;        // in cells; for items this is their thickness
         public ModelEntry model;
         internal float wallTop;     // a wall drawn from a model (WallBoxes.ModelWall): the height of its wall top, cells; else 0
+        internal WallTopSpec wallTops;  // (Api 11) a Block or Ground with a shaped top (ModelDef.wallTop, WallTops.cs); else null
     }
 
     public static class Forms
@@ -124,13 +127,29 @@ namespace IsoRim
                 }
 
                 float fill = WallBoxes.Fill(def);
+                WallTopSpec tops = listed ? entry.def.wallTop : null;
                 if (fill > 0f)
                 {
                     if (st.walls3D)
                     {
                         f.form = Form3D.Block;
                         f.height = setHeight > 0f ? setHeight : fill * View3D.WallHeight;
+                        if (tops != null)
+                        {
+                            // (Api 11) a wall with a shaped top: its own body height, in the walls' proportion
+                            f.wallTops = tops;
+                            if (tops.height > 0f)
+                            {
+                                f.height = tops.Scaled(tops.height);
+                            }
+                        }
                     }
+                    return f;
+                }
+                if (tops != null && tops.rule == WallTopRule.Rubble && st.walls3D && WallTops.GroundShaped(def))
+                {
+                    f.form = Form3D.Ground;   // (Api 11) rubble on the ground: drawn by the walls layer, no wall height
+                    f.wallTops = tops;
                     return f;
                 }
 
@@ -854,7 +873,8 @@ namespace IsoRim
             BlockTones(t, ref tint, ref capTint);
             tint = MineMarks.Tint(t, tint);   // marked for mining: toward the mark's colour
             capTint = MineMarks.Tint(t, capTint);
-            Material topMat = MaterialFor(kind, true, 0, false, capTint);
+            WallTopSpec spec = Forms.For(t.def).wallTops;   // (Api 11) a wall with a shaped top: plain cap, its own side texture
+            Material topMat = spec != null ? R3DMaterials.Solid : MaterialFor(kind, true, 0, false, capTint);
             if (topMat == null)
             {
                 return false;
@@ -882,7 +902,9 @@ namespace IsoRim
             int zShift;
             Floors.WallColumn(map, c, out drop, out floorH, out zShift);
             float baseY = -drop / squash;
-            float vBase = (floorH - drop) / SideCellsHigh;
+            float tileU = spec != null ? spec.tile.x : 2f;             // the side texture covers tileU cells across by tileV up
+            float tileV = spec != null ? spec.tile.y : SideCellsHigh;
+            float vBase = (floorH - drop) / tileV;
             float topY = height / squash;
             float rimY = topY + 0.002f / squash;
             Color32 lineColor = R3DMaterials.Shaded(tint, LineShade);
@@ -891,10 +913,19 @@ namespace IsoRim
             int whole = CutTags.Mark(layer);   // (shader cut-away) everything of this block goes down with its cell
 
             // The cap. Its texture repeats every two cells, so neighbouring blocks continue it.
-            MeshWriter.TexturedQuad(top,
-                new Vector3(x0, topY, z0), new Vector3(x0, topY, z1), new Vector3(x1, topY, z1), new Vector3(x1, topY, z0),
-                new Vector2(x0 * 0.5f, z0 * 0.5f), new Vector2(x0 * 0.5f, z1 * 0.5f), new Vector2(x1 * 0.5f, z1 * 0.5f), new Vector2(x1 * 0.5f, z0 * 0.5f),
-                White);
+            if (spec != null)
+            {
+                // (Api 11) a plain cap in the stone's colour (WallTopSpec.topShade)
+                MeshWriter.Quad(top, new Vector3(x0, topY, z0), new Vector3(x0, topY, z1), new Vector3(x1, topY, z1), new Vector3(x1, topY, z0),
+                    R3DMaterials.Shaded(capTint, spec.topShade));
+            }
+            else
+            {
+                MeshWriter.TexturedQuad(top,
+                    new Vector3(x0, topY, z0), new Vector3(x0, topY, z1), new Vector3(x1, topY, z1), new Vector3(x1, topY, z0),
+                    new Vector2(x0 * 0.5f, z0 * 0.5f), new Vector2(x0 * 0.5f, z1 * 0.5f), new Vector2(x1 * 0.5f, z1 * 0.5f), new Vector2(x1 * 0.5f, z0 * 0.5f),
+                    White);
+            }
             if (room)
             {
                 // A plain lid just under it, fully solid, so whatever stands behind stays hidden.
@@ -927,17 +958,17 @@ namespace IsoRim
                 Vector3 p0 = centre + outward * 0.5f - right * 0.5f;   // bottom left corner, seen from outside
                 Vector3 p1 = p0 + right;
 
-                Material sideMat = MaterialFor(kind, false, f, false, tint);
+                Material sideMat = spec != null ? WallTops.SideMaterial(spec, tint) : MaterialFor(kind, false, f, false, tint);
                 LayerSubMesh side = sideMat != null ? MeshWriter.Sub(layer, sideMat) : null;
                 bool textured = side != null && side.verts.Count + 4 <= MeshWriter.MaxVerts;
                 if (textured)
                 {
                     // Texture position follows the map, not the block, so a run of wall reads as one surface.
                     float along = Vector3.Dot(p0 - new Vector3(0f, 0f, zShift), right);
-                    float u0 = along * 0.5f;
-                    float u1 = (along + 1f) * 0.5f;
+                    float u0 = along / tileU;
+                    float u1 = (along + 1f) / tileU;
                     float v0 = vBase;
-                    float v1 = vBase + (height + drop) / SideCellsHigh;
+                    float v1 = vBase + (height + drop) / tileV;
                     int sideMark = CutTags.Mark(layer);
                     MeshWriter.TexturedQuad(side, p0, Raised(p0, topY), Raised(p1, topY), p1,
                         new Vector2(u0, v0), new Vector2(u0, v1), new Vector2(u1, v1), new Vector2(u1, v0), White);
@@ -995,6 +1026,11 @@ namespace IsoRim
                     markTop[k] = new Vector3(x0 + CornerX[k], height, z0 + CornerZ[k]);
                 }
                 MineMarks.PrintOutline(solid, t, markTop, markRim, OutlineWidth, capTint * TopShade, squash);
+                if (spec != null)
+                {
+                    // (Api 11) what stands on the cap: merlons, a ridge, broken stubs (WallTops.cs)
+                    PrintCrown(layer, t, spec, height, tint, capTint, lineColor, own, floorH, zShift);
+                }
             }
             CutTags.Apply(layer, whole, c, own);
             return true;
@@ -1307,8 +1343,9 @@ namespace IsoRim
             if (left || leftMay)
             {
                 int m = leftMay ? CutTags.Mark(layer) : -1;
-                Vector3 s = q0 - right * Gap;
-                EndLine(solid, f, s, q0, right, topY, lineColor, false);
+                Vector3 q = left ? Footed(q0, EndFoot(map, c, c - FaceRight[f])) : q0;
+                Vector3 s = q - right * Gap;
+                EndLine(solid, f, s, q, right, topY, lineColor, false);
                 CutTags.Apply(layer, m, c, own | ShaderCut.Cond(IntVec3.Zero - FaceRight[f]));
             }
             bool rightEnd = ExposedFrom(map, c, c + FaceRight[f], height);
@@ -1317,18 +1354,51 @@ namespace IsoRim
             {
                 int m = rightMay ? CutTags.Mark(layer) : -1;
                 Vector3 k = q0 + right;
+                if (rightEnd)
+                {
+                    k = Footed(k, EndFoot(map, c, c + FaceRight[f]));
+                }
                 Vector3 e = k + right * Gap;
                 EndLine(solid, f, e, k, -right, topY, lineColor, true);
                 CutTags.Apply(layer, m, c, own | ShaderCut.Cond(FaceRight[f]));
             }
         }
 
+        // (Api 11) Where the end line of a run beside a lower block starts: at that block's top when either of the two is a wall
+        // with a shaped top (WallTops.cs), so no line runs down the joint where both faces lie flush (a castle wall beside a
+        // low wall); else at the foot (0), as always.
+        private static float EndFoot(Map map, IntVec3 c, IntVec3 n)
+        {
+            if (map == null || !n.InBounds(map) || !c.InBounds(map))
+            {
+                return 0f;
+            }
+            Building nb = n.GetEdifice(map);
+            Building ob = c.GetEdifice(map);
+            if (nb == null || ob == null)
+            {
+                return 0f;
+            }
+            ThingForm nf = Forms.For(nb.def);
+            if (nf.form != Form3D.Block || (nf.wallTops == null && Forms.For(ob.def).wallTops == null))
+            {
+                return 0f;
+            }
+            return BuiltHeightAt(map, n);
+        }
+
+        private static Vector3 Footed(Vector3 p, float foot)
+        {
+            return foot > 0f ? new Vector3(p.x, Mathf.Max(p.y, foot / View3D.Squash), p.z) : p;
+        }
+
         // One end line on face f: from outer (past the corner) to the corner, whose inner edge the
         // vertex shader moves "along" (into the face) by its share of OutlineWidth. uv carries
         // the direction and width (xy) and which face it lies on (z = 2 + f).
-        private static void EndLine(LayerSubMesh sm, int f, Vector3 outer, Vector3 corner, Vector3 along, float topY, Color32 color, bool rightEnd)
+        private static void EndLine(LayerSubMesh sm, int f, Vector3 outer, Vector3 corner, Vector3 along, float topY, Color32 color, bool rightEnd,
+            float width = OutlineWidth)
         {
-            Vector3 inner = new Vector3(along.x * OutlineWidth, along.z * OutlineWidth, 2f + f);
+            Vector3 inner = new Vector3(along.x * width, along.z * width, 2f + f);
             Vector3 a = rightEnd ? corner : outer;
             Vector3 d = rightEnd ? outer : corner;
             Vector3 ua = rightEnd ? inner : Vector3.zero;

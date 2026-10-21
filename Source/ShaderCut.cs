@@ -28,6 +28,7 @@ namespace IsoRim
         public const int SecondShift = 9;    // bits 9-12: also lowered with the neighbour this way (1-8), whichever is cut more
                                              // bits 13-14: roof clipping (RoofClip.Own, RoofClip.Moving)
         public const int See = 32768;        // bit 15: goes see-through near the pointer while building (BuildSee)
+        public const int Crown = 65536;      // bit 16 (Api 11): a wall top's crown (WallTops.cs), hidden while its cell is cut down
 
         // How long a cell takes to go down or come back up, in seconds. 0 = at once (the user's choice; the old
         // cut-away popped too, but only after the pointer had rested 0.08 s, and 0.25 s before walls came back).

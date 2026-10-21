@@ -126,6 +126,8 @@ bool CutAway(inout vec3 pos, inout vec2 uv)
         cut = max(cut, CutCell(own + CutDirs[second]).b);
     }
     float full = CutFull(o);
+    if ((flags & 65536) != 0 && cut > 0.0)
+        return false;   // (Api 11) a wall top's crown (WallTops.cs, ShaderCut.Crown): hidden while its wall is cut down
     int cond = (flags >> 1) & 15;
     if (cond != 0)
     {

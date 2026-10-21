@@ -1,7 +1,7 @@
 # IsoRim Waylith Api (for mod authors)
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`) and the def `IsoRim.ApparelModelDef` (Api 9). Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`), the def `IsoRim.ApparelModelDef` (Api 9) and the `wallTop` field of `IsoRim.ModelDef` (Api 11, part 5). Everything else in the assembly is internal detail and can change
 in any update. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -13,10 +13,11 @@ your mod.
 if (IsoRim.Api.Version >= 8) { /* figure hooks and model drawing are there */ }
 if (IsoRim.Api.Version >= 9) { /* IsoRim.ApparelModelDef is there */ }
 if (IsoRim.Api.Version >= 10) { /* apparel decals; DrawModel follows the peek fade */ }
+if (IsoRim.Api.Version >= 11) { /* ModelDef.wallTop (wall tops) and Form3D.Ground */ }
 ```
 
 Members are never removed or changed in meaning within a version. Version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2).
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5.
 
 ## Spaces
 
@@ -255,9 +256,74 @@ static void Emblems(Apparel coat, Pawn wearer, List<IsoRim.ApparelDecal> decals)
 The VFE Medieval 2 pack's `Heraldry.cs` uses it to print each faction's heraldry (VE Framework render nodes asked for their
 2D graphic) on the 3D tabard.
 
+## Part 5: wall tops (version 11)
+
+A one-cell linked wall (the game's `linkType` Basic or CornerFiller, fill 0.2 or more) can be drawn on IsoRim's own wall
+path, the block every vanilla wall is, with its own height, a side texture cut from game textures at run time and a top
+shaped by a rule: a castle wall's merlons, a low wall's ridge, a damaged wall's broken stubs. No model file is needed.
+Declare it with a `wallTop` block on an `IsoRim.ModelDef` that names the thing (`thingDef`; no `model`).
+
+Because the wall stays a block, it joins vanilla walls, doors and other blocks with no seams and no lines inside a run, its
+side texture runs on along the map, and everything that asks IsoRim about walls (cut-away, floors built over it, fixtures
+on it, the fog lid, rooms, stacked-floor wall columns) treats it as a block of its body height: fill 0.9 or more is a full
+wall (cut by the cut-away), lower is a low wall (never cut, not a full wall). The top is a height field on a 1/16 cell
+grid over the body. It depends only on which sides join a neighbour (one at least as tall as built, or a door), which
+corners are inner corners, the map position, and the rule's numbers. So a run, an L, a T, a cross and a run's end all come
+out of one rule, and the faces, rims and end lines of the raised parts follow WallBoxes' own outline rules, across cell
+borders too. What stands above the body is the crown: it is left out where a floor is built right over the wall
+(nothing rises above the wall height there), hidden while the cut-away lowers the wall, and clipped under a roof and in
+the fog. Where a run ends against a lower block and either is a wall top, its end line starts at that block's top, so no
+line runs down the joint where both faces lie flush.
+
+With rule `Rubble` on a standable thing the game does not draw as a wall (fill 0, linked), the thing becomes
+`Form3D.Ground`: a low shape on the ground drawn by the walls layer, joined to the walls, doors and rubble round it. It is
+not a wall anywhere (no wall height, never cut, rooms see through it). Pawns walk over it at ground level.
+
+| Field (`wallTop`) | Meaning |
+|---|---|
+| `wallHeight` | The wall height (cells) the heights below are given for; they follow the walls drawn now. Default 1.65. |
+| `height` | The body's top (cells). -1 (default): the game's fill times the wall height. Ignored for Ground. |
+| `rule` | `None` (a plain block with this height and texture), `Merlons`, `Ridge`, `Ragged` or `Rubble`. |
+| `rise` | Merlons, Ridge: how far the raised part stands over the body (cells). |
+| `band` | Merlons, Ragged: how deep the edge parts reach in from an open side; Ridge: how far the ridge keeps from an open side (cells, not scaled). Default 0.25. |
+| `period`, `length` | Merlons: one merlon every `period` cells along a side, on the map grid, each `length` long; a square one in every outside and inner corner. Defaults 0.5, 0.25. |
+| `segment` | Ragged: the length of one stub; Rubble: the stone and edge grid (cells, map grid). Default 0.25. |
+| `steps` | Ragged: the stub heights picked from by map position; Rubble: the lowest and highest stone (cells). |
+| `chance`, `bed`, `inset` | Rubble: share of grid squares with a stone (0.35), the slab's thickness (0.035), how far an open edge is set in, once or twice by map position (0.0625). |
+| `texture`, `strips` | The side texture: strips (`texture` optional, else the spec's; `x`, `y`, `width`, `height` in pixels from the top left of the image file; `shift` pixels moved right, wrapping) cut from game textures at run time and laid top to bottom into one tile. All as wide as the first. None: plain sides. |
+| `tile` | The side texture covers `tile.x` cells across and `tile.y` cells up. Default (0.5, 0.55). |
+| `brightness` | The side texture's colour: the thing's colour times this. Default 1. |
+| `topShade`, `partShade`, `sideShade` | The cap and raised tops (0.92), Rubble's stones' tops (-1: `topShade`), sides without a texture (0.8): the thing's colour times these. |
+
+```xml
+<!-- A castle wall: full height, merlons along every open side, bricks cut from the mod's own atlas. -->
+<IsoRim.ModelDef>
+  <defName>MyPack_CastleWall</defName>
+  <thingDef>MyMod_CastleWall</thingDef>
+  <wallTop>
+    <height>1.65</height>
+    <rule>Merlons</rule>
+    <rise>0.22</rise>
+    <band>0.1875</band>
+    <texture>Things/Building/Linked/MyCastleWall_Atlas</texture>
+    <strips>
+      <li><x>337</x><y>252</y><width>40</width><height>18</height></li>
+      <li><x>337</x><y>270</y><width>40</width><height>6</height></li>
+    </strips>
+    <tile>(0.5, 0.275)</tile>
+  </wallTop>
+</IsoRim.ModelDef>
+```
+
+An older IsoRim does not know the `wallTop` field and logs an XML error for it, so a pack that supports older versions
+keeps the entry without `thingDef` and `wallTop` in its Defs and adds both with a patch that runs only on version 11 or
+later (the VFE Medieval 2 pack's `Patches\VFEM2_CastleWalls.xml`, with its `PatchOperation_IfIsoRimApi`). Add fields to an
+entry in the Defs folder; do not add a whole entry by patch (it has no mod of its own).
+
 ## Notes
 
 - Figure hooks also run for figures another mod draws through IsoRim's internals; attachments then follow that mod's
   placing as well.
 - The test modes for this Api are `Source/ProbeApi8.cs` and `Source/ProbeApi9.cs` / `ProbeApi9Check.cs` (harness only: dev mode, `-isorim3d` and a probe file).
-  Version 10 was tested with harness fixtures outside this repository (the VFEM2 pack's tabards, ProjectZ's lift models).
+  Version 10 was tested with harness fixtures outside this repository (the VFEM2 pack's tabards, ProjectZ's lift models),
+  version 11 likewise (the VFEM2 pack's castle walls and wall turrets, harness layouts `layout_wtcw*`, `layout_wtall`).

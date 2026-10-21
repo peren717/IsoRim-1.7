@@ -110,6 +110,29 @@ namespace IsoRim
             return null;
         }
 
+        // All the pixels of a texture at full size (mip 0, rows bottom first, the texture's stored values), or null if they
+        // cannot be read on the CPU (WallTops: a side texture cut from another mod's atlas). The array is shared: copy it.
+        public static Color32[] Full(Texture tex, out int w, out int h)
+        {
+            w = 0;
+            h = 0;
+            Vector2 scale = Vector2.one;
+            Vector2 offset = Vector2.zero;
+            Texture2D src = Resolve(tex, ref scale, ref offset);
+            if (src == null || scale != Vector2.one || offset != Vector2.zero)
+            {
+                return null;
+            }
+            Level lv = LevelOf(src, 0);
+            if (lv == null)
+            {
+                return null;
+            }
+            w = lv.w;
+            h = lv.h;
+            return lv.px;
+        }
+
         public static bool IsSheet(Texture tex)
         {
             return TilesOf(tex) != null;
