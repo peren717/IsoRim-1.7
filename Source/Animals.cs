@@ -14,7 +14,7 @@ namespace IsoRim
     // turns to face the way the animal is actually walking, and its legs swing in step with
     // the ground it covers. Asleep it settles onto its belly with its legs folded away; downed
     // or dead it lies on its side (dead insects, deadBellyUp: on their backs, legs up and curled in).
-    // Flying (birds) it rises over its cell with its legs tucked away.
+    // Flying (birds) it rises over its cell with its legs tucked away; wings (wingModel, Api 14) open and beat.
     public static class Animals
     {
         // What has to be remembered about one animal from frame to frame.
@@ -58,6 +58,7 @@ namespace IsoRim
             bool onSide = (dead || pawn.Downed) && !bellyUp;
             float lift = Carried.LiftOf(pawn, ref drawLoc) + Corpses.RestHeight(pawn);   // carried by a 3D pawn, or a corpse on a shelf
             float flight = FlightOf(pawn, ref drawLoc);       // in the air (before the facing: taking off is not a step north)
+            float air = dead ? 0f : AirborneFactor(pawn);      // flying or in mid-jump, 0..1: legs tucked, wings open
 
             float yaw;
             float phase = 0f;
@@ -71,6 +72,7 @@ namespace IsoRim
                 drawLoc.z = att.at.z;
                 lift = att.at.y;
                 flight = 0f;
+                air = 0f;
                 lying = att.a.pose == AttachPose.Lie;
                 onSide = false;
                 yaw = att.yaw;
@@ -140,11 +142,12 @@ namespace IsoRim
                 bodyPose = Matrix4x4.Translate(new Vector3(0f, -def.legLength * size * 0.78f, 0f));
                 drawLegs = false;
             }
-            else if (flight > 0f)
+            else if (air > 0f)
             {
-                // In the air: no stepping; the legs are tucked away once it is off the ground.
+                // In the air (flying, or in mid-jump in a PawnFlyer): no stepping; the legs are tucked away once it is
+                // off the ground.
                 bodyPose = Matrix4x4.identity;
-                drawLegs = flight < FlightHeight * 0.25f;
+                drawLegs = air < LegsTuckAt;
                 gait = 0f;
             }
             else
@@ -205,6 +208,11 @@ namespace IsoRim
                     }
                     DynamicModels.DrawLocal(Corpses.Body(pawn, entry.leg), position, yaw, local, Color.white, null);
                 }
+            }
+
+            if (entry.wing != null)
+            {
+                DrawWings(pawn, entry, def, position, yaw, bodyPose * sized, air);
             }
 
             if (!lying && pawn.carryTracker != null && pawn.carryTracker.CarriedThing != null)
@@ -274,7 +282,7 @@ namespace IsoRim
             }
             else
             {
-                rise = flight > 0f ? 0f : Mathf.Abs(Mathf.Sin(phase)) * 0.05f * def.legLength * size * gait;
+                rise = flight > 0f || (!dead && AirborneFactor(pawn) > 0f) ? 0f : Mathf.Abs(Mathf.Sin(phase)) * 0.05f * def.legLength * size * gait;
             }
             Vector3 mid;
             float back = BackHeight(def, body, out mid);
@@ -375,6 +383,92 @@ namespace IsoRim
             yaw = phase = gait = 0f;
             return false;
         }
+        // Wings (Api 14, ModelDef.wingModel / wings): folded back on the ground, spread and beating in the air. air is how
+        // far up the animal is (the game's PositionOffsetFactor, 0..1): the wings open as it leaves the ground and close
+        // just before it lands, in step with the legs tucking away. The beat counts game ticks (frozen when paused, faster
+        // at higher speeds, like the game's own flying frames), each animal at its own point in the beat.
+        private static void DrawWings(Pawn pawn, ModelEntry entry, ModelDef def, Vector3 position, float yaw, Matrix4x4 body, float air)
+        {
+            if (def.wings == null)
+            {
+                return;
+            }
+            float open = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(air / WingOpenAt));
+            float beat = 0f;
+            if (open > 0f)
+            {
+                float t = Find.TickManager.TicksGame / 60f * def.wingBeat + Hashing.Unit(pawn.thingIDNumber, 5, 14);
+                beat = Mathf.Sin(t * Mathf.PI * 2f) * def.wingFlap;
+            }
+            float fold = def.wingFold * (1f - open);
+            float lift = -def.wingDroop * (1f - open) + beat * open;
+            // Right wing: raised about the body's long axis, then swept back about the upright axis. A left wing is the
+            // mirror image, drawn from the mirrored model with the mirrored turn (still a plain rotation).
+            Matrix4x4 turn = Matrix4x4.Rotate(Quaternion.AngleAxis(fold, Vector3.up) * Quaternion.AngleAxis(lift, Vector3.forward));
+            Matrix4x4 turnLeft = Mirror * turn * Mirror;
+            Model right = Corpses.Body(pawn, entry.wing);
+            Model left = Corpses.Body(pawn, entry.wingMirror ?? entry.wing);
+            for (int i = 0; i < def.wings.Count; i++)
+            {
+                Vector3 hinge = def.wings[i];
+                bool isLeft = hinge.x < 0f;
+                Matrix4x4 local = body * Matrix4x4.Translate(hinge) * (isLeft ? turnLeft : turn);
+                DynamicModels.DrawLocal(isLeft ? left : right, position, yaw, local, Color.white, null);
+            }
+        }
+
+        private static readonly Matrix4x4 Mirror = Matrix4x4.Scale(new Vector3(-1f, 1f, 1f));
+
+        // How far into the air (AirborneFactor) the wings are fully open, and where the legs tuck away.
+        private const float WingOpenAt = 0.3f;
+        private const float LegsTuckAt = 0.25f;
+
+        // How far a pawn is into the air, 0 (on the ground) to 1 (fully up), one measure for the legs and the wings
+        // (Api.AirborneFactor):
+        //   - flying (Pawn_FlightTracker, 1.7 birds and locusts): the game's own take-off and landing curve,
+        //     PositionOffsetFactor;
+        //   - in mid-jump (carried by a PawnFlyer: jump abilities, jump packs, an addon's leap): eased in over the first
+        //     JumpEase of the flight and out over the last, 1 in between, so a jump opens and closes the wings as a
+        //     take-off and a landing do.
+        public static float AirborneFactor(Pawn pawn)
+        {
+            if (pawn == null)
+            {
+                return 0f;
+            }
+            try
+            {
+                if (pawn.flight != null && !pawn.Dead)
+                {
+                    float f = pawn.flight.PositionOffsetFactor;
+                    if (f > 0f)
+                    {
+                        return Mathf.Clamp01(f);
+                    }
+                }
+                PawnFlyer flyer = pawn.ParentHolder as PawnFlyer;
+                if (flyer != null)
+                {
+                    int total = flyerTotal(flyer);
+                    if (total <= 0)
+                    {
+                        return 0f;
+                    }
+                    float t = Mathf.Clamp01((float)flyerTicks(flyer) / total);
+                    return Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Mathf.Min(t, 1f - t) / JumpEase));
+                }
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Working out how far a pawn is in the air failed: " + e, 93611412);
+            }
+            return 0f;
+        }
+
+        // The share of a jump (PawnFlyer) over which the airborne factor rises from 0 to 1, and falls again at the end.
+        private const float JumpEase = 0.2f;
+        private static readonly AccessTools.FieldRef<PawnFlyer, int> flyerTicks = AccessTools.FieldRefAccess<PawnFlyer, int>("ticksFlying");
+        private static readonly AccessTools.FieldRef<PawnFlyer, int> flyerTotal = AccessTools.FieldRefAccess<PawnFlyer, int>("ticksFlightTime");
 
         // The same turning and stepping for anything else that walks (people). Gives back the
         // way it should face, where it is in its stride and how much of a stride it is in.
