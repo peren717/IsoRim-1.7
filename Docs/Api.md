@@ -423,6 +423,8 @@ and followed-pawn changes; IsoRim cannot detect an arbitrary add-on camera's own
 
 ### Verification
 
+For a full mod build, including where to obtain the RimWorld 1.7 and Harmony references, see [Building](Building.md).
+
 Run `dotnet run --project Tests/WallCutaway.Tests.csproj`. These tests compile the production request policy and native
 first-person lifecycle against minimal game/engine stand-ins. They check entry/exit, overlapping requests, invalid input,
 map/game changes, pawn loss, stale handles and redraw invalidation counts. They do not validate in-game drawing.
