@@ -31,8 +31,9 @@ namespace IsoRim
         // 8: figure hooks (FigureFrame) and model drawing: LoadModel, DrawModel, DrawFigure, FigureBounds, the colour helpers;
         // 9: apparel model bindings (ApparelModelDef) and held shields; 10: DrawModel follows the peek fade of the floor it draws
         // on, apparel decals: AddApparelDecals, RemoveApparelDecals, RefreshApparelDecals, ApparelDecal; 11: wall tops, ModelDef.wallTop
-        // (WallTopSpec, WallTopStrip, WallTopRule) and Form3D.Ground, WallTops.cs).
-        public static int Version => 11;
+        // (WallTopSpec, WallTopStrip, WallTopRule) and Form3D.Ground, WallTops.cs; 12: the upright drawing scope: BeginUpright,
+        // EndUpright, Upright (UprightScope) and DrawMesh, Upright.cs).
+        public static int Version => 12;
 
         // ---- the view
 
@@ -362,6 +363,44 @@ namespace IsoRim
         /// <summary>Asks the providers again for this person the next time the figure is drawn (after a change the provider
         /// knows of, such as a new emblem).</summary>
         public static void RefreshApparelDecals(Pawn pawn) => People.Refresh(pawn);
+
+        // ---- upright drawing (Version 12)
+
+        /// <summary>
+        /// Opens an upright scope: until <see cref="EndUpright"/>, the flat 2D meshes IsoRim draws for the game (a
+        /// <c>GenDraw.DrawFillableBar</c>, <c>GenDraw.DrawMeshNowOrLater</c>, a <c>Graphic</c>'s draw, an overlay) and those drawn
+        /// with <see cref="DrawMesh"/> stand up facing the camera, as one card, as IsoRim stands up status icons and
+        /// bubbles. The card is hinged on the first mesh drawn in the scope and raised by height: cells (true heights) over
+        /// the ground of the thing's floor (the peek fade treats it as the game's own flat drawing there); the other
+        /// meshes keep their place round it as the game lays them out from above (east to the right, north up the card).
+        /// The camera's turn and tilt are followed every frame. height is not divided by <see cref="HeightSquash"/>: IsoRim
+        /// does that. Scopes nest (the inner one wins until it ends). Without the 3D view nothing changes (the scope is
+        /// still counted, so Begin and End stay paired). A scope left open is closed after the thing whose drawing opened it,
+        /// or at the next frame. Call it on the main thread, while drawing (a thing's DrawAt, PostDraw and the like).
+        /// </summary>
+        public static void BeginUpright(float height) => UprightScopes.Begin(height, false, Vector3.zero);
+
+        /// <summary>The same, the card hinged on pivot (x and z in map cells; y is not used) instead of the first mesh.</summary>
+        public static void BeginUpright(float height, Vector3 pivot) => UprightScopes.Begin(height, true, pivot);
+
+        /// <summary>Closes the innermost upright scope. With none open it does nothing.</summary>
+        public static void EndUpright() => UprightScopes.End();
+
+        /// <summary>
+        /// <see cref="BeginUpright(float)"/> for a <c>using</c> block: <c>using (Api.Upright(1.9f)) { ... }</c>. Disposing it
+        /// closes its scope (and any left open inside it); disposing it twice, or after IsoRim closed it, does nothing.
+        /// </summary>
+        public static UprightScope Upright(float height) => UprightScopes.Begin(height, false, Vector3.zero);
+
+        /// <summary>The same with the card hinged on pivot.</summary>
+        public static UprightScope Upright(float height, Vector3 pivot) => UprightScopes.Begin(height, true, pivot);
+
+        /// <summary>
+        /// Draws a flat mesh as IsoRim draws the game's own 2D meshes (UnityEngine.Graphics.DrawMesh does not go through
+        /// IsoRim): stood up in an upright scope, raised onto a 3D model while that model's thing is drawn, moved onto its
+        /// stacked floor. Without the 3D view it is Graphics.DrawMesh.
+        /// </summary>
+        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer = 0) => DrawHook.DrawMesh(mesh, matrix, material, layer);
 
         // ---- for addons' dev tests only: may change without notice
 

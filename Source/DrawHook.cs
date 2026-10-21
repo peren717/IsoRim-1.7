@@ -38,6 +38,10 @@ namespace IsoRim
         public static bool hasPivot;
         public static Vector3 billboardPivot;
 
+        // With pivotOnFirst (and no pivot yet), the first mesh drawn becomes the pivot: everything drawn after it stands up
+        // with it as one card (UprightScopes: Api.BeginUpright without a pivot).
+        public static bool pivotOnFirst;
+
         // How far flat overlays (field edges, drag highlights, placement sprites) are kept off
         // the ground: the game spaces its drawing layers far apart in height, which the 3D view
         // would otherwise show as overlays floating in the air.
@@ -56,6 +60,11 @@ namespace IsoRim
                 return xform * matrix;
             }
             Vector3 p = matrix.GetColumn(3);
+            if (pivotOnFirst && !hasPivot)
+            {
+                hasPivot = true;
+                billboardPivot = p;
+            }
             if (hasPivot)
             {
                 p = new Vector3(billboardPivot.x, p.y, billboardPivot.z);

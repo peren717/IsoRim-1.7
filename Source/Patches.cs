@@ -622,6 +622,7 @@ namespace IsoRim
 
         public static void CullThings_Prefix()
         {
+            UprightScopes.FrameCheck();
             Cull.ThingsBegin();
             PartBatches.Begin();
         }
@@ -3192,6 +3193,7 @@ namespace IsoRim
             public Vector3 wasAnchor;
             public bool wasPivoted;
             public Vector3 wasPivot;
+            public int uprightMark;   // a thing's drawing: UprightScopes.Depth + 1 when it started (0: not marked)
         }
 
         // Wraps the game's per-frame drawing of one thing. __0 is the drawing phase; only the
@@ -3199,6 +3201,10 @@ namespace IsoRim
         public static void ThingDraw_Prefix(Thing __instance, DrawPhase __0, out DrawScope __state)
         {
             __state = default(DrawScope);
+            if (__0 == DrawPhase.Draw)
+            {
+                __state.uprightMark = UprightScopes.Depth + 1;   // an upright scope its drawing leaves open is closed after it
+            }
             if (__0 != DrawPhase.Draw || !View3D.Ready || __instance == null || __instance is Pawn)
             {
                 return;
@@ -3482,6 +3488,10 @@ namespace IsoRim
 
         public static void Scope_Finalizer(DrawScope __state)
         {
+            if (__state.uprightMark > 0)
+            {
+                UprightScopes.CloseFrom(__state.uprightMark - 1);
+            }
             if (__state.changed)
             {
                 DrawHook.active = __state.wasActive;

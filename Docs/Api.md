@@ -1,7 +1,7 @@
 # IsoRim Waylith Api (for mod authors)
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`), the def `IsoRim.ApparelModelDef` (Api 9) and the `wallTop` field of `IsoRim.ModelDef` (Api 11, part 5). Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`), the def `IsoRim.ApparelModelDef` (Api 9) and the `wallTop` field of `IsoRim.ModelDef` (Api 11, part 5). Everything else in the assembly is internal detail and can change
 in any update. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -14,10 +14,11 @@ if (IsoRim.Api.Version >= 8) { /* figure hooks and model drawing are there */ }
 if (IsoRim.Api.Version >= 9) { /* IsoRim.ApparelModelDef is there */ }
 if (IsoRim.Api.Version >= 10) { /* apparel decals; DrawModel follows the peek fade */ }
 if (IsoRim.Api.Version >= 11) { /* ModelDef.wallTop (wall tops) and Form3D.Ground */ }
+if (IsoRim.Api.Version >= 12) { /* the upright drawing scope: BeginUpright, EndUpright, Upright, DrawMesh */ }
 ```
 
 Members are never removed or changed in meaning within a version. Version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6.
 
 ## Spaces
 
@@ -320,6 +321,65 @@ keeps the entry without `thingDef` and `wallTop` in its Defs and adds both with 
 later (the VFE Medieval 2 pack's `Patches\VFEM2_CastleWalls.xml`, with its `PatchOperation_IfIsoRimApi`). Add fields to an
 entry in the Defs folder; do not add a whole entry by patch (it has no mod of its own).
 
+## Part 6: upright drawing scope (version 12)
+
+IsoRim lays the game's flat 2D drawing on the ground or on top of the 3D model it belongs to, and stands status icons
+and bubbles up facing the camera. A mod can ask for the same for its own flat drawing: a progress bar, a sign, an icon.
+While an upright scope is open, the flat meshes IsoRim draws for the game stand up as one card facing the camera, at the
+height you give. That covers `GenDraw.DrawFillableBar`, `GenDraw.DrawMeshNowOrLater`, a `Graphic`'s `Draw`, overlays, and
+meshes drawn with `Api.DrawMesh`. A plain `UnityEngine.Graphics.DrawMesh` in your own code does not go through IsoRim:
+call `Api.DrawMesh` instead.
+
+| Member | What it does |
+|---|---|
+| `Api.BeginUpright(float height)` | Opens a scope. The card is hinged on the first mesh drawn in it; the other meshes keep their place round it as the game lays them out from above (east to the right, north up the card). |
+| `Api.BeginUpright(float height, Vector3 pivot)` | The same, hinged on `pivot` (x and z in map cells). |
+| `Api.EndUpright()` | Closes the innermost scope. With none open it does nothing. |
+| `Api.Upright(float height)`, `Api.Upright(float height, Vector3 pivot)` | Open a scope and return an `UprightScope` (`IDisposable`) for a `using` block. Disposing it closes the scope and any left open inside it; a second Dispose does nothing. |
+| `Api.DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer = 0)` | Draws a flat mesh as IsoRim draws the game's own: stood up in a scope, raised onto the model while its thing is drawn, moved onto its stacked floor. Without the 3D view it is `Graphics.DrawMesh`. |
+
+- **Height** is in cells (true heights, part "Spaces") over the ground of the floor the thing stands on. Don't divide it by
+  `Api.HeightSquash`: IsoRim does that. `Api.HeightSquash` stays the factor for your own drawn-space maths (drawn y = true
+  height / `HeightSquash`), for example for a model you draw yourself.
+- The card follows the camera's turn and tilt every frame. On a stacked floor it stands on that floor and is hidden with
+  it. The peek fade treats it as the game's own flat drawing there: a material with a faded form fades, others (the
+  game's solid-colour bar materials, overlay icons) stay solid.
+- Scopes nest: the inner one is in charge until it ends, then the outer one is back. When a scope ends, IsoRim's own
+  drawing state is back as it was before it (a thing's lift onto its model, for example).
+- A scope left open (a forgotten End, an exception) is closed when the thing whose drawing opened it is done, or, outside
+  a thing's drawing, by the next frame. IsoRim logs a warning once.
+- Without the 3D view a scope changes nothing (Begin and End still pair up). Unused, it costs nothing.
+- Call it on the main thread while drawing: a thing's `DrawAt`, a comp's `PostDraw`, a `MapComponentUpdate`.
+
+Example: stand a building's two progress bars up 1.95 cells over the floor, and keep the mod working on an IsoRim older
+than version 12 (the bars stay flat there). The Api calls are in methods of their own, which only run once the version
+check has passed:
+
+```csharp
+[StaticConstructorOnStartup]
+public static class IsoRimBars
+{
+    static IsoRimBars()
+    {
+        if (ModsConfig.IsActive("Peren.IsoRim17") && ApiVersion() >= 12)
+        {
+            new Harmony("me.mymod.isorim").Patch(AccessTools.Method(typeof(Building_MyStove), "DrawProgressBar"),
+                prefix: new HarmonyMethod(typeof(IsoRimBars), nameof(Prefix)),
+                postfix: new HarmonyMethod(typeof(IsoRimBars), nameof(Postfix)));
+        }
+    }
+
+    private static int ApiVersion() => IsoRim.Api.Version;
+
+    public static void Prefix() => IsoRim.Api.BeginUpright(1.95f);
+
+    public static void Postfix() => IsoRim.Api.EndUpright();
+}
+```
+
+A mod that does not reference `IsoRim.dll` can find the same public members by name: read `IsoRim.Api.Version`, then
+make delegates for `BeginUpright(float)` and `EndUpright()` with `AccessTools.Method` and `AccessTools.MethodDelegate`.
+
 ## Notes
 
 - Figure hooks also run for figures another mod draws through IsoRim's internals; attachments then follow that mod's
@@ -327,3 +387,4 @@ entry in the Defs folder; do not add a whole entry by patch (it has no mod of it
 - The test modes for this Api are `Source/ProbeApi8.cs` and `Source/ProbeApi9.cs` / `ProbeApi9Check.cs` (harness only: dev mode, `-isorim3d` and a probe file).
   Version 10 was tested with harness fixtures outside this repository (the VFEM2 pack's tabards, ProjectZ's lift models),
   version 11 likewise (the VFEM2 pack's castle walls and wall turrets, harness layouts `layout_wtcw*`, `layout_wtall`).
+  Version 12: `Source/ProbeApi12.cs` (keys `upright`, `upcheck`, `uptest`; harness layout `layout_uprt`).
