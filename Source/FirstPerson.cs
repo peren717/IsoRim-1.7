@@ -107,6 +107,14 @@ namespace IsoRim
             }
         }
 
+        // A scene/game change must not keep the previous game's followed pawn. No camera or UI work here.
+        internal static void Reset()
+        {
+            pawn = null;
+            headingSet = false;
+            ResetLook();
+        }
+
         // Once a frame, before the camera is set: drops out if the colonist is gone, turns the body
         // heading toward where they walk, and keeps the game's camera over them (so the game draws
         // and updates the part of the map round them).

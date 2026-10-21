@@ -16,15 +16,18 @@
     <Optimize>true</Optimize>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);RW16;RW17</DefineConstants>
+    <!-- Keep the installed-mod layout as the default; allow compile-only reference bundles for validation. -->
+    <RimWorldDir Condition="'$(RimWorldDir)' == ''">$(MSBuildThisFileDirectory)..\..\..</RimWorldDir>
+    <HarmonyPath Condition="'$(HarmonyPath)' == ''">$(MSBuildThisFileDirectory)..\..\..\..\..\workshop\content\294100\2009463077\1.7\Assemblies\0Harmony.dll</HarmonyPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="obj\**;bin\**" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Assembly-CSharp"><HintPath>..\..\..\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="UnityStubs"><HintPath>..\..\..\UnityStubs.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Waylith"><HintPath>..\..\..\Waylith.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Brutal.Vulkan"><HintPath>..\..\..\Brutal.Vulkan.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="0Harmony"><HintPath>..\..\..\..\..\workshop\content\294100\2009463077\1.7\Assemblies\0Harmony.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Assembly-CSharp"><HintPath>$(RimWorldDir)\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityStubs"><HintPath>$(RimWorldDir)\UnityStubs.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Waylith"><HintPath>$(RimWorldDir)\Waylith.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Brutal.Vulkan"><HintPath>$(RimWorldDir)\Brutal.Vulkan.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(HarmonyPath)</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 </Project>

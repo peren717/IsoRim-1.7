@@ -36,8 +36,9 @@ namespace IsoRim
         // AttachmentOf, AttachedPlace, ReadHost, AnchorPoint (Attachment, AttachAnchor, AttachPose, AttachFacing,
         // HostTransform; Attach.cs) and ModelDef.backHeight; 14: animal wings, ModelDef.wingModel, wings, wingFold, wingDroop,
         // wingFlap, wingBeat, and AirborneFactor, Animals.cs; 15: the aged look, ModelDef.aged, Aged.cs; 16: ModelDef.graphicPath,
-        // models bound by texture path).
-        public static int Version => 16;
+        // models bound by texture path; 17: RequestFullWalls (complete-wall requests for camera modes; PR #5 by Ryuu-64),
+        // WallCutaway.cs).
+        public static int Version => 17;
 
         // ---- animals in the air (Version 14)
 

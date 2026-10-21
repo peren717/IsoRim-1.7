@@ -47,6 +47,8 @@ namespace IsoRim
 
             // Each game starts with the 3D view off unless an addon locks it on: the last game's switch is not kept.
             Patch("3D view state per game", AccessTools.Constructor(typeof(Game)), postfix: nameof(GameCtor_Postfix));
+            Patch("temporary camera state on leaving play", AccessTools.Method(typeof(Root), "Update"),
+                postfix: nameof(RootUpdate_Postfix));
             // A game that starts in 3D (locked on) gets its map built for 3D inside the loading screen, not after it.
             Patch("3D view built while loading", AccessTools.Method(typeof(MapDrawer), "RegenerateEverythingNow"),
                 prefix: nameof(RegenerateEverythingNow_Prefix));
@@ -920,6 +922,15 @@ namespace IsoRim
         public static void GameCtor_Postfix()
         {
             View3D.NewGame();
+        }
+
+        public static void RootUpdate_Postfix()
+        {
+            if (Current.ProgramState != ProgramState.Playing || Current.Game == null)
+            {
+                FullWalls.Reset();
+                FirstPerson.Reset();
+            }
         }
 
         public static void RegenerateEverythingNow_Prefix(MapDrawer __instance)

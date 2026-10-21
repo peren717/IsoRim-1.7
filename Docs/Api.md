@@ -19,10 +19,11 @@ if (IsoRim.Api.Version >= 13) { /* attachments: AddAttachments, ReadHost, Anchor
 if (IsoRim.Api.Version >= 14) { /* ModelDef wing fields (animal wings that fold and beat), AirborneFactor */ }
 if (IsoRim.Api.Version >= 15) { /* ModelDef.aged (the aged look) */ }
 if (IsoRim.Api.Version >= 16) { /* ModelDef.graphicPath: models bound by texture path */ }
+if (IsoRim.Api.Version >= 17) { /* complete-wall requests for camera modes: RequestFullWalls */ }
 ```
 
 Members are never removed or changed in meaning within a version. Version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11.
 
 ## Spaces
 
@@ -646,6 +647,48 @@ Example, IsoRim's own raw meat (Defs/Models.xml):
 An older IsoRim does not know the field and logs an XML error for it. A pack that supports older versions keeps the entry
 without `graphicPath` in its Defs and adds the field with a patch that runs only on version 16 or later (see part 5).
 
+## Part 11: complete walls for camera modes (version 17)
+
+IsoRim's built-in first-person view temporarily suspends automatic wall cutaway. Overhead view continues to use the
+player's settings. This does not change physical wall height, floors, movement, trees, roofs, or building-tool transparency.
+
+An add-on camera can request the same behavior with `Api.RequestFullWalls(Map map, Pawn followedPawn = null)`. Call on
+the main thread when entering the mode, for the current map in a running game. Keep the returned `IDisposable` until
+leaving the mode, then dispose it. Each request is independent: releasing one never cancels another camera's request
+or IsoRim's own first-person view. Switching display modes never writes the player's settings.
+
+Requests expire when the viewed map or game changes, or when play ends. Passing a followed pawn also expires the request
+if that pawn dies, despawns, is destroyed or leaves the map. An expired handle stays expired; request again on re-entry.
+The change is applied at the next camera update. Null maps, requests outside the current playing map, and invalid followed
+pawns throw argument/context exceptions. Calling `Dispose` repeatedly is safe, including after an automatic expiry.
+
+```csharp
+static IDisposable completeWalls;
+
+// Call once when entering your camera mode. Isolate new API calls behind a version check for optional integrations.
+static void EnterCamera(Map map, Pawn followedPawn)
+{
+    completeWalls?.Dispose();
+    completeWalls = null;
+    if (IsoRim.Api.Version >= 17)
+        completeWalls = AcquireWalls(map, followedPawn);
+}
+
+[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+static IDisposable AcquireWalls(Map map, Pawn followedPawn) => IsoRim.Api.RequestFullWalls(map, followedPawn);
+
+static void LeaveCamera()
+{
+    completeWalls?.Dispose();
+    completeWalls = null;
+}
+```
+
+Call `LeaveCamera` on your camera's normal exit and error/cleanup paths. Automatic expiry is a safety net for map/game
+and followed-pawn changes; IsoRim cannot detect an arbitrary add-on camera's own exit. Content-only add-ons need no changes.
+
+For a full mod build, including where to obtain the RimWorld 1.7 and Harmony references, see [Building](Building.md).
+
 ## Notes
 
 - Figure hooks also run for figures another mod draws through IsoRim's internals; attachments then follow that mod's
@@ -659,3 +702,4 @@ without `graphicPath` in its Defs and adds the field with a patch that runs only
   Version 15: probe key `aged=x` (`Source/ProbeScene.cs`, harness only: every aged def at strength x; harness layouts
   `layout_ancient`, `layout_ancientfin`).
   Version 16: IsoRim's raw meat (harness layout `layout_meat`; the model sweep's "how" column shows `graphicPath:`).
+  Version 17: `Source/ProbeApi17.cs` (keys `fwfp`, `fwreq`, `fwrel`, `fwcheck`, `fwapi`, `fwmapseq`, `fwgame`; harness layouts `layout_fw`, `layout_fwpz`).

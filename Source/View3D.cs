@@ -386,6 +386,7 @@ namespace IsoRim
                 ResetCamera();
             }
             Floors.BeginFrame();
+            FullWalls.Refresh();
             Probe.Lap(1);
 
             RegenerateIfStateChanged();
@@ -883,6 +884,8 @@ namespace IsoRim
         // locks it on. Nothing of the last game's view is kept (its cameras are gone with its scene).
         public static void NewGame()
         {
+            FullWalls.Reset();
+            FirstPerson.Reset();
             Active = LockedOn || HarnessStartsOn;
             lastActive = false;
             appliedSig = 0;
