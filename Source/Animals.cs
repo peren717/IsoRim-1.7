@@ -14,7 +14,7 @@ namespace IsoRim
     // turns to face the way the animal is actually walking, and its legs swing in step with
     // the ground it covers. Asleep it settles onto its belly with its legs folded away; downed
     // or dead it lies on its side (dead insects, deadBellyUp: on their backs, legs up and curled in).
-    // Flying (birds) it rises over its cell with its legs tucked away.
+    // Flying (birds) it rises over its cell with its legs tucked away; wings (wingModel, Api 14) open and beat.
     public static class Animals
     {
         // What has to be remembered about one animal from frame to frame.
@@ -194,6 +194,11 @@ namespace IsoRim
                 }
             }
 
+            if (entry.wing != null)
+            {
+                DrawWings(pawn, entry, def, position, yaw, bodyPose * sized, flight / FlightHeight);
+            }
+
             if (!lying && pawn.carryTracker != null && pawn.carryTracker.CarriedThing != null)
             {
                 // Held in the mouth, in front of the head: the front of the body, at the top of the legs.
@@ -203,6 +208,45 @@ namespace IsoRim
             }
             return true;
         }
+
+        // Wings (Api 14, ModelDef.wingModel / wings): folded back on the ground, spread and beating in the air. air is how
+        // far up the animal is (the game's PositionOffsetFactor, 0..1): the wings open as it leaves the ground and close
+        // just before it lands, in step with the legs tucking away. The beat counts game ticks (frozen when paused, faster
+        // at higher speeds, like the game's own flying frames), each animal at its own point in the beat.
+        private static void DrawWings(Pawn pawn, ModelEntry entry, ModelDef def, Vector3 position, float yaw, Matrix4x4 body, float air)
+        {
+            if (def.wings == null)
+            {
+                return;
+            }
+            float open = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(air / WingOpenAt));
+            float beat = 0f;
+            if (open > 0f)
+            {
+                float t = Find.TickManager.TicksGame / 60f * def.wingBeat + Hashing.Unit(pawn.thingIDNumber, 5, 14);
+                beat = Mathf.Sin(t * Mathf.PI * 2f) * def.wingFlap;
+            }
+            float fold = def.wingFold * (1f - open);
+            float lift = -def.wingDroop * (1f - open) + beat * open;
+            // Right wing: raised about the body's long axis, then swept back about the upright axis. A left wing is the
+            // mirror image, drawn from the mirrored model with the mirrored turn (still a plain rotation).
+            Matrix4x4 turn = Matrix4x4.Rotate(Quaternion.AngleAxis(fold, Vector3.up) * Quaternion.AngleAxis(lift, Vector3.forward));
+            Matrix4x4 turnLeft = Mirror * turn * Mirror;
+            Model right = Corpses.Body(pawn, entry.wing);
+            Model left = Corpses.Body(pawn, entry.wingMirror ?? entry.wing);
+            for (int i = 0; i < def.wings.Count; i++)
+            {
+                Vector3 hinge = def.wings[i];
+                bool isLeft = hinge.x < 0f;
+                Matrix4x4 local = body * Matrix4x4.Translate(hinge) * (isLeft ? turnLeft : turn);
+                DynamicModels.DrawLocal(isLeft ? left : right, position, yaw, local, Color.white, null);
+            }
+        }
+
+        private static readonly Matrix4x4 Mirror = Matrix4x4.Scale(new Vector3(-1f, 1f, 1f));
+
+        // How far up (PositionOffsetFactor) the wings are fully open; the legs tuck away at 0.25.
+        private const float WingOpenAt = 0.3f;
 
         // The same turning and stepping for anything else that walks (people). Gives back the
         // way it should face, where it is in its stride and how much of a stride it is in.

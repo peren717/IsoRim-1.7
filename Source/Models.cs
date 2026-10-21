@@ -235,6 +235,15 @@ namespace IsoRim
         public List<float> legYaw;          // with legFromHip: how far each leg (in legs order) is turned toward the front, degrees
         public float legLift = 12f;         // with legFromHip: how far a foot is raised as it comes forward, degrees
         public bool deadBellyUp = false;    // dead (not downed), it lies on its back with its legs up and curled in (insects)
+        // Wings (Api 14; Animals.cs): one wing model drawn at each hinge, folded on the ground and flapping in flight
+        // (Pawn_FlightTracker), blended by the game's own take-off and landing height. Animals without wings pay nothing.
+        public string wingModel;            // one (right) wing, spread: hinge at the origin, span along +x, leading edge +z;
+                                            // the left wing is its mirror image
+        public List<Vector3> wings;         // where each hinge is on the body (facing north, like legs); x < 0 is a left wing
+        public float wingFold = 90f;        // on the ground: how far the wings are swept back about the upright axis, degrees
+        public float wingDroop = 0f;        // on the ground: how far their tips are lowered, degrees (resting on the back or flanks)
+        public float wingFlap = 50f;        // in flight: how far they beat up and down about the body's long axis, degrees
+        public float wingBeat = 6f;         // in flight: beats per second at normal game speed (insects ~6, big birds ~2)
         // (rotation, for an animal, turns its body model only; legs and hips are given facing north.)
         public float stride = 1f;           // cells walked for one full swing of the legs
         public float bodyCentre = 0f;       // height of the middle of the trunk
@@ -554,6 +563,8 @@ namespace IsoRim
         public Dictionary<string, Model[]> byStyle;      // ThingStyleDef defName -> its models (one per random variant); null if none
         public Dictionary<string, Model> byState;        // addon state name -> model (byState); null if none
         public Model leg;   // animals only
+        public Model wing;        // animals with wings only (wingModel), the right wing
+        public Model wingMirror;  // the same, mirrored: the left wing
         public Model top;   // turrets only
         public Model empty;       // emptyModel, or null
         public Model doorLeaf;    // wide doors only
@@ -1042,6 +1053,11 @@ namespace IsoRim
             if (!md.legModel.NullOrEmpty() && md.modContentPack != null)
             {
                 entry.leg = LoadFile(Path.Combine(md.modContentPack.RootDir, md.legModel));
+            }
+            if (!md.wingModel.NullOrEmpty() && md.wings != null && md.wings.Count > 0 && md.modContentPack != null)
+            {
+                entry.wing = LoadFile(Path.Combine(md.modContentPack.RootDir, md.wingModel));
+                entry.wingMirror = entry.wing != null ? ObjLoader.Mirrored(entry.wing) : null;
             }
             if (!md.topModel.NullOrEmpty() && md.modContentPack != null)
             {
@@ -1738,6 +1754,47 @@ namespace IsoRim
         // one piece): every piece whose box is under size cells on its largest side, and every flat
         // sheet (under 0.01 cells on its smallest side; a sheet of faces gets a broken outline). A chess
         // table keeps the outline of its top and legs but not of its pieces and squares.
+        // The model mirrored left to right (x -> -x), each triangle turned round so it still faces outward (wings: Api 14).
+        public static Model Mirrored(Model src)
+        {
+            int n = src.positions.Length;
+            Model m = new Model();
+            m.positions = new Vector3[n];
+            m.normals = src.normals != null ? new Vector3[n] : null;
+            m.hull = src.hull != null ? new Vector3[n] : null;
+            m.colors = src.colors != null ? new Color[n] : null;
+            m.tinted = src.tinted != null ? new bool[n] : null;
+            m.uvs = src.uvs != null ? new Vector2[n] : null;
+            m.material = src.material != null ? new int[n] : null;
+            m.noOutline = src.noOutline != null ? new bool[n] : null;
+            for (int i = 0; i < n; i++)
+            {
+                int j = i % 3 == 1 ? i + 1 : i % 3 == 2 ? i - 1 : i;   // corners 1 and 2 swapped: the winding stays outward
+                if (j >= n)
+                {
+                    j = i;
+                }
+                Vector3 p = src.positions[j];
+                m.positions[i] = new Vector3(-p.x, p.y, p.z);
+                if (m.normals != null) { Vector3 q = src.normals[j]; m.normals[i] = new Vector3(-q.x, q.y, q.z); }
+                if (m.hull != null) { Vector3 q = src.hull[j]; m.hull[i] = new Vector3(-q.x, q.y, q.z); }
+                if (m.colors != null) m.colors[i] = src.colors[j];
+                if (m.tinted != null) m.tinted[i] = src.tinted[j];
+                if (m.uvs != null) m.uvs[i] = src.uvs[j];
+                if (m.material != null) m.material[i] = src.material[j];
+                if (m.noOutline != null) m.noOutline[i] = src.noOutline[j];
+            }
+            m.materials = src.materials;
+            m.maxY = src.maxY;
+            m.halfDepth = src.halfDepth;
+            m.minX = -src.maxX;
+            m.maxX = -src.minX;
+            m.minZ = src.minZ;
+            m.maxZ = src.maxZ;
+            m.id = nextId++;
+            return m;
+        }
+
         public static Model WithoutSmallOutlines(Model src, float size)
         {
             int n = src.positions.Length;

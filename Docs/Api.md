@@ -1,7 +1,7 @@
 # IsoRim Waylith Api (for mod authors)
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`), the def `IsoRim.ApparelModelDef` (Api 9) and the `wallTop` field of `IsoRim.ModelDef` (Api 11, part 5). Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`), the def `IsoRim.ApparelModelDef` (Api 9) and the `wallTop` field of `IsoRim.ModelDef` (Api 11, part 5) and its wing fields (Api 14, part 8). Everything else in the assembly is internal detail and can change
 in any update. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -15,10 +15,11 @@ if (IsoRim.Api.Version >= 9) { /* IsoRim.ApparelModelDef is there */ }
 if (IsoRim.Api.Version >= 10) { /* apparel decals; DrawModel follows the peek fade */ }
 if (IsoRim.Api.Version >= 11) { /* ModelDef.wallTop (wall tops) and Form3D.Ground */ }
 if (IsoRim.Api.Version >= 12) { /* the upright drawing scope: BeginUpright, EndUpright, Upright, DrawMesh */ }
+if (IsoRim.Api.Version >= 14) { /* ModelDef wing fields: animal wings that fold and beat */ }
 ```
 
 Members are never removed or changed in meaning within a version. Version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 14 part 8.
 
 ## Spaces
 
@@ -379,6 +380,48 @@ public static class IsoRimBars
 
 A mod that does not reference `IsoRim.dll` can find the same public members by name: read `IsoRim.Api.Version`, then
 make delegates for `BeginUpright(float)` and `EndUpright()` with `AccessTools.Method` and `AccessTools.MethodDelegate`.
+
+## Part 8: animal wings (version 14)
+
+An animal model (`<animal>true</animal>` in an `IsoRim.ModelDef`) can have wings. One wing model is drawn at each hinge:
+folded on the ground, spread and beating while the animal flies (the game's `Pawn_FlightTracker`). They open as it takes
+off and close as it lands, following the game's own take-off and landing curves (`PositionOffsetFactor`), and stay folded
+when it sleeps, is downed or dead. Animals without wings cost nothing.
+
+| Field | What it does |
+|---|---|
+| `wingModel` | One wing, the right one, spread: hinge at the origin, span along +x, leading edge toward +z (the front). A left wing (hinge x < 0) is its mirror image. |
+| `wings` | The hinge points on the body, facing north like `legs` (cells, before the animal's size). List both sides. |
+| `wingFold` | On the ground: degrees the wings are swept back about the upright axis (90: tips straight back). Default 90. |
+| `wingDroop` | On the ground: degrees the tips are lowered, so they rest on the back (insects) or the flanks (birds). Default 0. |
+| `wingFlap` | In flight: degrees the wings beat up and down about the body's long axis, a sine. Default 50. |
+| `wingBeat` | In flight: beats per second at normal game speed (game ticks: frozen when paused, faster at higher speeds). Insects about 6, big birds about 2. Default 6. |
+
+Each animal beats at its own point in the cycle, so a swarm is not in step. A thin wing should still be a closed plate
+(about 0.01 thick or more): it then gets IsoRim's outline like the body. Plates thinner than 0.01, or pieces under
+`outlineMinSize`, get none.
+
+```xml
+<IsoRim.ModelDef>
+  <defName>R3D_Animal_Locust</defName>
+  <thingDef>Locust</thingDef>
+  <model>Models/animal_locust.obj</model>
+  <animal>true</animal>
+  <!-- legModel, legs, legLength ... as for any animal -->
+  <wingModel>Models/animal_locust_wing.obj</wingModel>
+  <wings>
+    <li>(-0.029, 0.320, 0.000)</li>
+    <li>(0.029, 0.320, 0.000)</li>
+  </wings>
+  <wingFold>92</wingFold>
+  <wingDroop>5</wingDroop>
+  <wingFlap>50</wingFlap>
+  <wingBeat>6</wingBeat>
+</IsoRim.ModelDef>
+```
+
+A mod that adds wings to its own animals should check `IsoRim.Api.Version >= 14` before loading such defs (older IsoRim
+versions reject the unknown fields), for example by putting them in a patch folder loaded only with a new enough IsoRim.
 
 ## Notes
 

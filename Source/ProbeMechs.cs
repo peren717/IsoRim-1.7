@@ -29,6 +29,7 @@ namespace IsoRim
     //   walkfilm=N,k,tag,x,z,size[,follow|ticksM] N screenshots, k Unity frames apart (and each written before the next), the game
     //                                 running at normal speed meanwhile (renders\<harness tag>\walk_<tag>_<frame>.png), camera held at (x,z,size);
     //                                 with a 7th part "follow", centred on the pawns walking on a forced job instead
+    //                                 (7th part ticksM, 8th part "paused": the game kept paused, exactly M ticks per frame, ticks0 = frozen)
     //   facecheck=1                   logs every pawn: map facing, step it is walking, sprite facing seen (View3D.SeenFacing), 3D model
     //   drawcheck=1                   logs every standing person: map facing, step, the facing its sprite is drawn with (all mods' patches)
     //   turrettarget=x,z,tx,tz        the turret comp of the pawn in (x,z) given the pawn (or cell) at (tx,tz) as its target
@@ -391,6 +392,7 @@ namespace IsoRim
                     walkFollow = a.Length > 6 && a[6] == "follow";
                     walkExtraTicks = a.Length > 6 && a[6].StartsWith("ticks") ? I(a[6].Substring(5)) : 0;
                     walkTrack = a.Length > 7 && a[7] == "track";
+                    walkPaused = a.Length > 7 && a[7] == "paused";
                     return true;
                 case "facecheck":
                     // Each pawn: map facing, the way it is walking, the sprite facing the camera sees, 3D model or not.
@@ -538,6 +540,7 @@ namespace IsoRim
         private static Vector3 walkCam;
         private static bool walkFollow;
         private static bool walkTrack;       // 8th part "track": centred on the first entity bound to a model
+        private static bool walkPaused;      // 8th part "paused": the game stays paused, only the ticksM ticks run (exact steps)
         private static int walkExtraTicks;   // 7th part "ticks<N>": N more game ticks run before each film frame (slow states)
 
         // One film frame every few Unity frames: the game ticks and the camera is set, the picture is taken two
@@ -575,7 +578,7 @@ namespace IsoRim
             {
                 // The game runs at normal speed through the film (paused, the game does not move pawns' drawn
                 // positions on however many ticks are run).
-                Find.TickManager.CurTimeSpeed = TimeSpeed.Normal;
+                Find.TickManager.CurTimeSpeed = walkPaused ? TimeSpeed.Paused : TimeSpeed.Normal;
                 for (int i = 0; i < walkExtraTicks; i++)
                 {
                     Find.TickManager.DoSingleTick();
