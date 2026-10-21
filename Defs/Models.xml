@@ -9737,8 +9737,9 @@
     <surfaceHeight>0.00</surfaceHeight>
     <builtFor>(1, 2)</builtFor>
   </IsoRim.ModelDef>
-  <!-- Ancient furniture (O3), phase 1 prototype: ruined copies of vanilla buildings reuse the vanilla model, drawn old and
-       rusty with ModelDef.aged (Aged.cs). Same footprints as the vanilla buildings. -->
+  <!-- Ancient furniture (O3): ruined copies of vanilla buildings reuse the vanilla model, drawn old and rusty with
+       ModelDef.aged 0.6 (Aged.cs; user 2026-10-21). Same footprints as the vanilla buildings. The gestators have no glass
+       (broken). AncientMechGestatorTank (the intact mech vat) waits for a model of its own. -->
   <IsoRim.ModelDef>
     <defName>R3D_AncientTableMachining</defName>
     <thingDef>AncientTableMachining</thingDef>
@@ -9782,6 +9783,108 @@
     <model>Models/shelf.obj</model>
     <surfaceHeight>0.60</surfaceHeight>
     <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientTableDrugLab</defName>
+    <thingDef>AncientTableDrugLab</thingDef>
+    <model>Models/bench_drug.obj</model>
+    <surfaceHeight>0.62</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientTableTailorElectric</defName>
+    <thingDef>AncientTableTailorElectric</thingDef>
+    <model>Models/bench_electric_tailor.obj</model>
+    <surfaceHeight>0.62</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientTableTailorHand</defName>
+    <thingDef>AncientTableTailorHand</thingDef>
+    <model>Models/bench_tailor.obj</model>
+    <surfaceHeight>0.62</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientTableBrewery</defName>
+    <thingDef>AncientTableBrewery</thingDef>
+    <model>Models/bench_brewery.obj</model>
+    <surfaceHeight>0.62</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientTableButcher</defName>
+    <thingDef>AncientTableButcher</thingDef>
+    <model>Models/bench_butcher.obj</model>
+    <surfaceHeight>0.62</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientTableSmithingElectric</defName>
+    <thingDef>AncientTableSmithingElectric</thingDef>
+    <model>Models/bench_electric_smithy.obj</model>
+    <surfaceHeight>0.62</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientTableSmithingFueled</defName>
+    <thingDef>AncientTableSmithingFueled</thingDef>
+    <model>Models/bench_smithy.obj</model>
+    <surfaceHeight>0.62</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientTableStoveFueled</defName>
+    <thingDef>AncientTableStoveFueled</thingDef>
+    <model>Models/bench_fueled_stove.obj</model>
+    <surfaceHeight>0.62</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientStandardRecharger</defName>
+    <thingDef>AncientStandardRecharger</thingDef>
+    <model>Models/standard_recharger.obj</model>
+    <builtFor>(3, 2)</builtFor>
+    <surfaceHeight>0.34</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientLargeMechGestator</defName>
+    <thingDef>AncientLargeMechGestator</thingDef>
+    <model>Models/large_mech_gestator.obj</model>
+    <builtFor>(4, 3)</builtFor>
+    <surfaceHeight>0.32</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientBandNode</defName>
+    <thingDef>AncientBandNode</thingDef>
+    <model>Models/band_node.obj</model>
+    <builtFor>(2, 2)</builtFor>
+    <surfaceHeight>0.22</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientToxifierGenerator</defName>
+    <thingDef>AncientToxifierGenerator</thingDef>
+    <model>Models/toxifier_generator.obj</model>
+    <builtFor>(2, 2)</builtFor>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientSmallShelf</defName>
+    <thingDef>AncientSmallShelf</thingDef>
+    <model>Models/shelf_small.obj</model>
+    <surfaceHeight>0.60</surfaceHeight>
+    <aged>0.6</aged>
+  </IsoRim.ModelDef>
+  <!-- The rusted fridge: the junk refrigerator model is rusty already, so no aged layer. -->
+  <IsoRim.ModelDef>
+    <defName>R3D_AncientColdStorage</defName>
+    <thingDef>AncientColdStorage</thingDef>
+    <model>Models/junk_refrigerator.obj</model>
+    <surfaceHeight>0.00</surfaceHeight>
+    <builtFor>(1, 1)</builtFor>
   </IsoRim.ModelDef>
 
   <!-- Ideology archonexus structures (Graphic_Single, not rotatable). Glow traces are glow_archo plates 0.008 thick:

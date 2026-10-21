@@ -1,7 +1,7 @@
 # IsoRim Waylith Api (for mod authors)
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`), the def `IsoRim.ApparelModelDef` (Api 9) and the `wallTop` field of `IsoRim.ModelDef` (Api 11, part 5). Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`), the def `IsoRim.ApparelModelDef` (Api 9) and the `wallTop` field of `IsoRim.ModelDef` (Api 11, part 5) and its `aged` field (Api 15, part 8). Everything else in the assembly is internal detail and can change
 in any update. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -15,10 +15,11 @@ if (IsoRim.Api.Version >= 9) { /* IsoRim.ApparelModelDef is there */ }
 if (IsoRim.Api.Version >= 10) { /* apparel decals; DrawModel follows the peek fade */ }
 if (IsoRim.Api.Version >= 11) { /* ModelDef.wallTop (wall tops) and Form3D.Ground */ }
 if (IsoRim.Api.Version >= 12) { /* the upright drawing scope: BeginUpright, EndUpright, Upright, DrawMesh */ }
+if (IsoRim.Api.Version >= 15) { /* ModelDef.aged (the aged look) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 15 part 8 (versions 13 and 14 come from other branches).
 
 ## Spaces
 
@@ -380,6 +381,34 @@ public static class IsoRimBars
 A mod that does not reference `IsoRim.dll` can find the same public members by name: read `IsoRim.Api.Version`, then
 make delegates for `BeginUpright(float)` and `EndUpright()` with `AccessTools.Method` and `AccessTools.MethodDelegate`.
 
+## Part 8: aged look (version 15)
+
+`<aged>` on an `IsoRim.ModelDef` draws its models old and rusty, as the game draws its ancient ruins: a ruined copy of a
+building can reuse the building's own model. The value is the strength, 0 (off, the default) to 1; IsoRim's ancient
+furniture uses 0.6.
+
+```xml
+<IsoRim.ModelDef>
+  <defName>MyPack_RuinedLathe</defName>
+  <thingDef>MyRuinedLathe</thingDef>
+  <model>Models/lathe.obj</model>
+  <aged>0.6</aged>
+</IsoRim.ModelDef>
+```
+
+What it does, all once when the model is loaded (no cost while drawing):
+- colours not tinted by the stuff are dulled: most of the way to their own grey (a touch olive) and somewhat darker;
+- the stuff colour of "stuff" parts is dulled the same way, so the stuff still reads; a thing made of no stuff (and with
+  none in its cost list) whose sprite is drawn white takes old grey metal there, on the Metal swatch;
+- textured faces get a rusty copy of their texture (rust flakes and grime, the same on every run; more rust with a higher
+  value); faces with no texture are only dulled;
+- glowing faces are switched off.
+
+It applies to every body model of the def (`model`, `models`, `byAppearance`, `byStyle`, `byState`, `stackModels`,
+`emptyModel`, `hackedModel`, `openModel`); glass, turret guns and spinning, bobbing or glowing parts keep their look.
+Older IsoRim versions do not know the field (a config error), so a pack that supports them adds it by patch only when
+`Api.Version >= 15`.
+
 ## Notes
 
 - Figure hooks also run for figures another mod draws through IsoRim's internals; attachments then follow that mod's
@@ -388,3 +417,5 @@ make delegates for `BeginUpright(float)` and `EndUpright()` with `AccessTools.Me
   Version 10 was tested with harness fixtures outside this repository (the VFEM2 pack's tabards, ProjectZ's lift models),
   version 11 likewise (the VFEM2 pack's castle walls and wall turrets, harness layouts `layout_wtcw*`, `layout_wtall`).
   Version 12: `Source/ProbeApi12.cs` (keys `upright`, `upcheck`, `uptest`; harness layout `layout_uprt`).
+  Version 15: probe key `aged=x` (`Source/ProbeScene.cs`, harness only: every aged def at strength x; harness layouts
+  `layout_ancient`, `layout_ancientfin`).

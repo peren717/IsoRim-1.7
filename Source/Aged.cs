@@ -26,7 +26,7 @@ namespace IsoRim
         public static readonly Color OldMetal = new Color(0.64f, 0.64f, 0.62f);
 
         // Harness only (probe "aged=x"): every aged def drawn at this strength instead of its own; < 0 = off.
-        public static float Override = -1f;
+        internal static float Override = -1f;
 
         public static float StrengthOf(ModelDef def)
         {
