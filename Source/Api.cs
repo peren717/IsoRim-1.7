@@ -32,8 +32,9 @@ namespace IsoRim
         // 9: apparel model bindings (ApparelModelDef) and held shields; 10: DrawModel follows the peek fade of the floor it draws
         // on, apparel decals: AddApparelDecals, RemoveApparelDecals, RefreshApparelDecals, ApparelDecal; 11: wall tops, ModelDef.wallTop
         // (WallTopSpec, WallTopStrip, WallTopRule) and Form3D.Ground, WallTops.cs; 12: the upright drawing scope: BeginUpright,
-        // EndUpright, Upright (UprightScope) and DrawMesh, Upright.cs).
-        public static int Version => 12;
+        // EndUpright, Upright (UprightScope) and DrawMesh, Upright.cs;
+        // 17: RequestFullWalls (complete-wall requests for camera modes; PR #5 by Ryuu-64), WallCutaway.cs).
+        public static int Version => 17;
 
         // ---- the view
 

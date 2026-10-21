@@ -820,7 +820,33 @@ namespace IsoRim
 
         public static bool Hovered(Map map, IntVec3 c)
         {
-            return map == hoverMap && cutWalls.Count > 0 && cutWalls.Contains(c);
+            return !FullWalls.Required(map) && map == hoverMap && cutWalls.Count > 0 && cutWalls.Contains(c);
+        }
+
+        // A camera policy changed: discard cached pointer cuts, and refresh room cuts as well. Shader walls keep their
+        // geometry; the older untextured path must rebuild it. Trees and roofs keep their own visibility rules.
+        internal static void WallModeChanged(Map map)
+        {
+            if (map == null)
+            {
+                return;
+            }
+            if (map == hoverMap)
+            {
+                cutWalls.Clear();
+                wantWalls.Clear();
+                lastScan = -1000;
+                appliedSig = 0;
+                wantedSig = 0;
+            }
+            IsoCellMap.Rebuilt(map);
+            if (!ShaderCut.On)
+            {
+                bool shown = View3D.Shown(map);
+                MapSections.QueueAll(map, typeof(SectionLayer_IsoRimWalls), shown);
+                MapSections.QueueAll(map, typeof(SectionLayer_IsoRimDamage), shown);
+                MapSections.QueueAll(map, MapSections.ThingsLayer, shown);
+            }
         }
 
         public static bool TreeThinned(Map map, IntVec3 c)
@@ -1074,7 +1100,7 @@ namespace IsoRim
                 }
             }
 
-            if (st.walls3D)
+            if (st.walls3D && !FullWalls.Required(map))
             {
                 if (st.cutHover)
                 {

@@ -15,10 +15,11 @@ if (IsoRim.Api.Version >= 9) { /* IsoRim.ApparelModelDef is there */ }
 if (IsoRim.Api.Version >= 10) { /* apparel decals; DrawModel follows the peek fade */ }
 if (IsoRim.Api.Version >= 11) { /* ModelDef.wallTop (wall tops) and Form3D.Ground */ }
 if (IsoRim.Api.Version >= 12) { /* the upright drawing scope: BeginUpright, EndUpright, Upright, DrawMesh */ }
+if (IsoRim.Api.Version >= 17) { /* complete-wall requests for camera modes: RequestFullWalls */ }
 ```
 
 Members are never removed or changed in meaning within a version. Version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 17 part 10.
 
 ## Spaces
 
@@ -379,6 +380,64 @@ public static class IsoRimBars
 
 A mod that does not reference `IsoRim.dll` can find the same public members by name: read `IsoRim.Api.Version`, then
 make delegates for `BeginUpright(float)` and `EndUpright()` with `AccessTools.Method` and `AccessTools.MethodDelegate`.
+
+## Part 10: complete walls for camera modes (version 17)
+
+IsoRim's built-in first-person view temporarily suspends automatic wall cutaway. Overhead view continues to use the
+player's settings. This does not change physical wall height, floors, movement, trees, roofs, or building-tool transparency.
+
+An add-on camera can request the same behavior with `Api.RequestFullWalls(Map map, Pawn followedPawn = null)`. Call on
+the main thread when entering the mode, for the current map in a running game. Keep the returned `IDisposable` until
+leaving the mode, then dispose it. Each request is independent: releasing one never cancels another camera's request
+or IsoRim's own first-person view. Switching display modes never writes the player's settings.
+
+Requests expire when the viewed map or game changes, or when play ends. Passing a followed pawn also expires the request
+if that pawn dies, despawns, is destroyed or leaves the map. An expired handle stays expired; request again on re-entry.
+The change is applied at the next camera update. Null maps, requests outside the current playing map, and invalid followed
+pawns throw argument/context exceptions. Calling `Dispose` repeatedly is safe, including after an automatic expiry.
+
+```csharp
+static IDisposable completeWalls;
+
+// Call once when entering your camera mode. Isolate new API calls behind a version check for optional integrations.
+static void EnterCamera(Map map, Pawn followedPawn)
+{
+    completeWalls?.Dispose();
+    completeWalls = null;
+    if (IsoRim.Api.Version >= 17)
+        completeWalls = AcquireWalls(map, followedPawn);
+}
+
+[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+static IDisposable AcquireWalls(Map map, Pawn followedPawn) => IsoRim.Api.RequestFullWalls(map, followedPawn);
+
+static void LeaveCamera()
+{
+    completeWalls?.Dispose();
+    completeWalls = null;
+}
+```
+
+Call `LeaveCamera` on your camera's normal exit and error/cleanup paths. Automatic expiry is a safety net for map/game
+and followed-pawn changes; IsoRim cannot detect an arbitrary add-on camera's own exit. Content-only add-ons need no changes.
+
+### Verification
+
+Run `dotnet run --project Tests/WallCutaway.Tests.csproj`. These tests compile the production request policy and native
+first-person lifecycle against minimal game/engine stand-ins. They check entry/exit, overlapping requests, invalid input,
+map/game changes, pawn loss, stale handles and redraw invalidation counts. They do not validate in-game drawing.
+
+In RimWorld 1.7, check these cases both with textured walls (shader cutaway) and without them (rebuilt geometry), alone
+and with ProjectZ:
+
+1. Enable pointer, colonist and room cutaway. Lower walls, then enter first person: whole walls must return, including
+   walls already lowered, damage marks and doors. Leave first person: the player's cutaway settings apply again.
+2. Repeat with those settings disabled and with a non-default remaining-wall height. Confirm the saved settings do not
+   change, including when settings are edited/saved while in first person.
+3. Hold two independent complete-wall requests and release them in both orders. Also overlap a request with native first
+   person. Only leaving the last active mode restores normal cutaway.
+4. Switch maps, lose the followed pawn, return to the menu and start/load another game. Old requests must stay expired;
+   disposing an old handle must not cancel a new request. Repeat while the game is paused.
 
 ## Notes
 

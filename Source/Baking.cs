@@ -1594,6 +1594,10 @@ namespace IsoRim
         // pointer is over that stretch of wall, or (if that option is on) because it hides a room.
         public static bool CellCut(Map map, IntVec3 c)
         {
+            if (FullWalls.Required(map))
+            {
+                return false;
+            }
             if (Cutaway.Hovered(map, c))
             {
                 return true;
