@@ -35,8 +35,9 @@ namespace IsoRim
         // EndUpright, Upright (UprightScope) and DrawMesh, Upright.cs; 13: attachments: AddAttachments, RemoveAttachments,
         // AttachmentOf, AttachedPlace, ReadHost, AnchorPoint (Attachment, AttachAnchor, AttachPose, AttachFacing,
         // HostTransform; Attach.cs) and ModelDef.backHeight; 14: animal wings, ModelDef.wingModel, wings, wingFold, wingDroop,
-        // wingFlap, wingBeat, and AirborneFactor, Animals.cs; 15: the aged look, ModelDef.aged, Aged.cs).
-        public static int Version => 15;
+        // wingFlap, wingBeat, and AirborneFactor, Animals.cs; 15: the aged look, ModelDef.aged, Aged.cs; 16: ModelDef.graphicPath,
+        // models bound by texture path).
+        public static int Version => 16;
 
         // ---- animals in the air (Version 14)
 

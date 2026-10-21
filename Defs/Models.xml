@@ -3067,6 +3067,62 @@
     <model>Models/food_potato.obj</model>
   </IsoRim.ModelDef>
 
+  <!-- Raw meat (make_meat.py), Api 16 graphicPath -->
+  <IsoRim.ModelDef>
+    <defName>R3D_Meat_Big</defName>
+    <graphicPath>Things/Item/Resource/MeatFoodRaw/Meat_Big</graphicPath>
+    <stackModels>
+      <li>Models/item_meat_big_a.obj</li>
+      <li>Models/item_meat_big_b.obj</li>
+      <li>Models/item_meat_big_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Meat_Small</defName>
+    <graphicPath>Things/Item/Resource/MeatFoodRaw/Meat_Small</graphicPath>
+    <stackModels>
+      <li>Models/item_meat_small_a.obj</li>
+      <li>Models/item_meat_small_b.obj</li>
+      <li>Models/item_meat_small_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Meat_Insect</defName>
+    <graphicPath>Things/Item/Resource/MeatFoodRaw/Meat_Insect</graphicPath>
+    <stackModels>
+      <li>Models/item_meat_insect_a.obj</li>
+      <li>Models/item_meat_insect_b.obj</li>
+      <li>Models/item_meat_insect_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Meat_Human</defName>
+    <graphicPath>Things/Item/Resource/MeatFoodRaw/Meat_Human</graphicPath>
+    <stackModels>
+      <li>Models/item_meat_human_a.obj</li>
+      <li>Models/item_meat_human_b.obj</li>
+      <li>Models/item_meat_human_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Meat_Twisted</defName>
+    <graphicPath>Things/Item/Resource/TwistedMeat</graphicPath>
+    <stackModels>
+      <li>Models/item_meat_twisted_a.obj</li>
+      <li>Models/item_meat_twisted_b.obj</li>
+      <li>Models/item_meat_twisted_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
   <IsoRim.ModelDef>
     <defName>R3D_Category_MeatRaw</defName>
     <thingCategory>MeatRaw</thingCategory>

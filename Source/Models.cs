@@ -64,6 +64,9 @@ namespace IsoRim
                                             // doorLeafModel as the two leaves (Doors.DrawOne). Never an entry by itself.
                                             // Its surfaceHeight, if set, is where things rest on it (Forms.SurfaceOf: a shelf's items)
         public string thingCategory;       // apply to every thing in this category instead of one thingDef
+        public string graphicPath;         // (Api 16) every thing whose graphicData.texPath is this, unless it has its own
+                                           // thingDef entry: the game's generated per-animal meat shares 5 texPaths.
+                                           // Case-insensitive, \ = /, a trailing / ignored. Wins over thingCategory
         public bool randomRotation = false; // give each thing its own turn
         public float scaleJitter = 0f;      // vary each thing's size by up to this fraction
         public bool growthScale = false;    // scale with how grown a plant is
@@ -875,6 +878,17 @@ namespace IsoRim
             return how.TryGetValue(def, out h) ? h : null;
         }
 
+        // A texture path as graphicPath compares it (Api 16): lower case, / for \, no trailing /. Null if empty.
+        internal static string NormalPath(string path)
+        {
+            if (path.NullOrEmpty())
+            {
+                return null;
+            }
+            path = path.Replace('\\', '/').TrimEnd('/').ToLowerInvariant();
+            return path.Length == 0 ? null : path;
+        }
+
         // Whether a <match> name part names a word (or run of words) of the defName: it must start
         // where a capitalised word starts and end where one ends, ignoring case. "Car" finds
         // AncientCar and RustedCarWreck but not AncientCardboardBox; "APC" finds AncientAPC but not
@@ -1171,6 +1185,33 @@ namespace IsoRim
                 {
                     byThing[thing] = MakeEntry(md);
                     how[thing] = "thingDef";
+                }
+            }
+
+            // Then texture paths (Api 16): one model for every thing drawn with the same art, e.g. the meat the game
+            // generates per animal (vanilla and modded), before categories.
+            for (int i = 0; i < all.Count; i++)
+            {
+                ModelDef md = all[i];
+                string path = NormalPath(md.graphicPath);
+                if (path == null || !md.style.NullOrEmpty())
+                {
+                    continue;
+                }
+                ModelEntry entry = null;
+                foreach (ThingDef thing in DefDatabase<ThingDef>.AllDefs)
+                {
+                    if (thing.graphicData == null || thing.IsBlueprint || thing.IsFrame || byThing.ContainsKey(thing)
+                        || NormalPath(thing.graphicData.texPath) != path)
+                    {
+                        continue;
+                    }
+                    if (entry == null)
+                    {
+                        entry = MakeEntry(md);
+                    }
+                    byThing[thing] = entry;
+                    how[thing] = "graphicPath:" + md.graphicPath;
                 }
             }
 

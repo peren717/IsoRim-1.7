@@ -1,0 +1,36 @@
+# IsoRim raw-meat colours (tools/make_meat.py), from the vanilla sprites. stuff_meat* = the meat body,
+# multiplied by the thing colour (graphicData.color = the race meatColor) as vanilla tints its sprite;
+# meat_* fixed (human fat, twisted meat). No textures.
+
+newmtl stuff_meat
+Kd 0.500 0.250 0.250
+
+newmtl stuff_meat_dk
+Kd 0.300 0.160 0.160
+
+newmtl stuff_meat_small
+Kd 0.430 0.240 0.240
+
+newmtl stuff_meat_small_dk
+Kd 0.340 0.190 0.190
+
+newmtl stuff_meat_human
+Kd 0.530 0.290 0.290
+
+newmtl stuff_meat_insect
+Kd 0.950 0.950 0.950
+
+newmtl stuff_meat_insect_dk
+Kd 0.780 0.780 0.780
+
+newmtl meat_fat
+Kd 0.740 0.600 0.530
+
+newmtl meat_twisted
+Kd 0.470 0.250 0.320
+
+newmtl meat_twisted_dk
+Kd 0.350 0.180 0.240
+
+newmtl meat_twisted_streak
+Kd 0.780 0.460 0.540
