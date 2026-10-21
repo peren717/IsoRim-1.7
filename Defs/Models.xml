@@ -9738,4 +9738,51 @@
     <builtFor>(1, 2)</builtFor>
   </IsoRim.ModelDef>
 
+  <!-- Ideology archonexus structures (Graphic_Single, not rotatable). Glow traces are glow_archo plates 0.008 thick:
+       outlineMinSize makes IsoRim leave them unoutlined as flat sheets. -->
+  <IsoRim.ModelDef>
+    <defName>R3D_ArchotechTower</defName>
+    <thingDef>ArchotechTower</thingDef>
+    <model>Models/archotech_tower.obj</model>
+    <surfaceHeight>0.00</surfaceHeight>
+    <outlineMinSize>0.05</outlineMinSize>
+    <builtFor>(5, 5)</builtFor>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_MajorArchotechStructure</defName>
+    <thingDef>MajorArchotechStructure</thingDef>
+    <model>Models/archotech_major.obj</model>
+    <surfaceHeight>0.00</surfaceHeight>
+    <outlineMinSize>0.05</outlineMinSize>
+    <builtFor>(7, 7)</builtFor>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_MajorArchotechStructureStudiable</defName>
+    <thingDef>MajorArchotechStructureStudiable</thingDef>
+    <model>Models/archotech_major.obj</model>
+    <surfaceHeight>0.00</surfaceHeight>
+    <outlineMinSize>0.05</outlineMinSize>
+    <builtFor>(7, 7)</builtFor>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_GrandArchotechStructure</defName>
+    <thingDef>GrandArchotechStructure</thingDef>
+    <model>Models/archotech_grand.obj</model>
+    <surfaceHeight>0.00</surfaceHeight>
+    <outlineMinSize>0.05</outlineMinSize>
+    <builtFor>(9, 9)</builtFor>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_ArchonexusCore</defName>
+    <thingDef>ArchonexusCore</thingDef>
+    <model>Models/archonexus_core.obj</model>
+    <surfaceHeight>0.00</surfaceHeight>
+    <outlineMinSize>0.05</outlineMinSize>
+    <builtFor>(11, 11)</builtFor>
+  </IsoRim.ModelDef>
+
 </Defs>
