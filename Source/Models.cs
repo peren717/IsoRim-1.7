@@ -90,6 +90,9 @@ namespace IsoRim
                                             // touches are cut out of the map mesh and the ground round it hides what lies under
                                             // it (SinkHoles.cs). The model must cover the cut cells outside the opening (an
                                             // apron); a random turn is kept to quarter turns
+        public float aged = 0f;             // > 0 (up to 1, how strongly): drawn old and rusty, as the game's ancient ruins
+                                            // (dulled colours, rust flakes on the textures, dead lights; stuff parts dulled,
+                                            // old grey metal for a thing of no stuff). Made once at load (Aged.cs)
         public float outline = 1f;          // how bold the dark outline is; 0 for none
         public float outlineMinSize = 0f;   // separate pieces smaller than this (cells, largest side), and flat sheets,
                                             // get no outline (a chess table's pieces and board), so small detail does not turn black
@@ -1146,6 +1149,7 @@ namespace IsoRim
             {
                 entry.glass = LoadFile(Path.Combine(md.modContentPack.RootDir, md.glassModel));
             }
+            Aged.Apply(entry, Aged.StrengthOf(md));   // ModelDef.aged: its body models old and rusty
             return entry;
         }
 
@@ -2643,6 +2647,20 @@ namespace IsoRim
             {
                 return tex;
             }
+            if (Aged.IsAgedPath(path))
+            {
+                tex = null;
+                try
+                {
+                    tex = Aged.Texture(path);   // a rusty copy made at run time (ModelDef.aged); already set to tile
+                }
+                catch (Exception e)
+                {
+                    Log.ErrorOnce("[IsoRim] Making an aged texture failed: " + e, 93611300);
+                }
+                cache[path] = tex;
+                return tex;
+            }
             tex = ContentFinder<Texture2D>.Get(path, false);
             if (tex != null)
             {
@@ -2737,6 +2755,14 @@ namespace IsoRim
                 return b != null && b.PaintColorDef != null ? b.PaintColorDef.color : Color.white;
             }
             ThingDef cost = t.Stuff == null ? CostStuffIfWhite(t.def, t.DrawColor) : null;
+            float aged = Aged.StrengthOf(t);
+            if (aged > 0f)
+            {
+                // An aged thing (ModelDef.aged): its stuff colour dulled; made of no stuff and drawn white, old grey metal
+                // (Aged.OldMetal on the Metal swatch, ModelSwatch), as the grey of the game's ancient sprites.
+                Color c = cost != null ? t.def.GetColorForStuff(cost) : t.Stuff == null && IsWhite(t.DrawColor) ? Aged.OldMetal : t.DrawColor;
+                return Aged.Dull(c, aged);
+            }
             return cost != null ? t.def.GetColorForStuff(cost) : t.DrawColor;
         }
 
@@ -2746,7 +2772,17 @@ namespace IsoRim
             {
                 return "Metal";
             }
-            return SwatchOf(t.Stuff ?? CostStuffIfWhite(t.def, t.DrawColor));
+            ThingDef stuff = t.Stuff ?? CostStuffIfWhite(t.def, t.DrawColor);
+            if (stuff == null && IsWhite(t.DrawColor) && Aged.StrengthOf(t) > 0f)
+            {
+                return "Metal";   // an aged thing of no stuff: old metal (ModelTint)
+            }
+            return SwatchOf(stuff);
+        }
+
+        private static bool IsWhite(Color c)
+        {
+            return c.r >= 0.98f && c.g >= 0.98f && c.b >= 0.98f;
         }
 
         // A building whose binding says its "stuff" parts are its paint (ModelDef.paintedHull, the

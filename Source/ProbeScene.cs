@@ -244,6 +244,28 @@ namespace IsoRim
                     }
                     break;
                 }
+                case "aged":
+                {
+                    // aged=x: every ModelDef with aged > 0 drawn at strength x (-1: their own), entries rebuilt, map redrawn.
+                    Aged.Override = F(a[0]);
+                    Dictionary<ThingDef, ModelEntry> byThing = (Dictionary<ThingDef, ModelEntry>)AccessTools.Field(typeof(ModelLibrary), "byThing").GetValue(null);
+                    MethodInfo make = AccessTools.Method(typeof(ModelLibrary), "MakeEntry");
+                    int n = 0;
+                    foreach (ModelDef md in DefDatabase<ModelDef>.AllDefsListForReading)
+                    {
+                        ThingDef td = md.aged > 0f && !md.thingDef.NullOrEmpty() && md.style.NullOrEmpty() ? DefDatabase<ThingDef>.GetNamedSilentFail(md.thingDef) : null;
+                        if (td != null && byThing.ContainsKey(td))
+                        {
+                            byThing[td] = (ModelEntry)make.Invoke(null, new object[] { md });
+                            n++;
+                        }
+                    }
+                    ((System.Collections.IDictionary)AccessTools.Field(typeof(Forms), "cache").GetValue(null)).Clear();
+                    DynamicModels.Forget();
+                    map.mapDrawer.RegenerateEverythingNow();
+                    Log.Message("[IsoRim probe] aged " + a[0] + ": " + n + " entries rebuilt");
+                    break;
+                }
                 case "flatroof":
                     FlatRoofs.ThicknessOverride = F(a[0]);   // the concrete flat roof's thickness, of a wall height (-1: the default)
                     Roofs.Rebuild();
