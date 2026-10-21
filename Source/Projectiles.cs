@@ -326,8 +326,11 @@ namespace IsoRim
                 {
                     return 0.2f;
                 }
-                // About where a 3D figure or a standing sprite holds its weapon (People, Patches.HandHeight).
-                return Interaction.PickHeight(pawn) * (pawn.RaceProps != null && pawn.RaceProps.Humanlike ? 0.42f : 0.6f);
+                // About where a 3D figure or a standing sprite holds its weapon (People, Patches.HandHeight); attached to a
+                // host (Api 13), as high over its place on the host.
+                float onHost;
+                Poses.AttachRise(pawn, out onHost);
+                return (Interaction.PickHeight(pawn) - onHost) * (pawn.RaceProps != null && pawn.RaceProps.Humanlike ? 0.42f : 0.6f) + onHost;
             }
             if (launcher is Building_Turret turret)
             {

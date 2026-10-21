@@ -457,7 +457,9 @@ namespace IsoRim
             }
             try
             {
-                return Api.Floors.ThingOffset(t);
+                // An attached pawn (Api 13) is drawn on its host: the pair takes one offset (a step, a ladder), the host's,
+                // or the attached pawn's when it leads (Attachments.LayoutSource).
+                return Api.Floors.ThingOffset(Attachments.Any ? Attachments.LayoutSource(t) : t);
             }
             catch (Exception e)
             {

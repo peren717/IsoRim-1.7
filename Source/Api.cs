@@ -32,8 +32,10 @@ namespace IsoRim
         // 9: apparel model bindings (ApparelModelDef) and held shields; 10: DrawModel follows the peek fade of the floor it draws
         // on, apparel decals: AddApparelDecals, RemoveApparelDecals, RefreshApparelDecals, ApparelDecal; 11: wall tops, ModelDef.wallTop
         // (WallTopSpec, WallTopStrip, WallTopRule) and Form3D.Ground, WallTops.cs; 12: the upright drawing scope: BeginUpright,
-        // EndUpright, Upright (UprightScope) and DrawMesh, Upright.cs).
-        public static int Version => 12;
+        // EndUpright, Upright (UprightScope) and DrawMesh, Upright.cs; 13: attachments: AddAttachments, RemoveAttachments,
+        // AttachmentOf, AttachedPlace, ReadHost, AnchorPoint (Attachment, AttachAnchor, AttachPose, AttachFacing,
+        // HostTransform; Attach.cs) and ModelDef.backHeight).
+        public static int Version => 13;
 
         // ---- the view
 
@@ -401,6 +403,62 @@ namespace IsoRim
         /// stacked floor. Without the 3D view it is Graphics.DrawMesh.
         /// </summary>
         public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer = 0) => DrawHook.DrawMesh(mesh, matrix, material, layer);
+
+        // ---- attachments (Version 13)
+
+        /// <summary>
+        /// Registers a provider that says what a thing is attached to (<see cref="Attachment"/>; null: not attached). While
+        /// the 3D view is on, IsoRim asks it for the pawns it draws or measures, often (several times a frame per pawn, also
+        /// in game ticks): keep it cheap. An attached pawn is drawn on its host's anchor, following the host's drawn place,
+        /// facing, walking bob, floor and peek fade; its picking and box selection, name label, held weapon and shot origin,
+        /// bubbles and first person follow it, and its DrawPos (x and z) is the anchor's. People figures take every
+        /// <see cref="AttachPose"/>; animal models stand or lie on the anchor; pawns drawn as cards stand (or sit, sunk a
+        /// little) on it. Things that are not pawns are not drawn by it: draw them with <see cref="DrawModel(ModelHandle, Vector3, float, Vector3, Color, string)"/>
+        /// at <see cref="AnchorPoint"/>. The first provider with an answer wins. With none registered this costs nothing.
+        /// Registering the same provider twice does nothing. With the 3D view off nothing changes (the game's own drawing).
+        /// Call once, at startup.
+        /// </summary>
+        public static void AddAttachments(Func<Thing, Attachment?> provider) => Attachments.Add(provider);
+
+        /// <summary>Removes a provider added with <see cref="AddAttachments"/>.</summary>
+        public static void RemoveAttachments(Func<Thing, Attachment?> provider) => Attachments.Remove(provider);
+
+        /// <summary>What the providers say thing is attached to now (null: nothing, or its host is not spawned on its map).</summary>
+        public static Attachment? AttachmentOf(Thing thing)
+        {
+            Attachment a;
+            return Attachments.Of(thing, out a) ? a : (Attachment?)null;
+        }
+
+        /// <summary>
+        /// Where IsoRim puts an attached thing now: point, the anchor in true space (x, z map cells; y over its floor), and
+        /// yaw, the way it faces as drawn. False when it is not attached or the 3D view is off.
+        /// </summary>
+        public static bool AttachedPlace(Thing thing, out Vector3 point, out float yaw)
+        {
+            Attachments.Placed p;
+            bool ok = Attachments.Place(thing, false, null, out p);
+            point = p.at;
+            yaw = p.yaw;
+            return ok;
+        }
+
+        /// <summary>
+        /// A thing's place as IsoRim draws it now (<see cref="IsoRim.HostTransform"/>): its base point, drawn facing, walking
+        /// bob, model scale, floor and peek fade, and its anchors (an animal model as drawn; a person figure; a card or flat
+        /// pawn estimated from its sprite; a building by its model). False while the 3D view is off or it is not spawned.
+        /// </summary>
+        public static bool ReadHost(Thing host, out HostTransform transform) => Attachments.Host(host, false, out transform);
+
+        /// <summary>A named anchor of a host plus offset (its own space: x right, y up, z forward; cells), in true space.
+        /// False while the 3D view is off or the host is not spawned.</summary>
+        public static bool AnchorPoint(Thing host, AttachAnchor anchor, Vector3 offset, out Vector3 point)
+        {
+            HostTransform h;
+            bool ok = Attachments.Host(host, false, out h);
+            point = ok ? h.Anchor(anchor, offset) : Vector3.zero;
+            return ok;
+        }
 
         // ---- for addons' dev tests only: may change without notice
 

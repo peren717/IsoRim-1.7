@@ -1311,6 +1311,13 @@ namespace IsoRim
         public static bool LabelDrawPosFor_Prefix(Thing __0, float __1, ref Vector2 __result)
         {
             Vector3 lift = Floors.DrawnOffset(__0);   // on an upper floor (Floors)
+            Attachments.Placed attached;
+            if (Attachments.Any && __0 is Pawn && Attachments.Place(__0, false, null, out attached))
+            {
+                // Attached to a host (Api 13): hung from its anchor (another mod's own label offset left out).
+                lift.y += attached.at.y / View3D.Squash;
+                __1 = 0f;
+            }
             if (!View3D.Ready || __0 == null || View3D.Yaw == 0f && lift == Vector3.zero)
             {
                 return true;
@@ -1717,6 +1724,17 @@ namespace IsoRim
         // colony fast. Portraits and other off-map drawing are left to the game.
         public static bool RenderPawnAt_Prefix(PawnRenderer __instance, Vector3 __0, bool __2)
         {
+            if (renderDepth++ > 0)
+            {
+                // A pawn drawn inside another's drawing (another mod's render node draws its rider): the outer pawn's
+                // drawing state is put back when this one is done (RenderPawnAt_Finalizer).
+                nestedDraws.Push(new PawnDrawState
+                {
+                    active = DrawHook.active, billboard = DrawHook.billboard, skip = DrawHook.skip, xform = DrawHook.xform,
+                    upright = pawnUpright, pawn = uprightPawn, feet = pawnFeet, lift = pawnLift, size = pawnSize,
+                    aiming = cardAiming, aimGame = cardAimGame, aimSeen = cardAimSeen,
+                });
+            }
             DrawHook.active = false;
             DrawHook.billboard = false;
             DrawHook.skip = false;
@@ -1832,6 +1850,14 @@ namespace IsoRim
                     Vector3 standingFeet = onSeat - View3D.GroundForward * (spriteHeight * st.feetOffset);
                     feet = Vector3.Lerp(standingFeet, onSeat, seat.amount);
                     pawnLift = seat.Lift;
+                }
+                Attachments.Placed attached;
+                if (pawn != null && Attachments.Any && Attachments.Place(pawn, true, null, out attached))
+                {
+                    // Attached to a host (Api 13): the card stands on the anchor (not slid), sitting ones sunk to the hips.
+                    feet = new Vector3(attached.at.x, __0.y, attached.at.z);
+                    bool sits = attached.a.pose == AttachPose.Sit || attached.a.pose == AttachPose.SitNoLegs;
+                    pawnLift = attached.at.y - (sits ? CardHips * spriteHeight : 0f);
                 }
                 float skyLift;
                 if (pawn != null && Skyfallers.PawnLift(pawn, out skyLift))
@@ -2289,11 +2315,68 @@ namespace IsoRim
 
         public static void RenderPawnAt_Finalizer()
         {
+            renderDepth = Math.Max(0, renderDepth - 1);
+            if (renderDepth > 0 && nestedDraws.Count > 0)
+            {
+                PawnDrawState s = nestedDraws.Pop();   // back to the outer pawn's drawing (RenderPawnAt_Prefix)
+                DrawHook.active = s.active;
+                DrawHook.billboard = s.billboard;
+                DrawHook.skip = s.skip;
+                DrawHook.xform = s.xform;
+                pawnUpright = s.upright;
+                uprightPawn = s.pawn;
+                pawnFeet = s.feet;
+                pawnLift = s.lift;
+                pawnSize = s.size;
+                cardAiming = s.aiming;
+                cardAimGame = s.aimGame;
+                cardAimSeen = s.aimSeen;
+                return;
+            }
+            nestedDraws.Clear();
             DrawHook.active = false;
             DrawHook.billboard = false;
             DrawHook.skip = false;
             pawnUpright = false;
             cardAiming = false;
+        }
+
+        // Pawns drawn inside another pawn's drawing (RenderPawnAt_Prefix): how deep, and the outer pawns' drawing state.
+        private static int renderDepth;
+
+        // A sitting card's hips, of its sprite height up from its feet.
+        private const float CardHips = 0.2f;
+
+        private struct PawnDrawState
+        {
+            public bool active, billboard, skip, upright, aiming;
+            public Matrix4x4 xform;
+            public Pawn pawn;
+            public Vector3 feet;
+            public float lift, size, aimGame, aimSeen;
+        }
+
+        private static readonly Stack<PawnDrawState> nestedDraws = new Stack<PawnDrawState>();
+
+        // How tall a pawn's upright card is (its sprite's draw height; people 1.5), and where its feet stand: the bottom of
+        // the sprite's figure, slid to the side of the pawn's spot nearest the camera whichever way the camera faces.
+        internal static float CardHeight(Pawn pawn)
+        {
+            float spriteHeight = 1.5f;
+            if (pawn != null && pawn.RaceProps != null && !pawn.RaceProps.Humanlike && pawn.ageTracker != null)
+            {
+                PawnKindLifeStage stage = pawn.ageTracker.CurKindLifeStage;
+                if (stage != null && stage.bodyGraphicData != null)
+                {
+                    spriteHeight = stage.bodyGraphicData.drawSize.y;
+                }
+            }
+            return spriteHeight;
+        }
+
+        internal static Vector3 CardFeet(Pawn pawn, Vector3 drawPos, float spriteHeight)
+        {
+            return drawPos - View3D.GroundForward * (spriteHeight * IsoRimMod.Settings.feetOffset);
         }
 
         // Aiming on a 2D card (the game's own weapon sprite, stood up with the card by DrawHook).

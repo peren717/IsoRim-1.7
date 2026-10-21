@@ -1,7 +1,7 @@
 # IsoRim Waylith Api (for mod authors)
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`), the def `IsoRim.ApparelModelDef` (Api 9) and the `wallTop` field of `IsoRim.ModelDef` (Api 11, part 5). Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`), the def `IsoRim.ApparelModelDef` (Api 9) and the `wallTop` (Api 11, part 5) and `backHeight` (Api 13, part 7) fields of `IsoRim.ModelDef`. Everything else in the assembly is internal detail and can change
 in any update. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -15,10 +15,11 @@ if (IsoRim.Api.Version >= 9) { /* IsoRim.ApparelModelDef is there */ }
 if (IsoRim.Api.Version >= 10) { /* apparel decals; DrawModel follows the peek fade */ }
 if (IsoRim.Api.Version >= 11) { /* ModelDef.wallTop (wall tops) and Form3D.Ground */ }
 if (IsoRim.Api.Version >= 12) { /* the upright drawing scope: BeginUpright, EndUpright, Upright, DrawMesh */ }
+if (IsoRim.Api.Version >= 13) { /* attachments: AddAttachments, ReadHost, AnchorPoint, AttachedPlace, AttachmentOf */ }
 ```
 
 Members are never removed or changed in meaning within a version. Version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7.
 
 ## Spaces
 
@@ -380,6 +381,109 @@ public static class IsoRimBars
 A mod that does not reference `IsoRim.dll` can find the same public members by name: read `IsoRim.Api.Version`, then
 make delegates for `BeginUpright(float)` and `EndUpright()` with `AccessTools.Method` and `AccessTools.MethodDelegate`.
 
+## Part 7: attachments (version 13)
+
+Draw one thing on another thing's 3D model, following it: a rider on a mount, a passenger in a vehicle seat, someone
+carried on a back. It has two layers.
+
+**1. Read a host's drawn place.** `Api.ReadHost(Thing host, out HostTransform h)` gives where IsoRim draws a thing now:
+
+| `HostTransform` field | Meaning |
+|---|---|
+| `position` | Its base point, true space: x and z in map cells (its own floor's rows, as `DrawModel` takes them), y its height over its floor (in a jump, carried, flying; 0 on the ground). |
+| `yaw` | The way it is drawn facing, degrees clockwise from north (a model's turn as drawn, a card's facing). |
+| `bob` | The rise of its body in step now, cells (already in the anchors). |
+| `scale` | Cells per model unit of its drawn model (1 for a card or flat thing). |
+| `model` | Drawn as a 3D model now (false: an upright card or the game's flat drawing). |
+| `floor`, `shown`, `fade` | Its stacked floor (0 the ground or no floors, -1 between floors), whether that floor is drawn, and its peek fade slot (0 solid, above 0 faded). |
+| `floorOffset` | Its floor's and the floor layout's own offset (a pawn on a stair step), true space. |
+| `back`, `top`, `backAt` | Heights over `position.y` of the `Back` and `Top` anchors (bob included), and the back's point in the host's own space. |
+| `Point(local)`, `Anchor(anchor, offset)` | A point of the host's own space (x right, y up, z forward; cells), or an anchor plus offset, in true space. |
+
+`Api.AnchorPoint(host, anchor, offset, out point)` is the short form. Anchors (`AttachAnchor`):
+
+- `Back`: an animal model's back, measured once per model by a ray straight down through its body at the middle of its
+  trunk (between its hips); `backHeight` in the animal's `ModelDef` (model units) overrides it. A person figure: its
+  shoulders. A building: its surface (`surfaceHeight`). A card (no model, or models off): estimated from the sprite size.
+- `Top`: the highest point of the host as drawn (a card: estimated).
+- `Ground`: the host's base point; place by hand with the offset.
+
+**2. Attachments.** Register a provider that says what a thing is attached to:
+
+```csharp
+IsoRim.Api.AddAttachments(Func<Thing, Attachment?> provider);    // RemoveAttachments to take it back
+```
+
+IsoRim asks it for the pawns it draws or measures while the 3D view is on, often (several times a frame per pawn, also
+in game ticks), so keep it cheap; return null for "not attached". The first provider with an answer wins. With none
+registered nothing of this runs. An `Attachment` has:
+
+| Field | Meaning |
+|---|---|
+| `host` | What it is attached to: a spawned thing on the same map (anything else is ignored). |
+| `anchor`, `offset` | Where: a named anchor plus an offset in the host's own space (x right, y up, z forward; cells). |
+| `pose` (`AttachPose`) | `Stand` (feet on the anchor), `Sit` (seated as on a chair), `SitNoLegs` (hips on the anchor, legs left out: a rider), `Lie` (on its back along the host). |
+| `facing` (`AttachFacing`) | `Host` (the host's facing), `Aim` (the host's facing, turned to the target while aiming, as standing figures do), `Own` (its own rotation, turned to the target while aiming). |
+| `turn` | Degrees added to the host's facing (a seat facing sideways). |
+| `leads` | The attached pawn leads the pair's movement (a rider steering its mount): the offset a floor layout gives it while it takes a stair, ladder or lift step is drawn for the host too. False: it takes the host's offset (a vehicle seat). |
+
+What follows from it, in one place (`Attach.cs`, through `Poses`):
+
+- The pawn is drawn on the anchor, following the host's drawn place, facing, walking bob, floor and peek fade. People
+  figures take every pose; animal models stand or lie on the anchor; pawns drawn as cards stand (or sit, a little sunk)
+  on it.
+- Its `DrawPos` (x and z) is the anchor's while the 3D view is on, so the selection brackets, motes, aim lines and the
+  game's other uses of the drawn position follow it.
+- Picking and box selection, the name label (hung from the anchor), the held weapon and where its shots start, the
+  bubbles over it and first person all follow the figure on the host. The pointer picks the host's own body below the
+  attached pawn's figure.
+- With the 3D view off nothing changes: the game's own drawing.
+
+`Api.AttachmentOf(thing)` gives the providers' answer; `Api.AttachedPlace(thing, out point, out yaw)` where IsoRim puts
+an attached thing now. Things that are not pawns are not drawn by IsoRim through attachments: draw your own model with
+`Api.DrawModel` at `Api.AnchorPoint` / `HostTransform.Anchor`.
+
+Example: riders of a mounting mod sit on their mounts' backs, turning to aim (the IsoRim Waylith - Giddy-Up Pack does
+this). The Api 13 types live in a class of their own, so an older IsoRim never loads them:
+
+```csharp
+[StaticConstructorOnStartup]
+public static class IsoRimRiders
+{
+    static IsoRimRiders()
+    {
+        if (ModsConfig.IsActive("Peren.IsoRim17") && ApiVersion() >= 13)
+        {
+            Riders.Register();
+        }
+    }
+
+    private static int ApiVersion() => IsoRim.Api.Version;
+}
+
+internal static class Riders
+{
+    // Made from the MethodInfo on purpose: a plain method group (AddAttachments(Of)) is cached by the compiler in a static
+    // field of type Func<Thing, Attachment?>, and the game's startup scan of static fields fails on it when IsoRim is older
+    // than 13 (an error in the log, though nothing else breaks).
+    internal static void Register() => IsoRim.Api.AddAttachments((Func<Thing, IsoRim.Attachment?>)Delegate.CreateDelegate(
+        typeof(Func<Thing, IsoRim.Attachment?>), AccessTools.Method(typeof(Riders), nameof(Of))));
+
+    private static IsoRim.Attachment? Of(Thing t)
+    {
+        Pawn mount = t is Pawn rider ? MyMounts.MountOf(rider) : null;   // your mod's own lookup; keep it cheap
+        if (mount == null)
+        {
+            return null;
+        }
+        return new IsoRim.Attachment(mount, IsoRim.AttachAnchor.Back, IsoRim.AttachPose.SitNoLegs, IsoRim.AttachFacing.Aim) { leads = true };
+    }
+}
+```
+
+If your mod draws the attached pawn itself somewhere else (inside the host's render tree, say), switch that off while
+`Api.ViewReady` is true, so the pawn is drawn once, on its own path, where IsoRim puts it.
+
 ## Notes
 
 - Figure hooks also run for figures another mod draws through IsoRim's internals; attachments then follow that mod's
@@ -388,3 +492,5 @@ make delegates for `BeginUpright(float)` and `EndUpright()` with `AccessTools.Me
   Version 10 was tested with harness fixtures outside this repository (the VFEM2 pack's tabards, ProjectZ's lift models),
   version 11 likewise (the VFEM2 pack's castle walls and wall turrets, harness layouts `layout_wtcw*`, `layout_wtall`).
   Version 12: `Source/ProbeApi12.cs` (keys `upright`, `upcheck`, `uptest`; harness layout `layout_uprt`).
+  Version 13 was tested with the IsoRim Waylith - Giddy-Up Pack and a harness helper outside this repository (riders on
+  model and card mounts, picking, labels, shots, first person, stacked-floor stairs, ladders and lifts).

@@ -194,6 +194,12 @@ namespace IsoRim
         // mono (a statue's subject): every colour carved in that one colour (Statues.Carved), nothing glowing.
         public static List<Part> BuildMerged(List<Model> models, List<Matrix4x4> locals, List<Color> tints, int turned, Color? mono = null)
         {
+            return BuildMerged(models, locals, tints, turned, mono, float.NegativeInfinity);
+        }
+
+        // clipBelow: faces whose middle is lower than this (after their placing) are left out (a figure without legs).
+        public static List<Part> BuildMerged(List<Model> models, List<Matrix4x4> locals, List<Color> tints, int turned, Color? mono, float clipBelow)
+        {
             List<Part> parts = new List<Part>();
             Material solidMat = R3DMaterials.Solid;
             Material litMat = R3DMaterials.LitModel;
@@ -214,6 +220,11 @@ namespace IsoRim
                     int n = m.positions.Length;
                     for (int i = 0; i + 2 < n; i += 3)
                     {
+                        if (clipBelow > float.NegativeInfinity
+                            && local.MultiplyPoint3x4(m.positions[i]).y + local.MultiplyPoint3x4(m.positions[i + 1]).y + local.MultiplyPoint3x4(m.positions[i + 2]).y < 3f * clipBelow)
+                        {
+                            continue;
+                        }
                         int mi = m.material != null ? m.material[i] : 0;
                         ModelMaterial mm = m.materials != null ? m.materials[mi] : null;
                         Lists into = mm != null && mm.glow && !mono.HasValue ? glowing : solid;

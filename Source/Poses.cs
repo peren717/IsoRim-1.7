@@ -21,6 +21,9 @@ namespace IsoRim
     // no model): on the top of the bedding (ModelDef.beddingTop: the pillow), not on the mattress under the blanket and
     // pillow that would cover it. A 3D figure has a body of its own and lies on surfaceHeight as before.
     //
+    // Attached to a host (Api 13, Attach.cs): on the host's anchor, posed and turned as the attachment says; picking, first
+    // person, the bubbles and the muzzle height take it from DrawnSpot / AttachRise, the figure from People.Draw.
+    //
     // With the 3D view off nothing here applies: the game's own drawing.
     public static class Poses
     {
@@ -85,16 +88,55 @@ namespace IsoRim
         public static Vector3 DrawnSpot(Pawn pawn, out float headRise)
         {
             Vector3 at = pawn.DrawPos;
+            if (Attachments.Any && AttachRise(pawn, out headRise))
+            {
+                return at;   // attached to a host (Api 13): DrawPos is already on its anchor
+            }
             Seat s;
             // (a 3D figure's body is squashed; a card is not)
             headRise = Seated(pawn, ref at, out s) ? s.Lift - (Patches.DrawnAsModel(pawn) ? s.HeadDrop(1f) : 0f) : 0f;
             return at;
         }
 
+        // A pawn attached to a host (Api 13, Attachments; IsoRim draws it there): how much higher than standing on its floor
+        // its head is (a person figure, by its pose on the anchor), or the anchor's height (anything else).
+        public static bool AttachRise(Pawn pawn, out float rise)
+        {
+            rise = 0f;
+            Attachments.Placed p;
+            if (!Attachments.Any || !Attachments.Place(pawn, false, null, out p))
+            {
+                return false;
+            }
+            if (pawn.RaceProps == null || !pawn.RaceProps.Humanlike)
+            {
+                rise = p.at.y;
+                return true;
+            }
+            float size = pawn.ageTracker != null && pawn.ageTracker.CurLifeStage != null ? People.SizeFor(pawn.ageTracker.CurLifeStage.bodySizeFactor) : 1f;
+            rise = Attachments.HeadRise(p.a.pose, p.at.y, size, Attachments.Hips);
+            return true;
+        }
+
+        // The lowest point of an attached pawn's figure as drawn on its host (a little under the anchor: the hips of a
+        // rider), for picking.
+        public static bool AttachBottom(Pawn pawn, out float bottom)
+        {
+            bottom = 0f;
+            Attachments.Placed p;
+            if (!Attachments.Any || !Attachments.Place(pawn, false, null, out p))
+            {
+                return false;
+            }
+            bottom = Mathf.Max(0f, p.at.y - 0.15f);
+            return true;
+        }
+
         // The seat the pawn sits on by the game's rule, or null.
         public static Building SeatUnder(Pawn pawn)
         {
-            if (!On || pawn == null || !View3D.Active || !pawn.Spawned || pawn.Dead || pawn.ageTracker == null || pawn.pather == null)
+            if (!On || pawn == null || !View3D.Active || !pawn.Spawned || pawn.Dead || pawn.ageTracker == null || pawn.pather == null
+                || Attachments.Any && Attachments.HostOf(pawn) != null)
             {
                 return null;
             }

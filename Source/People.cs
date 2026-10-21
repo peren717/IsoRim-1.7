@@ -174,11 +174,13 @@ namespace IsoRim
         private static readonly List<Color> mergeTints = new List<Color>();
 
         // The body (head = false) or the head of a figure as ready-made meshes.
-        private static List<DynamicModels.Part> Merged(Look look, bool headPart, bool dead, int turned, Color? mono = null)
+        private static List<DynamicModels.Part> Merged(Look look, bool headPart, bool dead, int turned, Color? mono = null, bool noLegs = false)
         {
             // The meshes carry no shading (the shader lights them), so one set serves every light and turn.
             // A statue's subject (mono: the statue colour) has its own set, made again when the statue is repainted.
-            int key = (headPart ? 2 : 0) + (dead ? 1 : 0) + (mono.HasValue ? 4 : 0);
+            // Without legs (Api 13, AttachPose.SitNoLegs): the body's faces below the hips left out (key 8).
+            noLegs &= !headPart && !mono.HasValue;
+            int key = (headPart ? 2 : 0) + (dead ? 1 : 0) + (mono.HasValue ? 4 : 0) + (noLegs ? 8 : 0);
             List<DynamicModels.Part> parts;
             if (mono.HasValue && look.statueTint != mono.Value)
             {
@@ -268,7 +270,8 @@ namespace IsoRim
                     AddPart(pads, bodyPlace * Matrix4x4.Scale(new Vector3(look.shoulders, 1f, 1.05f)), look.coat != null ? look.coatColor : look.upperColor);
                 }
             }
-            parts = DynamicModels.BuildMerged(mergeModels, mergeLocals, mergeTints, turned, mono);
+            parts = DynamicModels.BuildMerged(mergeModels, mergeLocals, mergeTints, turned, mono,
+                noLegs ? Attachments.Hips * look.bodyScale.y : float.NegativeInfinity);
             look.meshes[key] = parts;
             return parts;
         }
@@ -368,12 +371,22 @@ namespace IsoRim
             {
                 vat = null;
             }
-            bool lying = gibbet == null && vat == null && (dead || pawn.GetPosture() != PawnPosture.Standing);
+            // Attached to a host (Api 13, Attachments): on its anchor, posed and turned as the attachment says.
+            Attachments.Placed att;
+            bool attached = Attached(pawn, look, !dead && gibbet == null && vat == null, neverAim, true, out att);
+            bool noLegs = attached && att.a.pose == AttachPose.SitNoLegs;
+            if (attached)
+            {
+                drawLoc.x = att.at.x;
+                drawLoc.z = att.at.z;
+                lift = 0f;
+            }
+            bool lying = attached ? att.a.pose == AttachPose.Lie : gibbet == null && vat == null && (dead || pawn.GetPosture() != PawnPosture.Standing);
             // Crawling (1.7): the game's own test (Pawn.Crawling: downed, able to crawl, on a job done crawling, not in bed).
-            bool crawling = lying && !dead && gibbet == null && vat == null && pawn.Crawling;
+            bool crawling = lying && !attached && !dead && gibbet == null && vat == null && pawn.Crawling;
             // Sitting (Poses): the game's shift up the screen taken out of drawLoc before the facing is tracked.
             Poses.Seat seat = default(Poses.Seat);
-            bool seated = !lying && gibbet == null && vat == null && lift <= 0f && Poses.Seated(pawn, ref drawLoc, out seat);
+            bool seated = attached ? AttachedSeat(att, out seat) : !lying && gibbet == null && vat == null && lift <= 0f && Poses.Seated(pawn, ref drawLoc, out seat);
             float size = look.size * (gibbet != null ? GibbetScale : 1f);
             float rise = 0f;
             if (vat != null)
@@ -384,7 +397,11 @@ namespace IsoRim
             float yaw;
             float phase = 0f;
             float gait = 0f;
-            if (gibbet != null)
+            if (attached)
+            {
+                yaw = att.yaw;   // still: its host steps (the host's bob is in the anchor)
+            }
+            else if (gibbet != null)
             {
                 yaw = 180f + (Hashing.Unit(pawn.thingIDNumber, 3, 9) - 0.5f) * 50f;
             }
@@ -416,8 +433,14 @@ namespace IsoRim
             {
                 // On their back, head toward the south of the figure's own space before it is turned.
                 Quaternion onBack = Quaternion.AngleAxis(-90f, Vector3.right);
-                Building_Bed bed = dead ? null : pawn.CurrentBed();
-                if (bed != null)
+                Building_Bed bed = dead || attached ? null : pawn.CurrentBed();
+                if (attached)
+                {
+                    // Lying on its host (Api 13), along its facing, the middle of the body on the anchor.
+                    ground = att.at.y;
+                    pose = Matrix4x4.Translate(new Vector3(0f, 0.15f * size, 0.55f * size)) * Matrix4x4.Rotate(onBack);
+                }
+                else if (bed != null)
                 {
                     // In a bed the person's place is where their head is, and they lie along the bed.
                     yaw = bed.Rotation.AsAngle;
@@ -461,6 +484,13 @@ namespace IsoRim
                     ground = Corpses.RestHeight(pawn);
                     pose = Matrix4x4.Translate(new Vector3(0f, 0.15f * size, 0.55f * size)) * Matrix4x4.Rotate(onBack);
                 }
+            }
+            else if (attached)
+            {
+                // Standing or sitting on its host (Api 13): no step of its own; without legs the hips go on the anchor.
+                pose = Matrix4x4.identity;
+                standing = true;
+                ground = seated ? seat.Lift : Attachments.Feet(att.a.pose, att.at.y, size, Attachments.Hips * look.bodyScale.y);
             }
             else if (vat != null)
             {
@@ -518,7 +548,7 @@ namespace IsoRim
             FigureScope.Root(at, yaw);   // (Api.DrawFigure: placed elsewhere)
             if (!headOnly)
             {
-                DynamicModels.DrawParts(Merged(look, false, dead, turned), at, yaw, bodyPlace);
+                DynamicModels.DrawParts(Merged(look, false, dead, turned, null, noLegs), at, yaw, bodyPlace);
                 if (look.decals != null)
                 {
                     ApparelDecals.Draw(look, at, yaw, bodyPlace);   // other mods' decals on the body garments (Api 10)
@@ -537,7 +567,7 @@ namespace IsoRim
             if (FigureHooks.Count > 0)
             {
                 // Other mods' attachments (Api.AddFigureHook), placed in this head and body.
-                FigureHooks.Raise(pawn, look, at, yaw, headPlace, bodyPlace, size, lift, lying, crawling, seated, dead, !headOnly);
+                FigureHooks.Raise(pawn, look, at, yaw, headPlace, bodyPlace, size, lift, lying, crawling, seated || noLegs, dead, !headOnly);
             }
             if (workTool != null)
             {
@@ -594,11 +624,38 @@ namespace IsoRim
             }
             Vector3 drawLoc = pawn.DrawPos;
             float lift = Carried.LiftOf(pawn, ref drawLoc);
-            Poses.Seat seat = default(Poses.Seat);
-            bool seated = lift <= 0f && Poses.Seated(pawn, ref drawLoc, out seat);
             float size = look.size;
             float aimGame, aimDrawn;
-            float yaw = FigureWeapons.AimOf(pawn, false, out aimGame, out aimDrawn) ? aimDrawn : pawn.Rotation.AsAngle;
+            bool aiming = FigureWeapons.AimOf(pawn, false, out aimGame, out aimDrawn);
+            Attachments.Placed att;
+            if (Attached(pawn, look, true, false, false, out att))
+            {
+                // On a host (Api 13), as Draw places it.
+                if (att.a.pose == AttachPose.Lie)
+                {
+                    return false;
+                }
+                Poses.Seat onHost;
+                bool sits = AttachedSeat(att, out onHost);
+                float yawOn = aiming && att.a.facing != AttachFacing.Host ? aimDrawn : att.yaw;
+                Vector3 atOn = new Vector3(att.at.x, sits ? onHost.Lift : Attachments.Feet(att.a.pose, att.at.y, size, Attachments.Hips * look.bodyScale.y), att.at.z);
+                Matrix4x4 wholeOn = Matrix4x4.Scale(new Vector3(size, size, size));
+                Matrix4x4 handsOn = sits ? wholeOn * Matrix4x4.Translate(new Vector3(0f, -(1f - onHost.Squash) * HandY, 0f)) : wholeOn;
+                Rand.PushState();
+                try
+                {
+                    FigureWeapons.Draw(pawn, false, new Vector3(att.at.x, drawLoc.y, att.at.z), atOn, yawOn, handsOn, size, look.upper.halfDepth * look.bodyScale.z,
+                        Mathf.Max(-look.upper.minX, look.upper.maxX) * look.bodyScale.x, true);
+                }
+                finally
+                {
+                    Rand.PopState();
+                }
+                return true;
+            }
+            Poses.Seat seat = default(Poses.Seat);
+            bool seated = lift <= 0f && Poses.Seated(pawn, ref drawLoc, out seat);
+            float yaw = aiming ? aimDrawn : pawn.Rotation.AsAngle;
             Matrix4x4 pose = BodyAnims.Apply(pawn, drawLoc, yaw, size, Matrix4x4.identity);
             Vector3 at = new Vector3(drawLoc.x, (seated ? seat.Lift : 0f) + lift, drawLoc.z);
             Matrix4x4 whole = pose * Matrix4x4.Scale(new Vector3(size, size, size));
@@ -617,6 +674,33 @@ namespace IsoRim
             {
                 Rand.PopState();
             }
+            return true;
+        }
+
+        // Attached to a host (Api 13, Attachments): where and how, with the aim as drawn for the figure's own turn (drawing:
+        // from Draw this frame). may: the figure could be posed on a host now (alive, not caged or in a vat).
+        private static bool Attached(Pawn pawn, Look look, bool may, bool neverAim, bool drawing, out Attachments.Placed att)
+        {
+            att = default(Attachments.Placed);
+            if (!may || !Attachments.Any)
+            {
+                return false;
+            }
+            float aimGame, aimDrawn;
+            bool aiming = FigureWeapons.AimOf(pawn, neverAim, out aimGame, out aimDrawn);
+            return Attachments.Place(pawn, drawing, aiming ? aimDrawn : (float?)null, out att);
+        }
+
+        // AttachPose.Sit: seated on the anchor as on a chair (the body squashed as on a seat).
+        private static bool AttachedSeat(Attachments.Placed att, out Poses.Seat seat)
+        {
+            seat = default(Poses.Seat);
+            if (att.a.pose != AttachPose.Sit)
+            {
+                return false;
+            }
+            seat.height = att.at.y;
+            seat.amount = 1f;
             return true;
         }
 
