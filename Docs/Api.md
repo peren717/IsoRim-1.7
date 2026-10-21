@@ -1,7 +1,7 @@
 # IsoRim Waylith Api (for mod authors)
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`), the def `IsoRim.ApparelModelDef` (Api 9) and the `wallTop` field of `IsoRim.ModelDef` (Api 11, part 5). Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`), the def `IsoRim.ApparelModelDef` (Api 9) the `wallTop` field of `IsoRim.ModelDef` (Api 11, part 5) and its `graphicPath` field (Api 16, part 11). Everything else in the assembly is internal detail and can change
 in any update. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -15,10 +15,11 @@ if (IsoRim.Api.Version >= 9) { /* IsoRim.ApparelModelDef is there */ }
 if (IsoRim.Api.Version >= 10) { /* apparel decals; DrawModel follows the peek fade */ }
 if (IsoRim.Api.Version >= 11) { /* ModelDef.wallTop (wall tops) and Form3D.Ground */ }
 if (IsoRim.Api.Version >= 12) { /* the upright drawing scope: BeginUpright, EndUpright, Upright, DrawMesh */ }
+if (IsoRim.Api.Version >= 16) { /* ModelDef.graphicPath: models bound by texture path */ }
 ```
 
 Members are never removed or changed in meaning within a version. Version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 16 part 11.
 
 ## Spaces
 
@@ -380,6 +381,37 @@ public static class IsoRimBars
 A mod that does not reference `IsoRim.dll` can find the same public members by name: read `IsoRim.Api.Version`, then
 make delegates for `BeginUpright(float)` and `EndUpright()` with `AccessTools.Method` and `AccessTools.MethodDelegate`.
 
+## Part 11: models bound by texture path (version 16)
+
+An `IsoRim.ModelDef` with `<graphicPath>` gives its model to every thing whose `graphicData.texPath` is that path. It is
+meant for defs the game makes itself, such as raw meat: the game makes one meat def per animal, vanilla and modded, but
+they share five textures.
+
+- The match is exact, ignoring case; `\` counts as `/` and a trailing `/` is ignored.
+- Order: a `thingDef` entry wins, then `graphicPath`, then `thingCategory`, then `match`, then the small-plant fallback.
+- Blueprints and frames are skipped. The other fields (`stackModels`, `overArt`, ...) work as in a `thingDef` entry.
+- Model parts with a `stuff_` material take the thing's colour. For raw meat that is the race's `meatColor`, as on the
+  vanilla sprite.
+- Binding happens once at startup and costs nothing while drawing.
+
+Example, IsoRim's own raw meat (Defs/Models.xml):
+
+```xml
+<IsoRim.ModelDef>
+  <defName>R3D_Meat_Big</defName>
+  <graphicPath>Things/Item/Resource/MeatFoodRaw/Meat_Big</graphicPath>
+  <stackModels>
+    <li>Models/item_meat_big_a.obj</li>
+    <li>Models/item_meat_big_b.obj</li>
+    <li>Models/item_meat_big_c.obj</li>
+  </stackModels>
+  <overArt>true</overArt>
+</IsoRim.ModelDef>
+```
+
+An older IsoRim does not know the field and logs an XML error for it. A pack that supports older versions keeps the entry
+without `graphicPath` in its Defs and adds the field with a patch that runs only on version 16 or later (see part 5).
+
 ## Notes
 
 - Figure hooks also run for figures another mod draws through IsoRim's internals; attachments then follow that mod's
@@ -388,3 +420,4 @@ make delegates for `BeginUpright(float)` and `EndUpright()` with `AccessTools.Me
   Version 10 was tested with harness fixtures outside this repository (the VFEM2 pack's tabards, ProjectZ's lift models),
   version 11 likewise (the VFEM2 pack's castle walls and wall turrets, harness layouts `layout_wtcw*`, `layout_wtall`).
   Version 12: `Source/ProbeApi12.cs` (keys `upright`, `upcheck`, `uptest`; harness layout `layout_uprt`).
+  Version 16: IsoRim's raw meat (harness layout `layout_meat`; the model sweep's "how" column shows `graphicPath:`).
