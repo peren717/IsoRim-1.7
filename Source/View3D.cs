@@ -868,6 +868,7 @@ namespace IsoRim
                 h = h * 31 + Mathf.RoundToInt(st.cutHeight * 100f);
                 h = h * 31 + (st.treeShadows ? 1 : 0);
                 h = h * 31 + Mathf.RoundToInt(st.treeShadowLength * 100f);
+                h = h * 31 + ModelLibrary.OverrideGeneration;   // the dev-mode model binder changed a model (Binder/)
                 return h == 0 ? 1 : h;
             }
         }
@@ -893,6 +894,7 @@ namespace IsoRim
         {
             FullWalls.Reset();
             FirstPerson.Reset();
+            ModelLibrary.ClearOverrides();   // the dev-mode model binder's changes last one game only
             Active = LockedOn || HarnessStartsOn;
             lastActive = false;
             appliedSig = 0;

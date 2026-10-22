@@ -43,6 +43,7 @@ COMPATIBILITY
   Other mods that change how pawns are drawn or how the camera works may clash. Buildings,
   animals and plants from DLC and mods without a model of their own are raised into 3D from
   their own sprites. Modded wrecks and junk are matched by name.
+  Model authors: Docs/ModelPacks.md (model packs, the dev-mode model binder, coverage report).
 
 
 PROBLEMS

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <!-- 开发模式：模型绑定器与模型覆盖报告（Source/Binder/） -->
+  <R3D_Binder_Title>模型绑定</R3D_Binder_Title>
+  <R3D_Binder_PickThing>点击一个建筑或物品</R3D_Binder_PickThing>
+  <R3D_Binder_OnlyThings>只支持建筑和物品。</R3D_Binder_OnlyThings>
+  <R3D_Binder_NeedView>请先开启 3D 视图。</R3D_Binder_NeedView>
+  <R3D_Binder_NoDoors>不支持门。</R3D_Binder_NoDoors>
+  <R3D_Binder_NoTurrets>不支持炮塔。</R3D_Binder_NoTurrets>
+  <R3D_Binder_NoStyles>不支持带风格的物体。</R3D_Binder_NoStyles>
+  <R3D_Binder_Shared>它的模型是共用的（{0}）。</R3D_Binder_Shared>
+  <R3D_Binder_NoModel>还没有模型</R3D_Binder_NoModel>
+  <R3D_Binder_HasModel>模型来自 {0}</R3D_Binder_HasModel>
+  <R3D_Binder_Live>已实时修改（还原可撤销）</R3D_Binder_Live>
+  <R3D_Binder_File>文件</R3D_Binder_File>
+  <R3D_Binder_Pick>选择</R3D_Binder_Pick>
+  <R3D_Binder_Reload>重新载入</R3D_Binder_Reload>
+  <R3D_Binder_Search>搜索</R3D_Binder_Search>
+  <R3D_Binder_Workspace>工作区</R3D_Binder_Workspace>
+  <R3D_Binder_NoFile>请选择一个 .obj 文件</R3D_Binder_NoFile>
+  <R3D_Binder_BadFile>无法读取此文件</R3D_Binder_BadFile>
+  <R3D_Binder_Readout>{0} 个三角面，{1} x {2} x {3}</R3D_Binder_Readout>
+  <R3D_Binder_BelowGround>有部分低于地面</R3D_Binder_BelowGround>
+  <R3D_Binder_Overhang>超出占地范围</R3D_Binder_Overhang>
+  <R3D_Binder_StuffOnStuffless>无材料的物体用了材料面</R3D_Binder_StuffOnStuffless>
+  <R3D_Binder_NotDrawn>当前设置下不会显示为模型</R3D_Binder_NotDrawn>
+  <R3D_Binder_BuiltFor>占地</R3D_Binder_BuiltFor>
+  <R3D_Binder_Offset>偏移</R3D_Binder_Offset>
+  <R3D_Binder_Rotation>旋转</R3D_Binder_Rotation>
+  <R3D_Binder_PerFacing>各朝向</R3D_Binder_PerFacing>
+  <R3D_Binder_Turn>转动</R3D_Binder_Turn>
+  <R3D_Binder_NoRoom>没有空间转动。</R3D_Binder_NoRoom>
+  <R3D_Binder_Yaw>朝向角度：{0}</R3D_Binder_Yaw>
+  <R3D_Binder_Scale>缩放</R3D_Binder_Scale>
+  <R3D_Binder_Surface>表面高度</R3D_Binder_Surface>
+  <R3D_Binder_Seat>座面高度</R3D_Binder_Seat>
+  <R3D_Binder_Bedding>床铺顶部</R3D_Binder_Bedding>
+  <R3D_Binder_WallFit>随墙高</R3D_Binder_WallFit>
+  <R3D_Binder_WallMounted>挂在墙上</R3D_Binder_WallMounted>
+  <R3D_Binder_MountHeight>挂墙高度</R3D_Binder_MountHeight>
+  <R3D_Binder_Linked>相连</R3D_Binder_Linked>
+  <R3D_Binder_Cutaway>降低墙</R3D_Binder_Cutaway>
+  <R3D_Binder_OverArt>盖过游戏原画</R3D_Binder_OverArt>
+  <R3D_Binder_LayFlat>平放</R3D_Binder_LayFlat>
+  <R3D_Binder_Outline>描边</R3D_Binder_Outline>
+  <R3D_Binder_GroundShadow>地面阴影</R3D_Binder_GroundShadow>
+  <R3D_Binder_Copy>复制已有模型</R3D_Binder_Copy>
+  <R3D_Binder_ThisThing>此物体</R3D_Binder_ThisThing>
+  <R3D_Binder_Revert>还原</R3D_Binder_Revert>
+  <R3D_Binder_Pack>包名</R3D_Binder_Pack>
+  <R3D_Binder_Export>导出</R3D_Binder_Export>
+  <R3D_Binder_BadPack>请给包起个名字（字母、数字）。</R3D_Binder_BadPack>
+  <R3D_Binder_Exported>已保存到 {0}</R3D_Binder_Exported>
+  <R3D_Binder_ExportFailed>导出失败：{0}</R3D_Binder_ExportFailed>
+
+  <R3D_Coverage_Title>模型覆盖</R3D_Coverage_Title>
+  <R3D_Coverage_Mod>{0}：建筑 {2} 个中 {1} 个、物品 {4} 个中 {3} 个没有模型</R3D_Coverage_Mod>
+  <R3D_Coverage_Building>建筑</R3D_Coverage_Building>
+  <R3D_Coverage_Item>物品</R3D_Coverage_Item>
+  <R3D_Coverage_Apparel>衣物</R3D_Coverage_Apparel>
+  <R3D_Coverage_Weapon>武器</R3D_Coverage_Weapon>
+  <R3D_Coverage_sprite>平面贴图</R3D_Coverage_sprite>
+  <R3D_Coverage_extruded>立体贴图</R3D_Coverage_extruded>
+  <R3D_Coverage_block>方块</R3D_Coverage_block>
+  <R3D_Coverage_worn>穿着外观</R3D_Coverage_worn>
+  <R3D_Coverage_ground>地面形状</R3D_Coverage_ground>
+  <R3D_Coverage_model>模型</R3D_Coverage_model>
+  <R3D_Coverage_door>3D 门</R3D_Coverage_door>
+</LanguageData>
