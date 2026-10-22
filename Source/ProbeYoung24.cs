@@ -15,6 +15,7 @@ namespace IsoRim
     //   tickgrow=x0,z0,x1,z1,<g>,N       game ticks (the plants' own growth, TickLong) until every plant in the rectangle has
     //                                    growth >= g (at most N); the storyteller is held off while it runs (no raids or events)
     //   plantcheck=x0,z0,x1,z1           logs each plant: def, growth, harvestable, young now (StateModels.Immature), built young
+    //   couple=x1,z1,x2,z2               the colonists in the two cells made spouses (to share a double bed)
     //   makeguest=x,z,prisoner|slave     the colonist in the cell made a prisoner / slave of the player (from the pirates)
     //   legcut=x,z                       the colonist in the cell gets a small leg cut (needs tending: medical beds valid for them)
     //   bedtype=x,z,colonist|prisoner|slave[,med|nomed]  the bed's owner type and medical toggle, as the player's buttons
@@ -124,6 +125,23 @@ namespace IsoRim
                             + ", young now " + StateModels.Immature(p) + ", built " + (built == null ? "not noted" : built.Value ? "young" : "mature"));
                     }
                     return true;
+                case "couple":
+                {
+                    // couple=x1,z1,x2,z2: the colonists in the two cells made spouses, so they may share a double bed (BedUtility:
+                    // sharing a bed with someone who is not a partner goes against most ideoligions).
+                    Pawn p1 = map.thingGrid.ThingsListAt(new IntVec3(I(a[0]), 0, I(a[1]))).OfType<Pawn>().FirstOrDefault();
+                    Pawn p2 = map.thingGrid.ThingsListAt(new IntVec3(I(a[2]), 0, I(a[3]))).OfType<Pawn>().FirstOrDefault();
+                    if (p1 == null || p2 == null)
+                    {
+                        Log.Warning("[IsoRim probe] couple: no pawns at " + string.Join(",", a));
+                        return true;
+                    }
+                    if (!p1.relations.DirectRelationExists(PawnRelationDefOf.Spouse, p2))
+                    {
+                        p1.relations.AddDirectRelation(PawnRelationDefOf.Spouse, p2);
+                    }
+                    return true;
+                }
                 case "makeguest":
                 {
                     Pawn gp = map.thingGrid.ThingsListAt(new IntVec3(I(a[0]), 0, I(a[1]))).OfType<Pawn>().FirstOrDefault();
