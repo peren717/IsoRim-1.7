@@ -38,8 +38,9 @@ layout(set = 2, binding = 2) uniform sampler2D _FallColorDestination;
 layout(set = 2, binding = 3) uniform sampler2D _IsoCellTex;   // @default = black   global: the cell texture (IsoCellMap)
 layout(set = 2, binding = 4) uniform sampler2D _IsoRoofTex;   // @default = black   global: the roof over each cell (RoofClip)
 
-// ---- Roof clipping (Source\RoofClip.cs). The same in IsoRimSolid.frag.glsl, IsoRimCardPlant.frag.glsl and
-// IsoRimCardSnow.frag.glsl. _IsoRoofTex: one texel per cell, r = the lid drawn over it (1 built roof, 2 rock, 3 ship
+// ---- Roof clipping (Source\RoofClip.cs). The same in IsoRimSolid.frag.glsl, IsoRimCardPlant.frag.glsl,
+// IsoRimCardSnow.frag.glsl and IsoRimCardMark.frag.glsl (its light pass).
+// _IsoRoofTex: one texel per cell, r = the lid drawn over it (1 built roof, 2 rock, 3 ship
 // deck, 4 a floor's slab, 0 none), g = corner levels SW | SE << 4, b = NW | NE << 4 (built roofs). _IsoRoof: x & 1 while roofs are drawn,
 // y = wall height, z = Rise, w = Pitch (SectionLayer_IsoRimRoofs). Roof space: x, z in map cells of the owner's floor,
 // y in true cells above that floor. Kind 4 (RoofClip.Slab): a stacked floor stands over the cell; its slab clips (at
