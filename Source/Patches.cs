@@ -2681,6 +2681,17 @@ namespace IsoRim
         private static Func<Building_Door, float> doorOpenPct;
         private static Func<Building_Door, bool> doorStuckOpen;
         private static Action<ThingWithComps> compsPostDraw;
+        private static Func<Building_Door, float> openPctOnly;
+
+        // The game's OpenPct of a door (0 shut .. 1 open), for one-cell doors whose leaves gather (Doors.DrawOne, Api 18).
+        internal static float DoorOpenPct(Building_Door door)
+        {
+            if (openPctOnly == null)
+            {
+                openPctOnly = AccessTools.MethodDelegate<Func<Building_Door, float>>(AccessTools.PropertyGetter(typeof(Building_Door), "OpenPct"));
+            }
+            return openPctOnly(door);
+        }
 
         // A wide door with its own models: drawn in 3D in place of the game's movers, frame and top
         // sprites; its comps still draw (the rest of what Building_Door.DrawAt does).

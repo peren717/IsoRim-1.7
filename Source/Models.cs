@@ -123,6 +123,9 @@ namespace IsoRim
         // Doors wider than one cell (ornate door): model is the fixed frame over the doorway, doorLeafModel one
         // leaf (spanning x 0..1 from the doorway centre; the other leaf is the same turned half round),
         // doorTopModel an optional fixed piece on top (the arch). Drawn by Doors.DrawWide.
+        // One-cell doors (Api 18; a style def's door since Api 6): model is the frame, doorLeafModel one leaf spanning
+        // x 0..0.5 (the other the same turned half round), built for walls 1.2 high. A thingDef entry with both is drawn
+        // by Doors.DrawOne when the door has no style entry of its own.
         public string doorLeafModel;
         public string doorTopModel;
         // doorUpperLeafModel (wide doors, optional): a second leaf pair drawn like doorLeafModel but sliding as the game's
@@ -133,6 +136,11 @@ namespace IsoRim
         // built centred and shut) that rises this far (cells, at the walls the models are built for) as the door opens,
         // OpenPct of the way, instead of two leaves sliding apart.
         public float doorLeafRise = 0f;
+        // doorLeafGather (Api 18, one-cell doors with their own models, optional): > 0 makes the two leaves gather toward
+        // their jambs as the door opens, like curtains drawn aside, instead of sliding into the walls: each leaf (x 0..0.5
+        // from the doorway centre) is squeezed along x about its jamb (x 0.5) to 1 - doorLeafGather * OpenPct of its
+        // width (the animal flap: 0.78). Clamped to 0..1. Doors.DrawOne.
+        public float doorLeafGather = 0f;
         // crownTop (wide doors, optional): > 0 gives the frame a crown over the walls: its top stands this many wall
         // heights high at any wall height (frame, leaves and doorLeafRise scaled to it, in height only). Under a floor
         // built right over the door (a slab) there is no room for the crown: everything above the wall top is left out,
@@ -574,7 +582,7 @@ namespace IsoRim
         public Model wingMirror;  // the same, mirrored: the left wing
         public Model top;   // turrets only
         public Model empty;       // emptyModel, or null
-        public Model doorLeaf;    // wide doors only
+        public Model doorLeaf;    // wide doors, and one-cell doors with their own models (Doors.DrawOne)
         public Model doorUpperLeaf;   // wide doors only, doorUpperLeafModel
         public Model doorTop;
         public Model topLoaded;   // turrets whose gun sprite changes once loaded (rocket launchers)

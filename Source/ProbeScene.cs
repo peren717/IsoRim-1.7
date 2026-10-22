@@ -2350,12 +2350,13 @@ namespace IsoRim
                 }
                 foreach (Building_Door bd in Find.CurrentMap.listerThings.AllThings.OfType<Building_Door>())
                 {
-                    if (bd.def.size.x > 1 || bd.def.size.z > 1)
+                    if (bd.def.size.x > 1 || bd.def.size.z > 1
+                        || (burstCam.z > 0f && Mathf.Abs(bd.Position.x + 0.5f - burstCam.x) < burstCam.z && Mathf.Abs(bd.Position.z + 0.5f - burstCam.y) < burstCam.z))
                     {
                         doors += " " + bd.def.defName + bd.Position + " pct " + Traverse.Create(bd).Property("OpenPct").GetValue<float>().ToString("0.00");
                     }
                 }
-                foreach (Pawn bp in Find.CurrentMap.mapPawns.FreeColonistsSpawned)
+                foreach (Pawn bp in Find.CurrentMap.mapPawns.FreeColonistsSpawned.Concat(Find.CurrentMap.mapPawns.SpawnedColonyAnimals))
                 {
                     bp.Drawer.tweener.ResetTweenedPosToRoot();   // paused game: the drawn position follows the ticks
                     doors += " | " + bp.LabelShort + " " + bp.Position + " " + (bp.CurJobDef?.defName ?? "-") + " moving " + bp.pather.Moving;

@@ -84,6 +84,11 @@ namespace IsoRim
             {
                 return 0f;
             }
+            if (def.size.x == 1 && def.size.z == 1 && typeof(RimWorld.Building_Door).IsAssignableFrom(def.thingClass)
+                && !typeof(RimWorld.Building_SupportedDoor).IsAssignableFrom(def.thingClass))
+            {
+                return 0f;   // a one-cell door with its own models (Api 18, the animal flap) is drawn as tall as the walls
+            }
             return entry.DrawnHeight(def);
         }
     }

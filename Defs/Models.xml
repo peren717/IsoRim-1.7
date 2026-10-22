@@ -3213,16 +3213,94 @@
     <model>Models/drug_pills.obj</model>
   </IsoRim.ModelDef>
 
+  <!-- Mortar shells (2026-10-21, tools/make_shells.py): one model per stack sprite (a, b, c), overArt; shells.mtl (mshell_*),
+       fixed colours from the vanilla sprites. Modded shells keep R3D_Category_MortarShells below. -->
   <IsoRim.ModelDef>
     <defName>R3D_Shell_HighExplosive</defName>
     <thingDef>Shell_HighExplosive</thingDef>
-    <model>Models/shells_he.obj</model>
+    <stackModels>
+      <li>Models/item_shell_he_a.obj</li>
+      <li>Models/item_shell_he_b.obj</li>
+      <li>Models/item_shell_he_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Shell_Incendiary</defName>
+    <thingDef>Shell_Incendiary</thingDef>
+    <stackModels>
+      <li>Models/item_shell_incendiary_a.obj</li>
+      <li>Models/item_shell_incendiary_b.obj</li>
+      <li>Models/item_shell_incendiary_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Shell_EMP</defName>
+    <thingDef>Shell_EMP</thingDef>
+    <stackModels>
+      <li>Models/item_shell_emp_a.obj</li>
+      <li>Models/item_shell_emp_b.obj</li>
+      <li>Models/item_shell_emp_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Shell_Smoke</defName>
+    <thingDef>Shell_Smoke</thingDef>
+    <stackModels>
+      <li>Models/item_shell_smoke_a.obj</li>
+      <li>Models/item_shell_smoke_b.obj</li>
+      <li>Models/item_shell_smoke_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Shell_Firefoam</defName>
+    <thingDef>Shell_Firefoam</thingDef>
+    <stackModels>
+      <li>Models/item_shell_firefoam_a.obj</li>
+      <li>Models/item_shell_firefoam_b.obj</li>
+      <li>Models/item_shell_firefoam_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Shell_AntigrainWarhead</defName>
     <thingDef>Shell_AntigrainWarhead</thingDef>
-    <model>Models/shells_he.obj</model>
+    <stackModels>
+      <li>Models/item_shell_antigrain_a.obj</li>
+      <li>Models/item_shell_antigrain_b.obj</li>
+      <li>Models/item_shell_antigrain_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Shell_Toxic</defName>
+    <thingDef>Shell_Toxic</thingDef>
+    <stackModels>
+      <li>Models/item_shell_toxic_a.obj</li>
+      <li>Models/item_shell_toxic_b.obj</li>
+      <li>Models/item_shell_toxic_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Shell_Deadlife</defName>
+    <thingDef>Shell_Deadlife</thingDef>
+    <stackModels>
+      <li>Models/item_shell_deadlife_a.obj</li>
+      <li>Models/item_shell_deadlife_b.obj</li>
+      <li>Models/item_shell_deadlife_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4993,6 +5071,18 @@
       <li>(-0.77, 0.62, -1.6)</li>
     </emitters>
     <emitterRise>0.15</emitterRise>
+  </IsoRim.ModelDef>
+
+  <!-- Animal flap (one cell, 2026-10-21, tools/make_animal_flap.py): a fabric valance (frame) and two halves of the
+       curtain (doorLeafModel) that gather toward their jambs as it opens (Api 18 doorLeafGather; Doors.DrawOne).
+       stuff_fabric* only: cloth or leather colour with the Fabric swatch. -->
+  <IsoRim.ModelDef>
+    <defName>R3D_AnimalFlap</defName>
+    <thingDef>AnimalFlap</thingDef>
+    <model>Models/animal_flap_frame.obj</model>
+    <doorLeafModel>Models/animal_flap_leaf.obj</doorLeafModel>
+    <doorLeafGather>0.78</doorLeafGather>
+    <builtFor>(1, 1)</builtFor>
   </IsoRim.ModelDef>
 
   <!-- Ornate door (2x1): the lintel stays, the two leaves slide apart into the walls (Doors.DrawWide).
