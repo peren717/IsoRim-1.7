@@ -118,14 +118,10 @@ namespace IsoRim
             {
                 return;
             }
-            if (!lookedUp)
-            {
-                lookedUp = true;
-                dragCells = AccessTools.Property(typeof(DesignationDragger), "DragCells");
-                placingRot = AccessTools.Field(typeof(Designator_Place), "placingRot");
-            }
-            List<IntVec3> cells = dragCells != null ? dragCells.GetValue(dragger, null) as List<IntVec3> : null;
-            if (cells == null || cells.Count == 0)
+            // As vanilla: the drag's whole shape (valid cells or not), only for styles that draw an outline.
+            DrawStyleDef style = dm.SelectedStyle;
+            List<IntVec3> cells = dragger.CellBuffer;
+            if (style == null || !style.drawOutline || cells == null || cells.Count == 0)
             {
                 return;
             }
@@ -140,8 +136,14 @@ namespace IsoRim
                 x1 = Mathf.Max(x1, cells[i].x);
                 z1 = Mathf.Max(z1, cells[i].z);
             }
-            float w = LineWidth;
-            Color line = new Color(1f, 1f, 1f, 0.35f);
+            if (x1 == x0 && z1 == z0)
+            {
+                return;
+            }
+            // Vanilla's box green, lighter to read on grass, with a faint fill.
+            float w = LineWidth * 1.5f;
+            Color line = new Color(0.62f, 0.82f, 0.45f, 0.95f);
+            Rect(x0, z0, x1 + 1f, z1 + 1f, new Color(0.62f, 0.82f, 0.45f, 0.12f));
             float ax = x0;
             float az = z0;
             float bx = x1 + 1f;
