@@ -141,7 +141,8 @@ Examples:
 ## Gating on IsoRim's version
 
 Keep the ModelDefs in `Defs/` **without** `<thingDef>` (IsoRim skips an entry that names no thing) and let a patch add the
-binding only when IsoRim's `Api.Version` is new enough for the fields the entry uses:
+binding only when IsoRim's `Api.Version` is new enough for the fields the entry uses. An entry with only base fields
+(those without a number below):
 
 ```xml
 <Patch>
@@ -160,8 +161,33 @@ IsoRim is missing or older than `minVersion`, so the pack loads either way. Ever
 IsoRim's `Tools/PackGate/`. A pack with code of its own may use its own copy of the class instead (the VFE Medieval 2 pack
 does).
 
-`minVersion` by field: plain binding 2; `rotationByFacing`, `byState`, `style`, `crownTop`, `doorLeafRise` 6; `wallTop` 11;
-`backHeight` 13; wing fields 14; `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20. The highest one used counts.
+**Newer fields go into the patch too, never into `Defs/`.** An IsoRim older than a field doesn't know it, and a field it
+doesn't know in `Defs/` is an XML error. Put the fields that need more than version 2 into the same `<value>` as
+`<thingDef>`, and gate it on the highest version among them; an older IsoRim then leaves the thing as it is (no error, no
+half-set model), a new enough one gets the whole entry:
+
+```xml
+<Operation Class="IsoRimPackGate.PatchOperation_IfIsoRimApi">
+  <minVersion>20</minVersion>
+  <apply Class="PatchOperationAdd">
+    <xpath>/Defs/IsoRim.ModelDef[defName="R3D_MyPack_Tank"]</xpath>
+    <value>
+      <thingDef>MyMod_Tank</thingDef>
+      <rotationByFacing>
+        <li>0</li>
+        <li>90</li>
+        <li>0</li>
+        <li>0</li>
+      </rotationByFacing>
+      <cutaway>Never</cutaway>
+    </value>
+  </apply>
+</Operation>
+```
+
+`minVersion` by field: base fields and the plain binding 2; `hackedGlowOff`, `deadBellyUp`, `legFromHip`, `legLift`,
+`legYaw` 5; `rotationByFacing`, `byState`, `style`, `crownTop`, `doorLeafRise` 6; `wallTop` 11; `backHeight` 13; wing
+fields 14; `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20. The highest one used counts.
 
 ## Pitfalls
 
@@ -204,7 +230,8 @@ The panel (it does not pause the game; typing in its fields doesn't move the cam
   press **Revert** or load a game. Closing the panel keeps the change; opening it again on the thing carries on.
 - **Copy from existing**: start from a model another thing already has (or this thing's own, to edit it).
 - **Export** with a **Pack** name writes `<save data>/IsoRimBinder/<Pack>/`: `Defs/` (the ModelDef, defName
-  `R3D_<Pack>_<thing>`, no thingDef), `Patches/` (the gated binding with the `minVersion` its fields need), `Models/`
+  `R3D_<Pack>_<thing>`, no thingDef, base fields only), `Patches/` (the binding plus the newer fields, gated on the
+  `minVersion` they need), `Models/`
   (copies of the `.obj` and the `.mtl` files it names), and, the first time, `About/About.xml` and the gate DLL. Exporting
   more things with the same pack name adds them to the same folder. Fill in `About.xml` (author, packageId) and move the
   folder into your Mods folder to load it. The binder never writes into a mod or Workshop folder.

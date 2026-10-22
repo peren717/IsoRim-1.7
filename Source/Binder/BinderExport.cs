@@ -13,9 +13,12 @@ namespace IsoRim
 {
     // The model binder's export: a pack folder under <save data>/IsoRimBinder/<pack>/ (never a Mods or Workshop folder) laid out
     // as IsoRim's own packs are (Docs/ModelPacks.md):
-    //   Defs/IsoRimBinder_<thing>.xml     the ModelDef (defName R3D_<pack>_<thing>) WITHOUT thingDef, its model paths in Models/
-    //   Patches/IsoRimBinder_<thing>.xml  IsoRimPackGate.PatchOperation_IfIsoRimApi adding the thingDef when IsoRim's Api.Version is
-    //                                     at least the version the fields used need (MinVersion)
+    //   Defs/IsoRimBinder_<thing>.xml     the ModelDef (defName R3D_<pack>_<thing>) WITHOUT thingDef and with only the fields
+    //                                     every IsoRim with an Api has (BaseVersion), its model paths in Models/
+    //   Patches/IsoRimBinder_<thing>.xml  IsoRimPackGate.PatchOperation_IfIsoRimApi adding the thingDef AND the newer fields when
+    //                                     IsoRim's Api.Version is at least the highest version the fields used need: an older
+    //                                     IsoRim never reads a field it doesn't know (an XML error) and never binds a
+    //                                     half-configured model, it leaves the thing as it was
     //   Models/                           copies of the .obj files and the .mtl files they name
     //   About/About.xml, 1.7/Assemblies/IsoRimPackGate.dll   written once, if missing, so the folder loads as a mod
     // A def a patch adds has no mod of its own (modContentPack null) and IsoRim could not find its files: hence the def in
@@ -28,6 +31,7 @@ namespace IsoRim
         // its number here.
         private static readonly Dictionary<string, int> FieldVersion = new Dictionary<string, int>
         {
+            { "deadBellyUp", 5 }, { "hackedGlowOff", 5 }, { "legFromHip", 5 }, { "legLift", 5 }, { "legYaw", 5 },
             { "rotationByFacing", 6 }, { "style", 6 }, { "crownTop", 6 }, { "doorLeafRise", 6 }, { "byState", 6 },
             { "wallTop", 11 },
             { "backHeight", 13 },
@@ -93,16 +97,13 @@ namespace IsoRim
                 HashSet<string> used = new HashSet<string>();
                 string defName = "R3D_" + pack + "_" + thing.defName;
                 StringBuilder body = new StringBuilder();
-                WriteFields(body, live, new ModelDef(), "    ", mapPath, used, true);
+                StringBuilder newer = new StringBuilder();
+                WriteFields(body, live, new ModelDef(), "    ", mapPath, used, newer);
 
                 int minVersion = BaseVersion;
                 foreach (string f in used)
                 {
-                    int v;
-                    if (FieldVersion.TryGetValue(f, out v) && v > minVersion)
-                    {
-                        minVersion = v;
-                    }
+                    minVersion = Math.Max(minVersion, VersionOf(f));
                 }
 
                 string source = string.Join(", ", new List<string>(copied.Keys).ConvertAll(Path.GetFullPath));
@@ -110,8 +111,9 @@ namespace IsoRim
                 defs.Append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
                 defs.Append("<!-- IsoRim model binder export, ").Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture))
                     .Append(", IsoRim Api ").Append(Api.Version).Append(".\n     Model for ").Append(thing.defName).Append(" from: ")
-                    .Append(Escape(source).Replace("--", "- -")).Append("\n     No thingDef here: Patches/IsoRimBinder_").Append(thing.defName)
-                    .Append(".xml adds it (see IsoRim's Docs/ModelPacks.md). -->\n");
+                    .Append(Escape(source).Replace("--", "- -")).Append("\n     No thingDef here").Append(newer.Length > 0 ? " and no fields newer than Api " + BaseVersion : "")
+                    .Append(": Patches/IsoRimBinder_").Append(thing.defName)
+                    .Append(".xml adds them (see IsoRim's Docs/ModelPacks.md). -->\n");
                 defs.Append("<Defs>\n  <IsoRim.ModelDef>\n    <defName>").Append(defName).Append("</defName>\n");
                 defs.Append(body);
                 defs.Append("  </IsoRim.ModelDef>\n</Defs>\n");
@@ -119,13 +121,23 @@ namespace IsoRim
 
                 StringBuilder patch = new StringBuilder();
                 patch.Append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<Patch>\n");
-                patch.Append("  <!-- Binds ").Append(defName).Append(" to ").Append(thing.defName).Append(" when IsoRim has Api ").Append(minVersion)
-                    .Append(" or later (the fields it uses). -->\n");
+                patch.Append("  <!-- Binds ").Append(defName).Append(" to ").Append(thing.defName)
+                    .Append(newer.Length > 0 ? " and adds its fields newer than Api " + BaseVersion : "")
+                    .Append(" when IsoRim has Api ").Append(minVersion).Append(" or later (the fields it uses); an older IsoRim leaves the thing as it is. -->\n");
                 patch.Append("  <Operation Class=\"").Append(GateClass).Append("\">\n");
                 patch.Append("    <minVersion>").Append(minVersion).Append("</minVersion>\n");
                 patch.Append("    <apply Class=\"PatchOperationAdd\">\n");
                 patch.Append("      <xpath>/Defs/IsoRim.ModelDef[defName=\"").Append(defName).Append("\"]</xpath>\n");
-                patch.Append("      <value><thingDef>").Append(thing.defName).Append("</thingDef></value>\n");
+                if (newer.Length == 0)
+                {
+                    patch.Append("      <value><thingDef>").Append(thing.defName).Append("</thingDef></value>\n");
+                }
+                else
+                {
+                    patch.Append("      <value>\n        <thingDef>").Append(thing.defName).Append("</thingDef>\n");
+                    patch.Append(newer);
+                    patch.Append("      </value>\n");
+                }
                 patch.Append("    </apply>\n  </Operation>\n</Patch>\n");
                 File.WriteAllText(Path.Combine(dir, "Patches", "IsoRimBinder_" + thing.defName + ".xml"), patch.ToString(), new UTF8Encoding(false));
 
@@ -203,11 +215,19 @@ namespace IsoRim
 
         // ---- XML
 
-        // The fields of obj that differ from those of a default instance, one element each. top: a ModelDef (only its own
-        // fields, not Def's; Skip left out).
-        private static void WriteFields(StringBuilder sb, object obj, object defaults, string indent, Func<string, string> mapPath,
-            HashSet<string> used, bool top)
+        private static int VersionOf(string field)
         {
+            int v;
+            return FieldVersion.TryGetValue(field, out v) ? v : BaseVersion;
+        }
+
+        // The fields of obj that differ from those of a default instance, one element each. newer != null: obj is the
+        // ModelDef (only its own fields, not Def's; Skip left out), and its fields that need more than BaseVersion go into
+        // newer (indented for the patch's <value>) instead of into.
+        private static void WriteFields(StringBuilder into, object obj, object defaults, string indent, Func<string, string> mapPath,
+            HashSet<string> used, StringBuilder newer)
+        {
+            bool top = newer != null;
             BindingFlags flags = BindingFlags.Public | BindingFlags.Instance | (top ? BindingFlags.DeclaredOnly : 0);
             foreach (FieldInfo f in obj.GetType().GetFields(flags))
             {
@@ -221,37 +241,44 @@ namespace IsoRim
                 {
                     continue;
                 }
+                StringBuilder sb = into;
+                string ind = indent;
+                if (top && VersionOf(f.Name) > BaseVersion)
+                {
+                    sb = newer;
+                    ind = "        ";   // inside the patch's <value>
+                }
                 if (v is IList list)
                 {
                     if (list.Count == 0)
                     {
                         continue;
                     }
-                    sb.Append(indent).Append('<').Append(f.Name).Append(">\n");
+                    sb.Append(ind).Append('<').Append(f.Name).Append(">\n");
                     foreach (object item in list)
                     {
                         if (item == null || Simple(item.GetType()))
                         {
-                            sb.Append(indent).Append("  <li>").Append(Format(item, mapPath)).Append("</li>\n");
+                            sb.Append(ind).Append("  <li>").Append(Format(item, mapPath)).Append("</li>\n");
                         }
                         else
                         {
-                            sb.Append(indent).Append("  <li>\n");
-                            WriteFields(sb, item, Activator.CreateInstance(item.GetType()), indent + "    ", mapPath, used, false);
-                            sb.Append(indent).Append("  </li>\n");
+                            sb.Append(ind).Append("  <li>\n");
+                            WriteFields(sb, item, Activator.CreateInstance(item.GetType()), ind + "    ", mapPath, used, null);
+                            sb.Append(ind).Append("  </li>\n");
                         }
                     }
-                    sb.Append(indent).Append("</").Append(f.Name).Append(">\n");
+                    sb.Append(ind).Append("</").Append(f.Name).Append(">\n");
                 }
                 else if (v != null && !Simple(v.GetType()))
                 {
-                    sb.Append(indent).Append('<').Append(f.Name).Append(">\n");
-                    WriteFields(sb, v, Activator.CreateInstance(v.GetType()), indent + "  ", mapPath, used, false);
-                    sb.Append(indent).Append("</").Append(f.Name).Append(">\n");
+                    sb.Append(ind).Append('<').Append(f.Name).Append(">\n");
+                    WriteFields(sb, v, Activator.CreateInstance(v.GetType()), ind + "  ", mapPath, used, null);
+                    sb.Append(ind).Append("</").Append(f.Name).Append(">\n");
                 }
                 else
                 {
-                    sb.Append(indent).Append('<').Append(f.Name).Append('>').Append(Format(v, mapPath)).Append("</").Append(f.Name).Append(">\n");
+                    sb.Append(ind).Append('<').Append(f.Name).Append('>').Append(Format(v, mapPath)).Append("</").Append(f.Name).Append(">\n");
                 }
                 if (top)
                 {

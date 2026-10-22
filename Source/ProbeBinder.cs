@@ -246,7 +246,7 @@ namespace IsoRim
                 Model m = e.variants[0];
                 line += ", def " + md.defName + ", file " + Path.GetFileName(md.model ?? "") + ", tris " + m.positions.Length / 3
                     + ", builtFor " + md.builtFor + ", offset " + md.offset.ToString("0.###") + ", rotation " + md.rotation
-                    + ", byFacing " + (md.rotationByFacing != null ? string.Join("/", md.rotationByFacing) : "-") + ", scale " + md.scale
+                    + ", byFacing " + (md.rotationByFacing != null ? string.Join("/", md.rotationByFacing) : "-") + ", cutaway " + md.cutaway + ", scale " + md.scale
                     + ", overArt " + md.overArt + ", height " + f.height.ToString("0.###");
                 Thing t = a.Length > 3 ? BinderThingAt(map, new[] { a[2], a[3], a[1] }) : null;
                 if (t != null)
