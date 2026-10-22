@@ -232,12 +232,18 @@ namespace IsoRim
                 {
                     AddPart(look.hair, Matrix4x4.identity, Color.white);
                 }
-                else
+                else if (look.headHidden)
                 {
                     AddPart(look.hair, headPlace, look.hairColor);
                     AddPart(look.hairTop, headPlace, look.hairColor);
                 }
-                AddPart(look.beard, headPlace, look.hairColor);
+                else
+                {
+                    // Hair shown with headgear goes inside it instead of through it (HairTuck); unchanged without.
+                    AddPart(HairTuck.Under(look.hair, look.hat, look.mouthWear, look.eyeWear), headPlace, look.hairColor);
+                    AddPart(HairTuck.Under(look.hairTop, look.hat, look.mouthWear, look.eyeWear), headPlace, look.hairColor);
+                }
+                AddPart(look.headHidden ? look.beard : HairTuck.Under(look.beard, look.hat, look.mouthWear, look.eyeWear), headPlace, look.hairColor);
                 AddPart(look.eyeWear, headPlace, look.eyeColor);
                 AddPart(look.mouthWear, headPlace, look.mouthColor);
                 AddPart(look.hat, headPlace, look.hatColor);
@@ -788,6 +794,15 @@ namespace IsoRim
         {
             Look look;
             int frame = Time.frameCount;
+            if (hairUnderHatsSeen != IsoRimMod.Settings.hairUnderHats)
+            {
+                // The option was switched: every look is worked out again at once (changed heads get new meshes).
+                hairUnderHatsSeen = IsoRimMod.Settings.hairUnderHats;
+                foreach (Look l in looks.Values)
+                {
+                    l.frame = int.MinValue / 2;
+                }
+            }
             // Worked out again at once on getting into or out of a bed that hides headgear.
             if (looks.TryGetValue(pawn.thingIDNumber, out look) && frame - look.frame < RefreshFrames && look.bedHidesHat == BedHidesHeadgear(pawn))
             {
@@ -898,7 +913,7 @@ namespace IsoRim
                 look.bindHides = 0;   // a bound hat hides only while it is drawn
             }
             look.hatKind = hatKind;
-            look.hairShown = !Skips(skip, RenderSkipFlagDefOf.Hair);
+            look.hairShown = !Skips(skip, RenderSkipFlagDefOf.Hair) || HairUnderHat(pawn, skip);
             if (hairKind != null && look.hairShown)
             {
                 look.hair = Part("person_hair_" + hairKind);
@@ -1071,6 +1086,47 @@ namespace IsoRim
                 }
             }
             return names.Count > 0 ? string.Join("+", names) : "none";
+        }
+
+        private static bool hairUnderHatsSeen;
+
+        // Option hairUnderHats: hair is shown (and tucked in, HairTuck) although the game hides it, when every worn item
+        // that hides it does so only by the game's default for headgear on the upper head. Items with their own skip
+        // flags (a mod's choice), headgear over the full head and anything that hides the whole head keep hiding it.
+        private static bool HairUnderHat(Pawn pawn, ulong skip)
+        {
+            if (!IsoRimMod.Settings.hairUnderHats || (skip & RenderSkipFlagDefOf.Head) != 0 || pawn.apparel == null)
+            {
+                return false;
+            }
+            bool upper = false;
+            List<Apparel> worn = pawn.apparel.WornApparel;
+            for (int i = 0; i < worn.Count; i++)
+            {
+                ApparelProperties props = worn[i].def.apparel;
+                if (props == null)
+                {
+                    continue;
+                }
+                if (props.renderSkipFlags != null)
+                {
+                    if (props.renderSkipFlags.Contains(RenderSkipFlagDefOf.Hair))
+                    {
+                        return false;
+                    }
+                    continue;
+                }
+                if (props.bodyPartGroups == null)
+                {
+                    continue;
+                }
+                if (props.bodyPartGroups.Contains(BodyPartGroupDefOf.FullHead))
+                {
+                    return false;
+                }
+                upper |= props.bodyPartGroups.Contains(BodyPartGroupDefOf.UpperHead);
+            }
+            return upper;
         }
 
         // Hair or beard is left out when its own flag is set, or Head (both hang under the head).

@@ -105,6 +105,7 @@ namespace IsoRim
         public float antiAliasStrength = 1f;
         public int lookMode = 0;         // free look drag button: 0 = middle button with R3D_LookModifier (Ctrl), 1 = right button with nothing selected
         public bool pawns3D = true;
+        public bool hairUnderHats = false;   // hair shown, tucked in, under headgear that covers only the upper head (People.HairUnderHat)
         public bool effects3D = true;
         public bool collapseDebris = true;
         public bool groundShadows = true;
@@ -220,6 +221,7 @@ namespace IsoRim
             Scribe_Values.Look(ref antiAliasStrength, "antiAliasStrength", 1f);
             Scribe_Values.Look(ref fpEyeHeight, "fpEyeHeight", 0.95f);
             Scribe_Values.Look(ref pawns3D, "pawns3D", true);
+            Scribe_Values.Look(ref hairUnderHats, "hairUnderHats", false);
             Scribe_Values.Look(ref effects3D, "effects3D", true);
             Scribe_Values.Look(ref collapseDebris, "collapseDebris", true);
             Scribe_Values.Look(ref cutHeight, "cutHeight", 0.5f);
@@ -1001,6 +1003,10 @@ namespace IsoRim
             {
                 Section(r, "R3D_Settings_CreaturesEffects".Translate());
                 Check(r, "R3D_Settings_Pawns3D".Translate(), ref st.pawns3D);
+                if (st.pawns3D)
+                {
+                    Check(r, "R3D_Settings_HairUnderHats".Translate(), ref st.hairUnderHats, "R3D_Settings_HairUnderHatsTip".Translate());
+                }
                 if (st.pawns3D && ModsConfig.IsActive("Nals.FacialAnimation"))
                 {
                     Check(r, "R3D_Settings_FaceDecal".Translate(), ref st.faceDecal, "R3D_Settings_FaceDecalTip".Translate());

@@ -17,7 +17,7 @@ namespace IsoRim
         private static readonly Dictionary<string, string> hairStandIn = new Dictionary<string, string>
         {
             { "buzz", null }, { "topknot", "mohawk" }, { "crest", "mohawk" }, { "shoulder", "long" }, { "bob", "medium" },
-            { "twintails", "ponytail" }, { "sidebuns", "bun" }, { "balding", "short" }, { "topbun_tail", "bun" },
+            { "twintails", "ponytail" }, { "sidebuns", "bun" }, { "jane", "sidebuns" }, { "balding", "short" }, { "topbun_tail", "bun" },
         };
         private static readonly Dictionary<string, string> beardStandIn = new Dictionary<string, string>
         {
@@ -36,7 +36,7 @@ namespace IsoRim
             { "Curly", "bob" }, { "Flowy", "bob" }, { "Frozen", "bob" }, { "Keeper", "bob" }, { "Cleopatra", "bob" },
             { "Artist", "bob" }, { "Mary", "bob" },
             { "Ponytails", "twintails" }, { "Pigtails", "twintails" },
-            { "Henry", "sidebuns" }, { "Richard", "sidebuns" }, { "Lisa", "sidebuns" }, { "Jane", "sidebuns" }, { "Cute", "sidebuns" },
+            { "Henry", "sidebuns" }, { "Richard", "sidebuns" }, { "Lisa", "sidebuns" }, { "Jane", "jane" }, { "Cute", "sidebuns" },
             { "Elder", "balding" }, { "Scatman", "balding" }, { "Stephen", "balding" },
             { "Victoria", "topbun_tail" }, { "Senorita", "topbun_tail" },
             { "Mohawk", "mohawk" }, { "ShavedMohawk", "mohawk" },
