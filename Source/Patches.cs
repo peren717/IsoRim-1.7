@@ -1576,6 +1576,16 @@ namespace IsoRim
                         PrintContext.height = resting + form.height;
                         break;
 
+                    case Form3D.Worn:
+                        if (GroundGear.Bake(__instance, __0, resting))
+                        {
+                            return false;   // the clothes a colonist wears, laid down, replace the sprite
+                        }
+                        PrintContext.mode = PrintMode.Extrude;   // none to show: the sprite made solid, as with the game's art
+                        PrintContext.baseHeight = resting;
+                        PrintContext.height = resting + Forms.ItemThickness(__0.def);
+                        break;
+
                     default:
                         if (resting > 0f)
                         {
@@ -2554,11 +2564,12 @@ namespace IsoRim
         }
 
         // A held weapon as a real object (from its art, or its model), lying level at position and pointing aim
-        // degrees clockwise from north. False if it has neither: the caller draws the game's sprite.
+        // degrees clockwise from north. False if it has neither: the caller draws the game's sprite. Its art made solid as a 3D
+        // colonist holds it (GroundGear.HeldSprite), unless another mod binds a model to it (with the game's art off).
         public static bool HeldWeapon3D(Thing weapon, Vector3 position, float aim)
         {
             IsoRimSettings st = IsoRimMod.Settings;
-            if (st.itemsFromArt && SpriteSolids.DrawHeld(weapon, position, aim))
+            if (GroundGear.HeldSprite(weapon.def) && SpriteSolids.DrawHeld(weapon, position, aim))
             {
                 return true;
             }

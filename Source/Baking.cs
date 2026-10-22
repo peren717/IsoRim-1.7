@@ -18,8 +18,9 @@ namespace IsoRim
         Model,      // a hand-made model from Models/
         Block,      // walls and rock: a cell-sized block with the sprite as its lid
         Extruded,   // everything else: the sprite raised up, with sides following its outline
-        Ground      // (Api 11) a standable linked thing drawn by the walls layer as a low shape on the ground (ModelDef.wallTop
+        Ground,     // (Api 11) a standable linked thing drawn by the walls layer as a low shape on the ground (ModelDef.wallTop
                     // rule Rubble: a damaged low wall's rubble); not a wall: no wall height, never cut, rooms see through it
+        Worn        // apparel lying on the ground drawn as the 3D clothes a colonist wears, laid down (GroundGear)
     }
 
     public class ThingForm
@@ -94,6 +95,24 @@ namespace IsoRim
             {
                 // Items are made solid from their own game sprite, so they read exactly as
                 // they do in the game. (Chunks keep their rock and scrap models.)
+                float thick = st.thickItems ? ItemThickness(def) * Mathf.Clamp01(st.itemThickness) : 0f;
+                if (st.autoExtrude && thick > 0.004f)
+                {
+                    f.form = Form3D.Extruded;
+                    f.height = thick;
+                }
+                return f;
+            }
+            if (def.category == ThingCategory.Item && GroundGear.Replaces(def, listed ? entry : null))
+            {
+                // Apparel and weapons look as a colonist wears or holds them (GroundGear): clothes as the 3D figure's clothes laid
+                // down, weapons from their own sprite (as held), not a generic model for their category.
+                if (GroundGear.WornLook(def))
+                {
+                    f.form = Form3D.Worn;
+                    f.height = GroundGear.Height;
+                    return f;
+                }
                 float thick = st.thickItems ? ItemThickness(def) * Mathf.Clamp01(st.itemThickness) : 0f;
                 if (st.autoExtrude && thick > 0.004f)
                 {
@@ -2662,6 +2681,14 @@ namespace IsoRim
             Color tint, float outlineBold)
         {
             return Write(layer, thing, m, center, turn, Quaternion.identity, Vector3.zero, Vector3.one, offset, baseHeight, tint, false, outlineBold);
+        }
+
+        // Writes a model already posed in its own space (GroundGear: apparel lying on the ground): turned by turn, scale times
+        // its size, its origin at center (x, z), baseHeight cells up.
+        internal static bool WritePosed(SectionLayer layer, Thing thing, Model m, Vector3 center, Quaternion turn, float scale, float baseHeight,
+            Color tint, float outlineBold)
+        {
+            return Write(layer, thing, m, center, turn, Quaternion.identity, Vector3.zero, Vector3.one * scale, Vector3.zero, baseHeight, tint, false, outlineBold);
         }
 
         // joinedSides (walls drawn from a model, WallBoxes.ModelWall): bits 1 << d of the sides (GenAdj.CardinalDirections
