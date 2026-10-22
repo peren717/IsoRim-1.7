@@ -152,6 +152,15 @@ namespace IsoRim
             ThingForm form = Forms.For(def);
             float s = View3D.Squash;
             Color col = new Color(Mathf.Lerp(tint.r, 0.6f, 0.25f), Mathf.Lerp(tint.g, 0.8f, 0.25f), Mathf.Lerp(tint.b, 1f, 0.25f), 0.45f);
+            if (!FixOff && def.thingClass != null && typeof(Building_Door).IsAssignableFrom(def.thingClass))
+            {
+                // Doors are drawn every frame from their own parts (Doors): the shut door, as it will stand.
+                return Doors.Ghost(def, center, rot, Find.CurrentMap, style, col);
+            }
+            if (!FixOff && form.form == Form3D.Extruded && form.height > 0.004f)
+            {
+                return DrawExtruded(def, center, rot, tint, col, stuff, form.height);
+            }
             if (form.form == Form3D.Model && form.model != null && form.model.HasModel)
             {
                 ModelEntry entry = form.model;
@@ -196,6 +205,112 @@ namespace IsoRim
                 return true;
             }
             return false;
+        }
+
+        public static bool FixOff;   // probe (ghostfix=0)
+
+        // How the placement preview shows a def in 3D (probe inventory): "model", "block", or "2d:<why>".
+        public static string PreviewKind(ThingDef def)
+        {
+            ThingForm form = Forms.For(def);
+            ModelEntry e;
+            bool listed = ModelLibrary.TryGet(def, out e);
+            if (def.thingClass != null && typeof(Building_Door).IsAssignableFrom(def.thingClass))
+            {
+                bool one = def.size.x == 1 && def.size.z == 1;
+                return !IsoRimMod.Settings.doors3D ? "2d:3D doors off"
+                    : one || typeof(Building_MultiTileDoor).IsAssignableFrom(def.thingClass) && listed && e.HasModel && e.doorLeaf != null ? "door"
+                    : "2d:wide door without its own models";
+            }
+            if (form.form == Form3D.Model && form.model != null && form.model.HasModel)
+            {
+                return "model";
+            }
+            if (form.form == Form3D.Block)
+            {
+                return "block";
+            }
+            if (form.form == Form3D.Extruded && form.height > 0.004f && def.graphic != null && !(def.graphic is Graphic_Linked))
+            {
+                return "extruded";
+            }
+            if (form.form == Form3D.Model || listed && !e.HasModel)
+            {
+                return "2d:model listed without a mesh";
+            }
+            if (listed && e.def.flat)
+            {
+                return "2d:model def says flat";
+            }
+            switch (form.form)
+            {
+                case Form3D.Extruded:
+                    return "2d:extruded sprite (no model)";
+                case Form3D.Ground:
+                    return "2d:ground shape";
+            }
+            if (def.drawerType == DrawerType.None)
+            {
+                return "2d:not drawn";
+            }
+            if (def.drawerType == DrawerType.RealtimeOnly)
+            {
+                return "2d:drawn every frame, no model";
+            }
+            if (def.altitudeLayer <= AltitudeLayer.FloorEmplacement)
+            {
+                return "2d:floor level";
+            }
+            if (def.graphicData != null && def.graphicData.linkType != LinkDrawerType.None)
+            {
+                return "2d:linked graphic";
+            }
+            return "2d:flat (" + form.form + ")";
+        }
+
+        // A building made solid from its sprite (Form3D.Extruded: the sprite raised height cells, its sides following the
+        // outline): a see-through block over its cells as high, with the game's own ghost sprite lying on its top, where
+        // the sprite will be.
+        private static bool DrawExtruded(ThingDef def, IntVec3 center, Rot4 rot, Color tint, Color col, ThingDef stuff, float height)
+        {
+            Graphic baseGraphic = def.graphic;
+            if (baseGraphic == null || baseGraphic is Graphic_Linked)
+            {
+                return false;
+            }
+            if (unitBox == null)
+            {
+                unitBox = MakeBox();
+            }
+            float s = View3D.Squash;
+            CellRect r = GenAdj.OccupiedRect(center, rot, def.size);
+            Vector3 mid = r.CenterVector3;
+            Draw(unitBox, Matrix4x4.Translate(new Vector3(mid.x, 0f, mid.z)) * Matrix4x4.Scale(new Vector3(r.Width - 0.08f, height / s, r.Height - 0.08f)), col);
+            Graphic g = GhostUtility.GhostGraphicFor(baseGraphic, def, tint, stuff);
+            bool was = DrawHook.active;
+            Matrix4x4 wasX = DrawHook.xform;
+            DrawHook.active = true;
+            DrawHook.xform = View3D.LiftMatrix(height + 0.01f) * Matrix4x4.Scale(new Vector3(1f, 0f, 1f));   // flat, on the top
+            try
+            {
+                g.DrawFromDef(GenThing.TrueCenter(center, rot, def.Size, AltitudeLayer.Blueprint.AltitudeFor()), rot, def);
+            }
+            finally
+            {
+                DrawHook.active = was;
+                DrawHook.xform = wasX;
+            }
+            return true;
+        }
+
+        // One model as a see-through ghost, placed by matrix (drawn space): a door part (Doors.Ghost).
+        internal static void DrawModel(Model m, Matrix4x4 matrix, Color col)
+        {
+            Mesh mesh = MeshFor(m);
+            if (mesh != null && R3DMaterials.Ghost != null)
+            {
+                Draw(mesh, matrix, col);
+            }
         }
 
         private static MaterialPropertyBlock block;
