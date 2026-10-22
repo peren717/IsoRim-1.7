@@ -6,7 +6,7 @@ using Verse;
 namespace IsoRim
 {
     // Harness-only shots of the mod settings window (for checking its translations), driven by the probe file (see Probe):
-    //   settingswin=<tab>,<tag>[,bottom]   opens IsoRim's settings window on that tab (0 view, 4 see-through, 1 colour,
+    //   settingswin=<tab>,<tag>[,bottom]   opens IsoRim's settings window on that tab (0 view, 4 see-through, 1 colour, 5 graphics,
     //                                      2 ground, 3 what is 3D), scrolled to the bottom with "bottom", and ~40 frames
     //                                      later takes a shot with the interface on: renders\<harness tag>\settings_<tag>.png
     //   settingswin=<tab>,<tag>,tips       as above, with the tooltip of every option an addon has locked drawn under it

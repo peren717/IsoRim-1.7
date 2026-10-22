@@ -5,12 +5,14 @@
 // IsoRimAA, queue 4890, before the colour grade). Only pixels on a contrast edge are changed: the
 // edge direction is found from the luma of the four diagonal neighbours and the pixel is blended
 // along it. The grab is read with texelFetch and filtered by hand, as its sampler state is unknown.
+// The same pass also sharpens (Graphics tab option, _Sharpen > 0), with or without the FXAA part.
 
 layout(location = 0) out vec4 outColor;
 
 layout(set = 2, binding = 0) uniform MaterialUniforms
 {
     float _AAStrength; // @default = 1.0    0 = off, 1 = full
+    float _Sharpen;    // @default = 0.0    sharpening (contrast-adaptive, after AMD CAS): 0 = off, 1 = strongest
 } u;
 
 layout(set = 2, binding = 1) uniform sampler2D _GrabIsoRimAA;
@@ -54,11 +56,28 @@ void main()
     float lumaSW = Luma(Fetch(ip + ivec2(-1, 1), size));
     float lumaSE = Luma(Fetch(ip + ivec2(1, 1), size));
 
+    // Sharpening on the cross neighbours, scaled down where the local contrast is already high (no halos).
+    // Pixels FXAA treats as an edge take the FXAA result instead, so edges are not made jagged again.
+    vec3 base = rgbM;
+    if (u._Sharpen > 0.0)
+    {
+        vec3 n = Fetch(ip + ivec2(0, -1), size);
+        vec3 s = Fetch(ip + ivec2(0, 1), size);
+        vec3 e = Fetch(ip + ivec2(1, 0), size);
+        vec3 w = Fetch(ip + ivec2(-1, 0), size);
+        vec3 mn = min(rgbM, min(min(n, s), min(e, w)));
+        vec3 mx = max(rgbM, max(max(n, s), max(e, w)));
+        vec3 amp = sqrt(clamp(min(mn, 1.0 - mx) / max(mx, vec3(1e-4)), 0.0, 1.0));
+        // CAS uses -1/mix(8, 5, sharpness); here 0 = none and 1 = CAS at full (-1/5), about CAS's middle at 0.5.
+        vec3 wgt = amp * (-0.2 * sqrt(clamp(u._Sharpen, 0.0, 1.0)));
+        base = clamp((rgbM + (n + s + e + w) * wgt) / (1.0 + 4.0 * wgt), 0.0, 1.0);
+    }
+
     float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
     float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
     if (lumaMax - lumaMin < max(EdgeMin, lumaMax * 0.125) || u._AAStrength <= 0.0)
     {
-        outColor = vec4(rgbM, 1.0);
+        outColor = vec4(base, 1.0);
         return;
     }
 
@@ -73,5 +92,5 @@ void main()
     vec3 rgbB = rgbA * 0.5 + 0.25 * (Sample(pos + dir * -0.5, size) + Sample(pos + dir * 0.5, size));
     float lumaB = Luma(rgbB);
     vec3 aa = (lumaB < lumaMin || lumaB > lumaMax) ? rgbA : rgbB;
-    outColor = vec4(mix(rgbM, aa, clamp(u._AAStrength, 0.0, 1.0)), 1.0);
+    outColor = vec4(mix(base, aa, clamp(u._AAStrength, 0.0, 1.0)), 1.0);
 }

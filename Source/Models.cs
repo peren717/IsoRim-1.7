@@ -2709,7 +2709,7 @@ namespace IsoRim
                 // Smoothly filtered at a slant and at a distance, so fine patterns do not
                 // shimmer as the camera moves.
                 tex.filterMode = FilterMode.Trilinear;
-                tex.anisoLevel = 4;
+                Aniso.Own(tex);   // level 4, or the anisotropic filtering option's if higher
             }
             else
             {
@@ -3387,6 +3387,7 @@ namespace IsoRim
             Material m = new Material(s);
             m.name = name;
             m.SetFloat(lightModeId, lightMode);
+            Aniso.Track(m);   // may show one of the mod's textures: refreshed when the filtering option changes
             if (queue >= 0)
             {
                 m.renderQueue = queue;

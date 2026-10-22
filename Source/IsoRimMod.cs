@@ -103,6 +103,9 @@ namespace IsoRim
         public bool lowSky = true;       // sun, moon and gas giant drawn lower, where the map camera can see them
         public bool antiAlias = true;    // FXAA pass over the 3D view (the engine has no MSAA)
         public float antiAliasStrength = 1f;
+        public bool sharpen = false;     // sharpening in the same pass (contrast-adaptive), also without FXAA
+        public float sharpenStrength = 0.5f;
+        public int aniso = 16;           // anisotropic filtering of the ground and the mod's textures: 0 (as the textures come), 2, 4, 8, 16 (Aniso)
         public int lookMode = 0;         // free look drag button: 0 = middle button with R3D_LookModifier (Ctrl), 1 = right button with nothing selected
         public bool pawns3D = true;
         public bool effects3D = true;
@@ -218,6 +221,9 @@ namespace IsoRim
             Scribe_Values.Look(ref lowSky, "lowSky", true);
             Scribe_Values.Look(ref antiAlias, "antiAlias", true);
             Scribe_Values.Look(ref antiAliasStrength, "antiAliasStrength", 1f);
+            Scribe_Values.Look(ref sharpen, "sharpen", false);
+            Scribe_Values.Look(ref sharpenStrength, "sharpenStrength", 0.5f);
+            Scribe_Values.Look(ref aniso, "aniso", 16);
             Scribe_Values.Look(ref fpEyeHeight, "fpEyeHeight", 0.95f);
             Scribe_Values.Look(ref pawns3D, "pawns3D", true);
             Scribe_Values.Look(ref effects3D, "effects3D", true);
@@ -302,7 +308,7 @@ namespace IsoRim
         }
     }
 
-    // The options screen: a header with the main switch, then four tabs, each in two columns of
+    // The options screen: a header with the main switch, then six tabs, each in two columns of
     // titled sections.
     public static class SettingsWindow
     {
@@ -333,6 +339,7 @@ namespace IsoRim
                 new TabRecord("R3D_Settings_TabColour".Translate(), delegate { tab = 1; }, tab == 1),
                 new TabRecord("R3D_Settings_TabWorld".Translate(), delegate { tab = 2; }, tab == 2),
                 new TabRecord("R3D_Settings_TabObjects".Translate(), delegate { tab = 3; }, tab == 3),
+                new TabRecord("R3D_Settings_TabGraphics".Translate(), delegate { tab = 5; }, tab == 5),
             };
             Widgets.DrawMenuSection(body);
             TabDrawer.DrawTabs(body, tabs);
@@ -652,6 +659,9 @@ namespace IsoRim
                 case 4:
                     SeeThroughTab(l, r, st);
                     break;
+                case 5:
+                    GraphicsTab(l, r, st);
+                    break;
                 default:
                     ObjectsTab(l, r, st);
                     break;
@@ -695,11 +705,6 @@ namespace IsoRim
                     st.weatherSize = Slider(l, "R3D_Settings_WeatherSize".Translate(), st.weatherSize, 0.25f, 3f, "×" + st.weatherSize.ToString("0.00"), "R3D_Settings_WeatherSizeTip".Translate());
                 }
                 Check(l, "R3D_Settings_ThingLabels".Translate(), ref st.thingLabels, "R3D_Settings_ThingLabelsTip".Translate());
-                Check(l, "R3D_Settings_AntiAlias".Translate(), ref st.antiAlias, "R3D_Settings_AntiAliasTip".Translate());
-                if (st.antiAlias)
-                {
-                    st.antiAliasStrength = Slider(l, "R3D_Settings_AntiAliasStrength".Translate(), st.antiAliasStrength, 0.2f, 1f, (st.antiAliasStrength * 100f).ToString("0") + "%");
-                }
                 Check(l, "R3D_Settings_Perspective".Translate(), ref st.perspective, "R3D_Settings_PerspectiveTip".Translate());
                 if (st.perspective)
                 {
@@ -776,6 +781,36 @@ namespace IsoRim
                     "R3D_Settings_FeetOffsetTip".Translate());
                 st.squash = Slider(r, "R3D_Settings_Squash".Translate(), st.squash, 0.002f, 0.004f, st.squash.ToString("0.0000"),
                     "R3D_Settings_SquashTip".Translate());
+            }
+        }
+
+        private static void GraphicsTab(Listing_Standard l, Listing_Standard r, IsoRimSettings st)
+        {
+            if (l != null)
+            {
+                Section(l, "R3D_Settings_Image".Translate());
+                Check(l, "R3D_Settings_AntiAlias".Translate(), ref st.antiAlias, "R3D_Settings_AntiAliasTip".Translate());
+                if (st.antiAlias)
+                {
+                    st.antiAliasStrength = Slider(l, "R3D_Settings_AntiAliasStrength".Translate(), st.antiAliasStrength, 0.2f, 1f, (st.antiAliasStrength * 100f).ToString("0") + "%");
+                }
+                Check(l, "R3D_Settings_Sharpen".Translate(), ref st.sharpen, "R3D_Settings_SharpenTip".Translate());
+                if (st.sharpen)
+                {
+                    st.sharpenStrength = Slider(l, "R3D_Settings_SharpenStrength".Translate(), st.sharpenStrength, 0f, 1f, (st.sharpenStrength * 100f).ToString("0") + "%");
+                }
+            }
+            if (r != null)
+            {
+                Section(r, "R3D_Settings_Textures".Translate());
+                // Anisotropic filtering in steps: off, 2x, 4x, 8x, 16x (Aniso.Levels).
+                int step = Mathf.Max(0, Array.IndexOf(Aniso.Levels, st.aniso));
+                string shown = step == 0 ? "R3D_Settings_Off".Translate().ToString() : Aniso.Levels[step] + "x";
+                int picked = Mathf.Clamp(Mathf.RoundToInt(Slider(r, "R3D_Settings_Aniso".Translate(), step, 0f, Aniso.Levels.Length - 1, shown, "R3D_Settings_AnisoTip".Translate())), 0, Aniso.Levels.Length - 1);
+                if (picked != step)
+                {
+                    st.aniso = Aniso.Levels[picked];
+                }
             }
         }
 

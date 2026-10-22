@@ -603,7 +603,7 @@ namespace IsoRim
                 return;
             }
             Saved saved = new Saved();
-            saved.texture = mat.mainTexture;
+            saved.texture = Aniso.RealTexture(mat);   // not the filtering option's one-frame stand-in
             saved.color = mat.HasProperty("_Color") ? mat.color : Color.white;
             originals[mat] = saved;
         }

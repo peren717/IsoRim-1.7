@@ -17,6 +17,7 @@
   <R3D_Settings_TabColour>色彩与光照</R3D_Settings_TabColour>
   <R3D_Settings_TabWorld>地面、水体、屋顶</R3D_Settings_TabWorld>
   <R3D_Settings_TabObjects>3D 内容</R3D_Settings_TabObjects>
+  <R3D_Settings_TabGraphics>画质</R3D_Settings_TabGraphics>
 
   <!-- 数值 -->
   <R3D_Settings_Cells>{0} 格</R3D_Settings_Cells>
@@ -56,9 +57,6 @@
   <R3D_Settings_WeatherSizeTip>雨滴和雪花在屏幕上的大小。镜头拉近时不再变大。</R3D_Settings_WeatherSizeTip>
   <R3D_Settings_ThingLabels>物品标签</R3D_Settings_ThingLabels>
   <R3D_Settings_ThingLabelsTip>地图上物品的标签（堆叠数量、品质）。人物头上的名字不受影响。</R3D_Settings_ThingLabelsTip>
-  <R3D_Settings_AntiAlias>平滑边缘（抗锯齿）</R3D_Settings_AntiAlias>
-  <R3D_Settings_AntiAliasTip>柔化墙壁和模型边缘的锯齿（FXAA）。不影响界面。</R3D_Settings_AntiAliasTip>
-  <R3D_Settings_AntiAliasStrength>边缘平滑度</R3D_Settings_AntiAliasStrength>
   <R3D_Settings_Perspective>透视镜头</R3D_Settings_Perspective>
   <R3D_Settings_PerspectiveTip>真正的透视镜头：远处的东西变小，类似 Rim3D。关闭：平面（正交）视图。</R3D_Settings_PerspectiveTip>
   <R3D_Settings_Fov>视野</R3D_Settings_Fov>
@@ -279,6 +277,19 @@
   <R3D_Settings_ModelStyle>模型风格</R3D_Settings_ModelStyle>
   <R3D_Settings_TexturedModels>模型使用材质</R3D_Settings_TexturedModels>
   <R3D_Settings_Outlines>模型深色描边</R3D_Settings_Outlines>
+
+  <!-- ==================== 画质 ==================== -->
+  <R3D_Settings_Image>画面</R3D_Settings_Image>
+  <R3D_Settings_AntiAlias>抗锯齿（FXAA）</R3D_Settings_AntiAlias>
+  <R3D_Settings_AntiAliasTip>柔化墙壁和模型边缘的锯齿。</R3D_Settings_AntiAliasTip>
+  <R3D_Settings_AntiAliasStrength>边缘平滑度</R3D_Settings_AntiAliasStrength>
+  <R3D_Settings_Sharpen>锐化</R3D_Settings_Sharpen>
+  <R3D_Settings_SharpenTip>画面更清晰，镜头拉远时最明显。</R3D_Settings_SharpenTip>
+  <R3D_Settings_SharpenStrength>锐化强度</R3D_Settings_SharpenStrength>
+  <R3D_Settings_Textures>纹理</R3D_Settings_Textures>
+  <R3D_Settings_Aniso>各向异性过滤</R3D_Settings_Aniso>
+  <R3D_Settings_AnisoTip>斜看时地面更清晰。</R3D_Settings_AnisoTip>
+  <R3D_Settings_Off>关闭</R3D_Settings_Off>
 
   <!-- ==================== 游戏内提示与右下角按钮 ==================== -->
   <R3D_Msg_ViewOn>IsoRim：3D 视图已开启</R3D_Msg_ViewOn>

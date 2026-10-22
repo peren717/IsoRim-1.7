@@ -394,6 +394,7 @@ namespace IsoRim
             MapSections.Process(8);
             Probe.Lap(3);
             Ground.Sync();
+            Aniso.Sync();
             Probe.Lap(4);
             Cutaway.Process();
             Probe.Lap(5);
