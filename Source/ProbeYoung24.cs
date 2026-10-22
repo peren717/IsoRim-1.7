@@ -59,7 +59,7 @@ namespace IsoRim
                         {
                             sk.Level = 15;
                         }
-                        if (p.workSettings != null)
+                        if (p.workSettings != null && !p.WorkTypeIsDisabled(WorkTypeDefOf.Growing))
                         {
                             p.workSettings.EnableAndInitialize();
                             p.workSettings.SetPriority(WorkTypeDefOf.Growing, 1);
