@@ -488,6 +488,16 @@ namespace IsoRim
             // Bullets and shells fly from the muzzle to the height of their target, not along the ground (Projectiles).
             Patch("projectiles at muzzle height", AccessTools.DeclaredMethod(typeof(Projectile), "DrawAt", new[] { typeof(Vector3), typeof(bool) }),
                 prefix: nameof(ProjectileDrawAt_Prefix));
+            // Projectile classes of other mods that draw themselves (VFE Medieval 2's warbow arrow): IsoRim draws them only
+            // when they are indirect fire, on the shell arc (Projectiles.OverrideDrawAt); everything else stays the mod's.
+            foreach (Type sub in GenTypes.AllSubclasses(typeof(Projectile)))
+            {
+                MethodInfo own = AccessTools.DeclaredMethod(sub, "DrawAt", new[] { typeof(Vector3), typeof(bool) });
+                if (own != null && !own.IsAbstract && own.DeclaringType == sub)
+                {
+                    Patch("indirect fire of other mods on the shell arc", own, prefix: nameof(ProjectileOverrideDrawAt_Prefix));
+                }
+            }
             // Drop pods, shuttles, meteorites and every other skyfaller come down from (or go up into) the sky with a real
             // height, not slid over the ground (Skyfallers).
             Patch("skyfallers from the sky", AccessTools.DeclaredMethod(typeof(Skyfaller), "DrawAt", new[] { typeof(Vector3), typeof(bool) }),
@@ -2502,6 +2512,20 @@ namespace IsoRim
         public static IEnumerable<CodeInstruction> CatchDraws_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             return FigureWeapons.CatchDraws_Transpiler(instructions);
+        }
+
+        // A projectile class's own DrawAt: IsoRim draws it when it is indirect fire (Projectiles.OverrideDrawAt).
+        public static bool ProjectileOverrideDrawAt_Prefix(Projectile __instance, Vector3 __0)
+        {
+            try
+            {
+                return Projectiles.OverrideDrawAt(__instance, __0);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Drawing a projectile in 3D failed: " + e, 93611502);
+                return true;
+            }
         }
 
         // A projectile drawn at its height in 3D (Projectiles). __0 is where the game would draw it.

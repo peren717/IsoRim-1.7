@@ -97,7 +97,7 @@ namespace IsoRim
                 }
                 row = Floors.RowOffset(p.Position.z);
             }
-            if (SkyStrikes.Enabled && p.def.projectile.flyOverhead && p.def.projectile.arcHeightFactor < 0.5f && p.def.graphicData != null)
+            if (Lobbed(p))
             {
                 return DrawLobbed(p, drawLoc, row);
             }
@@ -149,7 +149,28 @@ namespace IsoRim
             return false;
         }
 
-        // Mortar and artillery shells (flyOverhead, no arc of their own: vanilla flies them straight, which in 3D skimmed
+        // Indirect fire, drawn on the shell arc (DrawLobbed): every projectile that flies overhead (flyOverhead: the game
+        // lets it pass over walls; mortar shells, VFE Medieval 2's warbow arrows) and is drawn as one card. Only one with
+        // an arc of its own (arcHeightFactor) and its own graphic class (an animated sprite: the fleshmass spitter's acid)
+        // keeps the plain flight with its own arc, as DrawLobbed draws a single card. Direct shots (bows, guns) never.
+        public static bool Lobbed(Projectile p)
+        {
+            ProjectileProperties pp = p.def.projectile;
+            return SkyStrikes.Enabled && pp.flyOverhead && p.def.graphicData != null && (pp.arcHeightFactor < 0.5f || !pp.useGraphicClass);
+        }
+
+        // A projectile class of another mod that draws itself (overrides DrawAt without the game's own): IsoRim draws it
+        // when it is indirect fire (Lobbed), else leaves it to the mod (Patches: every such override is hooked).
+        public static bool OverrideDrawAt(Projectile p, Vector3 drawLoc)
+        {
+            if (!View3D.Ready || p == null || p.def?.projectile == null || !Lobbed(p))
+            {
+                return true;
+            }
+            return DrawAt(p, drawLoc);
+        }
+
+        // Mortar and artillery shells and other indirect fire (flyOverhead; shells have no arc of their own: vanilla flies them straight, which in 3D skimmed
         // the ground through walls): a drawn ballistic arc from the muzzle up into the sky and down onto the target, its
         // top SkyStrikes.ShellArc of the flat flight length (capped). It lands on the top of the target's column (a shell
         // from the sky hits the highest floor built there, as ProjectZ lands it). The sprite is a card facing the camera,
@@ -230,7 +251,7 @@ namespace IsoRim
             Vector3 d = destinationRef(p);
             Path path = new Path { origin = o, destination = d, lead = f.lead + f.rear };
             path.start = f.start + FloorHeight(f.launcherRow);
-            path.lobbed = SkyStrikes.Enabled && p.def.projectile.flyOverhead && p.def.projectile.arcHeightFactor < 0.5f;
+            path.lobbed = Lobbed(p);
             if (path.lobbed)
             {
                 float length = new Vector2(d.x - o.x, d.z - o.z).magnitude;
