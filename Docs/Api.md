@@ -35,10 +35,11 @@ if (IsoRim.Api.Version >= 19) { /* facing holds: AddFacingHold, RemoveFacingHold
 if (IsoRim.Api.Version >= 20) { /* ModelDef.cutaway, view state, flat scopes, SkipWhenModelled, floor placing, DrawGhost,
                                    projectile arcs, XrayPlacing, HasModel (part 14) */ }
 if (IsoRim.Api.Version >= 21) { /* face drawers: AddFaceDrawer, FaceFrame; FigureFrame.Hide (FigureParts) (part 15) */ }
+if (IsoRim.Api.Version >= 22) { /* AddFaceDrawer(drawer, evenWhenHidden), FaceFrame.HiddenByGame (part 15) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15. Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers). Part M is the model pack reference.
 
 ## Spaces
 
@@ -947,7 +948,7 @@ static bool DrawFace(IsoRim.FaceFrame f)
   eyes (`FigureFrame.FaceHidden`), no head is drawn (a burka), a skull or a ghoul's own head stands in, or a figure hook
   hid `Head` or `Face`. The first drawer that returns true wins; false leaves the face to the next drawer and then to
   IsoRim. Drawers run after the figure hooks and before the figure is drawn. An exception is logged once and counts as false.
-- `Api.AddFaceDrawer(FaceDrawer drawer, bool evenWhenHidden)`: with `true` the drawer is also asked where the game leaves
+- Version 22: `Api.AddFaceDrawer(FaceDrawer drawer, bool evenWhenHidden)`: with `true` the drawer is also asked where the game leaves
   the face out; `face.HiddenByGame` (`FaceHiddenBy`) says why: `None` (the face shows), `Apparel` (eyes covered),
   `NoHead` (a burka), `Skull`, `OwnHead` (a ghoul). Still not asked when a figure hook hid `Head` or `Face`. Drawers added
   without it are not asked then. The face meshes are those of IsoRim's plain head; a hat or covering still hides them by depth.
