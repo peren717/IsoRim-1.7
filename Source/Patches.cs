@@ -346,6 +346,8 @@ namespace IsoRim
                 aiming = null;
             }
             Patch("3D weapons in hand", aiming, prefix: nameof(DrawEquipmentAiming_Prefix), finalizer: nameof(DrawEquipmentAiming_Finalizer));
+            // A 3D figure aiming a gun shows its aim pie at the muzzle (AimPies).
+            Patch("aim pies at the muzzle", AccessTools.Method(typeof(GenDraw), nameof(GenDraw.DrawAimPie)), prefix: nameof(DrawAimPie_Prefix));
             // A 3D figure's weapon is posed by the game (FigureWeapons): which pose it chose, and the shield belt's bubble caught.
             Patch("3D weapons carried", renderUtility != null ? FindMethod(renderUtility, "DrawCarriedWeapon") : null,
                 prefix: nameof(DrawCarriedWeapon_Prefix), finalizer: nameof(DrawCarriedWeapon_Finalizer));
@@ -1777,6 +1779,7 @@ namespace IsoRim
                 if (pawn != null && st.mechs3D && st.models3D && pawn.RaceProps != null && pawn.RaceProps.IsMechanoid
                     && Mechs.Draw(pawn, __0))
                 {
+                    AimPies.ModelPawnExtras(pawn);   // its aim pie and ropes (AimPies)
                     return false;
                 }
 
@@ -1784,12 +1787,14 @@ namespace IsoRim
                 if (pawn != null && st.animals3D && st.models3D && pawn.RaceProps != null && !pawn.RaceProps.Humanlike && !pawn.RaceProps.IsMechanoid
                     && Mechs.Draw(pawn, __0))
                 {
+                    AimPies.ModelPawnExtras(pawn);   // its aim pie and ropes (AimPies)
                     return false;
                 }
 
                 if (pawn != null && st.animals3D && st.models3D && pawn.RaceProps != null && !pawn.RaceProps.Humanlike
                     && Animals.Draw(pawn, __0))
                 {
+                    AimPies.ModelPawnExtras(pawn);
                     return false;
                 }
 
@@ -1797,6 +1802,7 @@ namespace IsoRim
                 {
                     if (People.Draw(pawn, __0, __2))
                     {
+                        AimPies.ModelPawnExtras(pawn);
                         return false;   // with its weapon (FigureWeapons)
                     }
                 }
@@ -1899,6 +1905,11 @@ namespace IsoRim
                 Log.ErrorOnce("[IsoRim] Standing a pawn upright failed: " + e, 93611012);
             }
             return true;
+        }
+
+        public static bool DrawAimPie_Prefix(Thing shooter, LocalTargetInfo target, int degreesWide)
+        {
+            return AimPies.DrawAimPie_Prefix(shooter, target, degreesWide);
         }
 
         // True for a pawn that will certainly be drawn as a 3D model while the view is on.

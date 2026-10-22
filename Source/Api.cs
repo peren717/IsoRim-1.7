@@ -37,8 +37,18 @@ namespace IsoRim
         // HostTransform; Attach.cs) and ModelDef.backHeight; 14: animal wings, ModelDef.wingModel, wings, wingFold, wingDroop,
         // wingFlap, wingBeat, and AirborneFactor, Animals.cs; 15: the aged look, ModelDef.aged, Aged.cs; 16: ModelDef.graphicPath,
         // models bound by texture path; 17: RequestFullWalls (complete-wall requests for camera modes; PR #5 by Ryuu-64),
-        // WallCutaway.cs).
-        public static int Version => 17;
+        // WallCutaway.cs; 19: facing holds, AddFacingHold, RemoveFacingHold, Animals.cs).
+        public static int Version => 19;
+
+        // ---- facing holds (Version 19)
+
+        // A moving figure normally faces the way it goes. While any hold added here answers true for a pawn, its figure
+        // (person, animal or mech model) turns to the game's facing (Thing.Rotation) instead, also while it moves, legs
+        // together: a climber on a ladder faces the ladder. Asked each frame the figure is drawn: keep it cheap. Adding
+        // the same delegate twice adds it once.
+        public static void AddFacingHold(Func<Pawn, bool> holds) => Animals.AddFacingHold(holds);
+
+        public static void RemoveFacingHold(Func<Pawn, bool> holds) => Animals.RemoveFacingHold(holds);
 
         // ---- animals in the air (Version 14)
 
@@ -507,6 +517,24 @@ namespace IsoRim
                 Color32[] all = g == null ? null : corners(g);
                 int i = c.z * (g == null ? 0 : g.width) + c.x;
                 return all != null && i >= 0 && i < all.Length ? all[i] : (Color32?)null;
+            }
+
+            // Version 19: the yaw a figure (person, animal, mech model) was last drawn facing, degrees clockwise from north,
+            // and how many frames ago; null if it was never drawn as one.
+            public static float? DrawnYaw(Pawn pawn, out int age) => Animals.DrawnYaw(pawn, out age);
+
+            // Version 19: aim pies drawn at a muzzle so far, the last one's wedge angle on screen (degrees clockwise from up the
+            // screen) and its width in degrees; MuzzlePies off: the game's pie on the ground for every pawn.
+            public static int MuzzlePieCount => AimPies.Drawn;
+
+            public static float MuzzlePieAngle => AimPies.LastAngle;
+
+            public static float MuzzlePieDegrees => AimPies.LastDegrees;
+
+            public static bool MuzzlePies
+            {
+                get { return AimPies.AtMuzzle; }
+                set { AimPies.AtMuzzle = value; }
             }
         }
     }
