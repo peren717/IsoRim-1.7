@@ -15,7 +15,8 @@ namespace IsoRim
     /// <summary>
     /// Called for each person figure IsoRim draws (Api version 8; <see cref="Api.AddFigureHook"/>), after the figure is
     /// placed, normally once a frame per figure. Read the frame and attach models with it; it is only valid during the
-    /// call.
+    /// call. From version 21 it is called before the figure itself is drawn, so <see cref="FigureFrame.Hide"/> takes effect
+    /// at once.
     /// </summary>
     public delegate void FigureHook(FigureFrame frame);
 
@@ -42,9 +43,11 @@ namespace IsoRim
         // RemoveFacingHold, Animals.cs; 20: ModelDef.cutaway (CutawayRule) with low walls cut like other walls, ViewPerspective,
         // FieldOfView, FirstPersonPawn, ViewVersion, the flat scopes BeginSkipFlat, EndSkipFlat, SkipFlat, BeginFlatTransform,
         // EndFlatTransform, FlatTransform (FlatScope), SkipWhenModelled, DrawnMatrix, DrawnPosition, FloorShown, DrawGhost,
-        // AddProjectileArc, RemoveProjectileArc, XrayPlacing, HasModel; Api20.cs). The card overlay (IsCard, DrawOnCard,
+        // AddProjectileArc, RemoveProjectileArc, XrayPlacing, HasModel; Api20.cs; 21: face drawers, AddFaceDrawer, RemoveFaceDrawer
+        // (FaceDrawer, FaceFrame), and FigureFrame.Hide, FigureFrame.Hidden (FigureParts) with figure hooks raised before the
+        // figure is drawn; Api21.cs). The card overlay (IsCard, DrawOnCard,
         // CardLight; CardOverlay.cs) came in before version 8 without a number of its own: check >= 8 for it.
-        public static int Version => 20;
+        public static int Version => 21;
 
         // ---- facing holds (Version 19)
 

@@ -1,7 +1,7 @@
 # IsoRim Waylith Api (for mod authors)
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`), the defs `IsoRim.ModelDef` (part M) and `IsoRim.ApparelModelDef` (Api 9), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`), the defs `IsoRim.ModelDef` (part M) and `IsoRim.ApparelModelDef` (Api 9), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
 in any update, even when it is public: do not patch or reflect into it, ask for an Api member instead. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -32,10 +32,11 @@ if (IsoRim.Api.Version >= 18) { /* one-cell doors with their own thingDef models
 if (IsoRim.Api.Version >= 19) { /* facing holds: AddFacingHold, RemoveFacingHold */ }
 if (IsoRim.Api.Version >= 20) { /* ModelDef.cutaway, view state, flat scopes, SkipWhenModelled, floor placing, DrawGhost,
                                    projectile arcs, XrayPlacing, HasModel (part 14) */ }
+if (IsoRim.Api.Version >= 21) { /* face drawers: AddFaceDrawer, FaceFrame; FigureFrame.Hide (FigureParts) (part 15) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14. Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15. Part M is the model pack reference.
 
 ## Spaces
 
@@ -918,6 +919,77 @@ addon's defs.
 fallback; not `flat`). It says nothing about the player's options: whether the model stands in for a thing now is
 `Api.ModelStandsIn`.
 
+## Part 15: face drawers and hidden figure parts (version 21)
+
+### Face drawers
+
+A face drawer draws a person's face on the 3D head instead of IsoRim (its eyes, a creepjoiner's face, or Facial
+Animation's face, which IsoRim draws itself when that mod is active). Register it once at startup:
+
+```csharp
+// once, at startup (IsoRim.Api.Version >= 21; create the delegate inside a method that runs after the check)
+IsoRim.Api.AddFaceDrawer(new IsoRim.FaceDrawer(DrawFace));
+
+static bool DrawFace(IsoRim.FaceFrame f)
+{
+    Material eyes = MyFace.EyesFor(f.Pawn), mouth = MyFace.MouthFor(f.Pawn);   // south-facing head-sprite textures
+    if (eyes == null) return false;          // not ours: IsoRim draws its own face
+    f.DrawLayer(f.FaceMesh, eyes, 0);        // each layer a little further out than the one before
+    f.DrawLayer(f.MouthMesh, mouth, 1);
+    return true;                             // drawn: IsoRim leaves its own face out for this figure, this frame
+}
+```
+
+- `Api.AddFaceDrawer(FaceDrawer drawer)` / `Api.RemoveFaceDrawer(drawer)`. `FaceDrawer` is `bool (FaceFrame face)`.
+  IsoRim asks the drawers once a frame for each person figure whose head shows a face: not when the game leaves out the
+  eyes (`FigureFrame.FaceHidden`), no head is drawn (a burka), a skull or a ghoul's own head stands in, or a figure hook
+  hid `Head` or `Face`. The first drawer that returns true wins; false leaves the face to the next drawer and then to
+  IsoRim. Drawers run after the figure hooks and before the figure is drawn. An exception is logged once and counts as false.
+- `face.Matrix`: head space to where the head is drawn now, ready for `Graphics.DrawMesh` (pose, facing, lying, sitting,
+  crawling, in bed, the person's size, the head type's width, its stacked floor, `Api.DrawFigure` placing). Head space is
+  the space IsoRim's head model is modelled in: cells, the figure's feet at the origin, y up, +z the way it faces.
+- `face.Layer(int i)` / `face.DrawLayer(Mesh mesh, Material material, int i)`: the matrix for layer i (pushed out a
+  little from the head's middle per layer, as IsoRim lays Facial Animation's layers), and a draw with it this frame.
+- `face.FaceMesh`, `face.MouthMesh`: the front of the head with the texture projected straight from the front. The texture
+  is a south-facing head sprite (the game's head art or Facial Animation's layers: the whole square texture), placed as the
+  player set it in IsoRim's face options (and per worn apparel, `FaceDecalAdjust`); the mouth mesh also takes the mouth's
+  shift and zoom (around the texture point (0.5, 0.376) from the bottom left). `face.MeshFor(size, height, zoom)` makes
+  one at your own placing. `face.FaceSize`, `FaceHeight`, `MouthSize`, `MouthHeight` are the player's values.
+- `face.FacialAnimationFace`: IsoRim would draw Facial Animation's face here (that mod is active, the option is on).
+  `face.OwnFace`: IsoRim's face is a creepjoiner's special one.
+- `face.Pawn`, `Yaw`, `Facing`, `Lying`, `Crawling`, `Dead`, `Size`, `HeadWidth`, `HeadgearShown`, `HairShown`.
+
+The head turns with the figure, so draw the south-facing art for every facing. Hats, helmets and hair cover the face by
+depth as they cover the head. A material that writes no depth and sits under render queue 3099 is still darkened at
+night by IsoRim's light pass, as Facial Animation's own materials are. Facial Animation's empty layers use the game's
+dummy graphic (`Things/Common/dummy`): skip those, they show grey on the head.
+
+### Hiding the figure's own parts
+
+A figure hook can leave out parts of IsoRim's own figure for that frame, to draw its own replacement:
+
+```csharp
+IsoRim.Api.AddFigureHook(f =>
+{
+    if (!MyRace.Has(f.Pawn)) return;
+    f.Hide(IsoRim.FigureParts.Head | IsoRim.FigureParts.Hair | IsoRim.FigureParts.Beard);
+    f.AttachToHead(myHead, Matrix4x4.TRS(f.HeadCentre, Quaternion.identity, Vector3.one), f.Pawn.story.SkinColor);
+});
+```
+
+- `frame.Hide(FigureParts parts)`: from version 21 the figure hooks run before the figure is drawn, so the parts are left
+  out this frame. Hide them again every frame; several hooks add up. `frame.Hidden` is what the hooks hid so far.
+- `FigureParts` (flags): `Head` (the head model and the face on it), `Face` (the eyes, a creepjoiner's face, scars,
+  Facial Animation's face; face drawers are not asked), `Hair`, `Beard`, `Headgear` (hair shown under a hidden hat is no
+  longer tucked in; hair the game hides under it stays hidden), `EyeWear`, `MouthWear`, `Body` (shirt and trousers
+  parts, skin overlays), `Clothes` (coats, armour, vests, collars, leg armour, shoulder pads, their decals and flames),
+  `Gear` (packs, belts, waist tools), `Legs` (everything below the hips), `Shield` (a held shield binding).
+- Each mix of hidden parts gets its own merged meshes per person, made once and kept: keep the mix steady rather than
+  changing it every frame.
+
+With no drawer and no hook registered nothing changes. Hooks registered before version 21 now run before the figure is
+drawn instead of after it; what they draw is the same.
+
 ## Part M: model packs (IsoRim.ModelDef)
 
 A model pack is an XML-only mod (or a mod with a small DLL) that adds `IsoRim.ModelDef`s binding OBJ models to other
@@ -1014,3 +1086,7 @@ public class PatchOperation_IfIsoRimApi : PatchOperation
   `SkipFlat`, a sprite moved by `FlatTransform`, `DrawnMatrix` markers on a ProjectZ floor, `DrawGhost`, arc rules on four
   projectiles, the view state through turns, perspective and first person, `XrayPlacing` with ProjectZ's `xray` test mode),
   with the VFE Medieval 2 castle walls rendered before and after.
+  Version 21 was tested with a throwaway harness addon outside this repository: a face drawer drawing a test face on
+  every face and figure hooks hiding parts (with cube replacements), on people in four facings, children, hats and
+  helmets, masks, a burka, in beds and downed, with hairUnderHats off and on; with nothing registered the renders match
+  version 20.
