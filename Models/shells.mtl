@@ -1,0 +1,57 @@
+# IsoRim mortar-shell colours (tools/make_shells.py), from the vanilla sprites; fixed (no stuff)
+
+newmtl mshell_he
+Kd 0.660 0.600 0.340
+map_Kd IsoRim/Swatches/Metal
+
+newmtl mshell_he_dk
+Kd 0.520 0.470 0.260
+map_Kd IsoRim/Swatches/Metal
+
+newmtl mshell_nose
+Kd 0.560 0.560 0.560
+map_Kd IsoRim/Swatches/Metal
+
+newmtl mshell_grey
+Kd 0.530 0.530 0.540
+map_Kd IsoRim/Swatches/Metal
+
+newmtl mshell_grey_lt
+Kd 0.660 0.660 0.670
+map_Kd IsoRim/Swatches/Metal
+
+newmtl mshell_grey_dk
+Kd 0.400 0.400 0.410
+map_Kd IsoRim/Swatches/Metal
+
+newmtl mshell_emp
+Kd 0.460 0.560 0.640
+map_Kd IsoRim/Swatches/Metal
+
+newmtl mshell_ff
+Kd 0.620 0.700 0.600
+map_Kd IsoRim/Swatches/Metal
+
+newmtl mshell_ff_dk
+Kd 0.500 0.580 0.490
+map_Kd IsoRim/Swatches/Metal
+
+newmtl mshell_inc
+Kd 0.640 0.420 0.240
+map_Kd IsoRim/Swatches/Metal
+
+newmtl mshell_inc_dk
+Kd 0.500 0.320 0.180
+map_Kd IsoRim/Swatches/Metal
+
+newmtl mshell_tox
+Kd 0.740 0.790 0.520
+map_Kd IsoRim/Swatches/Metal
+
+newmtl mshell_tox_dk
+Kd 0.600 0.650 0.400
+map_Kd IsoRim/Swatches/Metal
+
+newmtl mshell_band
+Kd 0.260 0.260 0.270
+map_Kd IsoRim/Swatches/Metal

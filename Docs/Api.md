@@ -1,7 +1,7 @@
 # IsoRim Waylith Api (for mod authors)
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`), the def `IsoRim.ApparelModelDef` (Api 9) and the `wallTop` (Api 11, part 5), `backHeight` (Api 13, part 7), animal wing (Api 14, part 8), `aged` (Api 15, part 9) and `graphicPath` (Api 16, part 10) fields of `IsoRim.ModelDef`. Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`), the def `IsoRim.ApparelModelDef` (Api 9) and the `wallTop` (Api 11, part 5), `backHeight` (Api 13, part 7), animal wing (Api 14, part 8), `aged` (Api 15, part 9), `graphicPath` (Api 16, part 10) and `doorLeafGather` (Api 18, part 12) fields of `IsoRim.ModelDef`. Everything else in the assembly is internal detail and can change
 in any update. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -20,10 +20,11 @@ if (IsoRim.Api.Version >= 14) { /* ModelDef wing fields (animal wings that fold 
 if (IsoRim.Api.Version >= 15) { /* ModelDef.aged (the aged look) */ }
 if (IsoRim.Api.Version >= 16) { /* ModelDef.graphicPath: models bound by texture path */ }
 if (IsoRim.Api.Version >= 17) { /* complete-wall requests for camera modes: RequestFullWalls */ }
+if (IsoRim.Api.Version >= 18) { /* one-cell doors with their own thingDef models; ModelDef.doorLeafGather */ }
 ```
 
 Members are never removed or changed in meaning within a version. Version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12.
 
 ## Spaces
 
@@ -689,6 +690,37 @@ and followed-pawn changes; IsoRim cannot detect an arbitrary add-on camera's own
 
 For a full mod build, including where to obtain the RimWorld 1.7 and Harmony references, see [Building](Building.md).
 
+## Part 12: one-cell doors with their own models (version 18)
+
+A one-cell door (`Building_Door`, not a supported door such as the vac barrier) can be drawn from an ordinary
+`thingDef` entry: `model` is the frame, drawn fixed, and `doorLeafModel` is one leaf. Both are needed. The other leaf is
+the same model turned half round. A style entry for the door (`style`, version 6) still wins over it.
+
+- Build the models in door space: North rotation, so the doorway runs along x with walls east and west; origin at the
+  cell centre on the ground; walls 1.2 high. IsoRim scales the height to the current wall height and cuts it down with
+  the walls.
+- The leaf spans x 0 to 0.5 from the doorway centre. By default the leaves slide apart into the walls as the game's
+  movers do.
+- `<doorLeafGather>` (0 to 1, default 0) makes them gather toward their jambs instead, like curtains drawn aside. Each
+  leaf is squeezed along x about its jamb (x 0.5) to `1 - doorLeafGather * OpenPct` of its width.
+- Materials work as for any model; `stuff_` parts take the door's stuff colour.
+
+Example, IsoRim's own animal flap (Defs/Models.xml):
+
+```xml
+<IsoRim.ModelDef>
+  <defName>R3D_AnimalFlap</defName>
+  <thingDef>AnimalFlap</thingDef>
+  <model>Models/animal_flap_frame.obj</model>
+  <doorLeafModel>Models/animal_flap_leaf.obj</doorLeafModel>
+  <doorLeafGather>0.78</doorLeafGather>
+  <builtFor>(1, 1)</builtFor>
+</IsoRim.ModelDef>
+```
+
+Before version 18 a `thingDef` entry on a one-cell door is not drawn, and `doorLeafGather` is an XML error. A pack that
+supports older versions adds the field by patch only on version 18 or later (see part 5).
+
 ## Notes
 
 - Figure hooks also run for figures another mod draws through IsoRim's internals; attachments then follow that mod's
@@ -703,3 +735,4 @@ For a full mod build, including where to obtain the RimWorld 1.7 and Harmony ref
   `layout_ancient`, `layout_ancientfin`).
   Version 16: IsoRim's raw meat (harness layout `layout_meat`; the model sweep's "how" column shows `graphicPath:`).
   Version 17: `Source/ProbeApi17.cs` (keys `fwfp`, `fwreq`, `fwrel`, `fwcheck`, `fwapi`, `fwmapseq`, `fwgame`; harness layouts `layout_fw`, `layout_fwpz`).
+  Version 18: IsoRim's animal flap (harness layouts `layout_flap*`, real pawn and animal jobs through the doorway).

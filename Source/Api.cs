@@ -37,8 +37,9 @@ namespace IsoRim
         // HostTransform; Attach.cs) and ModelDef.backHeight; 14: animal wings, ModelDef.wingModel, wings, wingFold, wingDroop,
         // wingFlap, wingBeat, and AirborneFactor, Animals.cs; 15: the aged look, ModelDef.aged, Aged.cs; 16: ModelDef.graphicPath,
         // models bound by texture path; 17: RequestFullWalls (complete-wall requests for camera modes; PR #5 by Ryuu-64),
-        // WallCutaway.cs).
-        public static int Version => 17;
+        // WallCutaway.cs); 18: one-cell doors drawn from their own thingDef ModelDef (model + doorLeafModel) and
+        // ModelDef.doorLeafGather (leaves gather toward their jambs), Doors.DrawOne.
+        public static int Version => 18;
 
         // ---- animals in the air (Version 14)
 

@@ -1,0 +1,24 @@
+# IsoRim model: animal flap valance (AnimalFlap model) (Claude, tools/make_animal_flap.py)
+# One unit = one map cell, +Y up, -Z = north (as tools/make_models.py). Closed shells.
+mtllib isorim.mtl
+v -0.5000 1.0200 0.0750
+v 0.5000 1.0200 0.0750
+v 0.5000 1.0200 -0.0750
+v -0.5000 1.0200 -0.0750
+v -0.5000 1.2000 0.0750
+v 0.5000 1.2000 0.0750
+v 0.5000 1.2000 -0.0750
+v -0.5000 1.2000 -0.0750
+usemtl stuff_fabric_dark
+f 1 6 2
+f 1 5 6
+f 2 7 3
+f 2 6 7
+f 3 8 4
+f 3 7 8
+f 4 5 1
+f 4 8 5
+f 4 2 3
+f 4 1 2
+f 5 7 6
+f 5 8 7

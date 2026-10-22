@@ -1654,7 +1654,14 @@ namespace IsoRim
             // A door of a style with its own models (ModelDef.style: a pack's Viking door): its frame (model) and two
             // leaves (doorLeafModel, the other the same turned half round) in place of the plain ones, slid as those;
             // as tall as the walls, cut down with them.
+            // (Api 18) With no style entry, the door's own thingDef entry if it has a frame and a leaf (the animal flap).
             ModelEntry own = IsoRimMod.Settings.models3D ? ModelLibrary.StyledEntry(door) : null;
+            ModelEntry e;
+            if (own == null && IsoRimMod.Settings.models3D && !(door is Building_SupportedDoor) && ModelLibrary.TryGet(door.def, out e)
+                && e.HasModel && e.doorLeaf != null)
+            {
+                own = e;
+            }
             if (own != null && own.HasModel)
             {
                 float ownHeight = View3D.WallHeight * (WallBoxes.CellCut(map, c) ? WallBoxes.CutFraction : 1f);
@@ -1665,7 +1672,16 @@ namespace IsoRim
                 Color ownTint = door.DrawColor;
                 string ownSwatch = R3DTextures.StuffSwatch(door);
                 DynamicModels.DrawLocal(own.variants[0], centre, ownYaw, ownSized, ownTint, ownSwatch);
-                if (own.doorLeaf != null)
+                if (own.doorLeaf != null && own.def.doorLeafGather > 0f)
+                {
+                    // (Api 18) Leaves gathered toward their jambs (x 0.5 of the leaf), like curtains drawn aside.
+                    float g = 1f - Mathf.Clamp01(own.def.doorLeafGather) * Mathf.Clamp01(Patches.DoorOpenPct(door));
+                    Matrix4x4 gathered = ownSized * Matrix4x4.Translate(new Vector3(0.5f, 0f, 0f))
+                        * Matrix4x4.Scale(new Vector3(g, 1f, 1f)) * Matrix4x4.Translate(new Vector3(-0.5f, 0f, 0f));
+                    DynamicModels.DrawLocal(own.doorLeaf, centre, ownYaw, gathered, ownTint, ownSwatch);
+                    DynamicModels.DrawLocal(own.doorLeaf, centre, ownYaw + 180f, gathered, ownTint, ownSwatch);
+                }
+                else if (own.doorLeaf != null)
                 {
                     float slide = Mathf.Clamp(openDistance, 0f, 0.48f) * s;
                     DynamicModels.DrawLocal(own.doorLeaf, centre + ownAlong * slide, ownYaw, ownSized, ownTint, ownSwatch);
