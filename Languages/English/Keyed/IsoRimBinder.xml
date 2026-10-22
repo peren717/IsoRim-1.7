@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <!-- Dev-mode model binder and model coverage report (Source/Binder/) -->
+  <R3D_Binder_Title>Model binder</R3D_Binder_Title>
+  <R3D_Binder_PickThing>Click a building or item</R3D_Binder_PickThing>
+  <R3D_Binder_OnlyThings>Only buildings and items.</R3D_Binder_OnlyThings>
+  <R3D_Binder_NeedView>Turn the 3D view on first.</R3D_Binder_NeedView>
+  <R3D_Binder_NoDoors>Doors are not supported.</R3D_Binder_NoDoors>
+  <R3D_Binder_NoTurrets>Turrets are not supported.</R3D_Binder_NoTurrets>
+  <R3D_Binder_NoStyles>Styled things are not supported.</R3D_Binder_NoStyles>
+  <R3D_Binder_Shared>Its model is shared ({0}).</R3D_Binder_Shared>
+  <R3D_Binder_NoModel>No model yet</R3D_Binder_NoModel>
+  <R3D_Binder_HasModel>Model from {0}</R3D_Binder_HasModel>
+  <R3D_Binder_Live>Changed live (Revert to undo)</R3D_Binder_Live>
+  <R3D_Binder_File>File</R3D_Binder_File>
+  <R3D_Binder_Pick>Pick</R3D_Binder_Pick>
+  <R3D_Binder_Reload>Reload</R3D_Binder_Reload>
+  <R3D_Binder_Search>Search</R3D_Binder_Search>
+  <R3D_Binder_Workspace>Workspace</R3D_Binder_Workspace>
+  <R3D_Binder_NoFile>Pick an .obj file</R3D_Binder_NoFile>
+  <R3D_Binder_BadFile>Can't read this file</R3D_Binder_BadFile>
+  <R3D_Binder_Readout>{0} tris, {1} x {2} x {3}</R3D_Binder_Readout>
+  <R3D_Binder_BelowGround>Reaches below the ground</R3D_Binder_BelowGround>
+  <R3D_Binder_Overhang>Wider than its footprint</R3D_Binder_Overhang>
+  <R3D_Binder_StuffOnStuffless>Stuff faces on a thing without stuff</R3D_Binder_StuffOnStuffless>
+  <R3D_Binder_NotDrawn>Not drawn as a model with the current settings</R3D_Binder_NotDrawn>
+  <R3D_Binder_BuiltFor>Built for</R3D_Binder_BuiltFor>
+  <R3D_Binder_Offset>Offset</R3D_Binder_Offset>
+  <R3D_Binder_Rotation>Rotation</R3D_Binder_Rotation>
+  <R3D_Binder_PerFacing>Per facing</R3D_Binder_PerFacing>
+  <R3D_Binder_Turn>Turn</R3D_Binder_Turn>
+  <R3D_Binder_NoRoom>No room to turn it.</R3D_Binder_NoRoom>
+  <R3D_Binder_Yaw>Turn: {0}</R3D_Binder_Yaw>
+  <R3D_Binder_Scale>Scale</R3D_Binder_Scale>
+  <R3D_Binder_Surface>Surface height</R3D_Binder_Surface>
+  <R3D_Binder_Seat>Seat height</R3D_Binder_Seat>
+  <R3D_Binder_Bedding>Bedding top</R3D_Binder_Bedding>
+  <R3D_Binder_WallFit>Wall fit</R3D_Binder_WallFit>
+  <R3D_Binder_WallMounted>On the wall</R3D_Binder_WallMounted>
+  <R3D_Binder_MountHeight>Mount height</R3D_Binder_MountHeight>
+  <R3D_Binder_Linked>Linked</R3D_Binder_Linked>
+  <R3D_Binder_Cutaway>Cut-away</R3D_Binder_Cutaway>
+  <R3D_Binder_OverArt>Over the game's art</R3D_Binder_OverArt>
+  <R3D_Binder_LayFlat>Lay flat</R3D_Binder_LayFlat>
+  <R3D_Binder_Outline>Outline</R3D_Binder_Outline>
+  <R3D_Binder_GroundShadow>Ground shadow</R3D_Binder_GroundShadow>
+  <R3D_Binder_Copy>Copy from existing</R3D_Binder_Copy>
+  <R3D_Binder_ThisThing>This thing</R3D_Binder_ThisThing>
+  <R3D_Binder_Revert>Revert</R3D_Binder_Revert>
+  <R3D_Binder_Pack>Pack</R3D_Binder_Pack>
+  <R3D_Binder_Export>Export</R3D_Binder_Export>
+  <R3D_Binder_BadPack>Give the pack a name (letters, digits).</R3D_Binder_BadPack>
+  <R3D_Binder_Exported>Saved to {0}</R3D_Binder_Exported>
+  <R3D_Binder_ExportFailed>Export failed: {0}</R3D_Binder_ExportFailed>
+
+  <R3D_Coverage_Title>Model coverage</R3D_Coverage_Title>
+  <R3D_Coverage_Mod>{0}: buildings {1} of {2}, items {3} of {4} without a model</R3D_Coverage_Mod>
+  <R3D_Coverage_Building>Building</R3D_Coverage_Building>
+  <R3D_Coverage_Item>Item</R3D_Coverage_Item>
+  <R3D_Coverage_Apparel>Apparel</R3D_Coverage_Apparel>
+  <R3D_Coverage_Weapon>Weapon</R3D_Coverage_Weapon>
+  <R3D_Coverage_sprite>sprite</R3D_Coverage_sprite>
+  <R3D_Coverage_extruded>raised sprite</R3D_Coverage_extruded>
+  <R3D_Coverage_block>block</R3D_Coverage_block>
+  <R3D_Coverage_worn>worn look</R3D_Coverage_worn>
+  <R3D_Coverage_ground>ground shape</R3D_Coverage_ground>
+  <R3D_Coverage_model>model</R3D_Coverage_model>
+  <R3D_Coverage_door>3D door</R3D_Coverage_door>
+</LanguageData>

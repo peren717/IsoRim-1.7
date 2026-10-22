@@ -1,5 +1,7 @@
 # IsoRim Waylith Api (for mod authors)
 
+Model packs (XML and .obj files, no code), the dev-mode model binder and the coverage report: see [ModelPacks.md](ModelPacks.md).
+
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
 `ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`), the def `IsoRim.ApparelModelDef` (Api 9) and the `wallTop` (Api 11, part 5), `backHeight` (Api 13, part 7), animal wing (Api 14, part 8), `aged` (Api 15, part 9), `graphicPath` (Api 16, part 10) and `doorLeafGather` (Api 18, part 12) fields of `IsoRim.ModelDef`. Everything else in the assembly is internal detail and can change
 in any update. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for

@@ -854,7 +854,7 @@ namespace IsoRim
         }
     }
 
-    public static class ModelLibrary
+    public static partial class ModelLibrary   // (dev-mode binder overrides: ModelLibraryOverrides.cs)
     {
         private static readonly Dictionary<ThingDef, ModelEntry> byThing = new Dictionary<ThingDef, ModelEntry>();
         private static readonly Dictionary<string, Model> byPath = new Dictionary<string, Model>();

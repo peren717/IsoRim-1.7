@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- IsoRimPackGate.dll: the patch class XML model packs ship (PatchOperation_IfIsoRimApi). Not loaded by IsoRim itself (Tools/
+       is no load folder); the model binder copies the built DLL into each exported pack's 1.7/Assemblies (BinderExport).
+       Build: dotnet build Tools\PackGate\IsoRimPackGate.csproj -c Release -nodeReuse:false (writes IsoRimPackGate.dll here). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <AssemblyName>IsoRimPackGate</AssemblyName>
+    <RootNamespace>IsoRimPackGate</RootNamespace>
+    <Version>1.0.0</Version>
+    <OutputPath>.\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <DebugType>none</DebugType>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <Optimize>true</Optimize>
+    <RimWorldDir Condition="'$(RimWorldDir)' == ''">$(MSBuildThisFileDirectory)..\..\..\..</RimWorldDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="obj\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp"><HintPath>$(RimWorldDir)\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>
