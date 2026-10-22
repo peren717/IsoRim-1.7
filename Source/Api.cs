@@ -44,8 +44,9 @@ namespace IsoRim
         // FieldOfView, FirstPersonPawn, ViewVersion, the flat scopes BeginSkipFlat, EndSkipFlat, SkipFlat, BeginFlatTransform,
         // EndFlatTransform, FlatTransform (FlatScope), SkipWhenModelled, DrawnMatrix, DrawnPosition, FloorShown, DrawGhost,
         // AddProjectileArc, RemoveProjectileArc, XrayPlacing, HasModel; Api20.cs; 21: face drawers, AddFaceDrawer, RemoveFaceDrawer
-        // (FaceDrawer, FaceFrame), and FigureFrame.Hide, FigureFrame.Hidden (FigureParts) with figure hooks raised before the
-        // figure is drawn; Api21.cs). The card overlay (IsCard, DrawOnCard,
+        // (FaceDrawer, FaceFrame; AddFaceDrawer(drawer, evenWhenHidden) with FaceFrame.HiddenByGame, FaceHiddenBy), and
+        // FigureFrame.Hide, FigureFrame.Hidden (FigureParts) with figure hooks raised before the figure is drawn; Api21.cs).
+        // The card overlay (IsCard, DrawOnCard,
         // CardLight; CardOverlay.cs) came in before version 8 without a number of its own: check >= 8 for it.
         public static int Version => 21;
 

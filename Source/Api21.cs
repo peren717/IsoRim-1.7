@@ -5,7 +5,7 @@ using Verse;
 namespace IsoRim
 {
     // Api 21 (the API sprint's fourth batch, people; design api-sprint-design.md): face drawers (FaceDrawer, FaceFrame,
-    // FaceDrawers) and hiding a figure's own parts from a figure hook (FigureFrame.Hide, FigureParts; People.Merged).
+    // FaceDrawers; opt-in drawers asked even where the game hides the face, FaceHiddenBy) and hiding a figure's own parts from a figure hook (FigureFrame.Hide, FigureParts; People.Merged).
     public static partial class Api
     {
         // ---- faces (Version 21)
@@ -17,20 +17,49 @@ namespace IsoRim
         /// after the figure hooks and before the head is drawn. Draw the face with the <see cref="FaceFrame"/> and return
         /// true: IsoRim then leaves out its own face for that figure this frame (its eyes, a creepjoiner's face, Facial
         /// Animation's face). Return false to leave the face to IsoRim (or to the next drawer). The first drawer that
-        /// returns true wins. With none registered nothing extra runs. Registering the same drawer twice does nothing. An
+        /// returns true wins. To be asked also where the game leaves the face out, use <see cref="AddFaceDrawer(FaceDrawer, bool)"/>.
+        /// With none registered nothing extra runs. Registering the same drawer twice does nothing. An
         /// exception is logged once and counts as false. Call once, at startup.
         /// </summary>
-        public static void AddFaceDrawer(FaceDrawer drawer) => FaceDrawers.Add(drawer);
+        public static void AddFaceDrawer(FaceDrawer drawer) => FaceDrawers.Add(drawer, false);
 
-        /// <summary>Removes a drawer added with <see cref="AddFaceDrawer"/>.</summary>
+        /// <summary>
+        /// As <see cref="AddFaceDrawer(FaceDrawer)"/>; with evenWhenHidden true the drawer is also asked when the game
+        /// leaves the face out (eyes covered, no head drawn, a skull or a ghoul's own head): <see cref="FaceFrame.HiddenByGame"/>
+        /// says why (<see cref="FaceHiddenBy.None"/> when the face shows). Still not asked when a figure hook hid the head
+        /// or face. Drawers added without it are not asked then, as before. The first registration of a drawer counts.
+        /// </summary>
+        public static void AddFaceDrawer(FaceDrawer drawer, bool evenWhenHidden) => FaceDrawers.Add(drawer, evenWhenHidden);
+
+        /// <summary>Removes a drawer added with <see cref="AddFaceDrawer(FaceDrawer)"/>.</summary>
         public static void RemoveFaceDrawer(FaceDrawer drawer) => FaceDrawers.Remove(drawer);
     }
 
     /// <summary>
-    /// Draws a person's face on the 3D head (Api version 21; <see cref="Api.AddFaceDrawer"/>). Return true when it drew
+    /// Draws a person's face on the 3D head (Api version 21; <see cref="Api.AddFaceDrawer(FaceDrawer)"/>). Return true when it drew
     /// the face (IsoRim then leaves its own out), false to leave the face to IsoRim. The frame is only valid during the call.
     /// </summary>
     public delegate bool FaceDrawer(FaceFrame face);
+
+    /// <summary>
+    /// Why the game leaves a person's face out (Api version 21; <see cref="FaceFrame.HiddenByGame"/>), for drawers added
+    /// with <see cref="Api.AddFaceDrawer(FaceDrawer, bool)"/> evenWhenHidden.
+    /// </summary>
+    public enum FaceHiddenBy
+    {
+        /// <summary>The face shows.</summary>
+        None = 0,
+        /// <summary>Worn apparel covers the eyes (the game's skip flag Eyes, or an apparel model binding that hides the face).
+        /// Hats and helmets drawn still cover the face by depth.</summary>
+        Apparel = 1,
+        /// <summary>No head is drawn: a garment hides the whole head (the game's skip flag Head, such as a burka) and its
+        /// covering stands in the head's place.</summary>
+        NoHead = 2,
+        /// <summary>Dried to bones: a skull stands in for the head.</summary>
+        Skull = 3,
+        /// <summary>A head model of its own stands in (a ghoul's head).</summary>
+        OwnHead = 4,
+    }
 
     /// <summary>
     /// Parts of IsoRim's own person figure, for <see cref="FigureFrame.Hide"/> (Api version 21).
@@ -89,11 +118,13 @@ namespace IsoRim
         internal Matrix4x4 placed;   // head space to drawn space, before FigureScope and the stacked floor
         internal float yaw;
         internal bool lying, crawling, dead, live;
+        internal FaceHiddenBy hiddenBy;
         private bool adjustRead;
         private FaceAdjust adjust;
 
-        internal void Set(Pawn pawn, People.Look look, Model head, Matrix4x4 placed, float yaw, bool lying, bool crawling, bool dead)
+        internal void Set(Pawn pawn, People.Look look, Model head, Matrix4x4 placed, float yaw, bool lying, bool crawling, bool dead, FaceHiddenBy hiddenBy)
         {
+            this.hiddenBy = hiddenBy;
             this.pawn = pawn;
             this.look = look;
             this.head = head;
@@ -112,10 +143,16 @@ namespace IsoRim
             pawn = null;
             look = null;
             head = null;
+            hiddenBy = FaceHiddenBy.None;
         }
 
         /// <summary>The person.</summary>
         public Pawn Pawn => pawn;
+
+        /// <summary>Why the game leaves this face out (<see cref="FaceHiddenBy.None"/>: it shows). Only drawers added with
+        /// evenWhenHidden (<see cref="Api.AddFaceDrawer(FaceDrawer, bool)"/>) see anything else. The face meshes are still
+        /// those of IsoRim's plain head.</summary>
+        public FaceHiddenBy HiddenByGame => hiddenBy;
 
         /// <summary>Maps head space to where the head is drawn now (see the class notes), for <c>Graphics.DrawMesh</c>.</summary>
         public Matrix4x4 Matrix => FaceDecal.Drawn(placed, -1);
@@ -213,25 +250,29 @@ namespace IsoRim
         public bool HairShown => look != null && look.hairShown;
     }
 
-    // The face drawers (Api.AddFaceDrawer): asked by People.Draw for each figure whose head shows a face. Copy on write, so
-    // asking allocates nothing; with none registered People.Draw only reads Count.
+    // The face drawers (Api.AddFaceDrawer): asked by People.Draw for each figure whose head shows a face, and those added
+    // with evenWhenHidden (counted in Always) also where the game leaves the face out. Copy on write, so asking allocates
+    // nothing; with none registered People.Draw only reads Count.
     internal static class FaceDrawers
     {
         private static FaceDrawer[] drawers = new FaceDrawer[0];
-        internal static int Count;
+        private static bool[] evenHidden = new bool[0];
+        internal static int Count, Always;
         private static readonly FaceFrame frame = new FaceFrame();
 
-        internal static void Add(FaceDrawer drawer)
+        internal static void Add(FaceDrawer drawer, bool evenWhenHidden)
         {
             if (drawer == null || Array.IndexOf(drawers, drawer) >= 0)
             {
                 return;
             }
             FaceDrawer[] next = new FaceDrawer[drawers.Length + 1];
+            bool[] nextHidden = new bool[drawers.Length + 1];
             drawers.CopyTo(next, 0);
+            evenHidden.CopyTo(nextHidden, 0);
             next[drawers.Length] = drawer;
-            drawers = next;
-            Count = next.Length;
+            nextHidden[drawers.Length] = evenWhenHidden;
+            Set(next, nextHidden);
         }
 
         internal static void Remove(FaceDrawer drawer)
@@ -242,25 +283,65 @@ namespace IsoRim
                 return;
             }
             FaceDrawer[] next = new FaceDrawer[drawers.Length - 1];
+            bool[] nextHidden = new bool[drawers.Length - 1];
             Array.Copy(drawers, 0, next, 0, i);
             Array.Copy(drawers, i + 1, next, i, drawers.Length - i - 1);
+            Array.Copy(evenHidden, 0, nextHidden, 0, i);
+            Array.Copy(evenHidden, i + 1, nextHidden, i, drawers.Length - i - 1);
+            Set(next, nextHidden);
+        }
+
+        private static void Set(FaceDrawer[] next, bool[] nextHidden)
+        {
+            int always = 0;
+            for (int i = 0; i < nextHidden.Length; i++)
+            {
+                always += nextHidden[i] ? 1 : 0;
+            }
+            evenHidden = nextHidden;
             drawers = next;
             Count = next.Length;
+            Always = always;
+        }
+
+        // Why the game leaves this look's face out (the skull first: dried bones also set faceHidden).
+        internal static FaceHiddenBy HiddenBy(People.Look look)
+        {
+            if (look.skull != null)
+            {
+                return FaceHiddenBy.Skull;
+            }
+            if (look.headHidden)
+            {
+                return FaceHiddenBy.NoHead;
+            }
+            if (look.ownHead != null)
+            {
+                return FaceHiddenBy.OwnHead;
+            }
+            return look.faceHidden ? FaceHiddenBy.Apparel : FaceHiddenBy.None;
         }
 
         // True when a drawer drew the face. headLocal: the head's placing in the figure (headPlace) times its widening.
-        internal static bool Ask(Pawn pawn, People.Look look, Model head, Vector3 position, float yaw, Matrix4x4 headLocal, bool lying, bool crawling, bool dead)
+        // hiddenBy not None: only the drawers added with evenWhenHidden are asked.
+        internal static bool Ask(Pawn pawn, People.Look look, Model head, Vector3 position, float yaw, Matrix4x4 headLocal, bool lying, bool crawling, bool dead,
+            FaceHiddenBy hiddenBy)
         {
             if (frame.live)
             {
                 return false;   // a drawer drawing a figure from inside a drawer: IsoRim's own face
             }
-            frame.Set(pawn, look, head, FaceDecal.Placed(position, yaw, headLocal), yaw, lying, crawling, dead);
             FaceDrawer[] all = drawers;
+            bool[] even = evenHidden;
+            frame.Set(pawn, look, head, FaceDecal.Placed(position, yaw, headLocal), yaw, lying, crawling, dead, hiddenBy);
             try
             {
                 for (int i = 0; i < all.Length; i++)
                 {
+                    if (hiddenBy != FaceHiddenBy.None && !even[i])
+                    {
+                        continue;
+                    }
                     try
                     {
                         if (all[i](frame))

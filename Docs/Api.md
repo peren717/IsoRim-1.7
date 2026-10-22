@@ -947,6 +947,10 @@ static bool DrawFace(IsoRim.FaceFrame f)
   eyes (`FigureFrame.FaceHidden`), no head is drawn (a burka), a skull or a ghoul's own head stands in, or a figure hook
   hid `Head` or `Face`. The first drawer that returns true wins; false leaves the face to the next drawer and then to
   IsoRim. Drawers run after the figure hooks and before the figure is drawn. An exception is logged once and counts as false.
+- `Api.AddFaceDrawer(FaceDrawer drawer, bool evenWhenHidden)`: with `true` the drawer is also asked where the game leaves
+  the face out; `face.HiddenByGame` (`FaceHiddenBy`) says why: `None` (the face shows), `Apparel` (eyes covered),
+  `NoHead` (a burka), `Skull`, `OwnHead` (a ghoul). Still not asked when a figure hook hid `Head` or `Face`. Drawers added
+  without it are not asked then. The face meshes are those of IsoRim's plain head; a hat or covering still hides them by depth.
 - `face.Matrix`: head space to where the head is drawn now, ready for `Graphics.DrawMesh` (pose, facing, lying, sitting,
   crawling, in bed, the person's size, the head type's width, its stacked floor, `Api.DrawFigure` placing). Head space is
   the space IsoRim's head model is modelled in: cells, the figure's feet at the origin, y up, +z the way it faces.

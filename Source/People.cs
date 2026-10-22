@@ -592,13 +592,16 @@ namespace IsoRim
                 // they may hide its own parts (Api 21).
                 hidden = FigureHooks.Raise(pawn, look, at, yaw, headPlace, bodyPlace, size, lift, lying, crawling, seated || noLegs, dead, !headOnly);
             }
-            bool faceShown = !look.faceHidden && !look.headHidden && look.skull == null && look.ownHead == null
-                && (hidden & (FigureParts.Head | FigureParts.Face)) == 0;
             Matrix4x4 headLocal = headPlace * Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f));
-            if (faceShown && FaceDrawers.Count > 0 && !FigureScope.Measuring
-                && FaceDrawers.Ask(pawn, look, head, at, yaw, headLocal, lying, crawling, dead))
+            if (FaceDrawers.Count > 0 && !FigureScope.Measuring && (hidden & (FigureParts.Head | FigureParts.Face)) == 0)
             {
-                hidden |= FigureParts.Face;   // another mod drew the face (Api 21): IsoRim's own left out
+                // Where the game leaves the face out, only drawers added with evenWhenHidden are asked (Api 21).
+                FaceHiddenBy hiddenBy = FaceDrawers.HiddenBy(look);
+                if ((hiddenBy == FaceHiddenBy.None || FaceDrawers.Always > 0)
+                    && FaceDrawers.Ask(pawn, look, head, at, yaw, headLocal, lying, crawling, dead, hiddenBy) && hiddenBy == FaceHiddenBy.None)
+                {
+                    hidden |= FigureParts.Face;   // another mod drew the face (Api 21): IsoRim's own left out (already out when hidden)
+                }
             }
             if (!headOnly)
             {
