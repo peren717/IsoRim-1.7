@@ -258,7 +258,8 @@ namespace IsoRim
         }
 
         // The height of the raised building a thing sits on: items stored on a shelf rest on
-        // top of the shelf, and plants in a pot or a hydroponics basin grow from its rim.
+        // top of the shelf, items on a work table or a table on its top (BenchTops), and plants in a pot
+        // or a hydroponics basin grow from its rim.
         public static float BaseUnder(Thing t, bool storageOnly)
         {
             Map map = t.Map;
@@ -267,9 +268,13 @@ namespace IsoRim
                 return 0f;
             }
             Building b = t.Position.GetEdifice(map);
-            if (b == null || b == t || (storageOnly && !(b is Building_Storage)))
+            if (b == null || b == t)
             {
                 return 0f;
+            }
+            if (storageOnly && !(b is Building_Storage))
+            {
+                return BenchTops.Carries(b) ? BenchTops.TopOf(b) : 0f;
             }
             ThingForm f = For(b.def);
             return (f.form == Form3D.Flat || f.form == Form3D.Block) ? 0f : f.form == Form3D.Model ? SurfaceOf(b, f) : f.height;
