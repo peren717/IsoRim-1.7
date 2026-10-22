@@ -1384,8 +1384,8 @@ namespace IsoRim
         }
 
         // (Api 11) Where the end line of a run beside a lower block starts: at that block's top when either of the two is a wall
-        // with a shaped top (WallTops.cs), so no line runs down the joint where both faces lie flush (a castle wall beside a
-        // low wall); else at the foot (0), as always.
+        // with a shaped top (WallTops.cs), or (Api 20) the lower one is a low wall (LowWall: a half wall), so no line runs down
+        // the joint where both faces lie flush (a castle wall beside a low wall); else at the foot (0), as always.
         private static float EndFoot(Map map, IntVec3 c, IntVec3 n)
         {
             if (map == null || !n.InBounds(map) || !c.InBounds(map))
@@ -1399,7 +1399,7 @@ namespace IsoRim
                 return 0f;
             }
             ThingForm nf = Forms.For(nb.def);
-            if (nf.form != Form3D.Block || (nf.wallTops == null && Forms.For(ob.def).wallTops == null))
+            if (nf.form != Form3D.Block || (nf.wallTops == null && Forms.For(ob.def).wallTops == null && !LowWall(nb.def)))
             {
                 return 0f;
             }
@@ -1589,7 +1589,7 @@ namespace IsoRim
         // As in the Sims games: a built wall is cut down when the cell just behind it, seen from
         // the camera, is the floor of a roofed room. The far walls of the same room have open sky
         // behind them and stay whole, so each room keeps its back walls and loses the ones that
-        // would hide it. Natural rock and low walls are never cut.
+        // would hide it. Natural rock only with the cutRock option.
         public static bool IsCut(Map map, IntVec3 c, Thing wall)
         {
             if (map == null || wall == null || !CanBeCut(wall.def))
@@ -1599,14 +1599,44 @@ namespace IsoRim
             return CellCut(map, c);
         }
 
-        // Built walls of full height can be cut down; natural rock and low walls never are.
+        // THE cut rule (Api 20, ModelDef.cutaway; every cut-away path asks it): a def's own rule (Never, Always) first;
+        // Auto: built walls (full blocks, low walls, walls from a model) can be cut down, natural rock by the cutRock option,
+        // nothing else (sandbags, barricades, fences). It only has an effect on things IsoRim draws as walls.
         public static bool CanBeCut(ThingDef def)
         {
-            if (def != null && def.building != null && def.building.isNaturalRock)
+            if (def == null)
+            {
+                return false;
+            }
+            ModelEntry entry;
+            if (ModelLibrary.TryGet(def, out entry) && entry.def.cutaway != CutawayRule.Auto)
+            {
+                return entry.def.cutaway == CutawayRule.Always;
+            }
+            if (def.building != null && def.building.isNaturalRock)
             {
                 return IsoRimMod.Settings.cutRock;
             }
-            return def != null && (Fill(def) >= 0.9f || ModelWall(def));
+            return Fill(def) >= 0.9f || ModelWall(def) || LowWall(def);
+        }
+
+        // (Api 20) A low wall: a wall IsoRim draws as a block (one the game counts as a wall: fill 0.9 or more, or linked as
+        // walls) standing lower than nine tenths of the wall height (a ModelDef height or wallTop height under it, or a low
+        // fill: a half wall, a low castle wall). The cut-away lowers it as any wall (CanBeCut, Auto); it is not a full-height
+        // block (Floors.FullBlock): a wall upstairs does not reach down to it and a floor's slab is laid over it; the end line of
+        // a taller wall beside it starts at its top (EndFoot). Sandbags and barricades (not linked as walls) are not walls.
+        public static bool LowWall(ThingDef def)
+        {
+            if (def == null)
+            {
+                return false;
+            }
+            ThingForm form = Forms.For(def);
+            if (form.form != Form3D.Block || form.height >= 0.9f * View3D.WallHeight)
+            {
+                return false;
+            }
+            return Fill(def) >= 0.9f || def.graphicData != null && (def.graphicData.linkFlags & LinkFlags.Wall) != 0;
         }
 
         // Whether whatever wall or door stands in this cell is to be drawn cut down: because the

@@ -11,6 +11,14 @@ using Verse;
 
 namespace IsoRim
 {
+    // (Api 20) ModelDef.cutaway: whether the cut-away (pointer, rooms, IsoRim's cutHover / cutRooms options) lowers a wall.
+    public enum CutawayRule
+    {
+        Auto,       // as IsoRim decides: built walls (full ones, low walls, walls from a model) yes; natural rock by the cutRock option
+        Never,      // never lowered (a glazed half wall that must keep its window)
+        Always      // always lowered, also a block IsoRim would not count as a wall (a tall linked fence)
+    }
+
     // XML settings for how one thing is drawn in 3D. Any mod can add these:
     //
     //   <IsoRim.ModelDef>
@@ -120,6 +128,8 @@ namespace IsoRim
         public WallTopSpec wallTop;         // (Api 11) a one-cell linked wall drawn on IsoRim's own wall path (a block, as vanilla
                                             // walls: no model needed) with its own height, side texture and a top shaped by a
                                             // rule (merlons, ridge, ragged, rubble). See WallTops.cs and Docs/Api.md part 5
+        public CutawayRule cutaway = CutawayRule.Auto;  // (Api 20) whether the cut-away lowers this wall (WallBoxes.CanBeCut);
+                                            // only things IsoRim draws as walls (blocks, walls from a model) are ever lowered
         // Doors wider than one cell (ornate door): model is the fixed frame over the doorway, doorLeafModel one
         // leaf (spanning x 0..1 from the doorway centre; the other leaf is the same turned half round),
         // doorTopModel an optional fixed piece on top (the arch). Drawn by Doors.DrawWide.

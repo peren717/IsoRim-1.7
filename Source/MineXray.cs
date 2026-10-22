@@ -12,8 +12,9 @@ namespace IsoRim
     // and the floor above higher than the viewed one): their open cells (tunnels, rooms, mountain tops, built floors)
     // outlined, with a light fill, rock and walls left empty; the pawns there as dots. Below: only under what the viewed
     // floor covers (its rock, floors, buildings); below the open air the floor is seen anyway. Above: everywhere (the floors
-    // above the viewed one are not drawn). While placing stairs only the floor above is shown (where the exit lands); other mods'
-    // designators show the floors they ask for (Api.XrayDesignator), without the crosshair. A
+    // above the viewed one are not drawn). While placing a def an addon registered (Api.XrayPlacing: its stairs show the floor
+    // above, where the exit lands) and with other mods' designators (Api.XrayDesignator), the floors they ask for are shown,
+    // without the crosshair. A
     // crosshair (Mine tool) runs Reach cells along x and z from the pointer's cell on the viewed floor, all on the plane
     // of the pointer's frame (so on screen its arms run straight through the pointer). All on the overlay shader (no depth test), so the rock never hides it. Only what the player
     // knows is shown: fogged cells count as solid and pawns on them are left out.
@@ -108,11 +109,31 @@ namespace IsoRim
             return 0;
         }
 
-        // Placing stairs (ProjectZ's stairs and ship stairs, by name: IsoRim does not reference ProjectZ).
-        public static bool StairsTool(Designator d)
+        // (Api 20, Api.XrayPlacing) Defs whose placing shows the x-ray (an addon's stairs: the floor above, where the exit
+        // lands), with the floors they show.
+        private static readonly Dictionary<BuildableDef, int> placing = new Dictionary<BuildableDef, int>();
+
+        public static void RegisterPlacing(BuildableDef def, bool below, bool above)
         {
-            BuildableDef def = (d as Designator_Place)?.PlacingDef;
-            return def != null && (def.defName == "PZ_Stairs" || def.defName == "PZ_ShipStairs");
+            if (def == null)
+            {
+                return;
+            }
+            if (below || above)
+            {
+                placing[def] = (below ? ShowBelow : 0) | (above ? ShowAbove : 0);
+            }
+            else
+            {
+                placing.Remove(def);
+            }
+        }
+
+        // The floors shown while this designator places a registered def (0: not one).
+        private static int PlacingTool(Designator d)
+        {
+            BuildableDef def = placing.Count > 0 ? (d as Designator_Place)?.PlacingDef : null;
+            return def != null && placing.TryGetValue(def, out int show) ? show : 0;
         }
 
         // Every frame while the 3D view draws (View3D, with the drag box).
@@ -128,8 +149,12 @@ namespace IsoRim
             }
             Designator sel = dm.SelectedDesignator;
             bool mine = Tool(sel);
-            // the floors shown: Mine both, stairs the floor above (where the exit lands), others as registered
-            int show = mine ? ShowBelow | ShowAbove : StairsTool(sel) ? ShowAbove : OtherTool(sel);
+            // the floors shown: Mine both, others as registered (placing a def: XrayPlacing, wins; a designator: XrayDesignator)
+            int show = mine ? ShowBelow | ShowAbove : PlacingTool(sel);
+            if (show == 0)
+            {
+                show = OtherTool(sel);
+            }
             if (show == 0)
             {
                 return;

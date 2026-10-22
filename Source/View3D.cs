@@ -85,6 +85,9 @@ namespace IsoRim
             get { return persp; }
         }
 
+        // The vertical field of view (degrees) the perspective camera used this frame (Api 20, Api.FieldOfView).
+        public static float FieldOfView { get; private set; } = 40f;
+
         private static Camera[] cams;
         private static bool camerasOverridden;
 
@@ -715,6 +718,7 @@ namespace IsoRim
             IsoRimSettings st = IsoRimMod.Settings;
             persp = st.perspective || fp;
             float fovNow = Mathf.Clamp(fp ? st.fpFov : st.fov, 15f, 100f);
+            FieldOfView = fovNow;
             float near, far;
             if (fp)
             {

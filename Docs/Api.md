@@ -1,16 +1,24 @@
 # IsoRim Waylith Api (for mod authors)
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`), the def `IsoRim.ApparelModelDef` (Api 9) and the `wallTop` (Api 11, part 5), `backHeight` (Api 13, part 7), animal wing (Api 14, part 8), `aged` (Api 15, part 9), `graphicPath` (Api 16, part 10) and `doorLeafGather` (Api 18, part 12) fields of `IsoRim.ModelDef`. Everything else in the assembly is internal detail and can change
-in any update. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`), the defs `IsoRim.ModelDef` (part M) and `IsoRim.ApparelModelDef` (Api 9), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
+in any update, even when it is public: do not patch or reflect into it, ask for an Api member instead. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
+
+`Api.Dev` is for addons' own dev tests: its members can change or go without notice and are outside the version promise.
 
 ## Versioning
 
 `Api.Version` goes up whenever members are added. Check it before you use newer members:
 
 ```csharp
-if (IsoRim.Api.Version >= 8) { /* figure hooks and model drawing are there */ }
+if (IsoRim.Api.Version >= 2) { /* view, projectiles, floors, drawing and options (part 0) */ }
+if (IsoRim.Api.Version >= 3) { /* the fog lid lock: LockFogLid, UnlockFogLid, FogLidLockedBy, FogLidOn */ }
+if (IsoRim.Api.Version >= 4) { /* collapse debris: Debris */ }
+if (IsoRim.Api.Version >= 5) { /* XrayDesignator */ }
+if (IsoRim.Api.Version >= 6) { /* model states: AddModelState, ModelStandsIn; ModelDef style, byState, crownTop, rotationByFacing, doorLeafRise */ }
+if (IsoRim.Api.Version >= 7) { /* PeekUpperFloors */ }
+if (IsoRim.Api.Version >= 8) { /* figure hooks and model drawing are there; also the card overlay IsCard, DrawOnCard */ }
 if (IsoRim.Api.Version >= 9) { /* IsoRim.ApparelModelDef is there */ }
 if (IsoRim.Api.Version >= 10) { /* apparel decals; DrawModel follows the peek fade */ }
 if (IsoRim.Api.Version >= 11) { /* ModelDef.wallTop (wall tops) and Form3D.Ground */ }
@@ -22,10 +30,12 @@ if (IsoRim.Api.Version >= 16) { /* ModelDef.graphicPath: models bound by texture
 if (IsoRim.Api.Version >= 17) { /* complete-wall requests for camera modes: RequestFullWalls */ }
 if (IsoRim.Api.Version >= 18) { /* one-cell doors with their own thingDef models; ModelDef.doorLeafGather */ }
 if (IsoRim.Api.Version >= 19) { /* facing holds: AddFacingHold, RemoveFacingHold */ }
+if (IsoRim.Api.Version >= 20) { /* ModelDef.cutaway, view state, flat scopes, SkipWhenModelled, floor placing, DrawGhost,
+                                   projectile arcs, XrayPlacing, HasModel (part 14) */ }
 ```
 
-Members are never removed or changed in meaning within a version. Version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13.
+Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14. Part M is the model pack reference.
 
 ## Spaces
 
@@ -33,6 +43,59 @@ version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part
 - **Drawn space**: where IsoRim puts things: drawn y = true height / `Api.HeightSquash` (a very small number, so drawn
   y values are large). The figure frames below map into drawn space.
 - Model files are OBJ, one unit = one cell, +y up. IsoRim flips the file's z, as for its own models.
+
+## Part 0: view, floors, projectiles and drawing (versions 2 to 7)
+
+The view (version 2):
+
+| Member | What it does |
+|---|---|
+| `Api.ViewReady` | The 3D view is on and has drawn a frame (the camera members below are valid). |
+| `Api.ViewPitch`, `Api.ViewYaw` | The camera's tilt (90 looks straight down) and turn about the vertical, degrees. |
+| `Api.HeightSquash` | Drawn y = true height / `HeightSquash`. |
+| `Api.WallHeight` | The height of a full wall in cells (the option, or the locked value). |
+| `Api.LockView(string by, float wallHeight)` | For an addon that needs the 3D view: it starts on and cannot be turned off (`by` names the addon in the tooltip); `wallHeight` > 0 fixes the wall height. `Api.ViewLockedBy`, `Api.LockedWallHeight` read the lock. |
+| `Api.WorldToScreen(Vector3 p)` | Where a true-space point shows on screen (pixels from the bottom left). |
+| `Api.ScreenToGround(Vector2 px)`, `Api.ScreenToHeight(Vector2 px, float height)` | The ground point (or the point at a true height) under a screen pixel. |
+| `Api.ScreenToMap(Vector2 px)` | The map point under a pixel, on the stacked floor the pointer ray lands on. |
+| `Api.ShowRoofs(bool on)` | The player's roof switch. |
+| `Api.WallCutAway(Map map, IntVec3 c)` | The cut-away has lowered the wall in this cell (it is near the pointer). |
+| `Api.SetOption(string name, object value)` | Sets one of IsoRim's options by the name it is saved under in IsoRim's settings file (`freeYaw`, `isoPitch`, `wallHeight`, `cutHover`, `cutRooms`, `perspective`, `fov`, `groundShadows`, ...); returns the old value, or null for an unknown name. Not saved by itself. |
+| `Api.LockFogLid(string tip, bool on)`, `Api.UnlockFogLid()`, `Api.FogLidLockedBy`, `Api.FogLidOn` | (version 3) Lock the fog lid on or off for the current game; the player's option is kept and greyed out with `tip`. |
+
+Stacked floors (version 2): an addon that puts upper floors on the rows of the same map registers an `IFloorLayout` in
+`Api.Floors` (ground rows, floor count, each floor's height and row shift and whether it is drawn, the pointer's floor, a
+thing's extra offset, optional `ViewFloor` and `ShipCell`). IsoRim then draws each floor over the ground. Null (the
+default) costs nothing. Also: `Api.HiddenRoof` (a `Predicate<RoofDef>` for roofs kept for the game but not drawn) and
+`Api.RoofHidden(roof)`, `Api.ModelHeight(ThingDef)` (how tall a thing is drawn from its model, 0 for things that follow the
+wall height), `Api.Debris(Map, IEnumerable<IntVec3>)` (version 4: collapse debris; call it before the cells' things are
+removed), `Api.XrayDesignator(Type designator, bool below, bool above)` (version 5: the mining x-ray shows the floors
+next to the viewed one while that designator is in hand), `Api.PeekUpperFloors` (version 7: set it each frame from your
+own key to draw the floors above the viewed one faded instead of hidden).
+
+Projectiles (version 2; they only change how shots are drawn):
+
+| Member | What it does |
+|---|---|
+| `Api.MuzzleHeight(Thing launcher)` | How high a shooter fires from over its feet (cells). |
+| `Api.ProjectileHeight(Projectile p, Vector3 at)` | The true height IsoRim draws a projectile at when the game has it at `at`. |
+| `Api.AimHeight(Projectile p)` | The height of what it is aimed at over its floor. |
+| `Api.Muzzle(Thing owner, ThingDef gun, Vector3 from, Vector3 dir)` | The muzzle: x, z on the map, y over the owner's feet. |
+| `Api.SetLaunchPoint(Projectile p, Vector3 from)` | For an addon that moves a shot's launch point (onto another floor's rows): where it really left from. Call before it is first drawn. |
+| `Api.DrawnStart(Projectile p)` | Where the drawn flight starts (x, z the game's rows, y over the ground). |
+| `Api.ProjectileCard` | A `ProjectileCardHook`: replace the matrix of the cards IsoRim draws for plain projectiles; null draws them as usual. |
+| `Api.SkyfallerPose(Skyfaller s, out ground, out height, out floorHeight, out rowShift)` | Where a skyfaller is drawn now. |
+
+Models and drawing:
+
+| Member | What it does |
+|---|---|
+| `Api.AddModelState(Func<Thing, string> state)` | (version 6) Name a thing's state; a ModelDef with that state in `byState` draws its model then. Call once. |
+| `Api.ModelStandsIn(Thing t)` | (version 6) A 3D model stands in for the thing's body now (its sprite is not drawn). |
+| `Api.MakeBlendMaterial(string name, int queue)` | A see-through, vertex-coloured, unlit material at that render queue. |
+| `Api.DrawLit(Mesh mesh, Matrix4x4 matrix)` | Draws a vertex-coloured mesh lit as IsoRim lights its models. |
+| `Api.IsCard(Pawn pawn)` | (check version 8) The pawn is drawn as an upright 2D card now. |
+| `Api.DrawOnCard(Pawn pawn, Mesh mesh, Matrix4x4 gameMatrix, Material material, CardLight light = LikeCard, MaterialPropertyBlock props = null)` | (check version 8) Draws your mesh on the pawn's card this frame (`gameMatrix` as in vanilla); `CardLight.LikeCard` is darkened at night with the card, `Unlit` glows. False when the pawn is not a card: draw it as in vanilla. |
 
 ## Part 1: figure attachment points
 
@@ -741,6 +804,194 @@ The hold is asked every frame the figure is drawn, so keep it cheap. Set the fac
 (for example a patch on `Pawn_RotationTracker.UpdateRotation`); the hold only stops IsoRim from turning the figure to its
 walking direction. An exception in a hold is logged once and counts as false. ProjectZ uses it for its ladders.
 
+## Part 14: walls, view state, flat drawing, ghosts, arcs, x-ray placing (version 20)
+
+### Wall cut rule: `ModelDef.cutaway`
+
+`<cutaway>` takes `Auto` (default), `Never` or `Always` (enum `IsoRim.CutawayRule`) and decides whether the cut-away
+(pointer hover, rooms, the player's cutHover / cutRooms options) lowers the thing:
+
+- `Auto`: built walls are lowered: full walls, walls from a model (`linked` + `wallFit`) and, from version 20, **low walls**;
+  natural rock follows the player's cutRock option; anything else (sandbags, barricades, fences) never.
+- `Never`: never lowered (a glazed half wall that keeps its window).
+- `Always`: always lowered, also a block IsoRim would not count as a wall (a tall linked fence drawn as a block).
+
+Only things IsoRim draws as walls (blocks, walls from a model) are ever lowered; on other things the field does nothing.
+
+A **low wall** is a wall IsoRim draws as a block (fill 0.9 or more, or linked as walls) standing lower than nine tenths of
+the wall height: a model-less `ModelDef` whose `height` (or `wallTop` height) is under it, or a low fill (VFE Medieval 2's
+low castle wall). From version 20 IsoRim treats it as such everywhere, with no patches needed:
+
+- the cut-away lowers it (Auto; before version 20 low walls were never cut);
+- a taller wall beside it draws its end line only from the low wall's top up (no line down the flush joint);
+- it is not a full-height block for stacked floors: a wall standing on the floor above does not reach down to it (the
+  opening between the low wall and the slab stays open, as a window) and the floor's slab is laid over it.
+
+```xml
+<!-- a half wall (a real wall to the game, fill 1) drawn 0.825 high that keeps its window under the cut-away -->
+<IsoRim.ModelDef>
+  <defName>R3D_MyHalfWall</defName>
+  <thingDef>MyHalfWall</thingDef>
+  <height>0.825</height>
+  <cutaway>Never</cutaway>
+</IsoRim.ModelDef>
+```
+
+Before version 20 `cutaway` is an XML error: add it by patch only on version 20 or later (part M).
+
+### View state
+
+| Member | What it does |
+|---|---|
+| `Api.ViewPerspective` | The view draws with a perspective camera now (its option, or first person); false for the flat camera or the view off. |
+| `Api.FieldOfView` | The perspective camera's vertical field of view, degrees (first person: its own option); 0 when flat or off. |
+| `Api.FirstPersonPawn` | The pawn whose eyes the view looks through (IsoRim's first person), or null. |
+| `Api.ViewVersion` | A counter that goes up whenever how the view looks at the map changes: on or off, perspective or flat, field of view, `ViewYaw` or `ViewPitch` (every frame of a turn), first person on, off or to another pawn. Moving or zooming the camera does not count. |
+
+```csharp
+int seen = -1;
+void Update()   // a post-processing mod
+{
+    if (IsoRim.Api.Version >= 20 && IsoRim.Api.ViewVersion != seen) { seen = IsoRim.Api.ViewVersion; ResetHistory(); }
+}
+```
+
+### Flat drawing scopes and skipping 2D drawing under a model
+
+The flat 2D meshes IsoRim draws for the game (a `Graphic`'s draw, `GenDraw.DrawMeshNowOrLater`, fillable bars, overlays,
+and `Api.DrawMesh`; not your own `UnityEngine.Graphics` calls) can be changed for a stretch of drawing, on the same stack as
+the upright scope (part 6): scopes nest, `End...` closes the innermost one, one left open is closed after the thing whose
+drawing opened it or at the next frame, and with the 3D view off nothing changes.
+
+| Member | What it does |
+|---|---|
+| `Api.BeginSkipFlat()` / `Api.EndSkipFlat()` / `using (Api.SkipFlat())` | Those meshes are not drawn. For an overlay your mod draws over a body a model stands in for (check `Api.ModelStandsIn(thing)` first). |
+| `Api.BeginFlatTransform(Matrix4x4 m)` / `Api.EndFlatTransform()` / `using (Api.FlatTransform(m))` | Those meshes are drawn with `m` (drawn space) on top of their own matrix, in place of an outer upright scope or IsoRim's lift for the thing being drawn: a corpse's sprite laid on a shelf. |
+| `Api.SkipWhenModelled(MethodBase method)` | IsoRim patches `method` (another mod's or the game's) so it is skipped while `ModelStandsIn` is true for its thing: the instance (a `Thing`, or a `ThingComp`'s parent), else its first `Thing` argument. For drawing methods (a comp's `PostDraw`, a `DrawAt`); a skipped method returns its type's default. False (and a warning) if it could not be patched. Call once at startup. |
+
+```csharp
+// once, at startup: a mod's "working" overlay is left out while IsoRim's model stands in
+IsoRim.Api.SkipWhenModelled(AccessTools.Method(typeof(CompMyOverlay), nameof(CompMyOverlay.PostDraw)));
+
+// or decide yourself, inside the draw
+if (IsoRim.Api.ModelStandsIn(parent)) { using (IsoRim.Api.SkipFlat()) DrawBooks(); } else DrawBooks();
+
+// a stored corpse's sprite, laid 0.4 cells up on a shelf
+using (IsoRim.Api.FlatTransform(Matrix4x4.Translate(new Vector3(0f, 0.4f / IsoRim.Api.HeightSquash, 0f))))
+    corpse.DrawNowAt(spot);
+```
+
+### Placing on stacked floors
+
+| Member | What it does |
+|---|---|
+| `Api.DrawnMatrix(Matrix4x4 m)` | Where IsoRim draws a matrix given in the game's world space (drawn space) whose z may be a row of an upper floor: moved onto that floor (and by the layout's offset of the thing being drawn now). Unchanged without floors, on the ground and on a hidden floor. For meshes you draw with `UnityEngine.Graphics` yourself; `Api.DrawMesh`, `Api.DrawModel` and the game's own drawing are placed already. |
+| `Api.DrawnPosition(Vector3 p)` | The same for a true-space point: where it is drawn, in drawn space. |
+| `Api.FloorShown(Vector3 p)` | Whether things at that point (its row decides its floor) are drawn now: false on a hidden floor. |
+
+### Build ghosts
+
+`Api.DrawGhost(ThingDef def, IntVec3 cell, Rot4 rot, Color colour, ThingDef stuff = null, ThingStyleDef style = null)`
+draws, this frame, the see-through 3D ghost IsoRim draws under the pointer while placing: the thing's model (stuff or
+style variant) or its block, tinted from `colour` (the game's ghost colour; blueprint blue or frame sawdust likewise), on
+its stacked floor. It returns false when nothing was drawn (3D view or IsoRim's 3D ghosts option off, or no 3D shape):
+draw the game's own ghost then.
+
+### Projectile arcs
+
+`Api.AddProjectileArc(Func<Projectile, bool?> rule)` / `Api.RemoveProjectileArc(rule)`: how IsoRim draws a shot's
+flight. `true`: on the high arc of indirect fire, as mortar shells; `false`: straight (with the game's own small arc);
+`null`: IsoRim decides (the arc for projectiles that fly overhead). Asked once per flight, when the projectile is first
+drawn; the first rule with an answer wins. Only the drawing changes. A projectile without `graphicData` never takes the
+arc. A stacked-floors addon that declares a shot between floors direct answers `false` for it.
+
+### X-ray while placing
+
+`Api.XrayPlacing(BuildableDef def, bool below, bool above)`: while the player places `def`, the mining x-ray (IsoRim's
+mineXray option) shows the floor below and/or above the viewed one, without the crosshair. Both false removes it. It wins
+over `Api.XrayDesignator`. ProjectZ registers its stairs (the floor above, where the exit lands); IsoRim itself names no
+addon's defs.
+
+### Model query
+
+`Api.HasModel(ThingDef def)`: a model file is bound to the def (by `thingDef`, `graphicPath`, category, name match or
+fallback; not `flat`). It says nothing about the player's options: whether the model stands in for a thing now is
+`Api.ModelStandsIn`.
+
+## Part M: model packs (IsoRim.ModelDef)
+
+A model pack is an XML-only mod (or a mod with a small DLL) that adds `IsoRim.ModelDef`s binding OBJ models to other
+mods' things.
+
+### Binding and placing
+
+| Field | Meaning |
+|---|---|
+| `thingDef` | The ThingDef drawn with this model. A later def for the same thing wins (DefDatabase order). |
+| `graphicPath` (16) | Every thing whose `graphicData.texPath` is this, unless it has its own entry. |
+| `thingCategory`, `match`, `fallback` | Every thing of a category; things whose defName contains one of the words; `SmallPlants`. |
+| `model` / `models` | The OBJ path, relative to the root folder of the mod that holds the ModelDef; several: each thing picks one. |
+| `builtFor` | The footprint (x, z cells) the model was built for; it is stretched to the thing's size (and turned when the long sides differ). |
+| `scale`, `offset`, `rotation`, `rotationByFacing` (6), `ignoreRotation` | Placing in model space: `world = thing centre + R(yaw)·(local ∘ fit + offset)`, yaw = the thing's rotation + `rotation` + `rotationByFacing[facing]`. The model faces north (+z). |
+| `height`, `flat` | Without `model`: the height of IsoRim's automatic shape (a block for walls), or keep the flat sprite. |
+| `surfaceHeight`, `seatHeight`, `beddingTop` | Where things rest, sit and lie on it (-1: the model's top). |
+| `wallFit` | > 0: the model was built for walls this tall; its height follows the wall height drawn now. |
+| `linked` | The first model stands in the cell, the second is added toward each joined neighbour (with `wallFit` on a wall: a wall from a model). |
+| `wallMounted`, `mountHeight` | Fixed to the wall it faces, that far up. |
+| `byAppearance`, `byState` (6), `byStyle`, `style` (6) | Other models by the stuff's look, by an addon's state (`Api.AddModelState`), by Ideology style. |
+| `spriteTint`, `paintedHull`, `outline`, `outlineMinSize`, `groundShadow`, `aged` (15) | Colour and look. |
+| `wallTop` (11), `cutaway` (20), `backHeight` (13), wing fields (14), `doorLeafModel`, `doorLeafGather` (18), `crownTop`, `doorLeafRise` (6) | See their parts. |
+
+The numbers in brackets are the Api version a field needs; fields without one are there from version 2.
+
+### OBJ and materials
+
+- One unit = one cell, +y up, origin at the footprint's centre on the ground; IsoRim flips z on load.
+- Materials come from the `.mtl` (`Kd` colour, `map_Kd` texture). Faces whose material name starts with `stuff` take the
+  thing's stuff colour (or its paint, its sprite with `spriteTint`); `glow*`, `flame*` and `ember*` faces are unlit; `leaf*`
+  faces are a plant's leaves.
+- Keep shapes big and simple; IsoRim draws a dark outline round each piece (`outline`).
+
+### Gating fields by version
+
+A pack that must load on an older IsoRim keeps its ModelDefs in `Defs/` **without** `thingDef` (IsoRim skips an entry that
+names no thing) and adds `thingDef` and the newer fields by patch, only when IsoRim is new enough. The patch class lives in
+the pack's own DLL (a missing patch class is a load error):
+
+```csharp
+public class PatchOperation_IfIsoRimApi : PatchOperation
+{
+    public int minVersion;
+    public PatchOperation apply;
+    protected override bool ApplyWorker(XmlDocument xml)
+    {
+        int have;
+        try { have = IsoRim.Api.Version; } catch (Exception) { have = 0; }
+        return have < minVersion || apply == null || apply.Apply(xml);
+    }
+}
+```
+
+```xml
+<Operation Class="MyPack.PatchOperation_IfIsoRimApi">
+  <minVersion>20</minVersion>
+  <apply Class="PatchOperationAdd">
+    <xpath>/Defs/IsoRim.ModelDef[defName="R3D_MyHalfWall"]</xpath>
+    <value><thingDef>MyHalfWall</thingDef><cutaway>Never</cutaway></value>
+  </apply>
+</Operation>
+```
+
+### Notes for pack authors
+
+- A def a patch adds has no mod of its own (`modContentPack` is null), so IsoRim cannot find its model files: keep whole
+  ModelDefs in `Defs/` and let patches only add fields to them.
+- In C#, a method group of a delegate type that only a newer IsoRim has (`Api.AddProjectileArc(MyRule)`) is cached by the
+  compiler in a static field, and the game's startup scan of static fields then throws on an older IsoRim. Create the
+  delegate explicitly (`new Func<Projectile, bool?>(MyRule)`) inside a method that runs only after the version check, and
+  keep the calls in a `[MethodImpl(MethodImplOptions.NoInlining)]` method.
+- Check `Api.Version` once and remember it; read only Api members, never IsoRim's other public types.
+
 ## Notes
 
 - Figure hooks also run for figures another mod draws through IsoRim's internals; attachments then follow that mod's
@@ -758,3 +1009,8 @@ walking direction. An exception in a hold is logged once and counts as false. Pr
   Version 18: IsoRim's animal flap (harness layouts `layout_flap*`, real pawn and animal jobs through the doorway).
   Version 19 was tested with ProjectZ's test mode `ladderpose` (parts PW and PWR: the drawn yaw of climbers in real time,
   through `Api.Dev.DrawnYaw`).
+  Version 20 was tested with a throwaway harness addon outside this repository that uses each member as a third-party
+  mod would (half walls with `cutaway` Auto and Never, a low block with Always, overlays skipped by `SkipWhenModelled` and
+  `SkipFlat`, a sprite moved by `FlatTransform`, `DrawnMatrix` markers on a ProjectZ floor, `DrawGhost`, arc rules on four
+  projectiles, the view state through turns, perspective and first person, `XrayPlacing` with ProjectZ's `xray` test mode),
+  with the VFE Medieval 2 castle walls rendered before and after.

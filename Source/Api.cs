@@ -39,8 +39,12 @@ namespace IsoRim
         // models bound by texture path; 17: RequestFullWalls (complete-wall requests for camera modes; PR #5 by Ryuu-64),
         // WallCutaway.cs; 18: one-cell doors drawn from their own thingDef ModelDef (model + doorLeafModel) and
         // ModelDef.doorLeafGather (leaves gather toward their jambs), Doors.DrawOne; 19: facing holds, AddFacingHold,
-        // RemoveFacingHold, Animals.cs).
-        public static int Version => 19;
+        // RemoveFacingHold, Animals.cs; 20: ModelDef.cutaway (CutawayRule) with low walls cut like other walls, ViewPerspective,
+        // FieldOfView, FirstPersonPawn, ViewVersion, the flat scopes BeginSkipFlat, EndSkipFlat, SkipFlat, BeginFlatTransform,
+        // EndFlatTransform, FlatTransform (FlatScope), SkipWhenModelled, DrawnMatrix, DrawnPosition, FloorShown, DrawGhost,
+        // AddProjectileArc, RemoveProjectileArc, XrayPlacing, HasModel; Api20.cs). The card overlay (IsCard, DrawOnCard,
+        // CardLight; CardOverlay.cs) came in before version 8 without a number of its own: check >= 8 for it.
+        public static int Version => 20;
 
         // ---- facing holds (Version 19)
 

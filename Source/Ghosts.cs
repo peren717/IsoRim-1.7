@@ -140,14 +140,14 @@ namespace IsoRim
         private static Mesh unitBox;
 
         // def: what is being placed; center: its cell; rot: its rotation. tint: the game's
-        // ghost colour (green where it can go, red where it cannot).
-        public static void DrawPreview(ThingDef def, IntVec3 center, Rot4 rot, Color tint, ThingDef stuff = null, ThingStyleDef style = null)
+        // ghost colour (green where it can go, red where it cannot). False: nothing drawn (no 3D shape, ghosts off).
+        public static bool DrawPreview(ThingDef def, IntVec3 center, Rot4 rot, Color tint, ThingDef stuff = null, ThingStyleDef style = null)
         {
             IsoRimSettings st = IsoRimMod.Settings;
             Material mat = R3DMaterials.Ghost;
             if (!st.ghosts3D || def == null || mat == null)
             {
-                return;
+                return false;
             }
             ThingForm form = Forms.For(def);
             float s = View3D.Squash;
@@ -159,7 +159,7 @@ namespace IsoRim
                 Mesh mesh = MeshFor(m);
                 if (mesh == null)
                 {
-                    return;
+                    return false;
                 }
                 Vector3 at = GenThing.TrueCenter(center, rot, def.size, 0f);
                 float yaw = entry.Yaw(rot);
@@ -182,8 +182,9 @@ namespace IsoRim
                     * Matrix4x4.Rotate(turn)
                     * Matrix4x4.Scale(fit);
                 Draw(mesh, matrix, col);
+                return true;
             }
-            else if (form.form == Form3D.Block)
+            if (form.form == Form3D.Block)
             {
                 if (unitBox == null)
                 {
@@ -192,7 +193,9 @@ namespace IsoRim
                 Matrix4x4 matrix = Matrix4x4.Translate(new Vector3(center.x + 0.5f, 0f, center.z + 0.5f))
                     * Matrix4x4.Scale(new Vector3(0.96f, form.height / s, 0.96f));
                 Draw(unitBox, matrix, col);
+                return true;
             }
+            return false;
         }
 
         private static MaterialPropertyBlock block;

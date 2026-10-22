@@ -44,6 +44,7 @@ namespace IsoRim
             public int targetRow;
             public Vector3 lead;      // from the game's launch point (the shooter's middle) to the muzzle, flat
             public Vector3 rear;      // from the muzzle on to the drawn sprite's middle, flat: its tail at the muzzle (Rear)
+            public int arc = -2;      // (Api 20) the arc rules' answer, asked once a flight (ArcRules): -2 not asked, -1 none, 0 straight, 1 arc
         }
 
         private static readonly ConditionalWeakTable<Projectile, Flight> flights = new ConditionalWeakTable<Projectile, Flight>();
@@ -153,10 +154,29 @@ namespace IsoRim
         // lets it pass over walls; mortar shells, VFE Medieval 2's warbow arrows) and is drawn as one card. Only one with
         // an arc of its own (arcHeightFactor) and its own graphic class (an animated sprite: the fleshmass spitter's acid)
         // keeps the plain flight with its own arc, as DrawLobbed draws a single card. Direct shots (bows, guns) never.
+        // (Api 20) An addon's arc rule (Api.AddProjectileArc) decides first, asked once a flight: true draws it on the arc,
+        // false straight; no answer leaves it to the rule above. Never on the arc without graphicData.
         public static bool Lobbed(Projectile p)
         {
             ProjectileProperties pp = p.def.projectile;
-            return SkyStrikes.Enabled && pp.flyOverhead && p.def.graphicData != null && (pp.arcHeightFactor < 0.5f || !pp.useGraphicClass);
+            if (!SkyStrikes.Enabled || p.def.graphicData == null)
+            {
+                return false;
+            }
+            if (ArcRules.Any)
+            {
+                Flight f = flights.GetValue(p, Begin);
+                if (f.arc == -2)
+                {
+                    bool? said = ArcRules.Ask(p);
+                    f.arc = said == null ? -1 : said.Value ? 1 : 0;
+                }
+                if (f.arc >= 0)
+                {
+                    return f.arc == 1;
+                }
+            }
+            return pp.flyOverhead && (pp.arcHeightFactor < 0.5f || !pp.useGraphicClass);
         }
 
         // A projectile class of another mod that draws itself (overrides DrawAt without the game's own): IsoRim draws it

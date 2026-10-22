@@ -1625,7 +1625,7 @@ namespace IsoRim
             return up.IsValid && up.InBounds(map) && !map.terrainGrid.TerrainAt(up).dontRender;
         }
 
-        // A full-height block (a wall) in a cell, and its height: a block of fill 0.9 or more, or a wall drawn from a model
+        // A full-height block (a wall) in a cell, and its height: a block of fill 0.9 or more (not a low wall), or a wall drawn from a model
         // (WallBoxes.ModelWall, its wall top; its crown is left out under a floor built over it).
         public static bool FullBlock(Map map, IntVec3 c, out float height)
         {
@@ -1655,9 +1655,9 @@ namespace IsoRim
                 height = f.wallTop;
                 return true;
             }
-            if (WallBoxes.Fill(b.def) < 0.9f)
+            if (WallBoxes.Fill(b.def) < 0.9f || WallBoxes.LowWall(b.def))
             {
-                return false;
+                return false;   // (Api 20) a low wall drawn under its fill (a half wall) is not full height either
             }
             height = f.height;
             return true;
