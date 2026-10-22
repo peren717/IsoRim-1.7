@@ -442,23 +442,28 @@ namespace IsoRim
 
         // The live flames on a figure (People.Draw, while look.flames): at, yaw and the head and body placings as the figure
         // is drawn.
-        internal static void DrawFlames(People.Look look, int id, Vector3 at, float yaw, Matrix4x4 headPlace, Matrix4x4 bodyPlace, bool body)
+        internal static void DrawFlames(People.Look look, int id, Vector3 at, float yaw, Matrix4x4 headPlace, Matrix4x4 bodyPlace, bool body,
+            FigureParts hidden = FigureParts.None)
         {
             Matrix4x4 root = Matrix4x4.Translate(at) * Matrix4x4.Rotate(Quaternion.AngleAxis(yaw, Vector3.up));
             Matrix4x4 head = root * headPlace * Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f));
-            Burn(FlamesOf(look.hat), head, id);
-            Burn(FlamesOf(look.mouthWear), head, id + 1);
-            Burn(FlamesOf(look.eyeWear), head, id + 2);
+            bool clothes = (hidden & FigureParts.Clothes) == 0;   // (parts hidden: Api 21)
+            Burn((hidden & FigureParts.Headgear) == 0 ? FlamesOf(look.hat) : null, head, id);
+            Burn((hidden & FigureParts.MouthWear) == 0 ? FlamesOf(look.mouthWear) : null, head, id + 1);
+            Burn((hidden & FigureParts.EyeWear) == 0 ? FlamesOf(look.eyeWear) : null, head, id + 2);
             if (!body)
             {
                 return;
             }
             Matrix4x4 b = root * bodyPlace * Matrix4x4.Scale(look.bodyScale);
-            Burn(FlamesOf(look.neckWear), b, id + 3);
-            Burn(FlamesOf(look.coat), b, id + 4);
-            Burn(FlamesOf(look.mid), b, id + 5);
-            Burn(FlamesOf(look.shirtWear), b, id + 6);
-            for (int i = 0; i < look.gear.Count; i++)
+            if (clothes)
+            {
+                Burn(FlamesOf(look.neckWear), b, id + 3);
+                Burn(FlamesOf(look.coat), b, id + 4);
+                Burn(FlamesOf(look.mid), b, id + 5);
+                Burn(FlamesOf(look.shirtWear), b, id + 6);
+            }
+            for (int i = 0; (hidden & FigureParts.Gear) == 0 && i < look.gear.Count; i++)
             {
                 Flame[] f = FlamesOf(look.gear[i]);
                 if (f != null)
@@ -466,7 +471,7 @@ namespace IsoRim
                     Burn(f, root * bodyPlace * look.GearOnBody(i), id + 7 + i);
                 }
             }
-            Burn(FlamesOf(look.overCoat), b, id + 7 + look.gear.Count);
+            Burn(clothes ? FlamesOf(look.overCoat) : null, b, id + 7 + look.gear.Count);
         }
 
         private static void Burn(Flame[] f, Matrix4x4 place, int id)

@@ -227,11 +227,7 @@ namespace IsoRim
                 {
                     return;
                 }
-                float s = View3D.Squash;
-                Matrix4x4 placed = Matrix4x4.Translate(new Vector3(position.x, position.y / s, position.z))
-                    * Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f))
-                    * Matrix4x4.Rotate(Quaternion.AngleAxis(yaw, Vector3.up))
-                    * headLocal;
+                Matrix4x4 placed = Placed(position, yaw, headLocal);
                 for (int i = 0; i < f.parts.Count; i++)
                 {
                     PawnRenderNode node = f.parts[i];
@@ -245,12 +241,8 @@ namespace IsoRim
                     // Facial Animation's own material (its colours, iris mask and soft edges), on the front of the head,
                     // each layer a little further out than the one under it. It writes no depth, so the head's light
                     // pass (queue 3099) still darkens it at night with the head's own cell.
-                    float grow = 1.008f + 0.003f * i;
-                    Matrix4x4 local = Matrix4x4.Translate(new Vector3(0f, HeadMiddle, 0f))
-                        * Matrix4x4.Scale(new Vector3(grow, grow, grow))
-                        * Matrix4x4.Translate(new Vector3(0f, -HeadMiddle, 0f));
                     bool isMouth = f.controllers[i].GetType().Name == "MouthControllerComp";
-                    Graphics.DrawMesh(isMouth && mouth != null ? mouth : m, Floors.DrawnMatrix(FigureScope.Apply(placed * local)), gm, 0);
+                    Graphics.DrawMesh(isMouth && mouth != null ? mouth : m, Drawn(placed, i), gm, 0);
                 }
             }
             catch (Exception e)
@@ -259,12 +251,38 @@ namespace IsoRim
             }
         }
 
+        // The head's placing as People draws the head (position, yaw, headLocal), drawn space; shared with the face
+        // drawers (Api 21, FaceFrame).
+        internal static Matrix4x4 Placed(Vector3 position, float yaw, Matrix4x4 headLocal)
+        {
+            float s = View3D.Squash;
+            return Matrix4x4.Translate(new Vector3(position.x, position.y / s, position.z))
+                * Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f))
+                * Matrix4x4.Rotate(Quaternion.AngleAxis(yaw, Vector3.up))
+                * headLocal;
+        }
+
+        // The matrix face layer i is drawn with (each a little further out from the head's middle than the one under
+        // it; -1: the head itself), moved as the figure's parts are (FigureScope) and onto its stacked floor.
+        internal static Matrix4x4 Drawn(Matrix4x4 placed, int i)
+        {
+            if (i < 0)
+            {
+                return Floors.DrawnMatrix(FigureScope.Apply(placed));
+            }
+            float grow = 1.008f + 0.003f * i;
+            Matrix4x4 local = Matrix4x4.Translate(new Vector3(0f, HeadMiddle, 0f))
+                * Matrix4x4.Scale(new Vector3(grow, grow, grow))
+                * Matrix4x4.Translate(new Vector3(0f, -HeadMiddle, 0f));
+            return Floors.DrawnMatrix(FigureScope.Apply(placed * local));
+        }
+
         // The face's placing for this person: the global sliders, then the first worn apparel (outermost first) that
         // has its own: the player's override from the settings, else the apparel def's FaceDecalAdjust (XML, fields
         // left out keep the global value).
         private static readonly FaceAdjust adjust = new FaceAdjust();
 
-        private static FaceAdjust AdjustFor(Pawn pawn)
+        internal static FaceAdjust AdjustFor(Pawn pawn)
         {
             IsoRimSettings st = IsoRimMod.Settings;
             adjust.size = st.faceDecalSize;
@@ -315,7 +333,7 @@ namespace IsoRim
         // The front of the head model, its texture coordinates projected straight from the front. The .obj files face
         // -Z, but loading flips Z (right- to left-handed), so a loaded figure faces +Z. zoom enlarges the texture round
         // the mouth (1 for the rest of the face).
-        private static Mesh MeshFor(Model head, float size, float shift, float zoom)
+        internal static Mesh MeshFor(Model head, float size, float shift, float zoom)
         {
             if (meshesOf != head || meshes.Count > 64)
             {

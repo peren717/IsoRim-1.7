@@ -174,13 +174,22 @@ namespace IsoRim
         private static readonly List<Color> mergeTints = new List<Color>();
 
         // The body (head = false) or the head of a figure as ready-made meshes.
-        private static List<DynamicModels.Part> Merged(Look look, bool headPart, bool dead, int turned, Color? mono = null, bool noLegs = false)
+        // The parts hidden by figure hooks or a face drawer (Api 21, FigureParts) that change the head's or the body's
+        // meshes (Legs goes through noLegs, Shield is drawn apart).
+        private const int HeadHides = (int)(FigureParts.Head | FigureParts.Face | FigureParts.Hair | FigureParts.Beard | FigureParts.Headgear
+            | FigureParts.EyeWear | FigureParts.MouthWear);
+        private const int BodyHides = (int)(FigureParts.Body | FigureParts.Clothes | FigureParts.Gear);
+
+        private static List<DynamicModels.Part> Merged(Look look, bool headPart, bool dead, int turned, Color? mono = null, bool noLegs = false,
+            FigureParts hidden = FigureParts.None)
         {
             // The meshes carry no shading (the shader lights them), so one set serves every light and turn.
             // A statue's subject (mono: the statue colour) has its own set, made again when the statue is repainted.
             // Without legs (Api 13, AttachPose.SitNoLegs): the body's faces below the hips left out (key 8).
+            // Parts hidden (Api 21): a set of its own for each mix (key bits 16 and up; nothing hidden: the usual set).
             noLegs &= !headPart && !mono.HasValue;
-            int key = (headPart ? 2 : 0) + (dead ? 1 : 0) + (mono.HasValue ? 4 : 0) + (noLegs ? 8 : 0);
+            int hide = mono.HasValue ? 0 : (int)hidden & (headPart ? HeadHides : BodyHides);
+            int key = (headPart ? 2 : 0) + (dead ? 1 : 0) + (mono.HasValue ? 4 : 0) + (noLegs ? 8 : 0) + (hide << 4);
             List<DynamicModels.Part> parts;
             if (mono.HasValue && look.statueTint != mono.Value)
             {
@@ -205,7 +214,10 @@ namespace IsoRim
             {
                 Matrix4x4 headPlace = Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f));
                 Color skin = dead ? Color.Lerp(look.skin, new Color(0.55f, 0.58f, 0.52f), 0.35f) : look.skin;
-                if (look.headHidden)
+                Model hat = (hide & (int)FigureParts.Headgear) == 0 ? look.hat : null;   // (parts hidden: Api 21)
+                Model eyeWear = (hide & (int)FigureParts.EyeWear) == 0 ? look.eyeWear : null;
+                Model mouthWear = (hide & (int)FigureParts.MouthWear) == 0 ? look.mouthWear : null;
+                if (look.headHidden || (hide & (int)FigureParts.Head) != 0)
                 {
                     // No head at all, as the game draws it: the covering (look.hat) takes its place.
                 }
@@ -220,7 +232,7 @@ namespace IsoRim
                 else
                 {
                     AddPart(head, headPlace, skin);
-                    if (!look.faceHidden && !look.faceDecal)
+                    if (!look.faceHidden && !look.faceDecal && (hide & (int)FigureParts.Face) == 0)
                     {
                         AddPart(look.ownFace ?? (look.femaleEyes && faceFemale != null ? faceFemale : face), headPlace, look.ownFace != null ? look.faceTint : Color.white);
                         AddPart(look.eyeLeft, headPlace, Color.white);
@@ -228,7 +240,11 @@ namespace IsoRim
                         AddPart(look.scars, headPlace, Color.white);
                     }
                 }
-                if (look.ownHair)
+                if ((hide & (int)FigureParts.Hair) != 0)
+                {
+                    // hidden
+                }
+                else if (look.ownHair)
                 {
                     AddPart(look.hair, Matrix4x4.identity, Color.white);
                 }
@@ -240,14 +256,17 @@ namespace IsoRim
                 else
                 {
                     // Hair shown with headgear goes inside it instead of through it (HairTuck); unchanged without.
-                    AddPart(HairTuck.Under(look.hair, look.hat, look.mouthWear, look.eyeWear), headPlace, look.hairColor);
-                    AddPart(HairTuck.Under(look.hairTop, look.hat, look.mouthWear, look.eyeWear), headPlace, look.hairColor);
+                    AddPart(HairTuck.Under(look.hair, hat, mouthWear, eyeWear), headPlace, look.hairColor);
+                    AddPart(HairTuck.Under(look.hairTop, hat, mouthWear, eyeWear), headPlace, look.hairColor);
                 }
-                AddPart(look.headHidden ? look.beard : HairTuck.Under(look.beard, look.hat, look.mouthWear, look.eyeWear), headPlace, look.hairColor);
-                AddPart(look.eyeWear, headPlace, look.eyeColor);
-                AddPart(look.mouthWear, headPlace, look.mouthColor);
-                AddPart(look.hat, headPlace, look.hatColor);
-                if (look.hat != null && look.visor)
+                if ((hide & (int)FigureParts.Beard) == 0)
+                {
+                    AddPart(look.headHidden ? look.beard : HairTuck.Under(look.beard, hat, mouthWear, eyeWear), headPlace, look.hairColor);
+                }
+                AddPart(eyeWear, headPlace, look.eyeColor);
+                AddPart(mouthWear, headPlace, look.mouthColor);
+                AddPart(hat, headPlace, look.hatColor);
+                if (hat != null && look.visor)
                 {
                     AddPart(visor, headPlace, Color.white);
                 }
@@ -255,23 +274,37 @@ namespace IsoRim
             else
             {
                 Matrix4x4 bodyPlace = Matrix4x4.Scale(look.bodyScale);
-                AddPart(look.lower, look.lowerBones ? Matrix4x4.identity : bodyPlace, look.lowerBones ? Color.white : look.lowerColor);
-                AddPart(look.upper, look.upperBones ? Matrix4x4.identity : bodyPlace, look.upperBones ? Color.white : look.upperColor);
-                AddPart(look.shirtWear, bodyPlace, look.shirtWearColor);
-                AddPart(look.mid, bodyPlace, look.midColor);
-                AddPart(look.skinOverlay, bodyPlace, Color.white);
-                AddPart(look.barbs, bodyPlace, Color.white);
-                AddPart(look.plating, bodyPlace, Color.white);
-                AddPart(look.legArmour, bodyPlace, look.legArmourColor);
-                AddPart(look.underCoat, bodyPlace, look.underCoatColor);
-                AddPart(look.coat, bodyPlace, look.coatColor);
-                AddPart(look.overCoat, bodyPlace, look.overCoatColor);
-                AddPart(look.neckWear, bodyPlace, look.neckColor);
-                for (int i = 0; i < look.gear.Count; i++)
+                bool body = (hide & (int)FigureParts.Body) == 0;   // (parts hidden: Api 21)
+                bool clothes = (hide & (int)FigureParts.Clothes) == 0;
+                if (body)
+                {
+                    AddPart(look.lower, look.lowerBones ? Matrix4x4.identity : bodyPlace, look.lowerBones ? Color.white : look.lowerColor);
+                    AddPart(look.upper, look.upperBones ? Matrix4x4.identity : bodyPlace, look.upperBones ? Color.white : look.upperColor);
+                }
+                if (clothes)
+                {
+                    AddPart(look.shirtWear, bodyPlace, look.shirtWearColor);
+                    AddPart(look.mid, bodyPlace, look.midColor);
+                }
+                if (body)
+                {
+                    AddPart(look.skinOverlay, bodyPlace, Color.white);
+                    AddPart(look.barbs, bodyPlace, Color.white);
+                    AddPart(look.plating, bodyPlace, Color.white);
+                }
+                if (clothes)
+                {
+                    AddPart(look.legArmour, bodyPlace, look.legArmourColor);
+                    AddPart(look.underCoat, bodyPlace, look.underCoatColor);
+                    AddPart(look.coat, bodyPlace, look.coatColor);
+                    AddPart(look.overCoat, bodyPlace, look.overCoatColor);
+                    AddPart(look.neckWear, bodyPlace, look.neckColor);
+                }
+                for (int i = 0; (hide & (int)FigureParts.Gear) == 0 && i < look.gear.Count; i++)
                 {
                     AddPart(look.gear[i], look.GearOnBody(i), look.gearTint[i]);
                 }
-                if (look.pads)
+                if (look.pads && clothes)
                 {
                     AddPart(pads, bodyPlace * Matrix4x4.Scale(new Vector3(look.shoulders, 1f, 1.05f)), look.coat != null ? look.coatColor : look.upperColor);
                 }
@@ -552,28 +585,38 @@ namespace IsoRim
             // together once for this look and the way it is facing.
             int turned = Mathf.RoundToInt(Mathf.Repeat(yaw, 360f) / 45f) % 8;
             FigureScope.Root(at, yaw);   // (Api.DrawFigure: placed elsewhere)
+            FigureParts hidden = FigureParts.None;
+            if (FigureHooks.Count > 0)
+            {
+                // Other mods' attachments (Api.AddFigureHook), placed in this head and body; before the figure is drawn, as
+                // they may hide its own parts (Api 21).
+                hidden = FigureHooks.Raise(pawn, look, at, yaw, headPlace, bodyPlace, size, lift, lying, crawling, seated || noLegs, dead, !headOnly);
+            }
+            bool faceShown = !look.faceHidden && !look.headHidden && look.skull == null && look.ownHead == null
+                && (hidden & (FigureParts.Head | FigureParts.Face)) == 0;
+            Matrix4x4 headLocal = headPlace * Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f));
+            if (faceShown && FaceDrawers.Count > 0 && !FigureScope.Measuring
+                && FaceDrawers.Ask(pawn, look, head, at, yaw, headLocal, lying, crawling, dead))
+            {
+                hidden |= FigureParts.Face;   // another mod drew the face (Api 21): IsoRim's own left out
+            }
             if (!headOnly)
             {
-                DynamicModels.DrawParts(Merged(look, false, dead, turned, null, noLegs), at, yaw, bodyPlace);
-                if (look.decals != null)
+                DynamicModels.DrawParts(Merged(look, false, dead, turned, null, noLegs || (hidden & FigureParts.Legs) != 0, hidden), at, yaw, bodyPlace);
+                if (look.decals != null && (hidden & FigureParts.Clothes) == 0)
                 {
                     ApparelDecals.Draw(look, at, yaw, bodyPlace);   // other mods' decals on the body garments (Api 10)
                 }
             }
-            DynamicModels.DrawParts(Merged(look, true, dead, turned), at, yaw, headPlace);
-            if (look.faceDecal && !look.headHidden && look.skull == null)
+            DynamicModels.DrawParts(Merged(look, true, dead, turned, null, false, hidden), at, yaw, headPlace);
+            if (look.faceDecal && !look.headHidden && look.skull == null && (hidden & (FigureParts.Head | FigureParts.Face)) == 0)
             {
-                FaceDecal.Draw(pawn, head, at, yaw, headPlace * Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f)));
+                FaceDecal.Draw(pawn, head, at, yaw, headLocal);
             }
             if (look.flames && !dead)
             {
                 // A bound model's flame* parts (a torch belt): IsoRim's live flame (ApparelModels).
-                ApparelModels.DrawFlames(look, pawn.thingIDNumber, at, yaw, headPlace, bodyPlace, !headOnly);
-            }
-            if (FigureHooks.Count > 0)
-            {
-                // Other mods' attachments (Api.AddFigureHook), placed in this head and body.
-                FigureHooks.Raise(pawn, look, at, yaw, headPlace, bodyPlace, size, lift, lying, crawling, seated || noLegs, dead, !headOnly);
+                ApparelModels.DrawFlames(look, pawn.thingIDNumber, at, yaw, headPlace, bodyPlace, !headOnly, hidden);
             }
             if (workTool != null)
             {
@@ -600,7 +643,7 @@ namespace IsoRim
                 Model upper = look.upper;
                 FigureWeapons.Draw(pawn, neverAim, drawLoc, at, yaw, hands, size, upper.halfDepth * look.bodyScale.z,
                     Mathf.Max(-upper.minX, upper.maxX) * look.bodyScale.x);
-                if (look.shield != null && ApparelModels.ShieldShown(pawn, look))
+                if (look.shield != null && (hidden & FigureParts.Shield) == 0 && ApparelModels.ShieldShown(pawn, look))
                 {
                     // A bound shield, held on the left forearm (ApparelModels; after FigureWeapons, which notes whether the
                     // game drew its worn picture).

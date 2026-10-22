@@ -60,6 +60,7 @@ namespace IsoRim
         internal bool lying, crawling, seated, dead, bodyShown, live;
         private bool skipsRead;
         private ulong skips;
+        internal FigureParts hidden;
 
         internal void Set(Pawn pawn, People.Look look, Matrix4x4 head, Matrix4x4 body, float yaw, float size, float lift,
             bool lying, bool crawling, bool seated, bool dead, bool bodyShown)
@@ -77,6 +78,7 @@ namespace IsoRim
             this.dead = dead;
             this.bodyShown = bodyShown;
             skipsRead = false;
+            hidden = FigureParts.None;
             live = true;
         }
 
@@ -268,6 +270,22 @@ namespace IsoRim
                 FigureScope.DrawMesh(mesh, material, bodyRaw * local);
             }
         }
+
+        /// <summary>
+        /// Leaves out these parts of IsoRim's own figure this frame (Api version 21), for a hook that draws its own
+        /// replacement (a head, hair, a body). Hooks run before the figure is drawn, so this frame already goes without
+        /// them; ask again every frame (several hooks add up). Hiding the head or face also skips the face drawers.
+        /// </summary>
+        public void Hide(FigureParts parts)
+        {
+            if (live)
+            {
+                hidden |= parts;
+            }
+        }
+
+        /// <summary>The parts hidden so far this frame by the hooks (<see cref="Hide"/>).</summary>
+        public FigureParts Hidden => hidden;
     }
 
     // Boxes of a figure's parts, worked out once per model (no allocation after the first).
@@ -407,13 +425,14 @@ namespace IsoRim
             Count = next.Length;
         }
 
-        // position, yaw, headPlace and bodyPlace as People.Draw hands them to DynamicModels.DrawParts.
-        internal static void Raise(Pawn pawn, People.Look look, Vector3 position, float yaw, Matrix4x4 headPlace, Matrix4x4 bodyPlace,
+        // position, yaw, headPlace and bodyPlace as People.Draw hands them to DynamicModels.DrawParts. Raised before the
+        // figure is drawn (Api 21); returns the parts the hooks hid (FigureFrame.Hide).
+        internal static FigureParts Raise(Pawn pawn, People.Look look, Vector3 position, float yaw, Matrix4x4 headPlace, Matrix4x4 bodyPlace,
             float size, float lift, bool lying, bool crawling, bool seated, bool dead, bool bodyShown)
         {
             if (frame.live)
             {
-                return;   // a hook drawing a figure from inside a hook: not raised again
+                return FigureParts.None;   // a hook drawing a figure from inside a hook: not raised again
             }
             float s = View3D.Squash;
             Matrix4x4 placed = Matrix4x4.Translate(new Vector3(position.x, position.y / s, position.z))
@@ -435,6 +454,7 @@ namespace IsoRim
                             93618000 ^ all[i].Method.GetHashCode());
                     }
                 }
+                return frame.hidden;
             }
             finally
             {
