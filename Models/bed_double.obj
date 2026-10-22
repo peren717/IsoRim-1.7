@@ -296,7 +296,7 @@ f 95 104 103
 f 96 89 97
 f 96 97 104
 o bed_double_10
-usemtl bed_sheet
+usemtl sheet_bed
 v -0.9350 0.3000 0.8750
 v 0.9350 0.3000 0.8750
 v 0.9350 0.3750 0.8750

@@ -141,7 +141,7 @@ namespace IsoRim
             }
             Vector3 at = t.TrueCenter();
             Vector3 offset = Quaternion.AngleAxis(yaw, Vector3.up) * def.offset;
-            DynamicModels.Draw(entry.bob, new Vector3(at.x + offset.x, offset.y + Rise(t, def), at.z + offset.z), yaw,
+            DynamicModels.Draw(ObjLoader.SheetTinted(entry.bob, R3DTextures.SheetTint(t)), new Vector3(at.x + offset.x, offset.y + Rise(t, def), at.z + offset.z), yaw,
                 entry.Fit(t.def) * def.scale, R3DTextures.ModelTint(t), R3DTextures.ModelSwatch(t));
         }
 

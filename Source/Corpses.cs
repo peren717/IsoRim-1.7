@@ -92,7 +92,7 @@ namespace IsoRim
                     ModelMaterial o = m.materials[i];
                     mats[i] = new ModelMaterial
                     {
-                        name = o.name, texture = o.texture, tinted = o.tinted, leaf = o.leaf, twig = o.twig, glow = o.glow, fire = o.fire,
+                        name = o.name, texture = o.texture, tinted = o.tinted, sheet = o.sheet, leaf = o.leaf, twig = o.twig, glow = o.glow, fire = o.fire,
                         color = o.glow ? o.color : new Color(o.color.r * f.r, o.color.g * f.g, o.color.b * f.b, o.color.a)
                     };
                 }

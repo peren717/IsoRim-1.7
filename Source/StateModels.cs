@@ -63,6 +63,28 @@ namespace IsoRim
             return twc != null ? twc.GetComp<CompEmptyStateGraphic>() : null;
         }
 
+        // (Api 24) True while the plant shows its young stage: as the game's Plant.Graphic shows immatureGraphic, while it is
+        // not HarvestableNow (growth up to harvestMinGrowth); a plant that yields nothing (a rose) by the same growth.
+        public static bool Immature(Plant p)
+        {
+            if (p.def.plant == null)
+            {
+                return false;
+            }
+            return p.def.plant.Harvestable ? !p.HarvestableNow : p.Growth <= p.def.plant.harvestMinGrowth;
+        }
+
+        // Plants with a young stage in a built mesh, and whether they were built young (harness checks: YoungBaked).
+        private static readonly Dictionary<int, bool> youngBaked = new Dictionary<int, bool>();
+        internal static bool TrackYoung;   // set by the harness probe (plantcheck); off in play, so nothing is kept per plant
+
+        // How the plant was last built: young, mature, or null if never built with a young-stage entry.
+        internal static bool? YoungBaked(Thing t)
+        {
+            bool y;
+            return youngBaked.TryGetValue(t.thingIDNumber, out y) ? y : (bool?)null;
+        }
+
         public static bool IsEmpty(Thing t)
         {
             CompEmptyStateGraphic c = CompOf(t);
@@ -72,6 +94,22 @@ namespace IsoRim
         // Called by ModelBaker.Bake for the real thing (not a ghost): which model to use, and noted.
         public static Model Choose(Thing t, ModelEntry entry, Model normal)
         {
+            // (Api 24) A plant's young stage (ModelDef.immatureModels / immatureHide): while it is not yet harvestable, as the
+            // game's Plant.Graphic picks its immatureGraphic. The variant keeps its place in the list (its ID picks it).
+            if (entry.immature != null && t is Plant plant)
+            {
+                bool young = Immature(plant);
+                if (TrackYoung)
+                {
+                    youngBaked[t.thingIDNumber] = young;   // (harness only)
+                }
+                if (young)
+                {
+                    int i = entry.variants != null ? Array.IndexOf(entry.variants, normal) : -1;
+                    return entry.immature[(i < 0 ? 0 : i) % entry.immature.Length];
+                }
+                return normal;
+            }
             // A map portal with an open model (ancient stockpile hatch): open while it can be entered, as the
             // game's Print picks its open sprite. The game redraws the map mesh when that changes (hacked).
             if (entry.open != null && t is MapPortal portal)

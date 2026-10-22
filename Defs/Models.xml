@@ -1357,6 +1357,9 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.18</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureHide>
+      <li>petal_yellow</li>
+    </immatureHide>
     <scatter>0.50</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
@@ -1384,6 +1387,9 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.18</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureHide>
+      <li>petal_orange</li>
+    </immatureHide>
     <scatter>0.50</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
@@ -1408,6 +1414,9 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.18</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureHide>
+      <li>petal_red</li>
+    </immatureHide>
     <scatter>0.50</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
@@ -1462,6 +1471,9 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.10</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureModels>
+      <li>Models/healroot_young.obj</li>
+    </immatureModels>
     <scatter>0.16</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
@@ -1492,6 +1504,9 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.10</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureModels>
+      <li>Models/potato_young.obj</li>
+    </immatureModels>
     <scatter>0.16</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
@@ -1507,6 +1522,9 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.10</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureHide>
+      <li>fruit_red</li>
+    </immatureHide>
     <scatter>0.16</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
@@ -1519,6 +1537,9 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.10</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureModels>
+      <li>Models/smokeleaf_young.obj</li>
+    </immatureModels>
     <scatter>0.16</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
@@ -1546,6 +1567,10 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.10</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureModels>
+      <li>Models/rice_young_1.obj</li>
+      <li>Models/rice_young_2.obj</li>
+    </immatureModels>
     <scatter>0.16</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
@@ -1576,6 +1601,9 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.10</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureHide>
+      <li>corn</li>
+    </immatureHide>
     <scatter>0.16</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
@@ -1588,6 +1616,9 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.10</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureHide>
+      <li>cotton</li>
+    </immatureHide>
     <scatter>0.16</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
@@ -1600,6 +1631,9 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.10</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureHide>
+      <li>crop_pale</li>
+    </immatureHide>
     <scatter>0.16</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
@@ -1612,6 +1646,9 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.10</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureModels>
+      <li>Models/devilstrand_young.obj</li>
+    </immatureModels>
     <scatter>0.16</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
@@ -1692,7 +1729,7 @@
     <thingDef>Bedroll</thingDef>
     <model>Models/bedroll.obj</model>
     <beddingTop>0.16</beddingTop>
-    <surfaceHeight>0.07</surfaceHeight>
+    <surfaceHeight>0.08</surfaceHeight>
     <rotation>180</rotation>
     <builtFor>(1, 2)</builtFor>
   </IsoRim.ModelDef>
@@ -1702,7 +1739,7 @@
     <thingDef>BedrollDouble</thingDef>
     <model>Models/bedroll_double.obj</model>
     <beddingTop>0.16</beddingTop>
-    <surfaceHeight>0.07</surfaceHeight>
+    <surfaceHeight>0.08</surfaceHeight>
     <rotation>180</rotation>
     <builtFor>(2, 2)</builtFor>
   </IsoRim.ModelDef>
@@ -7990,6 +8027,9 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.10</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureModels>
+      <li>Models/nutrifungus_young.obj</li>
+    </immatureModels>
     <scatter>0.16</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
@@ -8325,6 +8365,11 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.10</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureHide>
+      <li>ody_tinct_cyan</li>
+      <li>ody_tinct_salmon</li>
+      <li>ody_tinct_yellow</li>
+    </immatureHide>
     <scatter>0.16</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
@@ -8340,6 +8385,10 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.10</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureHide>
+      <li>ody_fiber_cob</li>
+      <li>ody_fiber_cob_dk</li>
+    </immatureHide>
     <scatter>0.16</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
