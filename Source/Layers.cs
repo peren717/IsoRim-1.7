@@ -180,6 +180,7 @@ namespace IsoRim
             Material m = new Material(s);
             m.name = "IsoRim_" + path.Substring(path.LastIndexOf('/') + 1);
             m.mainTexture = tex;
+            Aniso.Track(m);
             m.renderQueue = queue;
             return m;
         }

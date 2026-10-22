@@ -87,8 +87,6 @@ namespace IsoRim
             }
         }
 
-        private static Dictionary<int, string> modelNames;
-
         private static string Name(Model m)
         {
             if (m == null)

@@ -17,6 +17,7 @@
   <R3D_Settings_TabColour>Colour and light</R3D_Settings_TabColour>
   <R3D_Settings_TabWorld>Ground, water, roofs</R3D_Settings_TabWorld>
   <R3D_Settings_TabObjects>What is 3D</R3D_Settings_TabObjects>
+  <R3D_Settings_TabGraphics>Graphics</R3D_Settings_TabGraphics>
 
   <!-- Values -->
   <R3D_Settings_Cells>{0} cells</R3D_Settings_Cells>
@@ -56,9 +57,6 @@
   <R3D_Settings_WeatherSizeTip>How big the drops and flakes look on screen. They no longer grow as the camera zooms in.</R3D_Settings_WeatherSizeTip>
   <R3D_Settings_ThingLabels>Item labels</R3D_Settings_ThingLabels>
   <R3D_Settings_ThingLabelsTip>Labels on things lying on the map (stack counts, quality). Names over people are not affected.</R3D_Settings_ThingLabelsTip>
-  <R3D_Settings_AntiAlias>Smooth edges (anti-aliasing)</R3D_Settings_AntiAlias>
-  <R3D_Settings_AntiAliasTip>Softens the stair steps on the edges of walls and models (FXAA). The interface is not touched.</R3D_Settings_AntiAliasTip>
-  <R3D_Settings_AntiAliasStrength>Edge smoothing</R3D_Settings_AntiAliasStrength>
   <R3D_Settings_Perspective>Perspective</R3D_Settings_Perspective>
   <R3D_Settings_PerspectiveTip>A real perspective camera: far things get smaller, as in Rim3D. Off: the flat (orthographic) view.</R3D_Settings_PerspectiveTip>
   <R3D_Settings_Fov>Field of view</R3D_Settings_Fov>
@@ -281,6 +279,19 @@
   <R3D_Settings_ModelStyle>Model style</R3D_Settings_ModelStyle>
   <R3D_Settings_TexturedModels>Textures on models</R3D_Settings_TexturedModels>
   <R3D_Settings_Outlines>Dark outlines on models</R3D_Settings_Outlines>
+
+  <!-- ==================== Graphics ==================== -->
+  <R3D_Settings_Image>Image</R3D_Settings_Image>
+  <R3D_Settings_AntiAlias>Anti-aliasing (FXAA)</R3D_Settings_AntiAlias>
+  <R3D_Settings_AntiAliasTip>Softens jagged edges of walls and models.</R3D_Settings_AntiAliasTip>
+  <R3D_Settings_AntiAliasStrength>Edge smoothing</R3D_Settings_AntiAliasStrength>
+  <R3D_Settings_Sharpen>Sharpen</R3D_Settings_Sharpen>
+  <R3D_Settings_SharpenTip>Crisper image, mostly when zoomed out.</R3D_Settings_SharpenTip>
+  <R3D_Settings_SharpenStrength>Sharpness</R3D_Settings_SharpenStrength>
+  <R3D_Settings_Textures>Textures</R3D_Settings_Textures>
+  <R3D_Settings_Aniso>Anisotropic filtering</R3D_Settings_Aniso>
+  <R3D_Settings_AnisoTip>Sharper ground at shallow angles.</R3D_Settings_AnisoTip>
+  <R3D_Settings_Off>off</R3D_Settings_Off>
 
   <!-- ==================== In-game messages and corner buttons ==================== -->
   <R3D_Msg_ViewOn>IsoRim: 3D view on</R3D_Msg_ViewOn>

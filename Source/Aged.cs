@@ -252,7 +252,7 @@ namespace IsoRim
             tex.name = "IsoRim_Aged";
             tex.wrapMode = TextureWrapMode.Repeat;
             tex.filterMode = FilterMode.Trilinear;
-            tex.anisoLevel = 4;
+            Aniso.Own(tex);   // level 4, or the anisotropic filtering option's if higher
             tex.SetPixels32(px);
             tex.Apply(true);
             return tex;
