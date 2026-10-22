@@ -22,7 +22,8 @@ namespace IsoRim
     //   GEAR_ART       apparel or a weapon with a model entry of IsoRim's own (or a category's) that lies on the ground as
     //                  GroundGear draws it instead (the worn clothes laid down, or its sprite made solid); by design
     // Also lists every apparel def (all mods) with how it lies on the ground with the setting off (GroundGear.LookOf): its
-    // worn clothes laid down, or its sprite (plain: only colours the body; none: no 3D part on a figure).
+    // worn clothes laid down, or its sprite (plain: only colours the body; none: no 3D part on a figure). And every item
+    // (all mods) that can be equipped but is no gear to GroundGear (GroundGear.IsGear: wood, tusks, beer ...).
     // Never runs in normal play (Probe.On needs dev mode, -isorim3d and a probe file).
     public static class ModelSweep
     {
@@ -146,6 +147,7 @@ namespace IsoRim
                 txt.Append(l);
             }
             GroundLooks(txt);
+            NotGear(txt);
             string dir = GenFilePaths.SaveDataFolderPath;
             File.WriteAllText(Path.Combine(dir, "IsoRimModelSweep.tsv"), tsv.ToString());
             File.WriteAllText(Path.Combine(dir, "IsoRimModelSweep.txt"), txt.ToString());
@@ -201,6 +203,27 @@ namespace IsoRim
             }
             txt.Append("\nlaid as worn clothes (laid tris / worn tris):\n");
             foreach (string r in worn)
+            {
+                txt.Append(r);
+            }
+        }
+
+        // Every item def (all mods) that can be equipped (equipmentType Primary) but is no gear to GroundGear, so it keeps its
+        // own look on the ground and in hands: its pack, categories and model entry.
+        private static void NotGear(StringBuilder txt)
+        {
+            List<string> rows = new List<string>();
+            foreach (ThingDef def in DefDatabase<ThingDef>.AllDefs.Where(d => d.category == ThingCategory.Item && !d.IsApparel
+                && d.equipmentType == EquipmentType.Primary && !GroundGear.IsGear(d)).OrderBy(d => d.defName))
+            {
+                ModelEntry entry;
+                bool listed = ModelLibrary.TryGet(def, out entry);
+                rows.Add(def.defName + "\t" + (def.modContentPack != null ? def.modContentPack.PackageId : "") + "\t"
+                    + (def.thingCategories != null ? string.Join(",", def.thingCategories.Select(c => c.defName)) : "") + "\t"
+                    + (listed ? entry.def.defName + (entry.HasModel ? "" : " (no model)") + " " + ModelLibrary.HowBound(def) : "-") + "\n");
+            }
+            txt.Append("\nequippable but no gear (GroundGear.IsGear false; own look kept): ").Append(rows.Count).Append('\n');
+            foreach (string r in rows)
             {
                 txt.Append(r);
             }

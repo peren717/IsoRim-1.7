@@ -39,7 +39,7 @@ namespace IsoRim
                                                 // lowest pitch (30°): the model's faces turned down, the outline's turned up
         private const int MaxShapes = 1024;     // shapes kept before the cache starts over
 
-        // Whether the look of this item lying on the map is GroundGear's: apparel and equippable weapons, unless another mod
+        // Whether the look of this item lying on the map is GroundGear's: apparel and weapons (IsGear), unless another mod
         // binds a model of its own to this very thing.
         public static bool Replaces(ThingDef def, ModelEntry entry)
         {
@@ -60,11 +60,23 @@ namespace IsoRim
 
         private static bool Gear(ThingDef def, ModelEntry entry)
         {
-            if (!def.IsApparel && def.equipmentType != EquipmentType.Primary)
+            if (!IsGear(def))
             {
                 return false;
             }
             return entry == null || !entry.HasModel || ModelLibrary.HowBound(def) != "thingDef" || OwnDef(entry.def);
+        }
+
+        // Real gear: apparel, and weapons as the game files them (equippable and under the Weapons category, the rule of its
+        // weapon filters). Not what can merely be wielded: wood, tusks and horns (ResourceVerbBase), a beer bottle; those keep
+        // their own look, as before GroundGear.
+        public static bool IsGear(ThingDef def)
+        {
+            if (def.IsApparel)
+            {
+                return true;
+            }
+            return def.equipmentType == EquipmentType.Primary && ThingCategoryDefOf.Weapons != null && def.IsWithinCategory(ThingCategoryDefOf.Weapons);
         }
 
         // Apparel drawn as the clothes a figure wears (else: from its sprite).
