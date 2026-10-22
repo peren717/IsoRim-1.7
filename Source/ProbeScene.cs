@@ -40,6 +40,8 @@ namespace IsoRim
     //   fleck=smoke|dust|glow,x,z,<count>
     //   ramp=0|1                     the grade's test band of known colours (Grade.TestPattern)
     //   gradegpu=N                   the grade pass drawn N more times a frame (to time it on the GPU)
+    //   tiltgpu=N                    the two tilt-shift passes drawn N more times a frame (to time them)
+    //   tiltdebug=0|1                tilt-shift tints the view red by blur amount (band checks)
     //   gradebench=N                 builds a grade table N times (alternating looks) and logs the times
     //   spritesweep=1                checks the CPU sprite sampling over every extruded / colour-sampled def
     //                                (SpriteSweep; writes IsoRimSpriteSweep.tsv/.txt, IsoRimSpriteColours.tsv)
@@ -531,6 +533,12 @@ namespace IsoRim
                 case "gradegpu":
                     Grade.ExtraDraws = I(a[0]);
                     break;
+                case "tiltgpu":
+                    TiltShift.ExtraDraws = I(a[0]);
+                    break;
+                case "tiltdebug":
+                    TiltShift.Debug = I(a[0]) != 0;
+                    break;
                 case "gradebench":
                     GradeBench(I(a[0]));
                     break;
@@ -637,6 +645,9 @@ namespace IsoRim
                 }
                 case "settingswin":
                     SettingsWin(a);
+                    break;
+                case "tiltsettings":
+                    TiltSettings(a);
                     break;
                 case "itemsheet":
                     SpriteSweep.PlaceSheet(map, I(a[0]), I(a[1]), I(a[2]), I(a[3]), I(a[4]));

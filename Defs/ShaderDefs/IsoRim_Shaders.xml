@@ -363,6 +363,45 @@
     </shaderProgram>
   </ShaderDef>
 
+  <!-- Tilt-shift (TiltShift.cs): two grabbed full-screen passes (separable blur), before FXAA. -->
+  <ShaderDef>
+    <defName>IsoRimTiltH</defName>
+    <shaderProgram>
+      <vertexShaderFileName>IsoRimScreen.vert.glsl</vertexShaderFileName>
+      <fragmentShaderFileName>IsoRimTiltH.frag.glsl</fragmentShaderFileName>
+      <useTexture>false</useTexture>
+      <flipTextureST>false</flipTextureST>
+      <blendMode>Opaque</blendMode>
+      <depthTest>false</depthTest>
+      <depthWrite>false</depthWrite>
+      <cullMode>None</cullMode>
+      <renderQueue>4880</renderQueue>
+      <sceneGrab>
+        <name>TiltA</name>
+        <queue>4880</queue>
+      </sceneGrab>
+    </shaderProgram>
+  </ShaderDef>
+
+  <ShaderDef>
+    <defName>IsoRimTiltV</defName>
+    <shaderProgram>
+      <vertexShaderFileName>IsoRimScreen.vert.glsl</vertexShaderFileName>
+      <fragmentShaderFileName>IsoRimTiltV.frag.glsl</fragmentShaderFileName>
+      <useTexture>false</useTexture>
+      <flipTextureST>false</flipTextureST>
+      <blendMode>Opaque</blendMode>
+      <depthTest>false</depthTest>
+      <depthWrite>false</depthWrite>
+      <cullMode>None</cullMode>
+      <renderQueue>4881</renderQueue>
+      <sceneGrab>
+        <name>TiltB</name>
+        <queue>4881</queue>
+      </sceneGrab>
+    </shaderProgram>
+  </ShaderDef>
+
   <!-- Anti-aliasing (AntiAlias.cs): FXAA as one full-screen pass over the map view drawn so far
        (scene grab IsoRimAA), just before the colour grade. The interface is drawn later and untouched. -->
   <ShaderDef>

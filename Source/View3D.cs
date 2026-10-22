@@ -378,6 +378,7 @@ namespace IsoRim
             if (Active)
             {
                 ApplyCamera(main);
+                TiltShift.Draw(main);
                 AntiAlias.Draw(main);
                 Grade.Draw(main);
             }

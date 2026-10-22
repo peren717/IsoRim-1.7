@@ -288,6 +288,13 @@
   <R3D_Settings_Sharpen>Sharpen</R3D_Settings_Sharpen>
   <R3D_Settings_SharpenTip>Crisper image, mostly when zoomed out.</R3D_Settings_SharpenTip>
   <R3D_Settings_SharpenStrength>Sharpness</R3D_Settings_SharpenStrength>
+  <R3D_Settings_TiltShift>Tilt-shift</R3D_Settings_TiltShift>
+  <R3D_Settings_TiltShiftTip>Blurs the top and bottom of the view for a miniature look.</R3D_Settings_TiltShiftTip>
+  <R3D_Settings_TiltStrength>Strength</R3D_Settings_TiltStrength>
+  <R3D_Settings_TiltCentre>Focus position</R3D_Settings_TiltCentre>
+  <R3D_Settings_TiltWidth>Focus width</R3D_Settings_TiltWidth>
+  <R3D_Settings_TiltPop>Pop colours</R3D_Settings_TiltPop>
+  <R3D_Settings_TiltPopTip>Slightly richer colours with tilt-shift.</R3D_Settings_TiltPopTip>
   <R3D_Settings_Textures>Textures</R3D_Settings_Textures>
   <R3D_Settings_Aniso>Anisotropic filtering</R3D_Settings_Aniso>
   <R3D_Settings_AnisoTip>Sharper ground at shallow angles.</R3D_Settings_AnisoTip>

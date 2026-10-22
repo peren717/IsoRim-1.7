@@ -12,6 +12,8 @@ namespace IsoRim
     //   settingswin=<tab>,<tag>,tips       as above, with the tooltip of every option an addon has locked drawn under it
     //                                      (the hidden harness window has no pointer to hover it)
     //   settingswin=close                  closes it again
+    //   tiltsettings=<label>[,write]       logs the live tilt-shift settings and whether their keys are in the settings file;
+    //                                      with "write" the settings are written and read back first (round trip, CHECK ok/FAILED)
     // Other options for a shot are set in the same pass first (set=perspective,1).
     public static partial class Probe
     {
@@ -65,6 +67,37 @@ namespace IsoRim
             ScreenCapture.CaptureScreenshot(System.IO.Path.Combine(dir, "settings_" + settingsShot + ".png"));
             Log.Message("[IsoRim probe] settings shot " + settingsShot + " (language " + LanguageDatabase.activeLanguage?.folderName + ")");
             settingsShot = null;
+        }
+
+        private static string TiltText(IsoRimSettings s)
+        {
+            return "tiltShift " + s.tiltShift + " tiltStrength " + s.tiltStrength + " tiltCentre " + s.tiltCentre + " tiltWidth " + s.tiltWidth + " tiltPop " + s.tiltPop;
+        }
+
+        private static void TiltSettings(string[] a)
+        {
+            Mod mod = LoadedModManager.GetMod<IsoRimMod>();
+            IsoRimSettings live = IsoRimMod.Settings;
+            string result = "";
+            if (a.Length > 1 && a[1] == "write")
+            {
+                mod.WriteSettings();
+                IsoRimSettings read = LoadedModManager.ReadModSettings<IsoRimSettings>(mod.Content.FolderName, mod.GetType().Name);
+                bool ok = read.tiltShift == live.tiltShift && read.tiltStrength == live.tiltStrength && read.tiltCentre == live.tiltCentre
+                    && read.tiltWidth == live.tiltWidth && read.tiltPop == live.tiltPop;
+                result = ", read back: " + TiltText(read) + " -> " + (ok ? "CHECK ok" : "CHECK FAILED");
+            }
+            string file = System.IO.Path.Combine(GenFilePaths.ConfigFolderPath, GenText.SanitizeFilename("Mod_" + mod.Content.FolderName + "_" + mod.GetType().Name + ".xml"));
+            string text = System.IO.File.Exists(file) ? System.IO.File.ReadAllText(file) : "";
+            int keys = 0;
+            foreach (string k in new[] { "tiltShift", "tiltStrength", "tiltCentre", "tiltWidth", "tiltPop" })
+            {
+                if (text.Contains("<" + k + ">"))
+                {
+                    keys++;
+                }
+            }
+            Log.Message("[IsoRim probe] tiltsettings " + a[0] + ": live " + TiltText(live) + ", tilt keys in file " + keys + "/5" + result);
         }
     }
 }

@@ -288,6 +288,13 @@
   <R3D_Settings_Sharpen>锐化</R3D_Settings_Sharpen>
   <R3D_Settings_SharpenTip>画面更清晰，镜头拉远时最明显。</R3D_Settings_SharpenTip>
   <R3D_Settings_SharpenStrength>锐化强度</R3D_Settings_SharpenStrength>
+  <R3D_Settings_TiltShift>移轴</R3D_Settings_TiltShift>
+  <R3D_Settings_TiltShiftTip>模糊画面上下边缘，呈现微缩模型效果。</R3D_Settings_TiltShiftTip>
+  <R3D_Settings_TiltStrength>强度</R3D_Settings_TiltStrength>
+  <R3D_Settings_TiltCentre>清晰带位置</R3D_Settings_TiltCentre>
+  <R3D_Settings_TiltWidth>清晰带宽度</R3D_Settings_TiltWidth>
+  <R3D_Settings_TiltPop>鲜艳</R3D_Settings_TiltPop>
+  <R3D_Settings_TiltPopTip>配合移轴让颜色更鲜艳。</R3D_Settings_TiltPopTip>
   <R3D_Settings_Textures>纹理</R3D_Settings_Textures>
   <R3D_Settings_Aniso>各向异性过滤</R3D_Settings_Aniso>
   <R3D_Settings_AnisoTip>斜看时地面更清晰。</R3D_Settings_AnisoTip>

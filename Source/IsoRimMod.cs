@@ -106,6 +106,11 @@ namespace IsoRim
         public bool sharpen = false;     // sharpening in the same pass (contrast-adaptive), also without FXAA
         public float sharpenStrength = 0.5f;
         public int aniso = 16;           // anisotropic filtering of the ground and the mod's textures: 0 (as the textures come), 2, 4, 8, 16 (Aniso)
+        public bool tiltShift = false;   // tilt-shift (TiltShift): top and bottom of the 3D view blurred, a miniature look
+        public float tiltStrength = 0.55f;   // 0..1, 1 = sigma TiltShift.MaxSigma px at 1080 lines
+        public float tiltCentre = 0.5f;      // sharp band centre, fraction of the screen height from the top (0.3..0.7)
+        public float tiltWidth = 0.3f;       // sharp band width, fraction of the screen height (0.1..0.6)
+        public bool tiltPop = false;         // slightly richer colours with tilt-shift (TiltShift.PopAmount)
         public int lookMode = 0;         // free look drag button: 0 = middle button with R3D_LookModifier (Ctrl), 1 = right button with nothing selected
         public bool pawns3D = true;
         public bool hairUnderHats = false;   // hair shown, tucked in, under headgear that covers only the upper head (People.HairUnderHat)
@@ -225,6 +230,11 @@ namespace IsoRim
             Scribe_Values.Look(ref sharpen, "sharpen", false);
             Scribe_Values.Look(ref sharpenStrength, "sharpenStrength", 0.5f);
             Scribe_Values.Look(ref aniso, "aniso", 16);
+            Scribe_Values.Look(ref tiltShift, "tiltShift", false);
+            Scribe_Values.Look(ref tiltStrength, "tiltStrength", 0.55f);
+            Scribe_Values.Look(ref tiltCentre, "tiltCentre", 0.5f);
+            Scribe_Values.Look(ref tiltWidth, "tiltWidth", 0.3f);
+            Scribe_Values.Look(ref tiltPop, "tiltPop", false);
             Scribe_Values.Look(ref fpEyeHeight, "fpEyeHeight", 0.95f);
             Scribe_Values.Look(ref pawns3D, "pawns3D", true);
             Scribe_Values.Look(ref hairUnderHats, "hairUnderHats", false);
@@ -800,6 +810,14 @@ namespace IsoRim
                 if (st.sharpen)
                 {
                     st.sharpenStrength = Slider(l, "R3D_Settings_SharpenStrength".Translate(), st.sharpenStrength, 0f, 1f, (st.sharpenStrength * 100f).ToString("0") + "%");
+                }
+                Check(l, "R3D_Settings_TiltShift".Translate(), ref st.tiltShift, "R3D_Settings_TiltShiftTip".Translate());
+                if (st.tiltShift)
+                {
+                    st.tiltStrength = Slider(l, "R3D_Settings_TiltStrength".Translate(), st.tiltStrength, 0f, 1f, (st.tiltStrength * 100f).ToString("0") + "%");
+                    st.tiltCentre = Slider(l, "R3D_Settings_TiltCentre".Translate(), st.tiltCentre, 0.3f, 0.7f, (st.tiltCentre * 100f).ToString("0") + "%");
+                    st.tiltWidth = Slider(l, "R3D_Settings_TiltWidth".Translate(), st.tiltWidth, 0.1f, 0.6f, (st.tiltWidth * 100f).ToString("0") + "%");
+                    Check(l, "R3D_Settings_TiltPop".Translate(), ref st.tiltPop, "R3D_Settings_TiltPopTip".Translate());
                 }
             }
             if (r != null)
