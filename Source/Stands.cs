@@ -159,11 +159,11 @@ namespace IsoRim
 
             bool flip = aim > 200f && aim < 340f;
             float angle = flip ? aim - 270f - weapon.def.equippedAngleOffset : aim - 90f + weapon.def.equippedAngleOffset;
-            if (IsoRimMod.Settings.itemsFromArt && SpriteSolids.DrawUpright(weapon, centre, angle, flip, size))
+            if (GroundGear.HeldSprite(weapon.def) && SpriteSolids.DrawUpright(weapon, centre, angle, flip, size))
             {
-                return true;
+                return true;   // its sprite made solid, as a 3D colonist holds it
             }
-            return Patches.HeldWeapon3D(weapon, centre, aim);   // no sprite to make solid: its model, level
+            return Patches.HeldWeapon3D(weapon, centre, aim);   // another mod's model for it (or no sprite to make solid), level
         }
 
         // The size of the colonist figure a stand is dressed as: People's size for the stand's body (the kid

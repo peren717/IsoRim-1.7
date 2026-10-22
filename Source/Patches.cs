@@ -2564,11 +2564,12 @@ namespace IsoRim
         }
 
         // A held weapon as a real object (from its art, or its model), lying level at position and pointing aim
-        // degrees clockwise from north. False if it has neither: the caller draws the game's sprite.
+        // degrees clockwise from north. False if it has neither: the caller draws the game's sprite. Its art made solid as a 3D
+        // colonist holds it (GroundGear.HeldSprite), unless another mod binds a model to it (with the game's art off).
         public static bool HeldWeapon3D(Thing weapon, Vector3 position, float aim)
         {
             IsoRimSettings st = IsoRimMod.Settings;
-            if (st.itemsFromArt && SpriteSolids.DrawHeld(weapon, position, aim))
+            if (GroundGear.HeldSprite(weapon.def) && SpriteSolids.DrawHeld(weapon, position, aim))
             {
                 return true;
             }

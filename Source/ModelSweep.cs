@@ -19,6 +19,10 @@ namespace IsoRim
     //   REALTIME       drawn by the game every frame (drawerType RealtimeOnly) and has a model
     //   ITEM_ART       an item with a model entry that is made from its sprite instead (setting
     //                  "Items and weapons use the game's art"); by design, listed for completeness
+    //   GEAR_ART       apparel or a weapon with a model entry of IsoRim's own (or a category's) that lies on the ground as
+    //                  GroundGear draws it instead (the worn clothes laid down, or its sprite made solid); by design
+    // Also lists every apparel def (all mods) with how it lies on the ground with the setting off (GroundGear.LookOf): its
+    // worn clothes laid down, or its sprite (plain: only colours the body; none: no 3D part on a figure).
     // Never runs in normal play (Probe.On needs dev mode, -isorim3d and a probe file).
     public static class ModelSweep
     {
@@ -91,6 +95,10 @@ namespace IsoRim
                     {
                         flags.Add("ITEM_ART");
                     }
+                    else if (item && GroundGear.Replaces(def, entry))
+                    {
+                        flags.Add("GEAR_ART");
+                    }
                     else
                     {
                         flags.Add("NOT_DRAWN");
@@ -120,7 +128,7 @@ namespace IsoRim
                     + "\t" + (how ?? "") + "\t" + file + "\t" + (hasModel ? "1" : "0") + "\t" + drawnBy + "\t" + oldMatch + "\t" + newMatch
                     + "\t" + string.Join(",", flags) + "\n";
                 tsv.Append(line);
-                if (flags.Count > 0 && !(flags.Count == 1 && flags[0] == "ITEM_ART"))
+                if (flags.Count > 0 && !(flags.Count == 1 && (flags[0] == "ITEM_ART" || flags[0] == "GEAR_ART")))
                 {
                     flagged.Add(line);
                 }
@@ -132,16 +140,70 @@ namespace IsoRim
                 .Append(" trees3D=").Append(st.trees3D).Append(" smallPlants3D=").Append(st.smallPlants3D).Append(" doors3D=").Append(st.doors3D).Append('\n');
             txt.Append("forms: ").Append(string.Join(", ", forms.OrderBy(p => p.Key).Select(p => p.Key + " " + p.Value))).Append('\n');
             txt.Append("flags: ").Append(string.Join(", ", counts.OrderBy(p => p.Key).Select(p => p.Key + " " + p.Value))).Append('\n');
-            txt.Append("\nflagged rows (ITEM_ART-only rows left out):\n");
+            txt.Append("\nflagged rows (ITEM_ART- and GEAR_ART-only rows left out):\n");
             foreach (string l in flagged)
             {
                 txt.Append(l);
             }
+            GroundLooks(txt);
             string dir = GenFilePaths.SaveDataFolderPath;
             File.WriteAllText(Path.Combine(dir, "IsoRimModelSweep.tsv"), tsv.ToString());
             File.WriteAllText(Path.Combine(dir, "IsoRimModelSweep.txt"), txt.ToString());
             Log.Message("[IsoRim probe] model sweep: " + rows + " defs; forms " + string.Join(", ", forms.Select(p => p.Key + " " + p.Value))
                 + "; flags " + string.Join(", ", counts.Select(p => p.Key + " " + p.Value)));
+        }
+
+        // Every apparel def (all mods) and how it lies on the ground with the game's art off (GroundGear): counts per look,
+        // the rows that keep their sprite, and the laid triangles against the worn parts' for the rest.
+        private static void GroundLooks(StringBuilder txt)
+        {
+            if (!IsoRimMod.Settings.pawns3D)
+            {
+                txt.Append("\nground apparel: 3D people off, every apparel lies as its sprite\n");
+                return;
+            }
+            List<string> sprite = new List<string>(), worn = new List<string>();
+            Dictionary<string, int> looks = new Dictionary<string, int>();
+            long laidSum = 0, wornSum = 0;
+            foreach (ThingDef def in DefDatabase<ThingDef>.AllDefs.Where(d => d.IsApparel && d.category == ThingCategory.Item).OrderBy(d => d.defName))
+            {
+                string look;
+                int laid, wornTris;
+                try
+                {
+                    look = GroundGear.LookOf(def, out laid, out wornTris);
+                }
+                catch (Exception e)
+                {
+                    look = "ERROR " + e.GetType().Name;
+                    laid = wornTris = 0;
+                }
+                looks[look] = (looks.TryGetValue(look, out int c) ? c : 0) + 1;
+                string row = def.defName + "\t" + def.label + "\t" + (def.modContentPack != null ? def.modContentPack.PackageId : "") + "\t" + look
+                    + (GroundGear.ChildOnly(def) ? "\tchild" : "\t");
+                if (look == "worn")
+                {
+                    worn.Add(row + "\t" + laid + "/" + wornTris + "\n");
+                    laidSum += laid;
+                    wornSum += wornTris;
+                }
+                else
+                {
+                    sprite.Add(row + "\n");
+                }
+            }
+            txt.Append("\nground apparel (game's art off): ").Append(string.Join(", ", looks.OrderBy(p => p.Key).Select(p => p.Key + " " + p.Value)))
+                .Append("; laid triangles (lit + outline) ").Append(laidSum).Append(" against ").Append(wornSum).Append(" worn\n");
+            txt.Append("\nkept as sprite (plain: only colours the body; none: no 3D part):\n");
+            foreach (string r in sprite)
+            {
+                txt.Append(r);
+            }
+            txt.Append("\nlaid as worn clothes (laid tris / worn tris):\n");
+            foreach (string r in worn)
+            {
+                txt.Append(r);
+            }
         }
 
         // The first name entry whose <match> list names this defName (same order as ModelLibrary).
