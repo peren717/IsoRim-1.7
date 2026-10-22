@@ -1544,6 +1544,22 @@
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
 
+  <!-- Toxipotato (Biotech; approved 2026-10-23, make_round2.py): before this it fell to the SmallPlants herb stand-in. -->
+  <IsoRim.ModelDef>
+    <defName>R3D_Plant_Toxipotato</defName>
+    <thingDef>Plant_Toxipotato</thingDef>
+    <model>Models/toxipotato.obj</model>
+    <surfaceHeight>0.00</surfaceHeight>
+    <randomRotation>true</randomRotation>
+    <scaleJitter>0.10</scaleJitter>
+    <growthScale>true</growthScale>
+    <immatureModels>
+      <li>Models/toxipotato_young.obj</li>
+    </immatureModels>
+    <scatter>0.16</scatter>
+    <groundShadow>false</groundShadow>
+  </IsoRim.ModelDef>
+
   <IsoRim.ModelDef>
     <defName>R3D_Plant_Psychoid</defName>
     <thingDef>Plant_Psychoid</thingDef>
@@ -1552,6 +1568,9 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.10</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureModels>
+      <li>Models/psychoid_young.obj</li>
+    </immatureModels>
     <scatter>0.16</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>
@@ -8436,6 +8455,9 @@
     <randomRotation>true</randomRotation>
     <scaleJitter>0.10</scaleJitter>
     <growthScale>true</growthScale>
+    <immatureModels>
+      <li>Models/psychoid_young.obj</li>
+    </immatureModels>
     <scatter>0.16</scatter>
     <groundShadow>false</groundShadow>
   </IsoRim.ModelDef>

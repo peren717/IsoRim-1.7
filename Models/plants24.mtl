@@ -1,0 +1,16 @@
+# plants24.mtl: review round 2 materials (make_round2.py, 2026-10-23), prefix plant24_
+newmtl plant24_psy_leaf
+Kd 0.470 0.700 0.370
+map_Kd IsoRim/Swatches/Leaf
+newmtl plant24_psy_leaf_dk
+Kd 0.330 0.540 0.290
+map_Kd IsoRim/Swatches/Leaf
+newmtl plant24_psy_stem
+Kd 0.440 0.320 0.210
+map_Kd IsoRim/Swatches/Bark
+newmtl plant24_toxi_leaf
+Kd 0.560 0.520 0.440
+map_Kd IsoRim/Swatches/Leaf
+newmtl plant24_toxi_dark
+Kd 0.300 0.270 0.230
+map_Kd IsoRim/Swatches/Leaf
