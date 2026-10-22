@@ -49,8 +49,8 @@
     <defName>R3D_Bed</defName>
     <thingDef>Bed</thingDef>
     <model>Models/bed.obj</model>
-    <beddingTop>0.48</beddingTop>
-    <surfaceHeight>0.40</surfaceHeight>
+    <beddingTop>0.54</beddingTop>
+    <surfaceHeight>0.46</surfaceHeight>
     <rotation>180</rotation>
   </IsoRim.ModelDef>
 
@@ -58,8 +58,8 @@
     <defName>R3D_DoubleBed</defName>
     <thingDef>DoubleBed</thingDef>
     <model>Models/bed_double.obj</model>
-    <beddingTop>0.48</beddingTop>
-    <surfaceHeight>0.40</surfaceHeight>
+    <beddingTop>0.54</beddingTop>
+    <surfaceHeight>0.46</surfaceHeight>
     <rotation>180</rotation>
   </IsoRim.ModelDef>
 
@@ -1692,7 +1692,7 @@
     <thingDef>Bedroll</thingDef>
     <model>Models/bedroll.obj</model>
     <beddingTop>0.16</beddingTop>
-    <surfaceHeight>0.08</surfaceHeight>
+    <surfaceHeight>0.07</surfaceHeight>
     <rotation>180</rotation>
     <builtFor>(1, 2)</builtFor>
   </IsoRim.ModelDef>
@@ -1702,7 +1702,7 @@
     <thingDef>BedrollDouble</thingDef>
     <model>Models/bedroll_double.obj</model>
     <beddingTop>0.16</beddingTop>
-    <surfaceHeight>0.08</surfaceHeight>
+    <surfaceHeight>0.07</surfaceHeight>
     <rotation>180</rotation>
     <builtFor>(2, 2)</builtFor>
   </IsoRim.ModelDef>
