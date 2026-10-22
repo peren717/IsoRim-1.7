@@ -887,17 +887,24 @@ namespace IsoRim
             MapSections.SetChangeFlags(this, "Roofs", "Buildings", "Terrain");   // Terrain: ship roofs follow Substructure
         }
 
+        // With a floor layout (an addon's stacked floors) also while the roofs are hidden: the game regenerates only visible
+        // layers, and the slabs' part of the roof texture (RoofClip.Slab) must follow the floors then too. Nothing is drawn.
         public override bool Visible
         {
-            get { return View3D.Ready && IsoRimMod.Settings.showRoofs; }
+            get { return View3D.Ready && (IsoRimMod.Settings.showRoofs || Api.Floors != null); }
         }
 
         public override void Regenerate()
         {
             ClearSubMeshes(MeshParts.All);
-            if (!View3D.Active || !IsoRimMod.Settings.showRoofs || R3DMaterials.Roof == null)
+            if (!View3D.Active || R3DMaterials.Roof == null)
             {
-                ClearRoofTexture();
+                ClearRoofTexture(false);
+                return;
+            }
+            if (!IsoRimMod.Settings.showRoofs)
+            {
+                ClearRoofTexture(true);   // roofs hidden: only the slabs of floors above still clip
                 return;
             }
             CutTags.Enabled = ShaderCut.On;   // (shader cut-away) every roof cell tagged, opened in the vertex stage
@@ -923,15 +930,16 @@ namespace IsoRim
         // colour in the material (the shader adds the sun on the slope, _LightMode 3); the plain
         // parts are coloured per corner. The game's own DrawLayer draws them.
 
-        // 4 (FloorLid): a stacked floor stands over this cell (Floors): its slab is the roof, drawn with that floor. Nothing
-        // is drawn here: while that floor is hidden the room below shows open, as with the roof display off.
-        private const int FloorLid = 4;
+        // 4 (FloorLid, RoofClip.Slab): a stacked floor stands over this cell (Floors): its slab is the roof, drawn with that
+        // floor. Nothing is drawn here: while that floor is hidden the room below shows open, as with the roof display off.
+        // In the roof texture it clips what stands under it while that floor is drawn solid (RoofClip).
+        private const int FloorLid = RoofClip.Slab;
 
         // 0: no lid here. 1: a built roof (or a wall under the edge of one). 2: a natural rock roof over open ground.
         // 3 (ShipRoofs.Kind): a built roof over a gravship, or a wall standing on Substructure under its edge (Gravship.cs).
         private static int LidKind(Map map, IntVec3 c)
         {
-            if (!c.InBounds(map) || (!CutTags.Enabled && Cutaway.RoofOpen(map, c)))
+            if (!c.InBounds(map))
             {
                 return 0;
             }
@@ -939,7 +947,12 @@ namespace IsoRim
             {
                 // Stacked floors (Floors, design section 5): the floor above is this cell's roof. It is drawn as that
                 // floor's slab only, never as a roof here (a lid here covered the room below while the floor was hidden).
+                // The cut-away never opens it (the slab is drawn whatever the cut-away does to this floor's roofs).
                 return FloorLid;
+            }
+            if (!CutTags.Enabled && Cutaway.RoofOpen(map, c))
+            {
+                return 0;
             }
             RoofDef roof = map.roofGrid.RoofAt(c);
             if (Api.RoofHidden(roof))
@@ -1256,21 +1269,26 @@ namespace IsoRim
                 int kind = KindAt(c.x, c.z);
                 Color32 v = kind == 1 && !flat
                     ? RoofClip.Pack(1, CornerLevel(c.x, c.z), CornerLevel(c.x + 1, c.z), CornerLevel(c.x, c.z + 1), CornerLevel(c.x + 1, c.z + 1))
-                    : RoofClip.Pack(kind, 0, 0, 0, 0);   // 4 (a floor above: its slab) packs as no roof
+                    : RoofClip.Pack(kind, 0, 0, 0, 0);   // 4: a floor above, clipping at its slab's underside (RoofClip.Slab)
                 cells.SetRoof(c, v);
             }
         }
 
-        private void ClearRoofTexture()
+        // No roofs in this block's part of the roof texture; keepSlabs (roofs hidden, the 3D view on): the slabs of floors
+        // above still go in (RoofClip.Slab), so they clip with the roof display off too. Maps without floors: all cleared.
+        private void ClearRoofTexture(bool keepSlabs)
         {
-            IsoCellMap cells = IsoCellMap.Existing(Map);
+            Map map = Map;
+            keepSlabs = keepSlabs && Floors.GroundRowsOf(map) > 0;
+            IsoCellMap cells = keepSlabs ? IsoCellMap.For(map) : IsoCellMap.Existing(map);
             if (cells == null)
             {
                 return;
             }
+            Color32 slab = RoofClip.Pack(RoofClip.Slab, 0, 0, 0, 0);
             foreach (IntVec3 c in section.CellRect)
             {
-                cells.SetRoof(c, default(Color32));
+                cells.SetRoof(c, keepSlabs && Floors.SlabOver(map, c) ? slab : default(Color32));
             }
         }
 

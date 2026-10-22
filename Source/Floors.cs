@@ -296,7 +296,9 @@ namespace IsoRim
         }
 
         // The light lookup of the shaders (IsoRimSolid.frag.glsl, _IsoFloorGlow): (floors above the ground, storey height,
-        // rows from one floor to the next, 0). A face drawn at or above floor k's height reads the glow of the cell k floors
+        // rows from one floor to the next, 1 + the highest floor drawn solid (the slab clip, RoofClip)); also read by the
+        // roof clip (IsoRim.vert.glsl, IsoRimTex.vert.glsl, IsoRimCard*.frag.glsl), so it is handed over with the lighting
+        // fix off too (IsoGlow.BeginFrame). A face drawn at or above floor k's height reads the glow of the cell k floors
         // north of where it is drawn, i.e. the floor's own cell: its own sky, roof and lamps, not the ground's under it. Zero
         // without floors (the ground's cells, as before). Floors must be evenly stacked (the layout's are).
         public static Vector4 GlowFloors()
@@ -310,10 +312,24 @@ namespace IsoRim
                 if (Mathf.Abs(heights[k] - k * heights[1]) > 0.001f || shifts[k] != k * shifts[1])
                 {
                     Log.ErrorOnce("[IsoRim] Floors are not evenly stacked: only floor 1 to " + (k - 1) + " take their own light.", 93611403);
-                    return new Vector4(k - 1, heights[1], shifts[1], 0f);
+                    return new Vector4(k - 1, heights[1], shifts[1], SolidTop(k - 1) + 1f);
                 }
             }
-            return new Vector4(count, heights[1], shifts[1], 0f);
+            return new Vector4(count, heights[1], shifts[1], SolidTop(count) + 1f);
+        }
+
+        // (_IsoFloorGlow.w - 1) The highest floor up to top drawn solid (0: the ground only). A floor's slab clips what
+        // stands under it only while that floor is drawn solid (RoofClip, lid kind 4).
+        private static int SolidTop(int top)
+        {
+            for (int k = top; k >= 1; k--)
+            {
+                if (ShownSolid(k))
+                {
+                    return k;
+                }
+            }
+            return 0;
         }
 
         // ---- THE drawing map (design "M1c-2 coordinates"): a point or matrix in the game's world space, whose z may be a

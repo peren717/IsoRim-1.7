@@ -27,7 +27,8 @@ layout(set = 2, binding = 0) uniform MaterialUniforms
     vec4 _FallDst;
     vec4 _FallRange;
     vec4 _IsoCellMap; // global, no default: (origin x, origin z, W, H) of the cell texture (IsoCellMap)
-    vec4 _IsoRoof;    // global, no default: roof and fog clipping (RoofClip): x = 1 roofs, 2 the fog, 3 both, y = wall height, z = Rise, w = Pitch
+    vec4 _IsoRoof;    // global, no default: roof and fog clipping (RoofClip): x = bits 1 roofs, 2 the fog, 4 slabs, y = wall height, z = Rise, w = Pitch
+    vec4 _IsoFloorGlow; // global, no default: stacked floors (Floors.GlowFloors): z = rows from one floor to the next, y = storey height, w = 1 + the highest floor drawn solid (the slab clip); 0 without floors
     float _IsoFade;   // @default = 0.0   faded floors (FadeFloors): share of pixels kept, 0 = drawn solid
     float _IsoFadeFrom; // @default = 0.0   faded floors: where in the dither pattern (0-1) the kept share starts
 } uMaterial;
@@ -39,12 +40,15 @@ layout(set = 2, binding = 4) uniform sampler2D _IsoRoofTex;   // @default = blac
 
 // ---- Roof clipping (Source\RoofClip.cs). The same in IsoRimSolid.frag.glsl, IsoRimCardPlant.frag.glsl and
 // IsoRimCardSnow.frag.glsl. _IsoRoofTex: one texel per cell, r = the lid drawn over it (1 built roof, 2 rock, 3 ship
-// deck, 0 none), g = corner levels SW | SE << 4, b = NW | NE << 4 (built roofs). _IsoRoof: x = 1 while roofs are drawn,
+// deck, 4 a floor's slab, 0 none), g = corner levels SW | SE << 4, b = NW | NE << 4 (built roofs). _IsoRoof: x & 1 while roofs are drawn,
 // y = wall height, z = Rise, w = Pitch (SectionLayer_IsoRimRoofs). Roof space: x, z in map cells of the owner's floor,
-// y in true cells above that floor.
+// y in true cells above that floor. Kind 4 (RoofClip.Slab): a stacked floor stands over the cell; its slab clips (at
+// its underside) while that floor is drawn solid (SlabShown), with the roofs shown or hidden (_IsoRoof.x & 4); kinds
+// 1-3 clip only while the roofs are drawn (_IsoRoof.x & 1).
 const float RoofOverhang = 0.07;   // SectionLayer_IsoRimRoofs.Overhang: the eave strip outside a built roof
 const float RoofUnder = 0.012;     // the plain copy under a built roof's slates (SectionLayer_IsoRimRoofs.Facet)
 const float RoofMargin = 0.004;
+const float SlabThickness = 0.12;  // Floors.SlabThickness
 
 ivec2 RoofTexel(ivec2 c, out bool inside)
 {
@@ -54,7 +58,17 @@ ivec2 RoofTexel(ivec2 c, out bool inside)
     return ivec2(c.x, size.y - 1 - c.y);   // rows stored north first
 }
 
-// The lid kind over cell c (0 none or open, 1 built, 2 rock, 3 ship), with its texel.
+// Whether the slab over cell c clips: the floor one above c's own (by its row) is drawn solid, i.e. no higher than the
+// highest solid floor (_IsoFloorGlow: z = rows from one floor to the next, w = 1 + that floor; 0 without floors).
+bool SlabShown(ivec2 c)
+{
+    vec4 fg = uMaterial._IsoFloorGlow;
+    if ((int(round(uMaterial._IsoRoof.x)) & 4) == 0 || fg.z < 0.5 || fg.w < 1.5)
+        return false;
+    return floor(float(c.y) / fg.z) + 1.0 < fg.w - 0.5;
+}
+
+// The lid kind over cell c (0 none or open, 1 built, 2 rock, 3 ship, 4 slab), with its texel.
 int RoofLid(ivec2 c, bool openToo, out vec4 r)
 {
     bool inside;
@@ -64,7 +78,9 @@ int RoofLid(ivec2 c, bool openToo, out vec4 r)
         return 0;
     r = texelFetch(_IsoRoofTex, t, 0);
     int kind = int(round(r.r * 255.0));
-    if (kind < 1 || kind > 3)
+    if (kind == 4)
+        return SlabShown(c) ? 4 : 0;   // a floor's slab: never opened by the cut-away
+    if (kind < 1 || kind > 3 || (int(round(uMaterial._IsoRoof.x)) & 1) == 0)
         return 0;
     if (!openToo && (int(round(texelFetch(_IsoCellTex, t, 0).a * 255.0)) & 2) != 0)
         return 0;   // opened by the cut-away: not drawn
@@ -79,6 +95,8 @@ float RoofUnderside(int kind, vec4 r, vec2 f)
         return R.y - 0.005 - RoofMargin;   // rock: a flat lid just under the wall tops
     if (kind == 3)
         return R.y - RoofMargin;           // ship deck (ShipRoofs: wall tops + 0.005)
+    if (kind == 4)
+        return uMaterial._IsoFloorGlow.y - SlabThickness - RoofMargin;   // a floor's slab: storey height less its thickness
     int g = int(round(r.g * 255.0));
     int b = int(round(r.b * 255.0));
     float base = R.y + R.z - RoofUnder - RoofMargin;
@@ -133,8 +151,8 @@ bool RoofHides(vec3 p, vec2 owner)
     int mode = int(round(uMaterial._IsoRoof.x));
     if ((mode & 2) != 0 && FogHides(p, owner))
         return true;
-    if ((mode & 1) == 0)
-        return false;
+    if ((mode & 5) == 0)
+        return false;   // neither roofs nor slabs clip
     vec4 r;
     if (RoofLid(ivec2(floor(owner)), true, r) == 0)
         return false;   // only things that stand under a roof (open or not) are clipped

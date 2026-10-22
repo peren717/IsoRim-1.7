@@ -28,8 +28,13 @@ namespace IsoRim
     // Things outside a roof are never clipped (a tree beside a house keeps the branches that reach over its eaves).
     // Not covered (drawn with the game's own shaders, or no taller than the walls): sprites drawn by the game (pawns
     // without a model, motes, fire, projectiles), held weapons and carried items (SpriteSolids), blueprints and frames
-    // (ghosts), extruded sprites and walls. Stacked floors (Floors): a floor above is a slab, not a roof, and clips
-    // nothing; a roof on an upper floor clips the things on that floor (roof space = that floor's own rows and height).
+    // (ghosts), extruded sprites and walls. Stacked floors (Floors): a roof on an upper floor clips the things on that
+    // floor (roof space = that floor's own rows and height). A floor above a cell is a lid too (kind 4, Slab): what stands
+    // under it is clipped at the slab's underside (storey height less Floors.SlabThickness), but only while that floor is
+    // drawn solid (Floors.ShownSolid; the highest such floor goes to the shaders in _IsoFloorGlow.w, Floors.GlowFloors):
+    // viewing a lower floor, or with that floor peeked (faded), the room below shows whole. Slabs clip with the roof
+    // display on or off (SlabsOn: with the roofs hidden the roofs layer writes only the slabs, SectionLayer_IsoRimRoofs)
+    // and are never opened by the cut-away. Maps without floors never have a kind 4.
     //
     // The fog clips the same way, with the fog lid on or off (the lid off: the game's flat fog, and the clip height is
     // still the cell's top, so over fogged open ground nothing rises above the ground). The game leaves fogged things out of what
@@ -57,13 +62,28 @@ namespace IsoRim
             get { return Enabled && View3D.Active && IsoRimMod.Settings.showRoofs; }
         }
 
+        // The lid kind of a stacked floor's slab over a cell.
+        public const int Slab = 4;
+
+        // While the current map has stacked floors in the 3D view: their slabs clip, the roof display on or off.
+        public static bool SlabsOn
+        {
+            get { return Enabled && View3D.Active && Floors.On; }
+        }
+
+        // The roof texture is kept up to date and handed to the shaders: roofs or slabs clip.
+        public static bool TextureOn
+        {
+            get { return On || SlabsOn; }
+        }
+
         // In the 3D view, with the fog lid on or off: the fog clips what stands in fogged cells at the cell's top.
         public static bool FogOn
         {
             get { return FogEnabled && View3D.Active; }
         }
 
-        // _IsoRoof: x = what clips (0 nothing, 1 roofs, 2 the fog, 3 both), y = wall height (true cells), z = how far a
+        // _IsoRoof: x = what clips (bits: 1 roofs, 2 the fog, 4 slabs; 0 nothing), y = wall height (true cells), z = how far a
         // built roof sits above the walls, w = how much it rises per cell (SectionLayer_IsoRimRoofs.Rise / ClipPitch: 0 for
         // the concrete flat roof, whose slab starts at the wall tops, FlatRoofs; the
         // shaders know the overhang and the margins).
@@ -71,15 +91,16 @@ namespace IsoRim
         {
             get
             {
-                float mode = (On ? 1f : 0f) + (FogOn ? 2f : 0f);
+                float mode = (On ? 1f : 0f) + (FogOn ? 2f : 0f) + (SlabsOn ? 4f : 0f);
                 return mode <= 0f ? Vector4.zero : new Vector4(mode, View3D.WallHeight, SectionLayer_IsoRimRoofs.Rise, SectionLayer_IsoRimRoofs.ClipPitch);
             }
         }
 
-        // The texel for one cell: the lid kind and, for a built roof, the levels of its corners SW, SE, NW, NE.
+        // The texel for one cell: the lid kind (1 built, 2 rock, 3 ship deck, 4 slab) and, for a built roof, the levels of
+        // its corners SW, SE, NW, NE.
         public static Color32 Pack(int kind, int sw, int se, int nw, int ne)
         {
-            if (kind < 1 || kind > 3)
+            if (kind < 1 || kind > Slab)
             {
                 return default(Color32);
             }

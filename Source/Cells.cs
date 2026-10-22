@@ -382,7 +382,7 @@ namespace IsoRim
                 dirtyList.Clear();
             }
             Fade();
-            if (RoofClip.On)
+            if (RoofClip.TextureOn)
             {
                 UploadRoofs();
             }
@@ -432,8 +432,8 @@ namespace IsoRim
         // it to the shaders (the fog lid, the cut-away, the roof and fog clips).
         public static void BeginFrame(Map map)
         {
-            bool roofClip = RoofClip.On;
-            Shader.SetGlobalVector(roofId, RoofClip.Globals);   // x = 0: nothing is clipped (1 roofs, 2 the fog, 3 both)
+            bool roofClip = RoofClip.TextureOn;   // roofs or slabs clip
+            Shader.SetGlobalVector(roofId, RoofClip.Globals);   // x = 0: nothing is clipped (bits: 1 roofs, 2 the fog, 4 slabs)
             if (!View3D.Active || map == null || !(View3D.FogLid || RoofClip.FogOn || ShaderCut.On || roofClip))
             {
                 return;

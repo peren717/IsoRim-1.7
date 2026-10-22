@@ -365,6 +365,9 @@ namespace IsoRim
             if (!IsoRimMod.Settings.lightingFix)
             {
                 BindNeutral();
+                // The floors still go over: the roof and slab clips read them too (the 1 x 1 neutral texture gives the
+                // same light wherever the floors' rows point).
+                Shader.SetGlobalVector(floorsId, Floors.GlowFloors());
                 return;
             }
             IsoGlowMap g = IsoGlowMap.For(map);
