@@ -35,6 +35,55 @@ namespace IsoRim
         private static readonly Dictionary<int, State> states = new Dictionary<int, State>();
         private static readonly List<int> stale = new List<int>();
 
+        // Api 19 (AddFacingHold): while any of these answers true for a pawn, its figure turns to the game's facing even
+        // while it moves (a climber on a ladder faces the ladder), legs still.
+        private static readonly List<Func<Pawn, bool>> facingHolds = new List<Func<Pawn, bool>>();
+
+        internal static void AddFacingHold(Func<Pawn, bool> holds)
+        {
+            if (holds != null && !facingHolds.Contains(holds))
+            {
+                facingHolds.Add(holds);
+            }
+        }
+
+        internal static void RemoveFacingHold(Func<Pawn, bool> holds)
+        {
+            facingHolds.Remove(holds);
+        }
+
+        // Tests (Api.Dev.DrawnYaw): the yaw last drawn and how many frames ago.
+        internal static float? DrawnYaw(Pawn pawn, out int age)
+        {
+            age = -1;
+            State st;
+            if (pawn == null || !states.TryGetValue(pawn.thingIDNumber, out st))
+            {
+                return null;
+            }
+            age = Time.frameCount - st.frame;
+            return st.yaw;
+        }
+
+        private static bool FacingHeld(Pawn pawn)
+        {
+            for (int i = 0; i < facingHolds.Count; i++)
+            {
+                try
+                {
+                    if (facingHolds[i](pawn))
+                    {
+                        return true;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.ErrorOnce("[IsoRim] A facing hold (Api.AddFacingHold) failed: " + e, 93621901);
+                }
+            }
+            return false;
+        }
+
         // Draws the animal at drawLoc. Returns false if it has no model, in which case the
         // game's sprite must be drawn as usual.
         public static bool Draw(Pawn pawn, Vector3 drawLoc)
@@ -559,7 +608,13 @@ namespace IsoRim
             float dist = move.magnitude;
             float dt = Time.deltaTime;
 
-            if (!lying && fresh && dist > 0.0004f && dist < 1.5f)
+            if (!lying && facingHolds.Count > 0 && FacingHeld(pawn))
+            {
+                // Held to the game's facing while it moves (Api.AddFacingHold): it turns there smoothly, legs together.
+                st.heading = facing;
+                st.gait = Mathf.MoveTowards(st.gait, 0f, dt * 5f);
+            }
+            else if (!lying && fresh && dist > 0.0004f && dist < 1.5f)
             {
                 // Walking: face the way it is going, and swing the legs by the ground covered.
                 st.heading = Mathf.Atan2(move.x, move.z) * Mathf.Rad2Deg;

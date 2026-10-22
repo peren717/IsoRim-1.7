@@ -135,6 +135,7 @@ namespace IsoRim
     //                                where they started before (Projectiles.TipMarks), for measuring against the drawn barrel
     //   muzzle=0|1                   shots leave from the muzzle (Projectiles.Muzzle, default 1): the flash standing there and the
     //                                bullet drawn from there; 0: the game's flat flash and the bullet from the middle (before/after)
+    //   muzzlepie=0|1                a 3D figure aiming a gun shows its aim pie at the muzzle (AimPies, default 1); 0: the game's pie on the ground
     //   clearflashes=1               the shot flashes in the air removed, no tick (the same frame without them, for diffs)
     //   interact=x,z                 the nearest free colonist is ordered to activate the building (as its float menu option)
     //   opencrate=x,z                the crate in the cell (Building_Crate) opened by the nearest free colonist not already opening one:
@@ -1716,6 +1717,9 @@ namespace IsoRim
                     break;
                 case "muzzle":
                     Projectiles.FromMuzzle = a[0] == "1";
+                    break;
+                case "muzzlepie":
+                    AimPies.AtMuzzle = a[0] == "1";
                     break;
                 case "clearflashes":
                 {

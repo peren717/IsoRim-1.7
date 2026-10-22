@@ -21,10 +21,11 @@ if (IsoRim.Api.Version >= 15) { /* ModelDef.aged (the aged look) */ }
 if (IsoRim.Api.Version >= 16) { /* ModelDef.graphicPath: models bound by texture path */ }
 if (IsoRim.Api.Version >= 17) { /* complete-wall requests for camera modes: RequestFullWalls */ }
 if (IsoRim.Api.Version >= 18) { /* one-cell doors with their own thingDef models; ModelDef.doorLeafGather */ }
+if (IsoRim.Api.Version >= 19) { /* facing holds: AddFacingHold, RemoveFacingHold */ }
 ```
 
 Members are never removed or changed in meaning within a version. Version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13.
 
 ## Spaces
 
@@ -721,6 +722,25 @@ Example, IsoRim's own animal flap (Defs/Models.xml):
 Before version 18 a `thingDef` entry on a one-cell door is not drawn, and `doorLeafGather` is an XML error. A pack that
 supports older versions adds the field by patch only on version 18 or later (see part 5).
 
+## Part 13: facing holds (version 19)
+
+A moving figure (a person, an animal or a mech drawn as a model) normally turns to face the way it goes. A facing hold
+makes it face the game's facing (`Thing.Rotation`) instead, also while it moves: a climber on a ladder faces the
+ladder, going up and going down.
+
+```csharp
+// once, at startup (IsoRim.Api.Version >= 19)
+IsoRim.Api.AddFacingHold(pawn => MyLadders.IsClimbing(pawn));
+```
+
+- `Api.AddFacingHold(Func<Pawn, bool> holds)`: while any added hold answers true for a pawn, its figure turns smoothly to
+  the game's facing and keeps its legs together. Adding the same delegate twice adds it once.
+- `Api.RemoveFacingHold(Func<Pawn, bool> holds)`: removes it again.
+
+The hold is asked every frame the figure is drawn, so keep it cheap. Set the facing you want with the game's own means
+(for example a patch on `Pawn_RotationTracker.UpdateRotation`); the hold only stops IsoRim from turning the figure to its
+walking direction. An exception in a hold is logged once and counts as false. ProjectZ uses it for its ladders.
+
 ## Notes
 
 - Figure hooks also run for figures another mod draws through IsoRim's internals; attachments then follow that mod's
@@ -736,3 +756,5 @@ supports older versions adds the field by patch only on version 18 or later (see
   Version 16: IsoRim's raw meat (harness layout `layout_meat`; the model sweep's "how" column shows `graphicPath:`).
   Version 17: `Source/ProbeApi17.cs` (keys `fwfp`, `fwreq`, `fwrel`, `fwcheck`, `fwapi`, `fwmapseq`, `fwgame`; harness layouts `layout_fw`, `layout_fwpz`).
   Version 18: IsoRim's animal flap (harness layouts `layout_flap*`, real pawn and animal jobs through the doorway).
+  Version 19 was tested with ProjectZ's test mode `ladderpose` (parts PW and PWR: the drawn yaw of climbers in real time,
+  through `Api.Dev.DrawnYaw`).
