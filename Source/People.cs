@@ -1754,6 +1754,46 @@ namespace IsoRim
             return hatKind;
         }
 
+        // What clothes dressed onto a look (Dress) put on a figure, without the figure itself: the body parts only where some
+        // clothing covers them, then everything worn over them (body: figure space, no body-type scale), and what goes on the
+        // head (head: eye cover, mask, hat and its visor; figure space). One list for the outfit stands (Stands) and for apparel
+        // lying on the ground (GroundGear), so both show exactly what a colonist wears.
+        internal static void ClothesParts(Look look, string build, Action<Model, Matrix4x4, Color> body, Action<Model, Matrix4x4, Color> head)
+        {
+            if (look.lowerWorn)
+            {
+                body(look.lower, Matrix4x4.identity, look.lowerColor);
+            }
+            if (look.upperWorn)
+            {
+                body(look.upper, Matrix4x4.identity, look.upperColor);
+            }
+            body(look.shirtWear, Matrix4x4.identity, look.shirtWearColor);   // a shirt's collar, jabot or panels (MidShapes)
+            body(look.mid, Matrix4x4.identity, look.midColor);               // a corset, vest or sash over the shirt
+            body(look.legArmour, Matrix4x4.identity, look.legArmourColor);
+            body(look.underCoat, Matrix4x4.identity, look.underCoatColor);   // a flak vest under an open coat (its front plate) or a strap
+            body(look.coat, Matrix4x4.identity, look.coatColor);
+            body(look.overCoat, Matrix4x4.identity, look.overCoatColor);     // a tabard or mantle over the coat (AboveShell)
+            body(look.neckWear, Matrix4x4.identity, look.neckColor);
+            for (int i = 0; i < look.gear.Count; i++)
+            {
+                // No body-type scale: the gear as on a colonist of that build before it.
+                Matrix4x4 place = look.gearRigid[i] ? Matrix4x4.Translate((Vector3)look.gearPlace[i].GetColumn(3) - look.gearAnchor[i]) : look.gearPlace[i];
+                body(look.gear[i], place, look.gearTint[i]);
+            }
+            if (look.pads)
+            {
+                body(Part("person_pads"), Matrix4x4.Scale(new Vector3(Shoulders(build), 1f, 1.05f)), look.coat != null ? look.coatColor : look.upperColor);
+            }
+            head(look.eyeWear, Matrix4x4.identity, look.eyeColor);
+            head(look.mouthWear, Matrix4x4.identity, look.mouthColor);
+            head(look.hat, Matrix4x4.identity, look.hatColor);
+            if (look.hat != null && look.visor)
+            {
+                head(Part("person_visor"), Matrix4x4.identity, Color.white);
+            }
+        }
+
         // Outer clothing with its own worn shape (Models/person_<build>_<file>.obj, materials in coats.mtl), and how
         // a flak vest worn under it shows, by vanilla's sprites: in the open front of the duster, lab coat, jacket,
         // royal robe, psyfocus robe and cape (its front plate); whole around the straps (the strap's _overvest shape

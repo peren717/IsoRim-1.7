@@ -249,31 +249,8 @@ namespace IsoRim
 
             // The body: only what some clothing covers (the stand's own body shows elsewhere).
             Begin();
-            if (look.lowerWorn)
-            {
-                Add(look.lower, Matrix4x4.identity, look.lowerColor);
-            }
-            if (look.upperWorn)
-            {
-                Add(look.upper, Matrix4x4.identity, look.upperColor);
-            }
-            Add(look.shirtWear, Matrix4x4.identity, look.shirtWearColor);   // a shirt's collar, jabot or panels (People.MidShapes)
-            Add(look.mid, Matrix4x4.identity, look.midColor);               // a corset, vest or sash over the shirt
-            Add(look.legArmour, Matrix4x4.identity, look.legArmourColor);
-            Add(look.underCoat, Matrix4x4.identity, look.underCoatColor);   // a flak vest under an open coat (its front plate) or a strap
-            Add(look.coat, Matrix4x4.identity, look.coatColor);
-            Add(look.overCoat, Matrix4x4.identity, look.overCoatColor);   // a tabard or mantle over the coat (People.AboveShell)
-            Add(look.neckWear, Matrix4x4.identity, look.neckColor);
-            for (int i = 0; i < look.gear.Count; i++)
-            {
-                // The stand's body has no body-type scale: the gear as on a colonist of that build before it.
-                Matrix4x4 place = look.gearRigid[i] ? Matrix4x4.Translate((Vector3)look.gearPlace[i].GetColumn(3) - look.gearAnchor[i]) : look.gearPlace[i];
-                Add(look.gear[i], place, look.gearTint[i]);
-            }
-            if (look.pads)
-            {
-                Add(People.Part("person_pads"), Matrix4x4.Scale(new Vector3(People.Shoulders(build), 1f, 1.05f)), look.coat != null ? look.coatColor : look.upperColor);
-            }
+            List<(Model, Matrix4x4, Color)> headParts = new List<(Model, Matrix4x4, Color)>();
+            People.ClothesParts(look, build, Add, (m, l, c) => { if (m != null) headParts.Add((m, l, c)); });
             // How far the dressed body reaches (the shirt part stands for the stand's own body), for the weapon.
             outfit.halfDepth = look.upper != null ? look.upper.halfDepth : 0.15f;
             outfit.halfWidth = look.upper != null ? Mathf.Max(-look.upper.minX, look.upper.maxX) : 0.25f;
@@ -290,12 +267,9 @@ namespace IsoRim
             Begin();
             if (!skipHead)
             {
-                Add(look.eyeWear, Matrix4x4.identity, look.eyeColor);
-                Add(look.mouthWear, Matrix4x4.identity, look.mouthColor);
-                Add(look.hat, Matrix4x4.identity, look.hatColor);
-                if (look.hat != null && look.visor)
+                foreach ((Model m, Matrix4x4 l, Color c) in headParts)
                 {
-                    Add(People.Part("person_visor"), Matrix4x4.identity, Color.white);
+                    Add(m, l, c);
                 }
             }
             else if (hides != null)

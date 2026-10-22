@@ -1576,6 +1576,16 @@ namespace IsoRim
                         PrintContext.height = resting + form.height;
                         break;
 
+                    case Form3D.Worn:
+                        if (GroundGear.Bake(__instance, __0, resting))
+                        {
+                            return false;   // the clothes a colonist wears, laid down, replace the sprite
+                        }
+                        PrintContext.mode = PrintMode.Extrude;   // none to show: the sprite made solid, as with the game's art
+                        PrintContext.baseHeight = resting;
+                        PrintContext.height = resting + Forms.ItemThickness(__0.def);
+                        break;
+
                     default:
                         if (resting > 0f)
                         {

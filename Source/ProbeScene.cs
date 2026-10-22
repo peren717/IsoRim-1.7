@@ -304,6 +304,53 @@ namespace IsoRim
                 case "burn3d":
                     Effects.BurningOn = a[0] == "1";   // burn3d=0: burning fires as the flat sprite (before)
                     break;
+                case "groundflat":
+                    GroundGear.Flatten = F(a[0]);   // groundflat=x: a laid garment's depth share (GroundGear; the map is rebuilt: View3D signature)
+                    break;
+                case "groundbare":
+                    GroundGear.BareAsSprite = a[0] == "1";   // groundbare=1: plain shirts and trousers on the ground as their sprite (GroundGear A/B)
+                    break;
+                case "groundcull":
+                    GroundGear.CullDown = a[0] == "1";   // groundcull=0: ground apparel keeps the faces turned to the ground (GroundGear A/B)
+                    break;
+                case "groundfill":
+                {
+                    // groundfill=x0,z0,w,h,Def;Def;...: one of those things (default stuff) on every cell of the rectangle, the defs in turn (GroundGear perf)
+                    string[] fillDefs = a[4].Split(';');
+                    int fk = 0;
+                    foreach (IntVec3 fc in CellRect.FromLimits(I(a[0]), I(a[1]), I(a[0]) + I(a[2]) - 1, I(a[1]) + I(a[3]) - 1))
+                    {
+                        ThingDef fd = DefDatabase<ThingDef>.GetNamed(fillDefs[fk++ % fillDefs.Length]);
+                        GenSpawn.Spawn(ThingMaker.MakeThing(fd, fd.MadeFromStuff ? GenStuff.DefaultStuffFor(fd) : null), fc, map);
+                    }
+                    Log.Message("[IsoRim probe] groundfill " + fk + " things");
+                    break;
+                }
+                case "sectiontime":
+                {
+                    // sectiontime=x,z,reps[,label]: the map block holding cell x,z rebuilt reps times (all layers), the mean time logged (GroundGear perf)
+                    Section sect = map.mapDrawer.SectionAt(new IntVec3(I(a[0]), 0, I(a[1])));
+                    int reps = Mathf.Max(1, I(a[2]));
+                    sect.RegenerateAllLayers();
+                    GroundGear.Bakes = 0;
+                    GroundGear.DressTicks = GroundGear.WriteTicks = GroundGear.Verts = 0;
+                    System.Diagnostics.Stopwatch sw = System.Diagnostics.Stopwatch.StartNew();
+                    for (int k = 0; k < reps; k++)
+                    {
+                        sect.RegenerateAllLayers();
+                    }
+                    sw.Stop();
+                    int items = 0;
+                    foreach (IntVec3 sc in sect.CellRect)
+                    {
+                        items += sc.GetItemCount(map);
+                    }
+                    Log.Message("[IsoRim probe] sectiontime " + (a.Length > 3 ? a[3] : "") + " block " + sect.botLeft + ": " + items + " items, "
+                        + (sw.Elapsed.TotalMilliseconds / reps).ToString("0.00") + " ms per rebuild (all layers, mean of " + reps + ")"
+                        + "; GroundGear per rebuild: " + (GroundGear.Bakes / reps) + " items, dress " + (GroundGear.DressTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency / reps).ToString("0.00")
+                        + " ms, write " + (GroundGear.WriteTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency / reps).ToString("0.00") + " ms, model verts " + (GroundGear.Verts / reps));
+                    break;
+                }
                 case "burn":
                 {
                     // burn=x,z,size: the pawns in that cell set on fire, as the game attaches it (only pawns carry a fire).
