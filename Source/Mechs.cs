@@ -19,7 +19,7 @@ namespace IsoRim
     // a hauled thing is held in front of it, it rises with a jump, and downed or dead it lies on its
     // side. While it works, the parts made for the work (brushes, cutter discs, sensor heads, digging
     // arms) move. A mech the game draws with its other look (the Ancient sprites of mechs over 100
-    // years old, which includes almost every raider) is drawn worn: darker, rusty, marks kept.
+    // years old, which includes almost every raider) is drawn worn: a little darker and duller, faint rust, marks kept.
     public static class Mechs
     {
         private enum Motion { Fixed, Wheel, Leg, Spin, Pitch, Arm, Upper, Head, Weapon, Turret, Open }
@@ -50,7 +50,7 @@ namespace IsoRim
             public Model[] bodyWornMarked;
         }
 
-        // Ancient mechs (the game's other sprite of the kind, over 100 years old) are drawn worn: darker, with rust
+        // Ancient mechs (the game's other sprite of the kind, over 100 years old) are drawn worn: a little darker, with faint rust
         // patches, in one of a few patterns picked by the mech's id (so each keeps its own).
         private const int WornVariants = 3;
 
@@ -94,33 +94,6 @@ namespace IsoRim
 
         // Rigs by binding and look (index 0: the binding's own model; i + 1: looks[i]).
         private static readonly Dictionary<ModelDef, Rig[]> rigs = new Dictionary<ModelDef, Rig[]>();
-
-        // MECHRUST TEST (harness probe "mechwear=n"): switches the worn look (ObjLoader.WearLooks) and drops the worn
-        // copies already made, so the next frame makes them again with the new look.
-        internal static int ForcedWornVariant = -1;   // MECHRUST TEST: every worn mech uses this rust pattern (-1: by thing id)
-
-        internal static void SetWearLook(int look)
-        {
-            ObjLoader.WearLook = look;
-            foreach (Rig[] all in rigs.Values)
-            {
-                for (int i = 0; all != null && i < all.Length; i++)
-                {
-                    Rig rig = all[i];
-                    if (rig == null)
-                    {
-                        continue;
-                    }
-                    rig.bodyWorn = null;
-                    rig.bodyWornMarked = null;
-                    foreach (Piece p in rig.pieces)
-                    {
-                        p.worn = null;
-                        p.wornMarked = null;
-                    }
-                }
-            }
-        }
 
         // An entity counts as shut while it has opened less than this (CompNociosphere.segScale).
         private const float OpenShown = 0.1f;
@@ -284,7 +257,7 @@ namespace IsoRim
                 marked = faction != null;
             }
 
-            int worn = def.mech && OtherLook(pawn) ? (ForcedWornVariant >= 0 ? ForcedWornVariant % WornVariants : (pawn.thingIDNumber & 0x7FFFFFFF) % WornVariants) : -1;
+            int worn = def.mech && OtherLook(pawn) ? (pawn.thingIDNumber & 0x7FFFFFFF) % WornVariants : -1;
             DynamicModels.DrawLocal(Corpses.Body(pawn, Pick(rig, def, null, worn, marked)), at, yaw, whole, mark, null);
 
             // Each moving piece, placed in the body's space (after its parent's movement).
