@@ -1,3 +1,4 @@
+using System.Linq;
 using HarmonyLib;
 using RimWorld;
 using Verse;
@@ -6,6 +7,7 @@ namespace IsoRim
 {
     // Harness keys for the placement ghost (ghost3, 2026-10-23):
     //   designrot=0..3     the build designator in hand turned to that rotation (as the player's Q / E keys: Designator_Place.placingRot)
+    //   undraft=x,z        the colonist in the cell undrafted (takes work again)
     //   ghostspritecheck=1 logs how many game ghost sprites IsoRim left out this session because its 3D ghost stands in
     public static partial class Probe
     {
@@ -24,6 +26,16 @@ namespace IsoRim
                         return true;
                     }
                     placingRot(d) = new Rot4(I(a[0]));
+                    return true;
+                }
+                case "undraft":
+                {
+                    // undraft=x,z: the colonist in the cell undrafted, so they take work (here: building the blueprints)
+                    Pawn up = map.thingGrid.ThingsListAt(new IntVec3(I(a[0]), 0, I(a[1]))).OfType<Pawn>().FirstOrDefault();
+                    if (up?.drafter != null)
+                    {
+                        up.drafter.Drafted = false;
+                    }
                     return true;
                 }
                 case "ghostspritecheck":

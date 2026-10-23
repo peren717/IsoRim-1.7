@@ -233,6 +233,9 @@ namespace IsoRim
                 ghostThing = null;
             }
             Patch("3D placement preview", ghostThing, postfix: nameof(DrawGhostThing_Postfix));
+            // Where the 3D preview stands in, the game's own flat ghost sprite is left out (only that call; the comps' and
+            // place workers' ghosts stay): Ghosts.DrawGameGhostSprite.
+            Patch("3D placement preview without the flat sprite", ghostThing, transpiler: nameof(GhostSprite_Transpiler));
 
             // The pointer in 3D: selection brackets on the ground, and clicking anywhere on a tall
             // thing picks it. (The selection drag box is the game's own: a plain rectangle on screen.)
@@ -3899,6 +3902,29 @@ namespace IsoRim
             if (__state)
             {
                 Emitters.End();
+            }
+        }
+
+        // GhostDrawer.DrawGhostThing: its graphic.DrawFromDef(loc, rot, def, extraRotation) call goes through
+        // Ghosts.DrawGameGhostSprite, which leaves the flat sprite out where IsoRim's 3D preview stands in.
+        public static IEnumerable<CodeInstruction> GhostSprite_Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            MethodInfo from = AccessTools.Method(typeof(Graphic), nameof(Graphic.DrawFromDef), new[] { typeof(Vector3), typeof(Rot4), typeof(ThingDef), typeof(float) });
+            MethodInfo to = AccessTools.Method(typeof(Ghosts), nameof(Ghosts.DrawGameGhostSprite));
+            int swapped = 0;
+            foreach (CodeInstruction ci in instructions)
+            {
+                if ((ci.opcode == OpCodes.Callvirt || ci.opcode == OpCodes.Call) && from != null && to != null && ci.operand as MethodInfo == from)
+                {
+                    ci.opcode = OpCodes.Call;
+                    ci.operand = to;
+                    swapped++;
+                }
+                yield return ci;
+            }
+            if (swapped != 1)
+            {
+                ModLog.Warn("[IsoRim] 3D placement preview: the game's ghost sprite call was found " + swapped + " times (expected 1)");
             }
         }
 
