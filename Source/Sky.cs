@@ -99,6 +99,14 @@ namespace IsoRim
             }
         }
 
+        // False for a map the game makes underground (MapGeneratorDef.isUnderground: the undercave and the metal hell of
+        // Anomaly, Odyssey's ancient stockpile and insect lair): no sky, sun, moon, night sky or distance fog there, as in
+        // the game, which draws nothing past the cave walls. The one check for everything the perspective sky draws (Draw).
+        public static bool OpenSky(Map map)
+        {
+            return map == null || map.generatorDef == null || !map.generatorDef.isUnderground;
+        }
+
         // The colour the fog fades into this frame (the sky's horizon).
         public static Color Horizon { get; private set; }
 
@@ -126,7 +134,7 @@ namespace IsoRim
                 Init();
             }
             Map map = Find.CurrentMap;
-            if (map == null)
+            if (map == null || !OpenSky(map))
             {
                 return;
             }
