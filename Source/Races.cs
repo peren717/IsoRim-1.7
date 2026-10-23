@@ -766,7 +766,10 @@ namespace IsoRim
         }
 
         // People.Merged: the race's extra parts of the head or the body.
-        internal static void AddParts(People.Look look, bool headPart, int hide, List<Model> models, List<Matrix4x4> locals, List<Color> tints)
+        // clip: in a bed that hides the body (People.Merged, ChinClip), the head's addon models are cut cleanly at that height (an
+        // open plane cut in the head frame, not face by face: no ragged strips of hair beside the head); NegativeInfinity: whole.
+        internal static void AddParts(People.Look look, bool headPart, int hide, List<Model> models, List<Matrix4x4> locals, List<Color> tints,
+            float clip = float.NegativeInfinity)
         {
             RaceLook r = look.race;
             if (r == null)
@@ -783,10 +786,43 @@ namespace IsoRim
                 {
                     continue;
                 }
+                if (!float.IsNegativeInfinity(clip))
+                {
+                    Model cut = ClippedBelow(r.extraModels[i], r.extraLocals[i], clip);
+                    if (cut != null)
+                    {
+                        models.Add(cut);
+                        locals.Add(Matrix4x4.identity);
+                        tints.Add(r.extraTints[i]);
+                    }
+                    continue;
+                }
                 models.Add(r.extraModels[i]);
                 locals.Add(r.extraLocals[i]);
                 tints.Add(r.extraTints[i]);
             }
+        }
+
+        private static readonly Dictionary<string, Model> clipped = new Dictionary<string, Model>();
+
+        // A model placed by local, cut at height clip (both in the head frame), the part above kept; null when nothing is left. Made once.
+        private static Model ClippedBelow(Model m, Matrix4x4 local, float clip)
+        {
+            string key = m.id + "|" + local.ToString("F5", System.Globalization.CultureInfo.InvariantCulture) + "|"
+                + clip.ToString("F4", System.Globalization.CultureInfo.InvariantCulture);
+            Model c;
+            if (!clipped.TryGetValue(key, out c))
+            {
+                Matrix4x4 normals = local.inverse.transpose;
+                Model placed = ObjLoader.Transformed(m, p => local.MultiplyPoint3x4(p), nn => normals.MultiplyVector(nn).normalized);
+                // ObjLoader.ClipBelow keeps what is below a height: mirrored upside down and back, it keeps what is above. Open cut
+                // (its lid would cover the model's whole box).
+                Func<Vector3, Vector3> flip = p => new Vector3(p.x, -p.y, p.z);
+                Model down = ObjLoader.ClipBelow(ObjLoader.Transformed(placed, flip, flip), -clip, false);
+                c = down != null ? ObjLoader.Transformed(down, flip, flip) : null;
+                clipped[key] = c;
+            }
+            return c;
         }
 
         // The named anchors (body frame; head and face in the head frame as IsoRim's own head is modelled).

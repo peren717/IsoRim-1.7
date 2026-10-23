@@ -312,7 +312,8 @@ namespace IsoRim
                     AddPart(pads, bodyPlace * Matrix4x4.Scale(new Vector3(look.shoulders, 1f, 1.05f)), look.coat != null ? look.coatColor : look.upperColor);
                 }
             }
-            RaceFigures.AddParts(look, headPart, hide, mergeModels, mergeLocals, mergeTints);   // a race's addon models, eyes on its own head (Api 25)
+            RaceFigures.AddParts(look, headPart, hide, mergeModels, mergeLocals, mergeTints,   // a race's addon models, eyes on its own head (Api 25)
+                noLegs && headPart ? RaceFigures.ChinClip(look) : float.NegativeInfinity);
             parts = DynamicModels.BuildMerged(mergeModels, mergeLocals, mergeTints, turned, mono,
                 noLegs ? (headPart ? RaceFigures.ChinClip(look) : Attachments.Hips * look.bodyScale.y) : float.NegativeInfinity);
             look.meshes[key] = parts;
