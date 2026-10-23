@@ -113,7 +113,7 @@ namespace IsoRim
                 rise = p.at.y;
                 return true;
             }
-            float size = pawn.ageTracker != null && pawn.ageTracker.CurLifeStage != null ? People.SizeFor(pawn.ageTracker.CurLifeStage.bodySizeFactor) : 1f;
+            float size = RaceFigures.SizeOf(pawn);   // (a race's scale too, Api 25)
             rise = Attachments.HeadRise(p.a.pose, p.at.y, size, Attachments.Hips);
             return true;
         }

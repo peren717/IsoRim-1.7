@@ -92,6 +92,9 @@ namespace IsoRim
         Legs = 1024,
         /// <summary>A shield held on the left forearm (an <see cref="ApparelModelDef"/> shield binding).</summary>
         Shield = 2048,
+        /// <summary>A race's addon cards (Api version 25: the race's own render nodes, such as HAR body addons, drawn as cards on a
+        /// race shown as a 3D figure), for a hook that draws them itself. Addon models a race pack gives stay.</summary>
+        Addons = 1 << 20,
     }
 
     /// <summary>

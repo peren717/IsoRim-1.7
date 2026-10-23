@@ -110,6 +110,7 @@ namespace IsoRim
             // merged meshes and carried over to a look kept as it was (LookOf).
             public Apparel coatFrom, overCoatFrom, midFrom, shirtWearFrom;
             public List<ApparelDecals.Placed> decals;
+            public RaceLook race;     // a race drawn as a 3D figure (Api 25, RaceFigures): its placing, own models, addon cards; null for people
 
             public bool SameGear(Look o)
             {
@@ -156,7 +157,8 @@ namespace IsoRim
                     && mouthColor == o.mouthColor && eyeColor == o.eyeColor && neckColor == o.neckColor
                     && mid == o.mid && shirtWear == o.shirtWear && midColor == o.midColor && shirtWearColor == o.shirtWearColor
                     && overCoat == o.overCoat && overCoatColor == o.overCoatColor
-                    && shield == o.shield && shieldColor == o.shieldColor && shieldBinding == o.shieldBinding && bindHides == o.bindHides && flames == o.flames;
+                    && shield == o.shield && shieldColor == o.shieldColor && shieldBinding == o.shieldBinding && bindHides == o.bindHides && flames == o.flames
+                    && (race == null ? o.race == null : race.SameAs(o.race));
             }
 
             public void Forget()
@@ -227,7 +229,7 @@ namespace IsoRim
                 }
                 else if (look.ownHead != null)
                 {
-                    AddPart(look.ownHead, Matrix4x4.identity, Color.white);   // its skin colour is in the model
+                    AddPart(look.ownHead, Matrix4x4.identity, look.race != null ? skin : Color.white);   // its skin colour is in the model (a race's own head: the skin's, Api 25)
                 }
                 else
                 {
@@ -309,6 +311,7 @@ namespace IsoRim
                     AddPart(pads, bodyPlace * Matrix4x4.Scale(new Vector3(look.shoulders, 1f, 1.05f)), look.coat != null ? look.coatColor : look.upperColor);
                 }
             }
+            RaceFigures.AddParts(look, headPart, hide, mergeModels, mergeLocals, mergeTints);   // a race's addon models, eyes on its own head (Api 25)
             parts = DynamicModels.BuildMerged(mergeModels, mergeLocals, mergeTints, turned, mono,
                 noLegs ? Attachments.Hips * look.bodyScale.y : float.NegativeInfinity);
             look.meshes[key] = parts;
@@ -393,7 +396,7 @@ namespace IsoRim
                 Matrix4x4 scaled = Matrix4x4.Scale(new Vector3(look.size, look.size, look.size));
                 FigureScope.Root(onBase, South);
                 DynamicModels.DrawParts(Merged(look, false, false, 4, stone), onBase, South, scaled);
-                DynamicModels.DrawParts(Merged(look, true, false, 4, stone), onBase, South, scaled);
+                DynamicModels.DrawParts(Merged(look, true, false, 4, stone), onBase, South, look.race != null ? scaled * look.race.head : scaled);
                 return true;   // nothing held, no weapon
             }
 
@@ -580,6 +583,10 @@ namespace IsoRim
                 headPlace = whole * Matrix4x4.Translate(new Vector3(0f, Poses.BodyTop, 0f)) * Matrix4x4.Rotate(Quaternion.AngleAxis(-headLift, Vector3.right))
                     * Matrix4x4.Translate(new Vector3(0f, -Poses.BodyTop, 0f));   // tipped back about the neck: looking ahead
             }
+            if (look.race != null)
+            {
+                headPlace = headPlace * look.race.head;   // a race's head placing (Api 25): everything on the head follows
+            }
 
             // The whole figure is two ready-made meshes (body and head), each a single draw, put
             // together once for this look and the way it is facing.
@@ -612,6 +619,10 @@ namespace IsoRim
                 }
             }
             DynamicModels.DrawParts(Merged(look, true, dead, turned, null, false, hidden), at, yaw, headPlace);
+            if (look.race != null)
+            {
+                RaceCards.Draw(look, at, yaw, headPlace, bodyPlace, hidden, !headOnly && !lying);   // a race's addons as cards (Api 25; body ones not while lying: a flat picture reads badly on a lying body)
+            }
             if (look.faceDecal && !look.headHidden && look.skull == null && (hidden & (FigureParts.Head | FigureParts.Face)) == 0)
             {
                 FaceDecal.Draw(pawn, head, at, yaw, headLocal);
@@ -625,6 +636,7 @@ namespace IsoRim
             {
                 // The tool is placed in the figure's own space, so it leans and dips with it.
                 Matrix4x4 hands = seated ? whole * Matrix4x4.Translate(new Vector3(0f, -(1f - squash) * HandY, 0f)) : whole;
+                hands = RaceHands(look, hands);
                 DynamicModels.DrawLocal(workTool, at, yaw, hands * workLocal, Color.white, "Wood");
             }
 
@@ -638,11 +650,12 @@ namespace IsoRim
                 // Held in front, at the hands (the game draws it a little in front of the pawn the way it faces).
                 Vector3 front = Quaternion.AngleAxis(yaw, Vector3.up) * Vector3.forward;
                 float reach = CarryReach * size * Mathf.Max(1f, look.bodyScale.z);   // clear of a deeper body
-                Carried.Draw(pawn, new Vector3(at.x + front.x * reach, at.y + CarryHeight * size * squash, at.z + front.z * reach), yaw);
+                Carried.Draw(pawn, new Vector3(at.x + front.x * reach, at.y + (CarryHeight + (look.race != null ? look.race.handShift : 0f)) * size * squash, at.z + front.z * reach), yaw);
             }
             if (standing)
             {
                 Matrix4x4 hands = seated ? whole * Matrix4x4.Translate(new Vector3(0f, -(1f - squash) * HandY, 0f)) : whole;
+                hands = RaceHands(look, hands);
                 Model upper = look.upper;
                 FigureWeapons.Draw(pawn, neverAim, drawLoc, at, yaw, hands, size, upper.halfDepth * look.bodyScale.z,
                     Mathf.Max(-upper.minX, upper.maxX) * look.bodyScale.x);
@@ -693,6 +706,7 @@ namespace IsoRim
                 Vector3 atOn = new Vector3(att.at.x, sits ? onHost.Lift : Attachments.Feet(att.a.pose, att.at.y, size, Attachments.Hips * look.bodyScale.y), att.at.z);
                 Matrix4x4 wholeOn = Matrix4x4.Scale(new Vector3(size, size, size));
                 Matrix4x4 handsOn = sits ? wholeOn * Matrix4x4.Translate(new Vector3(0f, -(1f - onHost.Squash) * HandY, 0f)) : wholeOn;
+                handsOn = RaceHands(look, handsOn);
                 Rand.PushState();
                 try
                 {
@@ -713,6 +727,7 @@ namespace IsoRim
             Matrix4x4 whole = pose * Matrix4x4.Scale(new Vector3(size, size, size));
             float squash = seated ? seat.Squash : 1f;
             Matrix4x4 hands = seated ? whole * Matrix4x4.Translate(new Vector3(0f, -(1f - squash) * HandY, 0f)) : whole;
+            hands = RaceHands(look, hands);
             Model upper = look.upper;
             // (it may run in a game tick, for a shot's flash: whatever the game's drawing code rolls stays out of the game's
             // random numbers)
@@ -780,13 +795,13 @@ namespace IsoRim
                 + (pawn.style != null ? HairParts.Beard(pawn.style.beardDef) ?? "none" : "none") + (l.beard != null ? "" : " (not drawn)") + ", body " + (pawn.story.bodyType != null ? pawn.story.bodyType.defName : "?")
                 + ", ownHead " + (l.ownHead != null) + ", ownFace " + (l.ownFace != null) + ", eyes " + (l.eyeLeft != null) + "/" + (l.eyeRight != null)
                 + ", scars " + (l.scars != null) + ", overlay " + (l.skinOverlay != null) + ", barbs " + (l.barbs != null) + ", plating " + (l.plating != null)
-                + ", ownHair " + l.ownHair + ", hat " + (l.hatKind ?? "-") + ", faceHidden " + l.faceHidden + ", headHidden " + l.headHidden + ", skips " + SkipNames(VanillaSkips(pawn)) + ", skin " + l.skin + ", faceTint " + l.faceTint + ", drawn " + Patches.DrawnAsModel(pawn);
+                + ", ownHair " + l.ownHair + ", hat " + (l.hatKind ?? "-") + ", faceHidden " + l.faceHidden + ", headHidden " + l.headHidden + ", skips " + SkipNames(VanillaSkips(pawn)) + ", skin " + l.skin + ", faceTint " + l.faceTint + ", drawn " + Patches.DrawnAsModel(pawn) + RaceFigures.Report(l);
         }
 
         // The races drawn as figures: people, and creepjoiners (people in all but race).
         public static bool FigureRace(Pawn pawn)
         {
-            return pawn.def != null && (pawn.def.defName == "Human" || pawn.def.defName == "CreepJoiner");
+            return RaceFigures.Drawn3D(pawn);   // people, creepjoiners, and races a race pack makes 3D (Api 25)
         }
 
         // People who are invisible must stay so: they keep their sprite, which the game hides.
@@ -817,6 +832,22 @@ namespace IsoRim
             m = IsoRimMod.RootDir != null ? ModelLibrary.LoadFile(Path.Combine(IsoRimMod.RootDir, "Models", name + ".obj")) : null;
             models[name] = m;
             return m;
+        }
+
+        // Every look worked out again the next time it is drawn (Api 25: the race settings or rules changed).
+        internal static void RefreshAll()
+        {
+            foreach (Look l in looks.Values)
+            {
+                l.frame = int.MinValue / 2;
+            }
+        }
+
+        // A race's hands (Api 25, an Own race's handLeft / handRight anchors): the held weapon, work tool and carried thing
+        // moved up or down with them; people unchanged.
+        private static Matrix4x4 RaceHands(Look look, Matrix4x4 hands)
+        {
+            return look.race != null && look.race.handShift != 0f ? hands * Matrix4x4.Translate(new Vector3(0f, look.race.handShift, 0f)) : hands;
         }
 
         // Api.RefreshApparelDecals: the person's look is worked out again the next time it is drawn.
@@ -872,6 +903,7 @@ namespace IsoRim
                     if (look != null && old.SameAs(look))
                     {
                         old.decals = look.decals;   // (asked anew each time: ApparelDecals)
+                        old.race = look.race;       // (the same placing; its addon cards anew: RaceCards)
                         look = old;   // nothing has changed: keep the meshes already made
                     }
                     else
@@ -906,14 +938,16 @@ namespace IsoRim
 
             // Build.
             string build = BuildOf(story.bodyType);
+            RaceLook race = RaceFigures.Prepare(pawn, ref build);   // a race drawn as a 3D figure (Api 25); null for people
+            look.race = race;
             look.shoulders = Shoulders(build);
-            look.bodyScale = BodyScales.For(story.bodyType);
+            look.bodyScale = race != null ? RaceFigures.BodyScale(race) : BodyScales.For(story.bodyType);
             float grown = 1f;
             if (pawn.ageTracker != null && pawn.ageTracker.CurLifeStage != null)
             {
                 grown = pawn.ageTracker.CurLifeStage.bodySizeFactor;
             }
-            look.size = SizeFor(grown);
+            look.size = SizeFor(grown) * (race != null ? race.scale : 1f);
 
             // Head, hair and beard.
             string headName = story.headType != null ? (story.headType.defName ?? "") : "";
@@ -925,7 +959,7 @@ namespace IsoRim
             string hairKind = HairParts.Hair(story.hairDef);
             string beardKind = pawn.style != null ? HairParts.Beard(pawn.style.beardDef) : null;
 
-            string hatKind = Dress(look, build, pawn.apparel != null ? pawn.apparel.WornApparel : null, look.skin, null);
+            string hatKind = Dress(look, build, race != null ? RaceFigures.Worn(pawn, race) : (pawn.apparel != null ? pawn.apparel.WornApparel : null), look.skin, null);
 
             // Headgear is left out where the game leaves it out (in a bed that hides the sleeper's body); then
             // hair, beard and eyes show under it exactly when the game draws them (its own skip flags).
@@ -1000,6 +1034,10 @@ namespace IsoRim
             if (ApparelDecals.Count > 0)
             {
                 look.decals = ApparelDecals.Collect(pawn, look);   // other mods' decals on the body garments (Api 10)
+            }
+            if (race != null)
+            {
+                RaceFigures.Finish(pawn, look, race);   // its own models, eyes, addon models and cards (Api 25)
             }
             return look;
         }

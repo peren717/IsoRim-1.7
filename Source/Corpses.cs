@@ -29,7 +29,7 @@ namespace IsoRim
         // drawn as its model then.
         public static bool ShownAsModel(Pawn pawn)
         {
-            return !Bones(pawn) || People.FigureRace(pawn);
+            return !Bones(pawn) || RaceFigures.BonesAsModel(pawn);   // (people and Human-figure races, Api 25)
         }
 
         // True while the game draws the pawn as bones.

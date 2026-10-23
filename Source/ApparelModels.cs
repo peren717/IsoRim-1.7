@@ -68,6 +68,13 @@ namespace IsoRim
         /// colour). spriteColour: the mean colour of its worn sprite instead (for items whose colour is painted into it).</summary>
         public bool spriteColour;
 
+        /// <summary>Api 25: only for these races (ThingDef defNames). For a race, a binding naming it wins over one without races;
+        /// a binding with races is not used for anyone else.</summary>
+        public List<string> races;
+
+        /// <summary>Api 25, Body: a model per race body type (BodyTypeDef defName), used before bodyModels.</summary>
+        public List<ApparelRaceBodyModel> raceBodyModels;
+
         public override IEnumerable<string> ConfigErrors()
         {
             foreach (string e in base.ConfigErrors())
@@ -78,7 +85,7 @@ namespace IsoRim
             {
                 yield return "no apparel";
             }
-            if (model.NullOrEmpty() && (bodyModels == null || !bodyModels.Any))
+            if (model.NullOrEmpty() && (bodyModels == null || !bodyModels.Any) && raceBodyModels.NullOrEmpty())
             {
                 yield return "no model";
             }
@@ -105,6 +112,13 @@ namespace IsoRim
                 }
             }
         }
+    }
+
+    /// <summary>A Body binding's model for one race body type (Api 25, ApparelModelDef.raceBodyModels).</summary>
+    public class ApparelRaceBodyModel
+    {
+        public string bodyType;
+        public string model;
     }
 
     /// <summary>Per body type models of a Body binding (ApparelModelDef.bodyModels).</summary>
@@ -168,7 +182,11 @@ namespace IsoRim
                 {
                     return null;
                 }
-                string path = slot == Slot.Body && def.bodyModels != null ? def.bodyModels.For(build) : null;
+                string path = slot == Slot.Body ? RaceBodyPath(def) : null;
+                if (path.NullOrEmpty())
+                {
+                    path = slot == Slot.Body && def.bodyModels != null ? def.bodyModels.For(build) : null;
+                }
                 if (path.NullOrEmpty())
                 {
                     path = def.model;
@@ -213,6 +231,7 @@ namespace IsoRim
         }
 
         private static Dictionary<string, Binding> byApparel;
+        private static Dictionary<string, Binding> byRace;   // "apparel|race" (Api 25)
         private static readonly Dictionary<int, Flame[]> flames = new Dictionary<int, Flame[]>();   // by Model.id
         internal static int Count;
 
@@ -238,6 +257,7 @@ namespace IsoRim
                 return;
             }
             byApparel = new Dictionary<string, Binding>();
+            byRace = new Dictionary<string, Binding>();
             foreach (ApparelModelDef d in DefDatabase<ApparelModelDef>.AllDefsListForReading)
             {
                 Slot slot = SlotOf(d.slot);
@@ -259,9 +279,17 @@ namespace IsoRim
                 Type cls = thing.thingClass ?? typeof(Apparel);
                 System.Reflection.MethodInfo extras = AccessTools.Method(cls, nameof(Apparel.DrawWornExtras));
                 b.drawsOwn = extras != null && extras.DeclaringType != typeof(Apparel) && extras.DeclaringType != typeof(ThingWithComps) && extras.DeclaringType != typeof(Thing);
+                if (!d.races.NullOrEmpty())
+                {
+                    foreach (string race in d.races)
+                    {
+                        byRace[thing.defName + "|" + race] = b;   // (Api 25: only for that race)
+                    }
+                    continue;
+                }
                 byApparel[thing.defName] = b;   // a later def for the same apparel wins (a pack overriding another)
             }
-            Count = byApparel.Count;
+            Count = byApparel.Count + byRace.Count;
         }
 
         // The binding of this apparel, or null (then IsoRim's own look).
@@ -272,7 +300,40 @@ namespace IsoRim
                 Build();
             }
             Binding b;
+            if (RaceFigures.dressingRace != null && Count > 0 && apparel != null && byRace.TryGetValue(apparel.defName + "|" + RaceFigures.dressingRace.defName, out b))
+            {
+                return b;   // a binding for the race the look is dressed for (Api 25)
+            }
             return Count > 0 && apparel != null && byApparel.TryGetValue(apparel.defName, out b) ? b : null;
+        }
+
+        // A binding of this apparel made for this race (Api 25), or null.
+        internal static Binding ForRace(ThingDef apparel, ThingDef race)
+        {
+            if (byApparel == null)
+            {
+                Build();
+            }
+            Binding b;
+            return Count > 0 && apparel != null && race != null && byRace.TryGetValue(apparel.defName + "|" + race.defName, out b) ? b : null;
+        }
+
+        // A race binding's model for the race body type the look is dressed for (Api 25), or null.
+        private static string RaceBodyPath(ApparelModelDef def)
+        {
+            BodyTypeDef body = RaceFigures.dressingBody;
+            if (def.raceBodyModels == null || body == null || RaceFigures.dressingRace == null)
+            {
+                return null;
+            }
+            foreach (ApparelRaceBodyModel m in def.raceBodyModels)
+            {
+                if (m.bodyType == body.defName)
+                {
+                    return m.model;
+                }
+            }
+            return null;
         }
 
         // The colour the item's "stuff" faces take.
