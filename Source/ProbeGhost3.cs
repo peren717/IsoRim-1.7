@@ -30,6 +30,17 @@ namespace IsoRim
                     placingRot(d) = new Rot4(I(a[0]));
                     return true;
                 }
+                case "mousecheck":
+                    // mousecheck=1: logs the cell under the pointer (UI.MouseCell: where a build designator draws its ghost and
+                    // places) and whether the ghost there is Occupied
+                    {
+                        IntVec3 mc = Verse.UI.MouseCell();
+                        Designator_Place dp = Find.DesignatorManager.SelectedDesignator as Designator_Place;
+                        ThingDef pd = dp != null ? dp.PlacingDef as ThingDef : null;
+                        Log.Message("[IsoRim probe] mousecheck: mouse cell " + mc + ", placing " + (pd?.defName ?? "-")
+                            + (pd != null ? ", occupied " + Ghosts.Occupied(pd, mc, placingRot(dp), map, null) + ", shows3D " + Ghosts.Shows3D(pd) : ""));
+                    }
+                    return true;
                 case "plancheck":
                     // plancheck=1: logs each blueprint and frame: what it becomes, its 3D form, where its model ghost stands
                     foreach (Thing t in map.listerThings.AllThings.Where(x => x is Blueprint || x is Frame).ToList())
