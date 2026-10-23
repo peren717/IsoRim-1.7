@@ -40,6 +40,11 @@ namespace IsoRim
                         gameGhosts.Clear();
                         return true;
                     }
+                    if (DefDatabase<ThingDef>.GetNamedSilentFail(a[0]) == null)
+                    {
+                        Log.Warning("[IsoRim probe] ghostgame: no def " + a[0] + " (its mod not loaded), skipped");
+                        return true;
+                    }
                     gameGhosts.Add(new GhostSpec { def = DefDatabase<ThingDef>.GetNamed(a[0]), cell = new IntVec3(I(a[1]), 0, I(a[2])), rot = new Rot4(I(a[3])) });
                     return true;
                 case "ghostinv":
