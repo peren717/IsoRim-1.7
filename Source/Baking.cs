@@ -2763,6 +2763,8 @@ namespace IsoRim
 
             bool textured = st.texturedModels && m.materials != null && m.uvs != null && m.material != null;
             string swatch = textured ? R3DTextures.ModelSwatch(thing) : null;
+            // (Api 24) "sheet" parts also take the thing's second colour (a bed's sheets by owner type: R3DTextures.SheetTint).
+            Color sheetTint = R3DTextures.HasSheet(m) ? R3DTextures.SheetTint(thing) : Color.white;
             // Reused from one model to the next: thousands of plants are written in a row.
             // The shader lights each face by its own direction, so all plain faces share one piece
             // of mesh (see R3DMaterials.Lit) and textured faces one per material.
@@ -2839,6 +2841,10 @@ namespace IsoRim
                         {
                             c *= tint;
                         }
+                        if (mm.sheet)
+                        {
+                            c *= sheetTint;
+                        }
                         string path = mm.texture.Replace("{stuff}", swatch);
                         Material tmat = glow ? R3DTextures.MaterialFor(path, c) : R3DMaterials.LitTexture(path, c);
                         texturedMeshes[slot] = tmat != null ? MeshWriter.Sub(layer, tmat) : null;
@@ -2857,6 +2863,10 @@ namespace IsoRim
                     if (m.tinted[k])
                     {
                         c *= tint;
+                    }
+                    if (mm != null && mm.sheet)
+                    {
+                        c *= sheetTint;
                     }
 
                     // 1. plain copy, pulled in a hair when a textured face will sit over it

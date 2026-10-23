@@ -168,6 +168,7 @@ namespace IsoRim
             live.stackModels = null;
             live.byAppearance = null;
             live.byState = null;
+            live.immatureModels = null;  // (Api 24) the copied def's young stage; its immatureHide still applies to the new file
             live.byStyle = null;
             live.parts = null;
             pathText = full;
@@ -354,6 +355,13 @@ namespace IsoRim
             if (md.models != null)
             {
                 foreach (string m in md.models)
+                {
+                    yield return ModelBinder.FullPath(md, m);
+                }
+            }
+            if (md.immatureModels != null)
+            {
+                foreach (string m in md.immatureModels)
                 {
                     yield return ModelBinder.FullPath(md, m);
                 }

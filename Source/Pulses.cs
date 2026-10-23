@@ -131,7 +131,7 @@ namespace IsoRim
                 float sx = Scale(beat, part.delay, part.maxScale.x);
                 float sz = Scale(beat, part.delay, part.maxScale.y);
                 Vector3 pivot = turn * (Vector3.Scale(new Vector3(part.pivot.x, 0f, part.pivot.y), fit) + def.offset);
-                DynamicModels.Draw(entry.pulse[i], new Vector3(at.x + pivot.x, pivot.y, at.z + pivot.z), yaw,
+                DynamicModels.Draw(ObjLoader.SheetTinted(entry.pulse[i], R3DTextures.SheetTint(t)), new Vector3(at.x + pivot.x, pivot.y, at.z + pivot.z), yaw,
                     Vector3.Scale(fit, new Vector3(sx, (sx + sz) * 0.5f, sz)), tint, swatch);
             }
         }

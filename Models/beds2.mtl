@@ -1,0 +1,6 @@
+# beds2.mtl: materials of the remade beds (make_beds2.py)
+# sheet_bed: the blanket. "sheet" prefix (IsoRim Api 24): multiplied by the bed's DrawColorTwo, the sheet colour by owner type
+# (normal green, medical blue, prisoner orange, slave yellow), as the game tints the sprite's grey mask. Kd = that grey.
+newmtl sheet_bed
+Kd 0.730 0.730 0.730
+map_Kd IsoRim/Swatches/Fabric

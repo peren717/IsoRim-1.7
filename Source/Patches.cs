@@ -794,7 +794,7 @@ namespace IsoRim
                 }
                 Vector3 at = turret.DrawPos;
                 Vector3 fit = entry.Fit(turret.def) * entry.def.scale;
-                DynamicModels.Draw(gun, new Vector3(at.x + __1.x, entry.def.topHeight * fit.y, at.z + __1.z), aim - 90f, fit, R3DTextures.ModelTint(turret), R3DTextures.ModelSwatch(turret));
+                DynamicModels.Draw(ObjLoader.SheetTinted(gun, R3DTextures.SheetTint(turret)), new Vector3(at.x + __1.x, entry.def.topHeight * fit.y, at.z + __1.z), aim - 90f, fit, R3DTextures.ModelTint(turret), R3DTextures.ModelSwatch(turret));
                 return false;
             }
             catch (Exception e)

@@ -40,6 +40,7 @@ namespace IsoRim
             { "graphicPath", 16 },
             { "doorLeafGather", 18 },
             { "cutaway", 20 },
+            { "immatureModels", 24 }, { "immatureHide", 24 },
         };
         private const int BaseVersion = 2;
 

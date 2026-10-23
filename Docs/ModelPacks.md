@@ -73,6 +73,7 @@ Everything else in the `.mtl` is ignored. Write the `.mtl` by hand: Blender writ
 | Prefix | Effect |
 |---|---|
 | `stuff...` | Tinted by what the thing is made of; `{stuff}` in its texture path becomes Wood, Stone, Metal or Fabric. Use `stuff` / `stuff_dark` / `stuff_deep` for the body of things made of stuff. |
+| `sheet...` | Api 24: multiplied by the thing's second colour (`DrawColorTwo`), as the game tints the second-colour mask of its sprite: a bed's sheets in green, blue (medical), orange (prisoner) or yellow (slave), also for mod beds. Give it a light grey `Kd` (most other things' second colour is white). On an older IsoRim it simply keeps its `Kd`. |
 | `glow...`, `flame...`, `ember...` | Unlit (screens, lamps, fire). |
 | `leaf...`, `twig...` | Trees only (hidden / shown while bare). |
 
@@ -114,6 +115,7 @@ Common fields:
 | `groundShadow` | true | Soft shading on the ground under it |
 | `byAppearance`, `byState`, `byStyle` | | Other models by stuff look (Planks, Bricks ...), by an addon's state (Api 6), by Ideology style |
 | `aged` | 0 | Api 15: drawn old and rusty |
+| `immatureModels`, `immatureHide` | | Api 24, plants: the young stage, drawn while the plant is not yet harvestable (as the game's `immatureGraphic`, growth up to `harvestMinGrowth`). `immatureModels`: own models, one per variant of `models` (same order). `immatureHide`: material names left out of the young stage, e.g. the produce; with no `immatureModels` the young stage is the mature model without them. `growthScale` still shrinks it |
 
 Doors (`doorLeafModel`, ...), turrets (`topModel`), animals, mechs and many special parts have their own fields; see the
 comments in IsoRim's `Source/Models.cs` and `Docs/Api.md`.
@@ -135,6 +137,20 @@ Examples:
   <model>Models/my_wall_lamp.obj</model>
   <builtFor>(1, 1)</builtFor>
   <wallMounted>true</wallMounted>
+</IsoRim.ModelDef>
+
+<!-- A crop (Api 24 fields: gate them, see below): two variants; young = the same plants without the fruit -->
+<IsoRim.ModelDef>
+  <defName>R3D_MyPack_Pepper</defName>
+  <models>
+    <li>Models/my_pepper_1.obj</li>
+    <li>Models/my_pepper_2.obj</li>
+  </models>
+  <randomRotation>true</randomRotation>
+  <growthScale>true</growthScale>
+  <immatureHide>
+    <li>mypack_pepper_fruit</li>
+  </immatureHide>
 </IsoRim.ModelDef>
 ```
 
@@ -187,7 +203,8 @@ half-set model), a new enough one gets the whole entry:
 
 `minVersion` by field: base fields and the plain binding 2; `hackedGlowOff`, `deadBellyUp`, `legFromHip`, `legLift`,
 `legYaw` 5; `rotationByFacing`, `byState`, `style`, `crownTop`, `doorLeafRise` 6; `wallTop` 11; `backHeight` 13; wing
-fields 14; `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20. The highest one used counts.
+fields 14; `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20; `immatureModels`, `immatureHide` 24. The highest
+one used counts.
 
 ## Pitfalls
 

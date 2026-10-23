@@ -120,7 +120,7 @@ namespace IsoRim
             Vector3 at = t.TrueCenter();
             Vector3 offset = Quaternion.AngleAxis(yaw, Vector3.up) * def.offset;
             // Its lit copy (the lightball's lenses) while it is on, also while the game is paused.
-            DynamicModels.Draw(on && entry.spinLit != null ? entry.spinLit : entry.spin, new Vector3(at.x + offset.x, offset.y, at.z + offset.z), yaw + angle,
+            DynamicModels.Draw(ObjLoader.SheetTinted(on && entry.spinLit != null ? entry.spinLit : entry.spin, R3DTextures.SheetTint(t)), new Vector3(at.x + offset.x, offset.y, at.z + offset.z), yaw + angle,
                 entry.Fit(t.def) * def.scale, R3DTextures.ModelTint(t), R3DTextures.ModelSwatch(t));
         }
 

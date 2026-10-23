@@ -292,7 +292,7 @@ namespace IsoRim
             yaw += pose.turn;
             Vector3 fit = entry.Fit(lands.def) * scale;
             Matrix4x4 local = Matrix4x4.Translate(entry.def.offset) * Matrix4x4.Scale(fit);
-            DynamicModels.DrawLocal(m, new Vector3(pose.ground.x, pose.height, pose.ground.z), yaw, local,
+            DynamicModels.DrawLocal(ObjLoader.SheetTinted(m, R3DTextures.SheetTint(lands)), new Vector3(pose.ground.x, pose.height, pose.ground.z), yaw, local,
                 R3DTextures.ModelTint(lands), R3DTextures.ModelSwatch(lands));
             return true;
         }

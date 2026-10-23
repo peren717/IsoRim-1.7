@@ -92,7 +92,7 @@ namespace IsoRim
             if (!skipHead && entry.head != null)
             {
                 // The stand's own head, the size of a colonist's head and where it sits (person_head).
-                DynamicModels.DrawLocal(entry.head, ground, yaw, figure * HeadFit(entry.head), R3DTextures.ModelTint(stand), R3DTextures.ModelSwatch(stand));
+                DynamicModels.DrawLocal(ObjLoader.SheetTinted(entry.head, R3DTextures.SheetTint(stand)), ground, yaw, figure * HeadFit(entry.head), R3DTextures.ModelTint(stand), R3DTextures.ModelSwatch(stand));
             }
 
             Outfit outfit = OutfitOf(stand, body, skipHead);

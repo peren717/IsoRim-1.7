@@ -82,7 +82,7 @@ namespace IsoRim
                 bool aged = !o.glow;
                 m.materials[i] = new ModelMaterial
                 {
-                    name = o.name, tinted = o.tinted, leaf = o.leaf, twig = o.twig, glow = o.glow, fire = o.fire,
+                    name = o.name, tinted = o.tinted, sheet = o.sheet, leaf = o.leaf, twig = o.twig, glow = o.glow, fire = o.fire,
                     color = aged && !o.tinted ? Dull(o.color, s) : o.color,   // stuff parts: their colour is dulled (ModelTint)
                     texture = o.texture != null && aged ? o.texture + Mark + level : o.texture
                 };

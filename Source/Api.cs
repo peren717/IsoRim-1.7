@@ -46,10 +46,13 @@ namespace IsoRim
         // AddProjectileArc, RemoveProjectileArc, XrayPlacing, HasModel; Api20.cs; 21: face drawers, AddFaceDrawer, RemoveFaceDrawer
         // (FaceDrawer, FaceFrame), and
         // FigureFrame.Hide, FigureFrame.Hidden (FigureParts) with figure hooks raised before the figure is drawn; Api21.cs; 22:
-        // AddFaceDrawer(drawer, evenWhenHidden) with FaceFrame.HiddenByGame (FaceHiddenBy), Api21.cs).
+        // AddFaceDrawer(drawer, evenWhenHidden) with FaceFrame.HiddenByGame (FaceHiddenBy), Api21.cs; 23: claimed for hand
+        // attach points and work tools, not in this build yet; 24: model packs: ModelDef.immatureModels and immatureHide (a
+        // plant's young stage, StateModels.Choose) and "sheet" materials tinted by the thing's second colour (a bed's sheets,
+        // R3DTextures.SheetTint)).
         // The card overlay (IsCard, DrawOnCard,
         // CardLight; CardOverlay.cs) came in before version 8 without a number of its own: check >= 8 for it.
-        public static int Version => 22;
+        public static int Version => 24;
 
         // ---- facing holds (Version 19)
 

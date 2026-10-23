@@ -78,6 +78,15 @@ namespace IsoRim
         public bool randomRotation = false; // give each thing its own turn
         public float scaleJitter = 0f;      // vary each thing's size by up to this fraction
         public bool growthScale = false;    // scale with how grown a plant is
+        public List<string> immatureModels; // (Api 24) a plant's young stage: drawn instead while it is not yet harvestable,
+                                            // as the game draws its immatureGraphic (Plant.Graphic: !HarvestableNow, i.e. growth
+                                            // up to harvestMinGrowth; a plant that yields nothing: growth up to
+                                            // harvestMinGrowth too). One per variant of models (same order; fewer: they repeat).
+                                            // growthScale still shrinks it. The game redraws a sown crop's cell as it grows
+                                            // (every 10 % of growth), so the switch shows at the next step, as vanilla's
+        public List<string> immatureHide;   // (Api 24) materials left out of the young stage (case-insensitive): the produce
+                                            // (cobs, berries, flowers). With no immatureModels the young stage is the mature
+                                            // model (each variant) without them; with them, they are left out of those too
         public bool keepLeaves = false;     // a plant's leaf* parts stay while it is leafless (cold, poison): for plants
                                             // whose vanilla look has no leafless sprite (Polux); thinning near the pointer still applies
         public bool layFlat = false;        // the model is built as held; on the ground it is tipped onto its side
@@ -552,6 +561,8 @@ namespace IsoRim
         public string texture;   // path under Textures/ without extension; null for a plain colour
         public Color color = new Color(0.8f, 0.8f, 0.8f);
         public bool tinted;
+        public bool sheet;       // (Api 24) a name starting with "sheet": its colour times the thing's second colour
+                                 // (Thing.DrawColorTwo: a bed's sheets, normal / medical / prisoner / slave; R3DTextures.SheetTint)
         public bool leaf;        // left out while a tree is bare
         public bool twig;        // only drawn while a tree is bare (fine branches the leaves would hide)
         public bool glow;        // gives off its own light (flames, embers, lamps): never shaded
@@ -587,6 +598,7 @@ namespace IsoRim
         public Dictionary<string, Model> byAppearance;   // StuffAppearanceDef defName -> model; null if none
         public Dictionary<string, Model[]> byStyle;      // ThingStyleDef defName -> its models (one per random variant); null if none
         public Dictionary<string, Model> byState;        // addon state name -> model (byState); null if none
+        public Model[] immature;   // (Api 24) a plant's young stage, one per variant (immatureModels / immatureHide); null if none
         public Model leg;   // animals only
         public Model wing;        // animals with wings only (wingModel), the right wing
         public Model wingMirror;  // the same, mirrored: the left wing
@@ -873,6 +885,57 @@ namespace IsoRim
         // ModelDefs with a style (ModelDef.style): thing -> style defName -> that def's own entry.
         private static readonly Dictionary<ThingDef, Dictionary<string, ModelEntry>> styled = new Dictionary<ThingDef, Dictionary<string, ModelEntry>>();
 
+        // (Api 24) A plant's young-stage models (ModelEntry.immature): its immatureModels (or, with none, its variants), each
+        // without the immatureHide materials. Null when the def gives neither, or nothing is left.
+        private static Model[] ImmatureModels(ModelDef md, Model[] variants)
+        {
+            bool own = md.immatureModels != null && md.immatureModels.Count > 0;
+            bool hide = md.immatureHide != null && md.immatureHide.Count > 0;
+            if (!own && !hide)
+            {
+                return null;
+            }
+            List<Model> from = new List<Model>();
+            if (own)
+            {
+                if (md.modContentPack == null)
+                {
+                    return null;
+                }
+                for (int i = 0; i < md.immatureModels.Count; i++)
+                {
+                    Model m = LoadFile(Path.Combine(md.modContentPack.RootDir, md.immatureModels[i]));
+                    if (m != null && md.outlineMinSize > 0f)
+                    {
+                        m = ObjLoader.WithoutSmallOutlines(m, md.outlineMinSize);
+                    }
+                    if (m != null)
+                    {
+                        from.Add(m);
+                    }
+                }
+            }
+            else if (variants != null)
+            {
+                from.AddRange(variants);
+            }
+            List<Model> young = new List<Model>();
+            for (int i = 0; i < from.Count; i++)
+            {
+                Model m = hide ? ObjLoader.WithoutMaterials(from[i], md.immatureHide) : from[i];
+                if (m != null)
+                {
+                    young.Add(m);
+                }
+            }
+            if (young.Count == 0)
+            {
+                ModLog.Warn("[IsoRim] " + md.defName + ": no young-stage model left (immatureModels / immatureHide)");
+                return null;
+            }
+            return young.ToArray();
+        }
+
         public static bool TryGet(ThingDef def, out ModelEntry entry)
         {
             return byThing.TryGetValue(def, out entry);
@@ -1086,6 +1149,7 @@ namespace IsoRim
                     }
                 }
             }
+            entry.immature = ImmatureModels(md, entry.variants);
             if (!md.legModel.NullOrEmpty() && md.modContentPack != null)
             {
                 entry.leg = LoadFile(Path.Combine(md.modContentPack.RootDir, md.legModel));
@@ -1417,7 +1481,8 @@ namespace IsoRim
 
     // Reads Wavefront OBJ, the plain-text format Blender exports with its default axes
     // (Y up, -Z forward), with its .mtl file. Per material: Kd is the colour, map_Kd an optional
-    // texture, and a name starting with "stuff" takes the colour of whatever the thing is made of.
+    // texture, and a name starting with "stuff" takes the colour of whatever the thing is made of; one starting with
+    // "sheet" is multiplied by the thing's second colour (Api 24: a bed's sheets, R3DTextures.SheetTint).
     public static class ObjLoader
     {
         private static readonly char[] Separators = { ' ', '\t' };
@@ -1656,7 +1721,7 @@ namespace IsoRim
                 ModelMaterial o = m.materials[i];
                 mats[i] = !o.glow || (keepFire && o.fire) ? o : new ModelMaterial
                 {
-                    name = o.name, texture = o.texture, tinted = o.tinted, leaf = o.leaf, twig = o.twig, glow = false, fire = o.fire,
+                    name = o.name, texture = o.texture, tinted = o.tinted, sheet = o.sheet, leaf = o.leaf, twig = o.twig, glow = false, fire = o.fire,
                     color = o.color * shade
                 };
             }
@@ -1858,6 +1923,142 @@ namespace IsoRim
             m.id = nextId++;
             return m;
         }
+
+        // (Api 24) The model without the faces of the named materials (case-insensitive): a crop's young stage made from its
+        // mature model, its produce left out (ModelDef.immatureHide). The source itself if it uses none of them; null if
+        // nothing would be left.
+        public static Model WithoutMaterials(Model src, List<string> names)
+        {
+            if (src == null || src.materials == null || src.material == null || names == null || names.Count == 0)
+            {
+                return src;
+            }
+            bool[] drop = new bool[src.materials.Length];
+            bool any = false;
+            for (int i = 0; i < src.materials.Length; i++)
+            {
+                drop[i] = names.Exists(x => string.Equals(x, src.materials[i].name, StringComparison.OrdinalIgnoreCase));
+                any |= drop[i];
+            }
+            if (!any)
+            {
+                return src;
+            }
+            int n = src.positions.Length;
+            List<int> keep = new List<int>(n);
+            for (int i = 0; i + 2 < n; i += 3)
+            {
+                if (!drop[src.material[i]])
+                {
+                    keep.Add(i);
+                    keep.Add(i + 1);
+                    keep.Add(i + 2);
+                }
+            }
+            if (keep.Count == 0)
+            {
+                return null;
+            }
+            int k = keep.Count;
+            Model m = new Model();
+            m.positions = new Vector3[k];
+            m.normals = src.normals != null ? new Vector3[k] : null;
+            m.hull = src.hull != null ? new Vector3[k] : null;
+            m.colors = src.colors != null ? new Color[k] : null;
+            m.tinted = src.tinted != null ? new bool[k] : null;
+            m.uvs = src.uvs != null ? new Vector2[k] : null;
+            m.material = new int[k];
+            m.noOutline = src.noOutline != null ? new bool[k] : null;
+            m.minX = m.minZ = float.MaxValue;
+            m.maxX = m.maxZ = float.MinValue;
+            for (int i = 0; i < k; i++)
+            {
+                int j = keep[i];
+                Vector3 p = src.positions[j];
+                m.positions[i] = p;
+                if (m.normals != null) m.normals[i] = src.normals[j];
+                if (m.hull != null) m.hull[i] = src.hull[j];
+                if (m.colors != null) m.colors[i] = src.colors[j];
+                if (m.tinted != null) m.tinted[i] = src.tinted[j];
+                if (m.uvs != null) m.uvs[i] = src.uvs[j];
+                m.material[i] = src.material[j];
+                if (m.noOutline != null) m.noOutline[i] = src.noOutline[j];
+                m.maxY = Mathf.Max(m.maxY, p.y);
+                m.halfDepth = Mathf.Max(m.halfDepth, Mathf.Abs(p.z));
+                m.minX = Mathf.Min(m.minX, p.x);
+                m.maxX = Mathf.Max(m.maxX, p.x);
+                m.minZ = Mathf.Min(m.minZ, p.z);
+                m.maxZ = Mathf.Max(m.maxZ, p.z);
+            }
+            m.materials = src.materials;
+            m.id = nextId++;
+            return m;
+        }
+
+        // (Api 24) A copy of a model whose "sheet" faces (ModelMaterial.sheet) are multiplied by two, for drawing paths that cache
+        // ready-made meshes by model and one tint (DynamicModels): the copy's sheet faces carry the colour, so they are not
+        // sheet faces any more. Copies are kept per model and colour (rounded as DynamicModels rounds its tints).
+        public static Model SheetTinted(Model src, Color two)
+        {
+            if (src == null || src.material == null || src.colors == null || !R3DTextures.HasSheet(src)
+                || (two.r >= 0.98f && two.g >= 0.98f && two.b >= 0.98f))
+            {
+                return src;   // (white: the sheet faces keep their own colour)
+            }
+            Color32 t = two;
+            t.r = (byte)(t.r & 0xF8);
+            t.g = (byte)(t.g & 0xF8);
+            t.b = (byte)(t.b & 0xF8);
+            long key = ((long)src.id << 24) | (uint)((t.r << 16) | (t.g << 8) | t.b);
+            Model m;
+            if (sheetTinted.TryGetValue(key, out m))
+            {
+                return m;
+            }
+            Color c2 = new Color(t.r / 255f, t.g / 255f, t.b / 255f, 1f);
+            m = new Model();
+            m.positions = src.positions;
+            m.normals = src.normals;
+            m.uvs = src.uvs;
+            m.hull = src.hull;
+            m.noOutline = src.noOutline;
+            m.tinted = src.tinted;
+            m.material = src.material;
+            m.maxY = src.maxY;
+            m.halfDepth = src.halfDepth;
+            m.minX = src.minX;
+            m.maxX = src.maxX;
+            m.minZ = src.minZ;
+            m.maxZ = src.maxZ;
+            m.materials = new ModelMaterial[src.materials.Length];
+            for (int i = 0; i < src.materials.Length; i++)
+            {
+                ModelMaterial o = src.materials[i];
+                m.materials[i] = !o.sheet ? o : new ModelMaterial
+                {
+                    name = o.name, texture = o.texture, tinted = o.tinted, sheet = false, leaf = o.leaf, twig = o.twig, glow = o.glow, fire = o.fire,
+                    color = o.color * c2
+                };
+            }
+            m.colors = (Color[])src.colors.Clone();
+            for (int i = 0; i < m.colors.Length; i++)
+            {
+                if (src.materials[src.material[i]].sheet)
+                {
+                    Color c = m.colors[i];
+                    m.colors[i] = new Color(c.r * c2.r, c.g * c2.g, c.b * c2.b, c.a);
+                }
+            }
+            m.id = nextId++;
+            if (sheetTinted.Count > 512)
+            {
+                sheetTinted.Clear();
+            }
+            sheetTinted[key] = m;
+            return m;
+        }
+
+        private static readonly Dictionary<long, Model> sheetTinted = new Dictionary<long, Model>();
 
         public static Model WithoutSmallOutlines(Model src, float size)
         {
@@ -2126,6 +2327,7 @@ namespace IsoRim
             ModelMaterial mat = new ModelMaterial();
             mat.name = name;
             mat.tinted = name.StartsWith("stuff", StringComparison.OrdinalIgnoreCase);
+            mat.sheet = name.StartsWith("sheet", StringComparison.OrdinalIgnoreCase);
             mat.leaf = name.StartsWith("leaf", StringComparison.OrdinalIgnoreCase);
             mat.twig = name.StartsWith("twig", StringComparison.OrdinalIgnoreCase);
             mat.glow = name.StartsWith("flame", StringComparison.OrdinalIgnoreCase) || name.StartsWith("glow", StringComparison.OrdinalIgnoreCase)
@@ -2823,6 +3025,44 @@ namespace IsoRim
                 return Aged.Dull(c, aged);
             }
             return cost != null ? t.def.GetColorForStuff(cost) : t.DrawColor;
+        }
+
+        // (Api 24) The colour a model's "sheet" parts (ModelMaterial.sheet) are multiplied by: the thing's second colour, as
+        // the game's CutoutComplex sprites take it in their mask (Thing.DrawColorTwo: Building_Bed gives its sheet colour by
+        // owner type and medical, a mod bed overriding DrawColorTwo its own; other things their graphicData.colorTwo).
+        // White without a thing.
+        public static Color SheetTint(Thing t)
+        {
+            if (t == null)
+            {
+                return Color.white;
+            }
+            try
+            {
+                return t.DrawColorTwo;
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] DrawColorTwo of " + t.def?.defName + " failed: " + e.Message, 93611412);
+                return Color.white;
+            }
+        }
+
+        // True if any of the model's materials is a "sheet" one (the second tint matters for it).
+        public static bool HasSheet(Model m)
+        {
+            if (m == null || m.materials == null)
+            {
+                return false;
+            }
+            for (int i = 0; i < m.materials.Length; i++)
+            {
+                if (m.materials[i].sheet)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public static string ModelSwatch(Thing t)
