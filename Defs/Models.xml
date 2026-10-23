@@ -1747,8 +1747,8 @@
     <defName>R3D_Bedroll</defName>
     <thingDef>Bedroll</thingDef>
     <model>Models/bedroll.obj</model>
-    <beddingTop>0.16</beddingTop>
-    <surfaceHeight>0.08</surfaceHeight>
+    <beddingTop>0.26</beddingTop>
+    <surfaceHeight>0.07</surfaceHeight>
     <rotation>180</rotation>
     <builtFor>(1, 2)</builtFor>
   </IsoRim.ModelDef>
@@ -1757,8 +1757,8 @@
     <defName>R3D_BedrollDouble</defName>
     <thingDef>BedrollDouble</thingDef>
     <model>Models/bedroll_double.obj</model>
-    <beddingTop>0.16</beddingTop>
-    <surfaceHeight>0.08</surfaceHeight>
+    <beddingTop>0.26</beddingTop>
+    <surfaceHeight>0.07</surfaceHeight>
     <rotation>180</rotation>
     <builtFor>(2, 2)</builtFor>
   </IsoRim.ModelDef>
