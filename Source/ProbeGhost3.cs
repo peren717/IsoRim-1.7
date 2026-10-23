@@ -7,6 +7,7 @@ namespace IsoRim
 {
     // Harness keys for the placement ghost (ghost3, 2026-10-23):
     //   designrot=0..3     the build designator in hand turned to that rotation (as the player's Q / E keys: Designator_Place.placingRot)
+    //   designcell=x,z     the build designator in hand designates that cell (the player's click: the blueprint)
     //   undraft=x,z        the colonist in the cell undrafted (takes work again)
     //   ghostspritecheck=1 logs how many game ghost sprites IsoRim left out this session because its 3D ghost stands in
     public static partial class Probe
@@ -26,6 +27,20 @@ namespace IsoRim
                         return true;
                     }
                     placingRot(d) = new Rot4(I(a[0]));
+                    return true;
+                }
+                case "designcell":
+                {
+                    // designcell=x,z: the build designator in hand designates that cell, as the player's click (CanDesignateCell
+                    // then DesignateSingleCell: the blueprint, replacing what stands there as the game does)
+                    Designator dz = Find.DesignatorManager.SelectedDesignator;
+                    IntVec3 dc = new IntVec3(I(a[0]), 0, I(a[1]));
+                    AcceptanceReport ok = dz != null ? dz.CanDesignateCell(dc) : "no designator";
+                    if (ok.Accepted)
+                    {
+                        dz.DesignateSingleCell(dc);
+                    }
+                    Log.Message("[IsoRim probe] designcell " + dc + ": " + (ok.Accepted ? "placed" : "refused: " + ok.Reason));
                     return true;
                 }
                 case "undraft":
