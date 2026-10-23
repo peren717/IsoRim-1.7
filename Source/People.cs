@@ -630,6 +630,9 @@ namespace IsoRim
             {
                 FaceDecal.Draw(pawn, head, at, yaw, headLocal);
             }
+            // The game's wounds, bandages and scars on the body and head (WoundMarks; a body without legs keeps none).
+            WoundMarks.DrawPerson(pawn, look, at, yaw, bodyPlace, headPlace,
+                !headOnly && !noLegs && (hidden & (FigureParts.Body | FigureParts.Legs)) == 0, !look.headHidden && (hidden & FigureParts.Head) == 0);
             if (look.flames && !dead)
             {
                 // A bound model's flame* parts (a torch belt): IsoRim's live flame (ApparelModels).

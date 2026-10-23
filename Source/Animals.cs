@@ -210,6 +210,7 @@ namespace IsoRim
             Matrix4x4 bodyTurn = def.rotation != 0f ? Matrix4x4.Rotate(Quaternion.AngleAxis(def.rotation, Vector3.up)) : Matrix4x4.identity;
             FigureScope.Root(position, yaw);   // (Api.DrawFigure: placed elsewhere)
             DynamicModels.DrawLocal(body, position, yaw, bodyPose * sized * bodyTurn, Color.white, null);
+            WoundMarks.DrawAnimal(pawn, body, position, yaw, bodyPose * sized, bodyTurn, size);   // the game's wounds on the body
             if (ground - flight <= 0f)
             {
                 // On the ground, or flying: the shadow stays on the ground (the blob is drawn at ground height).
