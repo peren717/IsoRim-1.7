@@ -2583,11 +2583,13 @@ namespace IsoRim
         // While this has any alpha, Bake writes the model as a see-through ghost of this colour
         // (for blueprints and frames) instead of the real thing.
         public static Color Ghost = new Color(0f, 0f, 0f, 0f);
+        // With Ghost: written with the x-ray ghost material (a blueprint inside a solid building, Ghosts.Print).
+        public static bool GhostXray;
 
         private static bool WriteGhost(SectionLayer layer, Model m, Vector3 center, Quaternion turn, Quaternion lay, Vector3 layLift,
             Vector3 scale, Vector3 offset, float baseHeight)
         {
-            Material mat = R3DMaterials.Ghost;
+            Material mat = GhostXray && R3DMaterials.GhostXray != null ? R3DMaterials.GhostXray : R3DMaterials.Ghost;   // (Ghosts.Print: inside a solid building)
             LayerSubMesh sm = mat != null ? MeshWriter.Sub(layer, mat) : null;
             int n = m.positions.Length;
             if (sm == null || sm.verts.Count + n > MeshWriter.MaxVerts)

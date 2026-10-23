@@ -1,6 +1,7 @@
 using System.Linq;
 using HarmonyLib;
 using RimWorld;
+using UnityEngine;
 using Verse;
 
 namespace IsoRim
@@ -29,6 +30,25 @@ namespace IsoRim
                     placingRot(d) = new Rot4(I(a[0]));
                     return true;
                 }
+                case "plancheck":
+                    // plancheck=1: logs each blueprint and frame: what it becomes, its 3D form, where its model ghost stands
+                    foreach (Thing t in map.listerThings.AllThings.Where(x => x is Blueprint || x is Frame).ToList())
+                    {
+                        ThingDef target = Ghosts.Target(t);
+                        ThingForm form = target != null ? Forms.For(target) : default(ThingForm);
+                        string where = "";
+                        if (target != null && form.form == Form3D.Model && form.model != null && form.model.HasModel)
+                        {
+                            Vector3 fit;
+                            float yaw;
+                            Vector3 p = ModelBaker.PointOnMap(t, form.model, form.model.variants[0], Vector3.zero, out fit, out yaw);
+                            where = ", model origin " + p.ToString("F2") + " yaw " + yaw.ToString("F0");
+                        }
+                        Building occ = t.Position.GetEdifice(map);
+                        Log.Message("[IsoRim probe] plancheck " + t.def.defName + " " + t.Position + " rot " + t.Rotation + ": target " + target?.defName
+                            + ", form " + form.form + where + ", edifice " + (occ != null ? occ.def.defName : "none") + ", drawer " + t.def.drawerType);
+                    }
+                    return true;
                 case "designcell":
                 {
                     // designcell=x,z: the build designator in hand designates that cell, as the player's click (CanDesignateCell

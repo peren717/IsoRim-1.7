@@ -236,6 +236,9 @@ namespace IsoRim
             // Where the 3D preview stands in, the game's own flat ghost sprite is left out (only that call; the comps' and
             // place workers' ghosts stay): Ghosts.DrawGameGhostSprite.
             Patch("3D placement preview without the flat sprite", ghostThing, transpiler: nameof(GhostSprite_Transpiler));
+            // Blueprints and frames drawn every frame whose flat sprite would lie in a wall: their 3D ghost (Ghosts.DrawPlanned).
+            Patch("3D ghosts of things to be built in walls", AccessTools.Method(typeof(Blueprint), "DrawAt"), prefix: nameof(BlueprintDraw_Prefix));
+            Patch("3D ghosts of things to be built in walls", AccessTools.Method(typeof(Frame), "DrawAt"), postfix: nameof(FrameDraw_Postfix));
 
             // The pointer in 3D: selection brackets on the ground, and clicking anywhere on a tall
             // thing picks it. (The selection drag box is the game's own: a plain rectangle on screen.)
@@ -3902,6 +3905,33 @@ namespace IsoRim
             if (__state)
             {
                 Emitters.End();
+            }
+        }
+
+        // A blueprint the game draws every frame: its 3D ghost in place of the flat sprite where that sprite would lie in a wall.
+        public static bool BlueprintDraw_Prefix(Blueprint __instance)
+        {
+            try
+            {
+                return !Ghosts.DrawPlanned(__instance);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Drawing a blueprint's 3D ghost failed: " + e, 93611561);
+                return true;
+            }
+        }
+
+        // A frame the same, over its work sprite.
+        public static void FrameDraw_Postfix(Frame __instance)
+        {
+            try
+            {
+                Ghosts.DrawPlanned(__instance);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Drawing a frame's 3D ghost failed: " + e, 93611562);
             }
         }
 

@@ -188,6 +188,21 @@
     </shaderProgram>
   </ShaderDef>
 
+  <!-- Ghosts of things to be built inside a wall or other solid building (a door replacing a wall section, a fixture
+       whose sprite lies in the wall): seen through it, as the mining x-ray. No depth test or write, front faces only. -->
+  <ShaderDef>
+    <defName>IsoRimGhostXray</defName>
+    <shaderProgram>
+      <fragmentShaderFileName>IsoRimSolid.frag.glsl</fragmentShaderFileName>
+      <useTexture>false</useTexture>
+      <blendMode>Alpha</blendMode>
+      <depthTest>false</depthTest>
+      <depthWrite>false</depthWrite>
+      <cullMode>Back</cullMode>
+      <renderQueue>3651</renderQueue>
+    </shaderProgram>
+  </ShaderDef>
+
   <!-- The colour grade: one full-screen pass after everything else in the map view. The engine copies
        the picture drawn so far into _GrabIsoRimGrade; the pass looks each pixel up in a LUT strip.
        The game's interface is drawn later, outside the map view, and is not graded. -->
