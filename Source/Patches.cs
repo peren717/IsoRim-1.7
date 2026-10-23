@@ -448,6 +448,27 @@ namespace IsoRim
             Patch("3D turning parts", AccessTools.DeclaredMethod(typeof(Mote), "DrawAt", new[] { typeof(Vector3), typeof(bool) }),
                 prefix: nameof(MoteDrawAt_Prefix));
 
+            // Work progress bars: hung over the thing worked on without the game's southward offset, shown farther out (Bars).
+            MethodInfo barDraw = AccessTools.DeclaredMethod(typeof(MoteProgressBar), "DrawAt", new[] { typeof(Vector3), typeof(bool) });
+            if (barDraw == null)
+            {
+                missed.Add("progress bars (not found)");
+            }
+            else
+            {
+                try
+                {
+                    harmony.Patch(barDraw, prefix: new HarmonyMethod(typeof(Bars), nameof(Bars.DrawAt_Prefix)),
+                        finalizer: new HarmonyMethod(typeof(Bars), nameof(Bars.DrawAt_Finalizer)));
+                    hooked.Add("MoteProgressBar.DrawAt");
+                }
+                catch (Exception e)
+                {
+                    missed.Add("MoteProgressBar.DrawAt (" + e.Message + ")");
+                    ModLog.Warn("[IsoRim] Could not hook MoteProgressBar.DrawAt for progress bars: " + e.Message);
+                }
+            }
+
             // Parts that bob in 3D (the grav engine's orb, Bobbers): the game's flat orb is left out while the model stands in.
             Patch("3D bobbing parts", AccessTools.DeclaredMethod(typeof(Building_GravEngine), "DrawAt", new[] { typeof(Vector3), typeof(bool) }),
                 prefix: nameof(GravEngineDrawAt_Prefix));
@@ -3383,6 +3404,21 @@ namespace IsoRim
             if (mote != null && SkyStrikes.FlatGlow(mote, out glowLift))
             {
                 BeginFlat(ref __state, glowLift);
+                return;
+            }
+            // A work progress bar: one card over the thing worked on, raised over its top (Bars).
+            MoteProgressBar bar = mote as MoteProgressBar;
+            if (bar != null && !Bars.Off)
+            {
+                Vector3 barAt;
+                float barHeight;
+                Bars.Anchor(bar, out barAt, out barHeight);
+                BeginBillboard(ref __state, barHeight, false, Vector3.zero);
+                if (__state.changed)
+                {
+                    DrawHook.hasPivot = true;
+                    DrawHook.billboardPivot = barAt;
+                }
                 return;
             }
             // Speech bubbles and icons over people's heads stand up and float above them.
