@@ -1,0 +1,5 @@
+# geothermal.mtl: the geothermal generator's louvre slats (make_geothermal.py), the sprite's red-brown.
+
+newmtl geo_louvre
+Kd 0.560 0.380 0.340
+map_Kd IsoRim/Swatches/Metal
