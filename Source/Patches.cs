@@ -2848,6 +2848,10 @@ namespace IsoRim
             {
                 if (__instance.def.drawerType == DrawerType.RealtimeOnly)
                 {
+                    if (LiveItems.Draw(__instance))
+                    {
+                        return false;   // an item drawn every frame (a book on the ground): solid, as items in the map mesh
+                    }
                     bool held = SectionLayer_IsoRimBodies.StandsIn(__instance);
                     if (Probe.On)
                     {

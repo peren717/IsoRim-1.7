@@ -73,7 +73,9 @@ namespace IsoRim
             // Things the game draws every frame (drawerType RealtimeOnly) are never printed into the
             // map mesh, so only a building with a hand-made model is reshaped: its model is baked
             // by SectionLayer_IsoRimBodies, and the game keeps drawing everything else about it.
-            if (def.drawerType == DrawerType.RealtimeOnly)
+            // Items drawn every frame with the plain item drawing (books: vanilla gives them no drawerType) take the
+            // same form as any other item below, and are drawn so every frame (LiveItems).
+            if (def.drawerType == DrawerType.RealtimeOnly && !LiveItems.Is(def))
             {
                 if (def.category != ThingCategory.Building || def.IsFrame || def.IsBlueprint || !listed || entry.def.flat
                     || entry.def.animal || !entry.HasModel || !st.models3D || typeof(Building_Door).IsAssignableFrom(def.thingClass))
