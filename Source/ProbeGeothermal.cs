@@ -53,7 +53,7 @@ namespace IsoRim
                 }
                 case "tickspray":
                 {
-                    Building b = new IntVec3(I(a[0]), 0, I(a[1])).GetFirstBuilding(map);
+                    Building b = new IntVec3(I(a[0]), 0, I(a[1])).GetThingList(map).OfType<Building>().FirstOrDefault(t => t.GetComp<CompPowerPlantSteam>() != null);   // not the geyser under it
                     CompPowerPlantSteam comp = b?.GetComp<CompPowerPlantSteam>();
                     if (comp == null)
                     {
