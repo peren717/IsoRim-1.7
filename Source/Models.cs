@@ -3627,6 +3627,7 @@ namespace IsoRim
         public const string GhostDef = "IsoRimGhost";       // alpha, depth write, cull back, 3100
         public const string BlendDef = "IsoRimBlend";       // alpha, depth test, no depth write, 3050
         public const string OverlayDef = "IsoRimOverlay";   // alpha, no depth test or write, 3650
+        public const string GhostXrayDef = "IsoRimGhostXray"; // alpha, no depth test or write, cull back, 3651
         public const string WaveDef = "IsoRimWave";         // the game's Transparent with a repeating texture
 
         public const int LightUnlit = 0;
@@ -3702,6 +3703,24 @@ namespace IsoRim
                     IsoGlow.Use(ghost, IsoGlow.OwnCellUnmarked);
                 }
                 return ghost;
+            }
+        }
+
+        // The same ghost seen through what stands in front of it (no depth test, as the mining x-ray): for a thing to be built
+        // inside a wall or other solid building (Ghosts.Occupied: a door replacing a wall section), which the plain ghost,
+        // depth tested, would leave hidden inside it.
+        private static Material ghostXray;
+
+        public static Material GhostXray
+        {
+            get
+            {
+                if (ghostXray == null && Solid != null)
+                {
+                    ghostXray = Make(GhostXrayDef, "IsoRim_GhostXray", 3651);
+                    IsoGlow.Use(ghostXray, IsoGlow.OwnCellUnmarked);
+                }
+                return ghostXray;
             }
         }
 
