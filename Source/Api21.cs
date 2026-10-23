@@ -318,7 +318,7 @@ namespace IsoRim
             {
                 return FaceHiddenBy.NoHead;
             }
-            if (look.ownHead != null)
+            if (look.ownHead != null && !(look.race != null && look.race.faceShown && look.race.ownHead == look.ownHead))   // (an Own race's head with IsoRim's face: as a person head, Api 25)
             {
                 return FaceHiddenBy.OwnHead;
             }

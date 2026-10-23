@@ -14,8 +14,7 @@ namespace IsoRim
     // the node's matrix against its head or body node (TryGetMatrix: HAR's offsets per facing, body type and head type,
     // its angle, size and mirroring are all in it), its material (HAR's colour channels), its mesh and whether it shows
     // (CanDrawNow: conditions, skip flags such as a hat hiding the ears). Drawn with the figure: the card of the facing the
-    // camera sees, in the head or body frame (it follows pose, sitting, stacked floors and Api.DrawFigure; body cards are left
-    // out while the figure lies or crawls: a flat picture reads badly on a lying body).
+    // camera sees, in the head or body frame (it follows pose, lying, sitting, crawling, stacked floors and Api.DrawFigure).
     internal static class RaceCards
     {
         internal sealed class Card
@@ -23,6 +22,8 @@ namespace IsoRim
             public Mesh mesh;
             public Material material;
             public Matrix4x4 local;   // in the head or body frame
+            public Vector3 push;      // how far local is pushed out to the front or back of the head or body (taken back out on a hat)
+            public float low;         // the card's lowest point in its frame (hatLift)
             public bool head;
         }
 
@@ -32,6 +33,8 @@ namespace IsoRim
             public bool onHead;
             public bool shown;        // drawn in at least one facing
             public bool bound;        // a pack entry draws it (model) or hides it: no card
+            public float hatLift;     // the pack entry's hatLift (head addons, while headgear is drawn)
+            public bool noCard;       // the pack's addonCards is off (a model may still bind it)
             public Color colour = Color.white;   // its material's colour (south), for addon models
             public readonly Card[] byFacing = new Card[4];
         }
@@ -72,7 +75,7 @@ namespace IsoRim
 
         internal static Set Collect(Pawn pawn, People.Look look, RaceLook r)
         {
-            if (r.pack != null && !r.pack.addonCards && (r.pack.addons == null || r.pack.addons.Count == 0))
+            if (r.pack != null && !r.pack.addonCards && r.pack.hair != RaceHair.Card && (r.pack.addons == null || r.pack.addons.Count == 0))
             {
                 return null;
             }
@@ -95,7 +98,7 @@ namespace IsoRim
                 tree.TryGetNodeByTag(PawnRenderNodeTagDefOf.Head, out headNode);
                 tree.TryGetNodeByTag(PawnRenderNodeTagDefOf.Body, out bodyNode);
                 List<PawnRenderNode> foreign = new List<PawnRenderNode>();
-                Walk(tree.rootNode, foreign);
+                Walk(tree.rootNode, foreign, r.pack != null && r.pack.hair == RaceHair.Card);
                 if (foreign.Count == 0)
                 {
                     return null;
@@ -110,6 +113,7 @@ namespace IsoRim
                 foreach (PawnRenderNode n in foreign)
                 {
                     Node node = new Node { onHead = headNode != null && Under(n, headNode) };
+                    node.noCard = r.pack != null && !r.pack.addonCards && !(n is PawnRenderNode_Hair || n is PawnRenderNode_Beard);   // (addonCards off: models only)
                     Graphic g = n.PrimaryGraphic;
                     node.path = g != null ? ModelLibrary.NormalPath(g.path) : null;
                     set.nodes.Add(node);
@@ -149,7 +153,9 @@ namespace IsoRim
                             continue;
                         }
                         Matrix4x4 rel = (node.onHead ? headM : bodyM).inverse * nm;
-                        node.byFacing[f] = new Card { mesh = mesh, material = mat, head = node.onHead, local = Place(rel, f, node.onHead, look, r, hb, bb) };
+                        Vector3 push;
+                        node.byFacing[f] = new Card { mesh = mesh, material = mat, head = node.onHead, local = Place(rel, f, node.onHead, look, r, hb, bb, out push), push = push };
+                        node.byFacing[f].low = Lowest(mesh, mat, node.byFacing[f].local);
                         if (!node.shown || f == 2)
                         {
                             node.colour = mat.color;
@@ -166,16 +172,18 @@ namespace IsoRim
             }
         }
 
-        // Every node of another mod's class under the root (not the game's own: body, head, hair, apparel, gene parts ...;
+        // Every node of another mod's class under the root (not the game's own: body, head, hair, apparel, gene parts ...; the hair
+        // and beard too for a pack with hair Card;
         // nor Facial Animation's face, which IsoRim draws itself).
-        private static void Walk(PawnRenderNode n, List<PawnRenderNode> into)
+        private static void Walk(PawnRenderNode n, List<PawnRenderNode> into, bool hair)
         {
             if (n == null)
             {
                 return;
             }
             Type t = n.GetType();
-            if (t.Assembly != typeof(PawnRenderNode).Assembly && (t.Namespace == null || !t.Namespace.StartsWith("FacialAnimation")))
+            if ((t.Assembly != typeof(PawnRenderNode).Assembly && (t.Namespace == null || !t.Namespace.StartsWith("FacialAnimation")))
+                || (hair && (n is PawnRenderNode_Hair || n is PawnRenderNode_Beard)))   // (pack hair Card: the game's hair and beard too)
             {
                 into.Add(n);
             }
@@ -183,9 +191,43 @@ namespace IsoRim
             {
                 for (int i = 0; i < n.children.Length; i++)
                 {
-                    Walk(n.children[i], into);
+                    Walk(n.children[i], into, hair);
                 }
             }
+        }
+
+        // The lowest drawn (opaque) point of a card placed by local (its frame's y): the quad's middle at the picture's lowest
+        // opaque row (the whole quad's bottom when the texture cannot be read).
+        private static readonly Dictionary<Texture, float> opaqueBottom = new Dictionary<Texture, float>();
+
+        private static float Lowest(Mesh mesh, Material mat, Matrix4x4 local)
+        {
+            Bounds b = mesh.bounds;
+            float frac = 0f;
+            Texture tex = mat != null ? mat.mainTexture : null;
+            if (tex != null && !opaqueBottom.TryGetValue(tex, out frac))
+            {
+                frac = 0f;
+                int w, h;
+                Color32[] px = SpritePixels.Full(tex, out w, out h);
+                if (px != null && w > 0 && h > 0)
+                {
+                    for (int y = 0; y < h && frac == 0f; y++)
+                    {
+                        for (int x = 0; x < w; x++)
+                        {
+                            if (px[y * w + x].a > 64)
+                            {
+                                frac = (y + 0.5f) / h;
+                                break;
+                            }
+                        }
+                    }
+                }
+                opaqueBottom[tex] = frac;
+            }
+            Vector3 p = new Vector3(b.center.x, b.center.y, b.min.z + frac * b.size.z);
+            return local.MultiplyPoint3x4(p).y;
         }
 
         private static bool Under(PawnRenderNode n, PawnRenderNode ancestor)
@@ -204,7 +246,7 @@ namespace IsoRim
         // facing f: the picture's middle where the game's head (body) sprite middle lands on the figure (FigureBoxes),
         // the game's cells to the frame's (the race's sizes are already in the frame), pushed out to the front or the back
         // of the head (body) by the layer's sign.
-        private static Matrix4x4 Place(Matrix4x4 rel, int f, bool onHead, People.Look look, RaceLook r, FigureBoxes.Box hb, FigureBoxes.Box bb)
+        private static Matrix4x4 Place(Matrix4x4 rel, int f, bool onHead, People.Look look, RaceLook r, FigureBoxes.Box hb, FigureBoxes.Box bb, out Vector3 push)
         {
             float layer = rel.m13;
             rel.m13 = 0f;
@@ -226,11 +268,37 @@ namespace IsoRim
             Vector3 v = ToViewer(f);
             float reach = Mathf.Abs(Vector3.Dot(box.size * 0.5f, new Vector3(Mathf.Abs(v.x), 0f, Mathf.Abs(v.z)))) + 0.025f;
             float depth = Vector3.Dot(box.centre, v) + (layer >= 0f ? reach : -reach);
+            push = v * (depth - Vector3.Dot(box.centre, v));
+            if (onHead && r.mode == FigureMode.Own && r.headFit != Vector3.one)
+            {
+                // An Own race's head frame carries headFit, which may stretch: the picture keeps its own proportions, sized by the
+                // fit's width, at the point the fit puts it.
+                Vector3 at = r.head.MultiplyPoint3x4(origin + v * depth);
+                return r.headInv * Matrix4x4.Translate(at) * Matrix4x4.Scale(Vector3.one * r.headFit.x) * PictureToFigure[f] * Matrix4x4.Scale(new Vector3(k, k, k)) * rel;
+            }
             return Matrix4x4.Translate(origin + v * depth) * PictureToFigure[f] * Matrix4x4.Scale(new Vector3(k, k, k)) * rel;
         }
 
+        // For People.Report (harness): each node, its path, shown, bound, hatLift and lowest point facing south.
+        internal static string Report(Set set)
+        {
+            if (set == null)
+            {
+                return "";
+            }
+            System.Text.StringBuilder s = new System.Text.StringBuilder(", nodes [");
+            foreach (Node n in set.nodes)
+            {
+                Card c = n.byFacing[2];
+                s.Append(n.path).Append(n.onHead ? " head" : " body").Append(n.shown ? "" : " unshown").Append(n.bound ? " bound" : "").Append(n.noCard ? " nocard" : "")
+                    .Append(n.hatLift > 0f ? " hatLift " + n.hatLift.ToString("0.00") : "").Append(c != null ? " low " + c.low.ToString("0.000") : "").Append("; ");
+            }
+            return s.Append("]").ToString();
+        }
+
         // People.Draw: the cards of the facing the camera sees, in the head and body frames (hidden parts left out).
-        internal static void Draw(People.Look look, Vector3 at, float yaw, Matrix4x4 headPlace, Matrix4x4 bodyPlace, FigureParts hidden, bool bodyShown)
+        internal static void Draw(People.Look look, Vector3 at, float yaw, Matrix4x4 headPlace, Matrix4x4 bodyPlace, FigureParts hidden, bool bodyShown,
+            bool lying = false, bool crawling = false)
         {
             Set set = look.race != null ? look.race.cards : null;
             if (set == null || set.nodes.Count == 0 || (hidden & FigureParts.Addons) != 0 || FigureScope.Measuring)
@@ -251,6 +319,10 @@ namespace IsoRim
                     facing = f;
                 }
             }
+            if (lying)
+            {
+                facing = crawling ? 0 : 2;   // lying on the back the front picture faces up, crawling the back one (as the game draws them)
+            }
             bool headShown = !look.headHidden && (hidden & FigureParts.Head) == 0;
             bool body = bodyShown && (hidden & FigureParts.Body) == 0;
             float s = View3D.Squash;
@@ -259,11 +331,18 @@ namespace IsoRim
             {
                 Node n = set.nodes[i];
                 Card c = n.byFacing[facing];
-                if (n.bound || c == null || (c.head ? !headShown : !body))
+                if (n.bound || n.noCard || c == null || (c.head ? !headShown : !body))
                 {
                     continue;
                 }
-                FigureScope.DrawMesh(c.mesh, c.material, placed * (c.head ? headPlace : bodyPlace) * c.local);
+                Matrix4x4 frame = c.head ? headPlace : bodyPlace;
+                if (c.head && n.hatLift > 0f && !float.IsNaN(look.race.hatTop))
+                {
+                    // Out of the hat (hatLift): its lowest point lifted that share of the way up to the hat's top, in the head's middle plane
+                    // (not on its front or back, where the hat would cover it or it would sit on the hat's face).
+                    frame = frame * Matrix4x4.Translate(new Vector3(0f, Mathf.Max(0f, look.race.hatTop - c.low) * n.hatLift, 0f) - c.push);
+                }
+                FigureScope.DrawMesh(c.mesh, c.material, placed * frame * c.local);
             }
         }
     }

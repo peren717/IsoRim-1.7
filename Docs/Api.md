@@ -3,7 +3,7 @@
 Model packs (XML and .obj files, no code), the dev-mode model binder and the coverage report: see [ModelPacks.md](ModelPacks.md).
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.RaceModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `RaceFace`, `RaceHair`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.RaceModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
 in any update, even when it is public: do not patch or reflect into it, ask for an Api member instead. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -1038,19 +1038,29 @@ follows: IsoRim's clothes, hats, hair and eyes, held weapons, work tools, carrie
 - **Human**: IsoRim's human figure, scaled by the race's scale (default: the game's body mesh against a human's, i.e. HAR's
   `customDrawSize`), its head scaled about the neck (default: head mesh / body mesh, HAR's `customHeadDrawSize`) and moved (default:
   the game's head offset against the body type's own, HAR's `headOffset`, south for up, east for forward). The race's body type
-  maps to one of IsoRim's builds (pack `build`, else vanilla names, else the body type's own art). IsoRim's eyes on the head.
+  maps to one of IsoRim's builds (pack `build`, else vanilla names, else the body type's own art). IsoRim's face on the head
+  (pack `face` `None`: no face).
 - **Own**: the pack's body (upper and lower, like `person_<build>_upper/_lower`) and head models in the race's own figure space.
-  IsoRim's head parts (hats, hair, eyes, head hooks) go through the `head` anchor and `headFit`; clothes, packs and belts made
-  for the body's `fitAs` build through `bodyFit`; held weapons and carried things move with the hands' height. Face drawers see
-  the race head as an own head (`FaceHiddenBy.OwnHead`, asked only when added with `evenWhenHidden`). Dried to bones, an Own
-  race keeps its card (IsoRim has no skeleton of its shape).
+  IsoRim's head parts (hats, hair, head hooks) go through the `head` anchor and `headFit`; clothes, packs and belts made
+  for the body's `fitAs` build through `bodyFit`; held weapons and carried things move with the hands' height. With `face`
+  `IsoRim` (the default) IsoRim's face (its eyes, Facial Animation's face) goes on the race head at the `face` anchor, scaled by
+  `faceFit`, and face drawers (part 15) are asked as for people: `FaceFrame.Matrix` maps IsoRim's head space onto that place.
+  With `face` `None` the head model has its own face: drawers see `FaceHiddenBy.OwnHead`. Dried to bones, an Own race keeps
+  its card (IsoRim has no skeleton of its shape).
+- **Hair**: pack `hair` `IsoRim` (IsoRim's hair shapes by the hairstyle, the default), `Card` (the game's own hair and beard
+  sprites as cards, like the addons: for races whose hair art IsoRim's shapes don't match) or `None`.
 - **Addons**: the race's render nodes of another mod's class (HAR body addons: ears, tails, horns, hair drawn as an addon) are
-  drawn as cards of the game's own sprites, as the game would draw them for the facing the camera sees: HAR's offsets per
-  facing, body type and head type, its colour channels, conditions and skip flags (a hat hiding the ears) all come from the
-  render tree. Cards on the body are left out while the figure lies or crawls. A pack can give one a model (by its texture
-  path) or hide it. The game's own gene parts on people are not
-  drawn by IsoRim (they are left to other mods, such as "IsoRim - Biotech Pawn Parts"); a mod that draws a race's addons
-  itself hides IsoRim's cards with `FigureParts.Addons`.
+  drawn as cards of the game's own sprites, as the game would draw them for the facing the camera sees (lying on the back:
+  the front picture, crawling: the back one): HAR's offsets per facing, body type and head type, its colour channels,
+  conditions and skip flags (a hat hiding the ears) all come from the render tree. A pack can give one a model (by its
+  texture path), hide it, or give it `hatLift`: while headgear is drawn, a head addon (card or model) is lifted that share of
+  the way from its lowest drawn point to the hat's top, in the head's middle plane, so ears the game shows over hats stick
+  out of the 3D hat. The game's own gene parts on people are not drawn by IsoRim (they are left to other mods, such as
+  "IsoRim - Biotech Pawn Parts"); a mod that draws a race's addons itself hides IsoRim's cards with `FigureParts.Addons`.
+- **Dev mode**: Debug actions > IsoRim > **Race tuning...** (a race pawn selected, or click one): live sliders for scale, head
+  scale and offset, every anchor and `headFit`, `bodyFit`, `faceFit`, the figure and face buttons, and **Copy XML** (the
+  fields and anchors as `RaceModelDef` XML on the clipboard). Changes show at once on every pawn of the race until Reset or
+  a new game; untouched fields keep the pack's (or measured) values and are not written.
 
 ## Part M: model packs (IsoRim.ModelDef)
 
@@ -1157,4 +1167,6 @@ public class PatchOperation_IfIsoRimApi : PatchOperation
   models, a tail model and a race-only hat binding; a race without a pack) and the probe keys `racepawn`, `racehooks`,
   `keeppaper`, `goto`, `racecheck` (`Source/ProbeRaces.cs`): four facings, apparel, hats, weapons, packs, eating at a table,
   resting in bed, crawling downed, carrying, aiming, walking, figure hooks and face drawers, "Keep as paper", the pack on an
-  older IsoRim (no change, no error) and the races without the pack (cards).
+  older IsoRim (no change, no error) and the races without the pack (cards). Round 2 added `face` on and off (set live in the
+  race tuning window, probe keys `racetune`, `racetuneset`, `racetunecopy`), cards while lying and crawling, and a trial pack for
+  Kiiro Race (HAR, Workshop 2988200143) with `hair` Card, ear `hatLift` and Kiiro's own and vanilla hats.

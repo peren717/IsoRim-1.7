@@ -16,6 +16,8 @@ namespace IsoRim
     //                                calls per person) and a test face drawer (counts, draws nothing) registered
     //   keeppaper=<ThingDef>|-       the "Keep as paper" list set to that race (or emptied), as the settings button does
     //   goto=px,pz,tx,tz             only the colonist in (px,pz) ordered to walk to (tx,tz) (a real Goto job; run tick= after it)
+    //   racetune=x,z | <race>        the race tuning window (dev) opened on the pawn in (x,z) or the first of the race; racetuneset=<field>,<i>,<value>
+    //                                moves a slider; racetunecopy=1 logs its "Copy XML" text (shot it with bindershot=<tag>)
     //   racecheck=1                  logs every humanlike on the map: race, Api.FigureModeOf, drawn as a model, the look's
     //                                race placing (People.Report), the hook and face drawer counts
     public static partial class Probe
@@ -61,6 +63,34 @@ namespace IsoRim
                         Job gj = JobMaker.MakeJob(JobDefOf.Goto, new IntVec3(I(a[2]), 0, I(a[3])));
                         gp.jobs.TryTakeOrderedJob(gj, JobTag.Misc);
                     }
+                    return true;
+                }
+                case "racetune":
+                {
+                    // racetune=x,z: the race tuning window opened on the pawn in the cell (as the debug action with it selected)
+                    Pawn tp = a.Length == 1 ? map.mapPawns.AllPawnsSpawned.FirstOrDefault(x => x.def.defName == a[0])
+                        : map.thingGrid.ThingsListAt(new IntVec3(I(a[0]), 0, I(a[1]))).OfType<Pawn>().FirstOrDefault();
+                    if (tp != null)
+                    {
+                        RaceTune.Open(tp);
+                    }
+                    return true;
+                }
+                case "racetuneset":
+                {
+                    // racetuneset=<field>,<component 0-2>,<value>: as moving that slider (fields: scale, headScale, headOffset, the
+                    // anchors, headFit, bodyFit, faceFit; figure 0-2, faceMode 0-1)
+                    RaceTuneWindow tw = Find.WindowStack.WindowOfType<RaceTuneWindow>();
+                    if (tw != null)
+                    {
+                        tw.Set(a[0], I(a[1]), F(a[2]));
+                    }
+                    return true;
+                }
+                case "racetunecopy":
+                {
+                    RaceTuneWindow tw = Find.WindowStack.WindowOfType<RaceTuneWindow>();
+                    Log.Message("[IsoRim probe] racetunecopy: " +  (tw != null ? tw.Xml() : "no window"));
                     return true;
                 }
                 case "racecheck":

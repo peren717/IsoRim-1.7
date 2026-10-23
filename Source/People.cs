@@ -599,7 +599,8 @@ namespace IsoRim
                 // they may hide its own parts (Api 21).
                 hidden = FigureHooks.Raise(pawn, look, at, yaw, headPlace, bodyPlace, size, lift, lying, crawling, seated || noLegs, dead, !headOnly);
             }
-            Matrix4x4 headLocal = headPlace * Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f));
+            // (a race: where its face goes, Api 25; an Own race's face on its own head at the face anchor)
+            Matrix4x4 headLocal = look.race != null ? headPlace * look.race.face : headPlace * Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f));
             if (FaceDrawers.Count > 0 && !FigureScope.Measuring && (hidden & (FigureParts.Head | FigureParts.Face)) == 0)
             {
                 // Where the game leaves the face out, only drawers added with evenWhenHidden are asked (Api 21).
@@ -621,7 +622,7 @@ namespace IsoRim
             DynamicModels.DrawParts(Merged(look, true, dead, turned, null, false, hidden), at, yaw, headPlace);
             if (look.race != null)
             {
-                RaceCards.Draw(look, at, yaw, headPlace, bodyPlace, hidden, !headOnly && !lying);   // a race's addons as cards (Api 25; body ones not while lying: a flat picture reads badly on a lying body)
+                RaceCards.Draw(look, at, yaw, headPlace, bodyPlace, hidden, !headOnly, lying, crawling);   // a race's addons as cards (Api 25)
             }
             if (look.faceDecal && !look.headHidden && look.skull == null && (hidden & (FigureParts.Head | FigureParts.Face)) == 0)
             {

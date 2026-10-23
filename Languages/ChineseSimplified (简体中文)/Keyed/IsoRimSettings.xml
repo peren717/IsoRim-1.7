@@ -268,6 +268,11 @@
   <R3D_Settings_HairUnderHatsTip>头发会显示在帽子和便帽下面，并收进帽子里。</R3D_Settings_HairUnderHatsTip>
   <R3D_Settings_KeepAsPaper>保持纸片人</R3D_Settings_KeepAsPaper>
   <R3D_Settings_KeepAsPaperTip>这些种族保持平面。</R3D_Settings_KeepAsPaperTip>
+  <R3D_RaceTune_Title>种族调整</R3D_RaceTune_Title>
+  <R3D_RaceTune_Pick>选择一个种族小人</R3D_RaceTune_Pick>
+  <R3D_RaceTune_Copy>复制 XML</R3D_RaceTune_Copy>
+  <R3D_RaceTune_Copied>已复制。</R3D_RaceTune_Copied>
+  <R3D_RaceTune_Reset>重置</R3D_RaceTune_Reset>
   <R3D_Settings_FaceDecal>  3D 头部显示 Facial Animation 的脸</R3D_Settings_FaceDecal>
   <R3D_Settings_FaceDecalTip>把 Facial Animation 的动态眼睛、眉毛和嘴巴贴在 3D 头部正面，代替 IsoRim 的眼睛。</R3D_Settings_FaceDecalTip>
   <R3D_Settings_FaceDecalSize>    脸部大小</R3D_Settings_FaceDecalSize>

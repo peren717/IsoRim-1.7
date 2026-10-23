@@ -284,13 +284,14 @@ A full example (one `Human` race, one `Own` race with a tail model, a race-only 
 | `headScale` | measured | `Human`: the head's size next to the body, about the neck. |
 | `headOffset` | measured | `Human`: the head moved, `(0, up, forward)` in cells of a figure of size 1. |
 | `build` | by name | The race's body types onto IsoRim's builds: `<MyBody>thin</MyBody>` (`male`, `female`, `thin`, `fat`, `hulk`). Without one: the vanilla types keep theirs, others by name (Female, Thin, Hulk, Fat), else by the body type's art, else male. |
-| `eyes` | true | IsoRim's eyes (`Own`: fitted onto your head by `headFit`). |
+| `face` | IsoRim | `IsoRim`: IsoRim's face (eyes, Facial Animation's face, other mods' face drawers); on an `Own` head at the `face` anchor, scaled by `faceFit`. `None`: no face (your head model has its own). |
+| `hair` | IsoRim | `IsoRim`: IsoRim's hair shapes by the hairstyle; `Card`: the game's own hair and beard sprites as cards (races with hair art of their own); `None`: no hair. |
 | `addonCards` | true | The race's addons without a model of their own drawn as cards. |
 | `clothes` | Show | `Hide`: only apparel with a binding for this race (`ApparelModelDef.races`) shows. |
 | `bodies` | | `Own`: `<li>` with `upper`, `lower`, `fitAs` (the build whose clothes fit it), optional `bodyType`, `lifeStage`; first match. |
 | `heads` | | `Own`: `<li>` with `model` and `headType` or `graphicPath` (the head type's texture path; a trailing `/` matches all under it); first match. |
-| `addons` | | `<li>` with `graphicPath` (the addon's texture path, as HAR's `path`; trailing `/` for a prefix) and `model` (placed at `anchor`, then `offset`, `rotation`, `scale`; `colour` Material (HAR's colour channel), Skin, Hair or White) or `hide`. |
-| `anchors` | IsoRim's figure | `head` (the head's pivot; IsoRim's human neck is (0, 0.74, 0)), `headFit` (IsoRim's head parts scaled about it onto your head), `face`, `neck`, `back`, `waist`, `handLeft`, `handRight`, `tailRoot`, `bodyFit` (IsoRim's clothes for the `fitAs` build scaled onto your body). Other mods use the anchors through `FigureFrame.Anchor`. |
+| `addons` | | `<li>` with `graphicPath` (the addon's texture path, as HAR's `path`; trailing `/` for a prefix) and `model` (placed at `anchor`, then `offset`, `rotation`, `scale`; `colour` Material (HAR's colour channel), Skin, Hair or White) or `hide`; `hatLift` (head addons, card or model): while a hat is drawn, lifted that share of the way from its lowest point to the hat's top (1: standing on the hat; ears the game shows over hats). An entry with only options keeps the card. |
+| `anchors` | IsoRim's figure | `head` (the head's pivot; IsoRim's human neck is (0, 0.74, 0)), `headFit` (IsoRim's head parts scaled about it onto your head), `face`, `neck`, `back`, `waist`, `handLeft`, `handRight`, `tailRoot`, `bodyFit` (IsoRim's clothes for the `fitAs` build scaled onto your body), `faceFit` (IsoRim's face scaled about its eyes' middle onto the `face` anchor; default `headFit`). Other mods use the anchors through `FigureFrame.Anchor`. |
 
 Own models: the same axes and units as IsoRim's `person_*.obj` (one unit = one cell, +y up, feet at the origin, the figure
 faces -z of the file). The upper body takes the shirt colour (or the skin when bare), the lower body the trousers, the head
@@ -302,6 +303,14 @@ without races; Body bindings can give `raceBodyModels` (`<li><bodyType>MyBody</b
 Apparel without a race binding is fitted onto the race (`Human`: as on people; `Own`: by `headFit` / `bodyFit`).
 
 Gene parts (Biotech tails, ears, horns) on people are not drawn by IsoRim; mods such as "IsoRim - Biotech Pawn Parts" do that.
+
+**Tuning in dev mode**: Debug actions > IsoRim > **Race tuning...** on a race pawn: live sliders for the scale, head scale and
+offset, every anchor and `headFit` / `bodyFit` / `faceFit`, buttons for the figure and the face, and **Copy XML**, which puts
+the tuned fields and anchors on the clipboard as `RaceModelDef` XML to paste into your pack. Changes show on every pawn of
+the race until Reset or a new game.
+
+A race with hair and ears of its own art (tried on Kiiro Race): `Own` with simple body, head and tail
+models, `hair` `Card` (Kiiro's hair sprites), its ears as cards with `hatLift` so they stay out of hats as in 2D.
 
 ## Pitfalls
 

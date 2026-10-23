@@ -63,8 +63,13 @@ namespace IsoRim
         /// Without an entry: a vanilla body type keeps its own, others by name (Female, Thin, Hulk, Fat), else male.</summary>
         public RaceBuildMap build;
 
-        /// <summary>IsoRim's eyes on the head (Human: always the person head's; Own: fitted onto the race head by headFit).</summary>
-        public bool eyes = true;
+        /// <summary>IsoRim: IsoRim's face (its eyes, Facial Animation's face, other mods' face drawers) on the head; on an Own race's
+        /// head at the face anchor, sized by anchors.faceFit. None: no face (the head model has its own).</summary>
+        public RaceFace face = RaceFace.IsoRim;
+
+        /// <summary>The hair and beard: IsoRim (its hair shapes, by the hairstyle), Card (the game's own hair and beard sprites as cards,
+        /// like the addons: for races whose hair art IsoRim's shapes do not match) or None (no hair; the head model or addons have it).</summary>
+        public RaceHair hair = RaceHair.IsoRim;
 
         /// <summary>The race's own render nodes (HAR body addons: ears, tails, horns) without a model of their own drawn as
         /// cards from the game's sprites.</summary>
@@ -141,6 +146,23 @@ namespace IsoRim
         }
     }
 
+    /// <summary>RaceModelDef.face (Api 25): who draws the race's face.</summary>
+    /// <summary>RaceModelDef.hair (Api 25): how the race's hair and beard are drawn.</summary>
+    public enum RaceHair
+    {
+        IsoRim = 0,
+        Card = 1,
+        None = 2,
+    }
+
+    public enum RaceFace
+    {
+        /// <summary>IsoRim's face, as on people (and other mods' face drawers).</summary>
+        IsoRim = 0,
+        /// <summary>No face: the head model has its own.</summary>
+        None = 1,
+    }
+
     /// <summary>RaceModelDef.build: body type defName to IsoRim build, written as &lt;MyBody&gt;thin&lt;/MyBody&gt;.</summary>
     public class RaceBuildMap
     {
@@ -195,6 +217,9 @@ namespace IsoRim
         public bool hide;
         /// <summary>What the model's stuff faces take: Material (the node's colour, HAR's colour channel), Skin, Hair, or White.</summary>
         public string colour = "Material";
+        /// <summary>On the head, while headgear is drawn: the addon (card or model) is lifted by this share of how far the hat reaches
+        /// above the head (0: stays; 1: by all of it), so ears that show over hats in 2D stick out of the 3D hat.</summary>
+        public float hatLift;
     }
 
     /// <summary>Named points of a race's figure (cells, a figure of size 1, feet at the origin, y up, facing +z), and how
@@ -216,6 +241,9 @@ namespace IsoRim
         public Vector3 tailRoot = Unset;
         /// <summary>IsoRim's clothes, packs and belts (made for the body's fitAs build) scaled onto the race body.</summary>
         public Vector3 bodyFit = Vector3.one;
+        /// <summary>IsoRim's face (made on its person head, the eyes' middle at (0, 0.95, 0.22)) scaled about that point onto the
+        /// face anchor of an Own race's head model. Default: headFit.</summary>
+        public Vector3 faceFit = Unset;
 
         internal static bool Set(Vector3 v)
         {
@@ -239,20 +267,23 @@ namespace IsoRim
         public float handShift;           // the hands moved up (Own: handLeft / handRight against IsoRim's 0.46)
         public bool clothesHidden;
         public Model ownHead, ownUpper, ownLower;
-        public bool eyes = true;
+        public bool faceShown = true;
+        public Matrix4x4 face = Matrix4x4.identity;   // IsoRim's head space to where the face goes in the head frame (eyes, face drawers, decals)
         public Vector3 headFit = Vector3.one, bodyFit = Vector3.one;
         public readonly Dictionary<string, Vector3> anchors = new Dictionary<string, Vector3>();   // body frame (head ones: head frame)
         public readonly List<Model> extraModels = new List<Model>();
         public readonly List<Matrix4x4> extraLocals = new List<Matrix4x4>();
         public readonly List<Color> extraTints = new List<Color>();
         public readonly List<bool> extraHead = new List<bool>();
+        public readonly List<bool> extraFace = new List<bool>();
         public RaceCards.Set cards;
         public string headType, bodyType;
+        public float hatTop = float.NaN;  // the top of the drawn hat in the head frame (NaN: none), for addons' hatLift
 
         public bool SameAs(RaceLook o)
         {
             if (o == null || o.pack != pack || o.mode != mode || o.build != build || o.scale != scale || o.headScale != headScale || o.headShift != headShift
-                || o.ownHead != ownHead || o.ownUpper != ownUpper || o.ownLower != ownLower || o.eyes != eyes || o.extraModels.Count != extraModels.Count
+                || o.ownHead != ownHead || o.ownUpper != ownUpper || o.ownLower != ownLower || o.faceShown != faceShown || o.face != face || o.extraModels.Count != extraModels.Count
                 || o.handShift != handShift)
             {
                 return false;
@@ -362,8 +393,36 @@ namespace IsoRim
             return pack != null ? pack.figure : FigureMode.Card;
         }
 
+        // The race tuning window's live copies (dev mode, RaceTune.cs), by race defName; they stand in for the packs this game.
+        private static readonly Dictionary<string, RaceModelDef> live = new Dictionary<string, RaceModelDef>();
+
+        private static Game liveGame;
+
+        internal static void SetLive(ThingDef race, RaceModelDef def)
+        {
+            if (liveGame != Current.Game)
+            {
+                live.Clear();
+                liveGame = Current.Game;
+            }
+            if (def == null)
+            {
+                live.Remove(race.defName);
+            }
+            else
+            {
+                live[race.defName] = def;
+            }
+            Clear();
+        }
+
         internal static RaceModelDef PackFor(ThingDef def)
         {
+            RaceModelDef tuned;
+            if (live.Count > 0 && def != null && liveGame == Current.Game && live.TryGetValue(def.defName, out tuned))
+            {
+                return tuned;
+            }
             if (packs == null)
             {
                 packs = new Dictionary<string, RaceModelDef>();
@@ -500,7 +559,7 @@ namespace IsoRim
             }
             r.headInv = r.head.inverse;
             r.clothesHidden = pack != null && pack.clothes == "Hide";
-            r.eyes = pack == null || pack.eyes;
+            r.faceShown = pack == null || pack.face == RaceFace.IsoRim;
             dressingRace = pawn.def;
             dressingBody = story.bodyType;
             return r;
@@ -581,17 +640,31 @@ namespace IsoRim
                 {
                     r.ownHead = h;
                     look.ownHead = h;   // replaces the person head and its face (drawn in the head frame)
-                    if (r.eyes && !look.faceHidden && !look.faceDecal)
+                    r.face = FaceOnOwnHead(r) * Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f));
+                    if (r.faceShown && !look.faceHidden && !look.faceDecal)
                     {
                         Model eyes = People.Part(look.femaleEyes && People.Part("person_face_female") != null ? "person_face_female" : "person_face");
-                        AddExtra(r, eyes, Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f)), Color.white, true);
+                        AddExtra(r, eyes, r.face, Color.white, true, true);
                     }
                 }
-                else if (!r.eyes)
-                {
-                    look.faceHidden = true;
-                }
             }
+            if (r.ownHead == null)
+            {
+                r.face = Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f));   // the person head's own place (fitted by headFit on an Own race)
+            }
+            if (pack != null && pack.hair != RaceHair.IsoRim)
+            {
+                look.hair = null;   // (Card: the game's hair and beard as cards, RaceCards)
+                look.hairTop = null;
+                look.beard = null;
+            }
+            if (!r.faceShown)
+            {
+                look.faceHidden = true;   // face None: no IsoRim face, no Facial Animation face
+                look.faceDecal = false;
+            }
+            Model personHead = People.Part("person_head");
+            r.hatTop = look.hat != null ? look.hat.maxY : float.NaN;
             Anchors(r, look);
             // Addon models (by the render node's texture path) and cards for the rest.
             r.cards = RaceCards.Collect(pawn, look, r);
@@ -604,7 +677,8 @@ namespace IsoRim
                     {
                         continue;
                     }
-                    n.bound = true;
+                    n.hatLift = a.hatLift;
+                    n.bound = a.hide || !a.model.NullOrEmpty();   // (an entry with neither only sets options: the card stays)
                     if (a.hide || a.model.NullOrEmpty() || !n.shown)
                     {
                         continue;
@@ -621,14 +695,27 @@ namespace IsoRim
                     {
                         at = Vector3.zero;
                     }
-                    Matrix4x4 local = Matrix4x4.Translate(at) * Matrix4x4.TRS(a.offset, Quaternion.Euler(a.rotation), Vector3.one * a.scale);
+                    // On the head the model keeps its own size (the head frame carries the fit of IsoRim's head parts).
+                    Matrix4x4 local = onHead
+                        ? r.headInv * Matrix4x4.Translate(r.head.MultiplyPoint3x4(at)) * Matrix4x4.TRS(a.offset, Quaternion.Euler(a.rotation), Vector3.one * a.scale)
+                        : Matrix4x4.Translate(at) * Matrix4x4.TRS(a.offset, Quaternion.Euler(a.rotation), Vector3.one * a.scale);
+                    if (onHead && a.hatLift > 0f && !float.IsNaN(r.hatTop))
+                    {
+                        // Out of the hat (hatLift): its lowest point lifted that share of the way up to the hat's top.
+                        float low = float.MaxValue;
+                        for (int i = 0; i < m.positions.Length; i++)
+                        {
+                            low = Mathf.Min(low, local.MultiplyPoint3x4(m.positions[i]).y);
+                        }
+                        local = Matrix4x4.Translate(new Vector3(0f, Mathf.Max(0f, r.hatTop - low) * a.hatLift, 0f)) * local;
+                    }
                     Color tint = a.colour == "Skin" ? look.skin : (a.colour == "Hair" ? look.hairColor : (a.colour == "White" ? Color.white : n.colour));
                     AddExtra(r, m, local, tint, onHead);
                 }
             }
         }
 
-        private static void AddExtra(RaceLook r, Model m, Matrix4x4 local, Color tint, bool head)
+        private static void AddExtra(RaceLook r, Model m, Matrix4x4 local, Color tint, bool head, bool face = false)
         {
             if (m == null)
             {
@@ -638,6 +725,26 @@ namespace IsoRim
             r.extraLocals.Add(local);
             r.extraTints.Add(tint);
             r.extraHead.Add(head);
+            r.extraFace.Add(face);
+        }
+
+        // IsoRim's face on an Own race's own head, in the head frame: the eyes' middle (FacePoint, IsoRim's person head space)
+        // onto the face anchor (the race's figure space), scaled about it by faceFit (default headFit). Without either
+        // field: fitted by headFit like the rest of the head parts (identity in the head frame).
+        internal static readonly Vector3 FacePoint = new Vector3(0f, 0.95f, 0.22f);
+
+        private static Matrix4x4 FaceOnOwnHead(RaceLook r)
+        {
+            RaceAnchors an = r.pack != null ? r.pack.anchors : null;
+            bool anchor = an != null && RaceAnchors.Set(an.face);
+            bool fit = an != null && RaceAnchors.Set(an.faceFit);
+            if (!anchor && !fit)
+            {
+                return Matrix4x4.identity;
+            }
+            Vector3 at = anchor ? an.face : r.head.MultiplyPoint3x4(FacePoint);
+            Vector3 size = fit ? an.faceFit : r.headFit;
+            return r.headInv * Matrix4x4.Translate(at) * Matrix4x4.Scale(size) * Matrix4x4.Translate(-FacePoint);
         }
 
         // People.Merged: the race's extra parts of the head or the body.
@@ -654,7 +761,7 @@ namespace IsoRim
                 {
                     continue;
                 }
-                if (headPart ? (hide & (int)(FigureParts.Head | FigureParts.Face)) != 0 && r.extraModels[i] == People.Part("person_face") : (hide & (int)FigureParts.Body) != 0)
+                if (headPart ? (hide & (int)(FigureParts.Head | FigureParts.Face)) != 0 && r.extraFace[i] : (hide & (int)FigureParts.Body) != 0)
                 {
                     continue;
                 }
@@ -1032,7 +1139,7 @@ namespace IsoRim
                 + ", headDraw " + r.headDraw.ToString("0.000") + ", scale " + r.scale.ToString("0.000") + ", headScale " + r.headScale.ToString("0.000")
                 + ", headShift " + r.headShift.ToString("F3") + ", handShift " + r.handShift.ToString("0.000") + ", size " + look.size.ToString("0.000")
                 + ", ownHead " + (r.ownHead != null) + ", ownBody " + (r.ownUpper != null) + ", extras " + r.extraModels.Count + ", addon nodes "
-                + (r.cards != null ? r.cards.nodes.Count : 0) + " (cards " + cards + ", bound " + bound + "), clothesHidden " + r.clothesHidden;
+                + (r.cards != null ? r.cards.nodes.Count : 0) + " (cards " + cards + ", bound " + bound + "), clothesHidden " + r.clothesHidden + ", face " + (r.faceShown ? "IsoRim" : "None") + " at " + r.face.MultiplyPoint3x4(RaceFigures.FacePoint).ToString("F3") + ", hatTop " + r.hatTop.ToString("0.000") + RaceCards.Report(r.cards);
         }
     }
 

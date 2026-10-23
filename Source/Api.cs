@@ -48,7 +48,8 @@ namespace IsoRim
         // FigureFrame.Hide, FigureFrame.Hidden (FigureParts) with figure hooks raised before the figure is drawn; Api21.cs; 22:
         // AddFaceDrawer(drawer, evenWhenHidden) with FaceFrame.HiddenByGame (FaceHiddenBy), Api21.cs; 25: humanlike races: RaceModelDef
         // race packs (FigureMode Own, Human, Card), FigureModeOf, AddRaceFigureRule, RemoveRaceFigureRule, FigureFrame.Anchor, FigureFrame.Mode,
-        // FigureParts.Addons, ApparelModelDef.races and raceBodyModels, the "Keep as paper" setting; Races.cs, RaceCards.cs).
+        // FigureParts.Addons, ApparelModelDef.races and raceBodyModels, RaceModelDef.face (RaceFace) / hair (RaceHair) / faceFit /
+        // addon hatLift, the "Keep as paper" setting, the dev-mode race tuning window; Races.cs, RaceCards.cs, RaceTune.cs).
         // The card overlay (IsCard, DrawOnCard,
         // CardLight; CardOverlay.cs) came in before version 8 without a number of its own: check >= 8 for it.
         public static int Version => 25;
