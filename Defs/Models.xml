@@ -3195,6 +3195,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -3204,6 +3205,7 @@
       <li>Models/item_egg_oval_a.obj</li>
       <li>Models/item_egg_oval_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -3213,6 +3215,7 @@
       <li>Models/item_egg_round_a.obj</li>
       <li>Models/item_egg_round_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -3222,6 +3225,7 @@
       <li>Models/item_egg_oval_a.obj</li>
       <li>Models/item_egg_oval_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.1</scale>
   </IsoRim.ModelDef>
 
@@ -3232,6 +3236,7 @@
       <li>Models/item_egg_oval_a.obj</li>
       <li>Models/item_egg_oval_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.1</scale>
   </IsoRim.ModelDef>
 
@@ -3242,6 +3247,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>0.75</scale>
   </IsoRim.ModelDef>
 
@@ -3252,6 +3258,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>0.75</scale>
   </IsoRim.ModelDef>
 
@@ -3262,6 +3269,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.2</scale>
   </IsoRim.ModelDef>
 
@@ -3272,6 +3280,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.2</scale>
   </IsoRim.ModelDef>
 
@@ -3282,6 +3291,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>0.8</scale>
   </IsoRim.ModelDef>
 
@@ -3292,6 +3302,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>0.8</scale>
   </IsoRim.ModelDef>
 
@@ -3302,6 +3313,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.2</scale>
   </IsoRim.ModelDef>
 
@@ -3312,6 +3324,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.2</scale>
   </IsoRim.ModelDef>
 
@@ -3322,6 +3335,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.2</scale>
   </IsoRim.ModelDef>
 
@@ -3332,6 +3346,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.2</scale>
   </IsoRim.ModelDef>
 
@@ -3342,6 +3357,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.2</scale>
   </IsoRim.ModelDef>
 
@@ -3352,6 +3368,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.2</scale>
   </IsoRim.ModelDef>
 
@@ -3362,6 +3379,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>0.8</scale>
   </IsoRim.ModelDef>
 
@@ -3372,6 +3390,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>0.8</scale>
   </IsoRim.ModelDef>
 
@@ -3382,6 +3401,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.3</scale>
   </IsoRim.ModelDef>
 
@@ -3392,6 +3412,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.3</scale>
   </IsoRim.ModelDef>
 
@@ -3402,6 +3423,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.2</scale>
   </IsoRim.ModelDef>
 
@@ -3412,6 +3434,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.2</scale>
   </IsoRim.ModelDef>
 
@@ -3422,6 +3445,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>0.8</scale>
   </IsoRim.ModelDef>
 
@@ -3432,6 +3456,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>0.8</scale>
   </IsoRim.ModelDef>
 
@@ -3442,6 +3467,7 @@
       <li>Models/item_egg_round_a.obj</li>
       <li>Models/item_egg_round_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.1</scale>
   </IsoRim.ModelDef>
 
@@ -3452,6 +3478,7 @@
       <li>Models/item_egg_round_a.obj</li>
       <li>Models/item_egg_round_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.1</scale>
   </IsoRim.ModelDef>
 
@@ -3462,6 +3489,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>0.75</scale>
   </IsoRim.ModelDef>
 
@@ -3472,6 +3500,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>0.75</scale>
   </IsoRim.ModelDef>
 
@@ -3482,6 +3511,7 @@
       <li>Models/item_egg_round_a.obj</li>
       <li>Models/item_egg_round_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>0.8</scale>
   </IsoRim.ModelDef>
 
@@ -3492,6 +3522,7 @@
       <li>Models/item_egg_round_a.obj</li>
       <li>Models/item_egg_round_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>0.8</scale>
   </IsoRim.ModelDef>
 
@@ -3502,6 +3533,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.1</scale>
   </IsoRim.ModelDef>
 
@@ -3512,6 +3544,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
     <scale>1.1</scale>
   </IsoRim.ModelDef>
 
@@ -3522,6 +3555,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -3531,6 +3565,7 @@
       <li>Models/item_egg_small_a.obj</li>
       <li>Models/item_egg_small_b.obj</li>
     </stackModels>
+    <overArt>true</overArt>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
