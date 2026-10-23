@@ -2099,6 +2099,11 @@
     <model>Models/geothermal.obj</model>
     <surfaceHeight>0.00</surfaceHeight>
     <builtFor>(6, 6)</builtFor>
+    <!-- The game's steam puffs (IntermittentSteamSprayer) come out of the glowing vent grate in the middle (Emitters.cs). -->
+    <emitters>
+      <li>(0, 0.66, 0)</li>
+    </emitters>
+    <emitterRise>1.2</emitterRise>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
