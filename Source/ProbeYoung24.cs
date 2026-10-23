@@ -11,7 +11,10 @@ namespace IsoRim
     //   trackyoung=1                     from now on note how each plant with a young stage is built (StateModels.YoungBaked)
     //   sowfield=x0,z0,x1,z1,<PlantDef>  a growing zone over the rectangle set to that plant; every free colonist undrafted,
     //                                    Plants skill 15 and Growing work first, so they sow it (run ticksown after it)
-    //   ticksown=x0,z0,x1,z1,N           game ticks until every zone cell in the rectangle holds the zone's plant (at most N)
+    //   sowgrower=x0,z0,x1,z1,<PlantDef> every plant grower (pot, hydroponics basin) in the rectangle set to that plant, colonists
+    //                                    made growers as for sowfield, so they sow it (run ticksown after it)
+    //   ticksown=x0,z0,x1,z1,N           game ticks until every zone or grower cell in the rectangle holds its plant, fully sown (at most N)
+    //   potcheck=x0,z0,x1,z1             logs each plant: in a planter (ModelBaker.InPlanter), the model's drawn centre off the cell centre
     //   tickgrow=x0,z0,x1,z1,<g>,N       game ticks (the plants' own growth, TickLong) until every plant in the rectangle has
     //                                    growth >= g (at most N); the storyteller is held off while it runs (no raids or events)
     //   plantcheck=x0,z0,x1,z1           logs each plant: def, growth, harvestable, young now (StateModels.Immature), built young
@@ -22,6 +25,12 @@ namespace IsoRim
     //   bedtint=1                        logs each bed: owner type, medical, DrawColorTwo, the sheet tint IsoRim takes
     public static partial class Probe
     {
+        // A plant of that kind stands there and its sowing is finished (a plant still being sown goes if the sower stops).
+        private static bool Sown(Plant p, ThingDef def)
+        {
+            return p != null && p.def == def && p.LifeStage != PlantLifeStage.Sowing;
+        }
+
         private static bool Young24Key(string key, string[] a, Map map)
         {
             switch (key)
@@ -69,12 +78,73 @@ namespace IsoRim
                     Log.Message("[IsoRim probe] sowfield " + plantDef.defName + ": " + cells + " cells, sowMinSkill " + plantDef.plant.sowMinSkill);
                     return true;
                 }
+                case "sowgrower":
+                {
+                    ThingDef gDef = DefDatabase<ThingDef>.GetNamedSilentFail(a[4]);
+                    if (gDef == null || gDef.plant == null)
+                    {
+                        Log.Warning("[IsoRim probe] sowgrower: no plant " + a[4]);
+                        return true;
+                    }
+                    HashSet<Building_PlantGrower> growers = new HashSet<Building_PlantGrower>();
+                    foreach (IntVec3 c in Rect(a, 0))
+                    {
+                        if (c.InBounds(map) && c.GetEdifice(map) is Building_PlantGrower g)
+                        {
+                            growers.Add(g);
+                        }
+                    }
+                    foreach (Building_PlantGrower g in growers)
+                    {
+                        g.SetPlantDefToGrow(gDef);
+                    }
+                    foreach (Pawn p in map.mapPawns.FreeColonistsSpawned.ToList())
+                    {
+                        if (p.drafter != null)
+                        {
+                            p.drafter.Drafted = false;
+                        }
+                        SkillRecord sk = p.skills?.GetSkill(SkillDefOf.Plants);
+                        if (sk != null)
+                        {
+                            sk.Level = 15;
+                        }
+                        if (p.workSettings != null && !p.WorkTypeIsDisabled(WorkTypeDefOf.Growing))
+                        {
+                            p.workSettings.EnableAndInitialize();
+                            p.workSettings.SetPriority(WorkTypeDefOf.Growing, 1);
+                        }
+                    }
+                    Log.Message("[IsoRim probe] sowgrower " + gDef.defName + ": " + growers.Count + " growers (" + string.Join(", ", growers.Select(g => g.def.defName + " " + g.Position)) + ")");
+                    return true;
+                }
+                case "potcheck":
+                {
+                    foreach (IntVec3 c in Rect(a, 0))
+                    {
+                        Plant pl = c.InBounds(map) ? c.GetPlant(map) : null;
+                        ModelEntry pe;
+                        if (pl == null || !ModelLibrary.TryGet(pl.def, out pe) || !pe.HasModel)
+                        {
+                            continue;
+                        }
+                        Model pm = pe.Pick(pl);
+                        Vector3 pfit;
+                        float pyaw;
+                        Vector3 at = ModelBaker.PointOnMap(pl, pe, pm, Vector3.zero, out pfit, out pyaw);
+                        Vector3 cc = c.ToVector3Shifted();
+                        Log.Message("[IsoRim probe] potcheck " + pl.def.defName + " " + c + " growth " + pl.Growth.ToString("0.00") + " on " + (c.GetEdifice(map)?.def.defName ?? "ground")
+                            + ", in planter " + ModelBaker.InPlanter(pl) + ", drawn centre off cell centre (" + (at.x - cc.x).ToString("0.000") + ", " + (at.z - cc.z).ToString("0.000") + ")");
+                    }
+                    return true;
+                }
                 case "ticksown":
                 {
                     CellRect r = Rect(a, 0);
                     int limit = Mathf.Max(1, I(a[4])), done = 0;
-                    System.Func<bool> sown = () => r.Cells.All(c => !c.InBounds(map) || !(map.zoneManager.ZoneAt(c) is Zone_Growing g)
-                        || c.GetPlant(map)?.def == g.GetPlantDefToGrow());
+                    System.Func<bool> sown = () => r.Cells.All(c => !c.InBounds(map)
+                        || (c.GetEdifice(map) is Building_PlantGrower pg ? Sown(c.GetPlant(map), pg.GetPlantDefToGrow())
+                        : !(map.zoneManager.ZoneAt(c) is Zone_Growing g) || Sown(c.GetPlant(map), g.GetPlantDefToGrow())));
                     HoldStoryteller(() =>
                     {
                         while (done < limit && !sown())
