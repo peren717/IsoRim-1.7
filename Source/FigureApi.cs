@@ -403,15 +403,53 @@ namespace IsoRim
 
         internal static Matrix4x4 BodySprite(People.Look look, BodyTypeDef type)
         {
+            return BodySprite(look, type, Rot4.South);
+        }
+
+        // The same for the body sprite of each facing (WoundMarks): south on the figure's front as above, north on its back
+        // (seen from behind: not turned), east on its right side and west on its left, the side sprites' width running
+        // front to back at the body's own proportion (up), centred on the body's depth.
+        internal static Matrix4x4 BodySprite(People.Look look, BodyTypeDef type, Rot4 facing)
+        {
             float feet, half;
             SpriteOf(People.BuildOf(type), out feet, out half);
             float chin = (type != null ? type.headOffset.y : 0.34f) - SpriteHeadHalf;
             Box body = Body(look);
             float up = Poses.BodyTop / Mathf.Max(0.1f, chin - feet);
             float across = body.size.x * 0.5f / half;
+            if (facing.IsHorizontal)
+            {
+                return Matrix4x4.Translate(new Vector3(0f, -feet * up, body.centre.z))
+                    * Matrix4x4.Rotate(Quaternion.AngleAxis(SideTurn(facing), Vector3.up))
+                    * Matrix4x4.Scale(new Vector3(up, up, up));
+            }
             return Matrix4x4.Translate(new Vector3(0f, -feet * up, 0f))
                 * Matrix4x4.Scale(new Vector3(across, up, up))
-                * Matrix4x4.Rotate(Quaternion.AngleAxis(180f, Vector3.up));
+                * Matrix4x4.Rotate(Quaternion.AngleAxis(SideTurn(facing), Vector3.up));
+        }
+
+        // The head sprite of each facing on the head (WoundMarks), as HeadSprite for south; wide: the head type's widening
+        // (People.Look.headWide) across the front and back.
+        internal static Matrix4x4 HeadSpriteFacing(Rot4 facing, float wide, float depthCentre)
+        {
+            float k = FaceDecal.SpriteCells / GameQuad;
+            return Matrix4x4.Translate(new Vector3(0f, FaceDecal.CentreHeight, facing.IsHorizontal ? depthCentre : 0f))
+                * Matrix4x4.Rotate(Quaternion.AngleAxis(SideTurn(facing), Vector3.up))
+                * Matrix4x4.Scale(new Vector3(facing.IsHorizontal ? k : k * wide, k, k));
+        }
+
+        // How a sprite of that facing is turned onto the figure (which faces +z): its right (x) and its depth (z, into the
+        // picture) become south: -x, -z (the front, seen face on); north: x, z (the back); east: z, -x (the right side);
+        // west: -z, x (the left side).
+        internal static float SideTurn(Rot4 facing)
+        {
+            switch (facing.AsInt)
+            {
+                case 0: return 0f;      // north
+                case 1: return -90f;    // east
+                case 3: return 90f;     // west
+                default: return 180f;   // south
+            }
         }
     }
 

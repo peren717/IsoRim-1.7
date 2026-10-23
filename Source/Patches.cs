@@ -157,6 +157,9 @@ namespace IsoRim
             Patch("upright pawns", AccessTools.Method(typeof(PawnRenderer), "RenderPawnAt"),
                 prefix: nameof(RenderPawnAt_Prefix), finalizer: nameof(RenderPawnAt_Finalizer));
 
+            // Wounds on 3D figures and animals (WoundMarks) are worked out again when the game clears its own wound cache.
+            Patch("wounds on 3D figures", AccessTools.Method(typeof(PawnOverlayDrawer), "ClearCache"), postfix: nameof(WoundCacheCleared_Postfix));
+
             // The game works out each pawn's sprite layers ahead of drawing, on worker threads.
             // For a pawn the mod draws as a 3D model that work is wasted, so it is skipped.
             MethodInfo preRender = FindMethod(typeof(PawnRenderer), "ParallelPreRenderPawnAt");
@@ -2244,6 +2247,12 @@ namespace IsoRim
         // in the 3D view the zoom says little about how close a person is seen. Drawn in full while the 3D view is
         // on, with Facial Animation active and the option set.
         private static bool? facialAnimation;
+
+        // The game's wound drawer forgot its draw calls (a hediff changed): the 3D marks are worked out again (WoundMarks).
+        public static void WoundCacheCleared_Postfix(PawnOverlayDrawer __instance)
+        {
+            WoundMarks.Cleared(__instance);
+        }
 
         public static void PreRenderCache_Prefix(ref bool disableCache)
         {
