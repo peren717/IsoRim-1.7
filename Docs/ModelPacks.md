@@ -309,8 +309,10 @@ offset, every anchor and `headFit` / `bodyFit` / `faceFit`, buttons for the figu
 the tuned fields and anchors on the clipboard as `AlienModelDef` XML to paste into your pack. Changes show on every pawn of
 the race until Reset or a new game.
 
-A race with hair and ears of its own art (tried on Kiiro Race): `Own` with simple body, head and tail
-models, `hair` `Card` (Kiiro's hair sprites), its ears as cards with `hatLift` so they stay out of hats as in 2D.
+A race with hair and ears of its own art (tried on Kiiro Race): `Own` with simple body, head and tail models and
+`hair` `None`; its hair addons get shared 3D hair models by `graphicPath` (one model for each group of similar styles,
+anchored at `head`, the back-hair addons hidden), and its ears get solid ear models (`colour` Skin) with `hatLift`
+so they stay out of hats as in 2D.
 
 ## Pitfalls
 

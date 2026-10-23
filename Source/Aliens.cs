@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
@@ -301,13 +302,20 @@ namespace IsoRim
 
     internal static class AlienFigures
     {
-        private static readonly Dictionary<ThingDef, FigureMode> modes = new Dictionary<ThingDef, FigureMode>();
+        // Threads: ModeOf (through Patches.DrawnAsModel, Corpses.ShownAsModel) also runs on the game's parallel pre-render
+        // workers. The mode cache is read without a lock; everything behind it (the Keep as paper snapshot, rules, packs,
+        // live copies) is guarded by gate. The model caches (loaded, fitted, clipped) have their own lock, modelGate.
+        private static readonly object gate = new object();
+        private static readonly object modelGate = new object();
+        private static readonly ConcurrentDictionary<ThingDef, FigureMode> modes = new ConcurrentDictionary<ThingDef, FigureMode>();
         private static Dictionary<string, AlienModelDef> packs;
         private static readonly List<Func<ThingDef, FigureMode?>> rules = new List<Func<ThingDef, FigureMode?>>();
         private static readonly Dictionary<string, Model> fitted = new Dictionary<string, Model>();
         private static readonly Dictionary<string, Model> loaded = new Dictionary<string, Model>();
-        private static List<string> seenList;
-        private static int seenCount;
+        private static volatile List<string> seenList;
+        private static volatile int seenCount;
+        private static HashSet<string> paper = new HashSet<string>();   // the Keep as paper list as last seen (a copy)
+        private static volatile bool refreshPending;                   // looks to work out again, done on the main thread
 
         // IsoRim's person figure (People / Poses / FigureWeapons constants), the defaults of the anchors.
         internal const float Neck = 0.74f;          // Poses.BodyTop
@@ -316,9 +324,10 @@ namespace IsoRim
         private const float SpriteHeadHalf = 0.287f; // FigureBoxes: the head sprite's opaque half height
         private const float VanillaHeadY = 0.34f;   // a vanilla body type's headOffset.y
 
-        // The race the look being worked out is dressed for (ApparelModels.For: race bindings), set around People.Dress.
-        internal static ThingDef dressingAlien;
-        internal static BodyTypeDef dressingBody;
+        // The race the look being worked out is dressed for (ApparelModels.For: race bindings), set around People.Dress
+        // (per thread: only the thread working out that look sees it).
+        [ThreadStatic] internal static ThingDef dressingAlien;
+        [ThreadStatic] internal static BodyTypeDef dressingBody;
 
         // ---- the chokepoint
 
@@ -346,31 +355,70 @@ namespace IsoRim
             if (st != null && (st.keepPaper != seenList || (st.keepPaper != null && st.keepPaper.Count != seenCount)))
             {
                 // The player changed the "Keep as paper" list (or reset the settings): every race asked again.
-                seenList = st.keepPaper;
-                seenCount = st.keepPaper != null ? st.keepPaper.Count : 0;
-                if (modes.Count > 0)
+                lock (gate)
                 {
-                    Clear();
+                    if (st.keepPaper != seenList || (st.keepPaper != null && st.keepPaper.Count != seenCount))
+                    {
+                        ClearLocked();
+                    }
                 }
+            }
+            if (refreshPending && UnityData.IsInMainThread)
+            {
+                refreshPending = false;
+                People.RefreshAll();
             }
             FigureMode m;
             if (modes.TryGetValue(def, out m))
             {
                 return m;
             }
-            m = Work(def);
-            modes[def] = m;
+            lock (gate)
+            {
+                if (!modes.TryGetValue(def, out m))
+                {
+                    m = Work(def);
+                    modes[def] = m;
+                }
+            }
             return m;
         }
 
+        // Under gate: the Keep as paper list copied again, every race's mode dropped, every look to be worked out again
+        // (People.RefreshAll, on the main thread: now if this is it, else at the next ModeOf there).
+        private static void ClearLocked()
+        {
+            IsoRimSettings st = IsoRimMod.Settings;
+            List<string> list = st != null ? st.keepPaper : null;
+            HashSet<string> copy = new HashSet<string>();
+            int count = 0;
+            if (list != null)
+            {
+                try
+                {
+                    count = list.Count;
+                    copy.UnionWith(list.ToArray());
+                }
+                catch (Exception)
+                {
+                    count = -1;   // changed while copied (on the main thread): copied again at the next ModeOf
+                }
+            }
+            paper = copy;
+            seenList = list;
+            seenCount = count;
+            modes.Clear();
+            refreshPending = true;
+        }
+
+        // Under gate.
         private static FigureMode Work(ThingDef def)
         {
             if (def.race == null || !def.race.Humanlike)
             {
                 return FigureMode.Card;
             }
-            IsoRimSettings st = IsoRimMod.Settings;
-            if (st != null && st.keepPaper != null && st.keepPaper.Contains(def.defName))
+            if (paper.Contains(def.defName))
             {
                 return FigureMode.Card;   // the player's "Keep as paper" list wins
             }
@@ -400,63 +448,89 @@ namespace IsoRim
 
         internal static void SetLive(ThingDef race, AlienModelDef def)
         {
-            if (liveGame != Current.Game)
+            lock (gate)
             {
-                live.Clear();
-                liveGame = Current.Game;
-            }
-            if (def == null)
-            {
-                live.Remove(race.defName);
-            }
-            else
-            {
-                live[race.defName] = def;
+                if (liveGame != Current.Game)
+                {
+                    live.Clear();
+                    liveGame = Current.Game;
+                }
+                if (def == null)
+                {
+                    live.Remove(race.defName);
+                }
+                else
+                {
+                    live[race.defName] = def;
+                }
             }
             Clear();
         }
 
         internal static AlienModelDef PackFor(ThingDef def)
         {
-            AlienModelDef tuned;
-            if (live.Count > 0 && def != null && liveGame == Current.Game && live.TryGetValue(def.defName, out tuned))
+            lock (gate)
             {
-                return tuned;
-            }
-            if (packs == null)
-            {
-                packs = new Dictionary<string, AlienModelDef>();
-                foreach (AlienModelDef d in DefDatabase<AlienModelDef>.AllDefsListForReading)
+                AlienModelDef tuned;
+                if (live.Count > 0 && def != null && liveGame == Current.Game && live.TryGetValue(def.defName, out tuned))
                 {
-                    foreach (string r in d.Aliens())
+                    return tuned;
+                }
+                if (packs == null)
+                {
+                    packs = new Dictionary<string, AlienModelDef>();
+                    foreach (AlienModelDef d in DefDatabase<AlienModelDef>.AllDefsListForReading)
                     {
-                        packs[r] = d;   // a later def for the same race wins (a pack overriding another)
+                        foreach (string r in d.Aliens())
+                        {
+                            packs[r] = d;   // a later def for the same race wins (a pack overriding another)
+                        }
                     }
                 }
+                AlienModelDef p;
+                return def != null && packs.TryGetValue(def.defName, out p) ? p : null;
             }
-            AlienModelDef p;
-            return def != null && packs.TryGetValue(def.defName, out p) ? p : null;
         }
 
         // The settings list or the rules changed: every race asked again, every look worked out again.
         internal static void Clear()
         {
-            modes.Clear();
-            People.RefreshAll();
+            lock (gate)
+            {
+                ClearLocked();
+            }
+            if (UnityData.IsInMainThread)
+            {
+                refreshPending = false;
+                People.RefreshAll();
+            }
         }
 
         internal static void AddRule(Func<ThingDef, FigureMode?> rule)
         {
-            if (rule != null && !rules.Contains(rule))
+            bool added = false;
+            lock (gate)
             {
-                rules.Add(rule);
+                if (rule != null && !rules.Contains(rule))
+                {
+                    rules.Add(rule);
+                    added = true;
+                }
+            }
+            if (added)
+            {
                 Clear();
             }
         }
 
         internal static void RemoveRule(Func<ThingDef, FigureMode?> rule)
         {
-            if (rules.Remove(rule))
+            bool removed;
+            lock (gate)
+            {
+                removed = rules.Remove(rule);
+            }
+            if (removed)
             {
                 Clear();
             }
@@ -808,6 +882,14 @@ namespace IsoRim
         // A model placed by local, cut at height clip (both in the head frame), the part above kept; null when nothing is left. Made once.
         private static Model ClippedBelow(Model m, Matrix4x4 local, float clip)
         {
+            lock (modelGate)
+            {
+                return ClippedBelowLocked(m, local, clip);
+            }
+        }
+
+        private static Model ClippedBelowLocked(Model m, Matrix4x4 local, float clip)
+        {
             string key = m.id + "|" + local.ToString("F5", System.Globalization.CultureInfo.InvariantCulture) + "|"
                 + clip.ToString("F4", System.Globalization.CultureInfo.InvariantCulture);
             Model c;
@@ -1087,6 +1169,14 @@ namespace IsoRim
         // A pack's model file (relative to its mod: modPackageId, its own mod, or the first active mod with the file).
         internal static Model Load(AlienModelDef pack, string path)
         {
+            lock (modelGate)
+            {
+                return LoadLocked(pack, path);
+            }
+        }
+
+        private static Model LoadLocked(AlienModelDef pack, string path)
+        {
             if (pack == null || path.NullOrEmpty())
             {
                 return null;
@@ -1109,6 +1199,14 @@ namespace IsoRim
 
         // A pack model moved into the frame IsoRim draws it in (bodyFit / head fit taken back out), made once.
         private static Model Fitted(AlienModelDef pack, string path, Matrix4x4 local)
+        {
+            lock (modelGate)
+            {
+                return FittedLocked(pack, path, local);
+            }
+        }
+
+        private static Model FittedLocked(AlienModelDef pack, string path, Matrix4x4 local)
         {
             Model raw = Load(pack, path);
             if (raw == null)

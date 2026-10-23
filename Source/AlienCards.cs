@@ -205,7 +205,15 @@ namespace IsoRim
             Bounds b = mesh.bounds;
             float frac = 0f;
             Texture tex = mat != null ? mat.mainTexture : null;
-            if (tex != null && !opaqueBottom.TryGetValue(tex, out frac))
+            bool known = false;
+            if (tex != null)
+            {
+                lock (opaqueBottom)   // (main thread in practice: it reads the texture; locked like the other Api 25 caches)
+                {
+                    known = opaqueBottom.TryGetValue(tex, out frac);
+                }
+            }
+            if (tex != null && !known)
             {
                 frac = 0f;
                 int w, h;
@@ -224,7 +232,10 @@ namespace IsoRim
                         }
                     }
                 }
-                opaqueBottom[tex] = frac;
+                lock (opaqueBottom)
+                {
+                    opaqueBottom[tex] = frac;
+                }
             }
             Vector3 p = new Vector3(b.center.x, b.center.y, b.min.z + frac * b.size.z);
             return local.MultiplyPoint3x4(p).y;
