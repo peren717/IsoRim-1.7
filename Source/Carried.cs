@@ -111,6 +111,13 @@ namespace IsoRim
                     return;
                 }
 
+                // A book being read: opened (OpenBooks), in the book's colour; closed again when the reading ends.
+                Model open = OpenBooks.For(t);
+                if (open != null)
+                {
+                    DynamicModels.Draw(open, hold, yaw, Vector3.one * ItemScale, SpriteColors.MeanFor(t), null);
+                    return;
+                }
                 ThingForm form = Forms.For(t.def);
                 if (form.form == Form3D.Model && form.model != null && form.model.HasModel)
                 {

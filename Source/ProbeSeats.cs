@@ -11,7 +11,8 @@ namespace IsoRim
     //   place=<Def>,x,z,<rot 0-3>[,<Stuff>|-]   a building (the player's) facing rot
     //   sit=px,pz,<kind>[,tx,tz]     the colonist in (px,pz) undrafted and given a job that seats them, as the game gives it:
     //                                eat (a simple meal put in its cell, Ingest: it finds a chair at a table itself),
-    //                                read (a novel put in its cell, Reading: it finds a chair itself), tv (watch the
+    //                                read[:<book def>] (a novel, or a book of that kind, put in its cell, Reading: it finds a
+    //                                chair itself), tv (watch the
     //                                television at tx,tz: WatchBuildingUtility picks the seat), reign (on the throne at
     //                                tx,tz), meditate (on the cell tx,tz)
     //   walkover=px,pz,tx,tz[,N]     the colonist in (px,pz) walks to (tx,tz) (Goto); ticks until it is on a seat while
@@ -56,7 +57,7 @@ namespace IsoRim
                     IntVec3 tc = a.Length > 4 ? new IntVec3(I(a[3]), 0, I(a[4])) : IntVec3.Invalid;
                     Job job = null;
                     string note = "";
-                    switch (a[2])
+                    switch (a[2].Split(':')[0])
                     {
                         case "eat":
                         {
@@ -71,7 +72,8 @@ namespace IsoRim
                         }
                         case "read":
                         {
-                            Thing book = GenSpawn.Spawn(ThingMaker.MakeThing(ThingDefOf.Novel), p.Position, map);
+                            ThingDef bookDef = a[2].Contains(":") ? DefDatabase<ThingDef>.GetNamed(a[2].Split(':')[1]) : ThingDefOf.Novel;   // read:<book def> (a book of that kind, as BookUtility makes it)
+                            Thing book = GenSpawn.Spawn(typeof(Book).IsAssignableFrom(bookDef.thingClass) ? BookUtility.MakeBook(bookDef, ArtGenerationContext.Colony) : ThingMaker.MakeThing(bookDef), p.Position, map);
                             if (p.needs.joy != null)
                             {
                                 p.needs.joy.CurLevel = 0.1f;
