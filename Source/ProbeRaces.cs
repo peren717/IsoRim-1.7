@@ -18,6 +18,7 @@ namespace IsoRim
     //   goto=px,pz,tx,tz             only the colonist in (px,pz) ordered to walk to (tx,tz) (a real Goto job; run tick= after it)
     //   racetune=x,z | <race>        the race tuning window (dev) opened on the pawn in (x,z) or the first of the race; racetuneset=<field>,<i>,<value>
     //                                moves a slider; racetunecopy=1 logs its "Copy XML" text (shot it with bindershot=<tag>)
+    //   addonvariant=x,z,i:v;...      the pawn's HAR addon i shown with variant v (AlienComp.addonVariants by reflection, harness only)
     //   racecheck=1                  logs every humanlike on the map: race, Api.FigureModeOf, drawn as a model, the look's
     //                                race placing (People.Report), the hook and face drawer counts
     public static partial class Probe
@@ -91,6 +92,32 @@ namespace IsoRim
                 {
                     RaceTuneWindow tw = Find.WindowStack.WindowOfType<RaceTuneWindow>();
                     Log.Message("[IsoRim probe] racetunecopy: " +  (tw != null ? tw.Xml() : "no window"));
+                    return true;
+                }
+                case "addonvariant":
+                {
+                    // addonvariant=x,z,i:v;i:v...: the pawn's render-tree addons (HAR AlienComp.addonVariants, by reflection: harness
+                    // only, no reference) set to those variants, so a fixture shows a chosen style every run
+                    Pawn vp = map.thingGrid.ThingsListAt(new IntVec3(I(a[0]), 0, I(a[1]))).OfType<Pawn>().FirstOrDefault();
+                    ThingComp comp = vp != null ? vp.AllComps.FirstOrDefault(c => c.GetType().Name == "AlienComp") : null;
+                    System.Collections.Generic.List<int> vars = comp != null ? HarmonyLib.AccessTools.Field(comp.GetType(), "addonVariants")?.GetValue(comp) as System.Collections.Generic.List<int> : null;
+                    if (vars == null)
+                    {
+                        Log.Warning("[IsoRim probe] addonvariant: no addon variants at " + a[0] + "," + a[1]);
+                        return true;
+                    }
+                    foreach (string iv in a[2].Split(';'))
+                    {
+                        string[] p2 = iv.Split(':');
+                        int ai = int.Parse(p2[0]);
+                        while (vars.Count <= ai)
+                        {
+                            vars.Add(0);
+                        }
+                        vars[ai] = int.Parse(p2[1]);
+                    }
+                    vp.Drawer.renderer.SetAllGraphicsDirty();
+                    People.Refresh(vp);
                     return true;
                 }
                 case "racecheck":

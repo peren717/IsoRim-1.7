@@ -189,7 +189,8 @@ namespace IsoRim
             // A statue's subject (mono: the statue colour) has its own set, made again when the statue is repainted.
             // Without legs (Api 13, AttachPose.SitNoLegs): the body's faces below the hips left out (key 8).
             // Parts hidden (Api 21): a set of its own for each mix (key bits 16 and up; nothing hidden: the usual set).
-            noLegs &= !headPart && !mono.HasValue;
+            // (a race's head in a bed that hides the body: its parts below the chin left out, as its body is, Api 25)
+            noLegs &= (!headPart || look.race != null) && !mono.HasValue;
             int hide = mono.HasValue ? 0 : (int)hidden & (headPart ? HeadHides : BodyHides);
             int key = (headPart ? 2 : 0) + (dead ? 1 : 0) + (mono.HasValue ? 4 : 0) + (noLegs ? 8 : 0) + (hide << 4);
             List<DynamicModels.Part> parts;
@@ -313,7 +314,7 @@ namespace IsoRim
             }
             RaceFigures.AddParts(look, headPart, hide, mergeModels, mergeLocals, mergeTints);   // a race's addon models, eyes on its own head (Api 25)
             parts = DynamicModels.BuildMerged(mergeModels, mergeLocals, mergeTints, turned, mono,
-                noLegs ? Attachments.Hips * look.bodyScale.y : float.NegativeInfinity);
+                noLegs ? (headPart ? RaceFigures.ChinClip(look) : Attachments.Hips * look.bodyScale.y) : float.NegativeInfinity);
             look.meshes[key] = parts;
             return parts;
         }
@@ -619,7 +620,7 @@ namespace IsoRim
                     ApparelDecals.Draw(look, at, yaw, bodyPlace);   // other mods' decals on the body garments (Api 10)
                 }
             }
-            DynamicModels.DrawParts(Merged(look, true, dead, turned, null, false, hidden), at, yaw, headPlace);
+            DynamicModels.DrawParts(Merged(look, true, dead, turned, null, headOnly && look.race != null, hidden), at, yaw, headPlace);
             if (look.race != null)
             {
                 RaceCards.Draw(look, at, yaw, headPlace, bodyPlace, hidden, !headOnly, lying, crawling);   // a race's addons as cards (Api 25)

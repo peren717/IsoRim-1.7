@@ -747,6 +747,24 @@ namespace IsoRim
             return r.headInv * Matrix4x4.Translate(at) * Matrix4x4.Scale(size) * Matrix4x4.Translate(-FacePoint);
         }
 
+        // People.Merged, a race's head in a bed that hides the body (headOnly): faces lower than the chin are left out (hair hanging
+        // down the back would otherwise lie on the blanket, apart from the head). The chin: the lowest point of the head drawn
+        // (an Own race's head model, else IsoRim's person head), in the head frame.
+        internal static float ChinClip(People.Look look)
+        {
+            Model h = look.ownHead ?? People.Part("person_head");
+            if (h == null)
+            {
+                return float.NegativeInfinity;
+            }
+            float low = float.MaxValue;
+            for (int i = 0; i < h.positions.Length; i++)
+            {
+                low = Mathf.Min(low, h.positions[i].y);
+            }
+            return low - 0.005f;
+        }
+
         // People.Merged: the race's extra parts of the head or the body.
         internal static void AddParts(People.Look look, bool headPart, int hide, List<Model> models, List<Matrix4x4> locals, List<Color> tints)
         {
