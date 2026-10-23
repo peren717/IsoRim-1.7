@@ -209,6 +209,55 @@ namespace IsoRim
 
         public static bool FixOff;   // probe (ghostfix=0)
 
+        // Harness counters (ghostspritecheck): game ghost sprites left out because the 3D ghost stands in, and drawn.
+        internal static int SpritesLeftOut, SpritesDrawn;
+
+        // GhostDrawer.DrawGhostThing's own flat sprite (its graphic.DrawFromDef call, Patches.GhostSprite_Transpiler): left out
+        // where DrawPreview draws the thing in 3D, so the player sees one ghost, not the 3D one plus a flat footprint beside it
+        // (any building with a model, a block or a sprite-made shape: vanilla, Neat Storage shelves, every mod's). The comps'
+        // and place workers' ghosts are drawn as before; with no 3D preview (3D off, ghosts off, wide doors without their own
+        // models, flat things) the game's sprite is drawn as before.
+        public static void DrawGameGhostSprite(Graphic graphic, Vector3 loc, Rot4 rot, ThingDef def, float extraRotation)
+        {
+            if (Shows3D(def))
+            {
+                SpritesLeftOut++;
+                return;
+            }
+            SpritesDrawn++;
+            graphic.DrawFromDef(loc, rot, def, extraRotation);
+        }
+
+        // True when DrawPreview draws this def in 3D (the same cases, without drawing).
+        public static bool Shows3D(ThingDef def)
+        {
+            if (def == null || FixOff || !View3D.Ready || !IsoRimMod.Settings.ghosts3D || R3DMaterials.Ghost == null)
+            {
+                return false;
+            }
+            if (def.thingClass != null && typeof(Building_Door).IsAssignableFrom(def.thingClass))
+            {
+                if (!IsoRimMod.Settings.doors3D)
+                {
+                    return false;
+                }
+                ModelEntry e;
+                return def.size.x == 1 && def.size.z == 1
+                    || typeof(Building_MultiTileDoor).IsAssignableFrom(def.thingClass) && ModelLibrary.TryGet(def, out e) && e.HasModel && e.doorLeaf != null;
+            }
+            ThingForm form = Forms.For(def);
+            switch (form.form)
+            {
+                case Form3D.Model:
+                    return form.model != null && form.model.HasModel;
+                case Form3D.Block:
+                    return true;
+                case Form3D.Extruded:
+                    return form.height > 0.004f && def.graphic != null && !(def.graphic is Graphic_Linked);
+            }
+            return false;
+        }
+
         // How the placement preview shows a def in 3D (probe inventory): "model", "block", or "2d:<why>".
         public static string PreviewKind(ThingDef def)
         {
