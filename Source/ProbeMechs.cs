@@ -33,6 +33,8 @@ namespace IsoRim
     //   facecheck=1                   logs every pawn: map facing, step it is walking, sprite facing seen (View3D.SeenFacing), 3D model
     //   drawcheck=1                   logs every standing person: map facing, step, the facing its sprite is drawn with (all mods' patches)
     //   turrettarget=x,z,tx,tz        the turret comp of the pawn in (x,z) given the pawn (or cell) at (tx,tz) as its target
+    //   mechwear=n                    MECHRUST TEST: the worn look of Ancient mechs (0 current, 1 A, 2 B, 3 C), worn copies remade;
+    //                                 mechwear=n,v also gives every worn mech rust pattern v (0-2) instead of one by its thing id
     //   mechcheck=1                   logs every mech and carrying pawn on the map (Mechs.Report)
     //   rot=x,z,rotting|dessicated    every corpse in the cell (and one held by the building there) rotted that far (CompRottable.RotImmediately)
     //   haulcorpse=x,z,ix,iz          the pawn in (x,z) given the job to haul the corpse at (ix,iz) to storage (a real job; zone= first)
@@ -55,6 +57,14 @@ namespace IsoRim
         {
             switch (key)
             {
+                case "mechwear":
+                {
+                    // MECHRUST TEST: mechwear=n, the worn look of Ancient mechs (0 current, 1 A, 2 B, 3 C)
+                    Mechs.ForcedWornVariant = a.Length > 1 ? I(a[1]) : -1;
+                    Mechs.SetWearLook(I(a[0]));
+                    Log.Message("[IsoRim probe] mechwear " + ObjLoader.WearLook);
+                    return true;
+                }
                 case "clearzone":
                 {
                     CellRect r = CellRect.FromLimits(I(a[0]), I(a[1]), I(a[2]), I(a[3]));
@@ -89,8 +99,17 @@ namespace IsoRim
                     PawnKindDef kind = DefDatabase<PawnKindDef>.GetNamed(a[2]);
                     Faction f = a[3] == "enemy" ? Find.FactionManager.OfMechanoids : Faction.OfPlayer;
                     float age = F(a[4]);
-                    Pawn p = PawnGenerator.GeneratePawn(new PawnGenerationRequest(kind, f, PawnGenerationContext.NonPlayer,
-                        fixedBiologicalAge: age, fixedChronologicalAge: age));
+                    Rand.PushState(Gen.HashCombineInt(I(a[0]), I(a[1]) * 7919 + 17));   // fixed seed per cell: the same mech every run
+                    Pawn p;
+                    try
+                    {
+                        p = PawnGenerator.GeneratePawn(new PawnGenerationRequest(kind, f, PawnGenerationContext.NonPlayer,
+                            fixedBiologicalAge: age, fixedChronologicalAge: age));
+                    }
+                    finally
+                    {
+                        Rand.PopState();
+                    }
                     Rot4 rot = new Rot4(I(a[5]));
                     GenSpawn.Spawn(p, new IntVec3(I(a[0]), 0, I(a[1])), map, rot);
                     p.jobs?.StopAll();

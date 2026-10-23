@@ -1669,6 +1669,37 @@ namespace IsoRim
         private static readonly Color Rust = new Color(0.42f, 0.24f, 0.13f);
         private static readonly Color RustDark = new Color(0.27f, 0.16f, 0.10f);
 
+        // How worn a worn copy looks. MECHRUST TEST (branch mechrust only): four looks to choose from, picked by
+        // WearLook (harness probe "mechwear=0..3"); the chosen one becomes the only look when finalised.
+        //   rustFrom: noise level where rust patches start (higher: fewer, smaller patches)
+        //   rustMix:  how far a full patch goes to the rust colour
+        //   rustBrown: patch colour, 1 = rust brown, 0 = the face's own dark grime
+        //   shade, shadeVar: the face's brightness (shade + shadeVar * fine noise)
+        //   dull:     how far the face goes toward its own brown-grey
+        internal struct Wear
+        {
+            public float rustFrom, rustMix, rustBrown, shade, shadeVar, dull;
+            public Wear(float rustFrom, float rustMix, float rustBrown, float shade, float shadeVar, float dull)
+            {
+                this.rustFrom = rustFrom;
+                this.rustMix = rustMix;
+                this.rustBrown = rustBrown;
+                this.shade = shade;
+                this.shadeVar = shadeVar;
+                this.dull = dull;
+            }
+        }
+
+        internal static readonly Wear[] WearLooks =
+        {
+            new Wear(0.55f, 0.85f, 1f, 0.58f, 0.10f, 0.45f),     // 0 current (rust share 0.17)
+            new Wear(0.60f, 0.80f, 1f, 0.66f, 0.10f, 0.38f),     // A light cleanup (rust share 0.11, about 1/3 less)
+            new Wear(0.65f, 0.70f, 0.75f, 0.76f, 0.09f, 0.28f),  // B medium (rust share 0.06, about 2/3 less; grime kept)
+            new Wear(0.72f, 0.45f, 0.6f, 0.86f, 0.07f, 0.16f),   // C strong (rust share 0.02, faint wear only)
+        };
+
+        internal static int WearLook;
+
         // A worn copy of a model (Ancient mechanoids): every face darker and duller, with rust-coloured blotches
         // where a smooth noise over the model's own space is high. offset (in model cells) shifts the noise, so
         // copies made with different offsets rust in different places; the same offset always rusts the same
@@ -1705,16 +1736,17 @@ namespace IsoRim
                     continue;
                 }
                 Vector3 c = (src.positions[i] + src.positions[i + 1] + src.positions[i + 2]) / 3f + offset;
-                float rust = Mathf.Clamp01((Blotch(c * 5.5f) - 0.55f) * 4f);       // patches
+                Wear w = WearLooks[Mathf.Clamp(WearLook, 0, WearLooks.Length - 1)];
+                float rust = Mathf.Clamp01((Blotch(c * 5.5f) - w.rustFrom) * 4f);   // patches
                 float grime = Blotch(c * 13f + new Vector3(7.1f, 3.3f, 1.9f));     // fine variation
                 for (int k = i; k < i + 3; k++)
                 {
                     Color col = src.colors[k];
                     float lum = col.r * 0.3f + col.g * 0.59f + col.b * 0.11f;
                     // Darker, a little desaturated toward a brown-grey.
-                    Color worn = Color.Lerp(col, new Color(lum, lum * 0.95f, lum * 0.86f), 0.45f) * (0.58f + 0.1f * grime);
-                    Color rusty = Color.Lerp(Rust, RustDark, grime) * Mathf.Lerp(0.7f, 1.1f, lum);
-                    Color o = Color.Lerp(worn, rusty, rust * 0.85f);
+                    Color worn = Color.Lerp(col, new Color(lum, lum * 0.95f, lum * 0.86f), w.dull) * (w.shade + w.shadeVar * grime);
+                    Color rusty = Color.Lerp(worn * 0.62f, Color.Lerp(Rust, RustDark, grime) * Mathf.Lerp(0.7f, 1.1f, lum), w.rustBrown);
+                    Color o = Color.Lerp(worn, rusty, rust * w.rustMix);
                     o.a = col.a;
                     m.colors[k] = o;
                 }
