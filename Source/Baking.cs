@@ -2285,6 +2285,14 @@ namespace IsoRim
             }
         }
 
+        // True for a plant growing in a plant grower (a plant pot, a bonsai pot, a hydroponics basin: Building_PlantGrower, as the
+        // game sows them): it stands in the middle of its cell, as the game draws it there (Plant.Print moves a single plant at
+        // most 0.05 off the middle), not scattered about the cell as in a field (ModelDef.scatter).
+        public static bool InPlanter(Thing thing)
+        {
+            return thing is Plant && thing.Spawned && thing.Position.GetEdifice(thing.Map) is Building_PlantGrower;
+        }
+
         // Where a thing's model m stands: its centre on the map, its turn (more turns added to yaw), its size per axis
         // (fit) and its base height (wall fittings go up their wall). One place for the bake and for what is drawn
         // every frame in step with the baked model (Effects' flames).
@@ -2307,7 +2315,7 @@ namespace IsoRim
             {
                 Mount(thing, def, m, fit.y, ref center, ref yaw, ref baseHeight);
             }
-            if (def.scatter > 0f)
+            if (def.scatter > 0f && !InPlanter(thing))   // a plant in a pot or basin stands in its middle
             {
                 int id = thing.thingIDNumber;
                 center.x += (Hashing.Unit(id, 13, 3) - 0.5f) * def.scatter;
