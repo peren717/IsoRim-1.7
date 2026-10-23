@@ -209,6 +209,9 @@ namespace IsoRim
 
         public static bool FixOff;   // probe (ghostfix=0)
 
+        // Harness counters (ghostspritecheck): game ghost sprites left out because the 3D ghost stands in, and drawn.
+        internal static int SpritesLeftOut, SpritesDrawn;
+
         // How the placement preview shows a def in 3D (probe inventory): "model", "block", or "2d:<why>".
         public static string PreviewKind(ThingDef def)
         {
