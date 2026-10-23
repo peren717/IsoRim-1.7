@@ -1514,7 +1514,7 @@ namespace IsoRim
                     int blockMark = CutTags.Mark(this);   // (shader cut-away) the marks go down with the block
                     for (int k = 0; k < marks; k++)
                     {
-                        int face = (int)(Hashing.Unit(id, k, 61) * 5f);   // 0 the cap, 1 to 4 the sides
+                        int face = Hashing.Index(id, k, 61, 5);   // 0 the cap, 1 to 4 the sides
                         float u = 0.2f + 0.6f * Hashing.Unit(id, k, 67);
                         float v = 0.2f + 0.6f * Hashing.Unit(id, k, 71);
                         float size = 0.13f + 0.08f * Hashing.Unit(id, k, 73);

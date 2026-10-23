@@ -14,6 +14,8 @@ namespace IsoRim
     //   cutfade=seconds                (shader cut-away) how long a cell takes to go down or come back up
     //   hurt=x,z,amount                the building at that cell takes that much blunt damage (damage marks)
     //   cutmark=0|1                    a small ring on the ground round the cut-away's pointer (default 1)
+    //   damageid=x,z,Def,Stuff|-,id,hp a building spawned there with that thing id (the id picks its damage marks) and that
+    //                                  fraction of its hit points (layout_dmgface: id 25960 once drew a mark on a fifth side)
     public static partial class Probe
     {
         public static bool HasCutPointer;
@@ -68,6 +70,16 @@ namespace IsoRim
                     {
                         b.TakeDamage(new DamageInfo(RimWorld.DamageDefOf.Blunt, F(a[2])));
                     }
+                    return true;
+                }
+                case "damageid":
+                {
+                    ThingDef dd = DefDatabase<ThingDef>.GetNamed(a[2]);
+                    Thing t = ThingMaker.MakeThing(dd, a[3] == "-" ? null : DefDatabase<ThingDef>.GetNamed(a[3]));
+                    t.thingIDNumber = I(a[4]);
+                    t.HitPoints = Math.Max(1, (int)(t.MaxHitPoints * F(a[5])));
+                    GenSpawn.Spawn(t, new IntVec3(I(a[0]), 0, I(a[1])), Find.CurrentMap);
+                    Log.Message("[IsoRim probe] damageid " + dd.defName + " id " + t.thingIDNumber + " hp " + t.HitPoints + "/" + t.MaxHitPoints);
                     return true;
                 }
                 case "cutmark":

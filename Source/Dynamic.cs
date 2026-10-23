@@ -13,7 +13,7 @@ namespace IsoRim
     // corner or tree looks the same every time the map is redrawn.
     public static class Hashing
     {
-        // A value from 0 to 1.
+        // A value from 0 up to (not including) 1, so that (int)(Unit * n) is always below n.
         public static float Unit(int a, int b, int salt)
         {
             unchecked
@@ -21,8 +21,14 @@ namespace IsoRim
                 int h = (a * 73856093) ^ (b * 19349663) ^ (salt * 83492791);
                 h = (h ^ (int)((uint)h >> 13)) * 1274126177;
                 h ^= (int)((uint)h >> 16);
-                return (h & 0xFFFF) / 65535f;
+                return (h & 0xFFFF) / 65536f;
             }
+        }
+
+        // A whole number from 0 to n - 1 (n > 0): for picking one of n things.
+        public static int Index(int a, int b, int salt, int n)
+        {
+            return n <= 0 ? 0 : Math.Min(n - 1, (int)(Unit(a, b, salt) * n));
         }
     }
 
