@@ -89,8 +89,17 @@ namespace IsoRim
                     PawnKindDef kind = DefDatabase<PawnKindDef>.GetNamed(a[2]);
                     Faction f = a[3] == "enemy" ? Find.FactionManager.OfMechanoids : Faction.OfPlayer;
                     float age = F(a[4]);
-                    Pawn p = PawnGenerator.GeneratePawn(new PawnGenerationRequest(kind, f, PawnGenerationContext.NonPlayer,
-                        fixedBiologicalAge: age, fixedChronologicalAge: age));
+                    Rand.PushState(Gen.HashCombineInt(I(a[0]), I(a[1]) * 7919 + 17));   // fixed seed per cell: the same mech every run
+                    Pawn p;
+                    try
+                    {
+                        p = PawnGenerator.GeneratePawn(new PawnGenerationRequest(kind, f, PawnGenerationContext.NonPlayer,
+                            fixedBiologicalAge: age, fixedChronologicalAge: age));
+                    }
+                    finally
+                    {
+                        Rand.PopState();
+                    }
                     Rot4 rot = new Rot4(I(a[5]));
                     GenSpawn.Spawn(p, new IntVec3(I(a[0]), 0, I(a[1])), map, rot);
                     p.jobs?.StopAll();

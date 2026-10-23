@@ -1742,7 +1742,16 @@ namespace IsoRim
         private static readonly Color Rust = new Color(0.42f, 0.24f, 0.13f);
         private static readonly Color RustDark = new Color(0.27f, 0.16f, 0.10f);
 
-        // A worn copy of a model (Ancient mechanoids): every face darker and duller, with rust-coloured blotches
+        // How worn a worn copy looks: used but kept clean, as the game's own Ancient sprites (pale, unrusted), with only
+        // faint wear left (rust share about 0.02 of the surface).
+        private const float RustFrom = 0.72f;    // noise level where rust flecks start (higher: fewer, smaller flecks)
+        private const float RustMix = 0.45f;     // how far a full fleck goes to its colour
+        private const float RustBrown = 0.6f;    // fleck colour: 1 = rust brown, 0 = the face's own dark grime
+        private const float WornShade = 0.86f;   // the face's brightness: WornShade + WornShadeVar * fine noise
+        private const float WornShadeVar = 0.07f;
+        private const float WornDull = 0.16f;    // how far the face goes toward its own brown-grey
+
+        // A worn copy of a model (Ancient mechanoids): every face a little darker and duller, with faint rust flecks
         // where a smooth noise over the model's own space is high. offset (in model cells) shifts the noise, so
         // copies made with different offsets rust in different places; the same offset always rusts the same
         // way. Faces whose material is in keep (lenses, faction marks), glowing faces and faces tinted by the
@@ -1778,16 +1787,16 @@ namespace IsoRim
                     continue;
                 }
                 Vector3 c = (src.positions[i] + src.positions[i + 1] + src.positions[i + 2]) / 3f + offset;
-                float rust = Mathf.Clamp01((Blotch(c * 5.5f) - 0.55f) * 4f);       // patches
+                float rust = Mathf.Clamp01((Blotch(c * 5.5f) - RustFrom) * 4f);   // flecks
                 float grime = Blotch(c * 13f + new Vector3(7.1f, 3.3f, 1.9f));     // fine variation
                 for (int k = i; k < i + 3; k++)
                 {
                     Color col = src.colors[k];
                     float lum = col.r * 0.3f + col.g * 0.59f + col.b * 0.11f;
                     // Darker, a little desaturated toward a brown-grey.
-                    Color worn = Color.Lerp(col, new Color(lum, lum * 0.95f, lum * 0.86f), 0.45f) * (0.58f + 0.1f * grime);
-                    Color rusty = Color.Lerp(Rust, RustDark, grime) * Mathf.Lerp(0.7f, 1.1f, lum);
-                    Color o = Color.Lerp(worn, rusty, rust * 0.85f);
+                    Color worn = Color.Lerp(col, new Color(lum, lum * 0.95f, lum * 0.86f), WornDull) * (WornShade + WornShadeVar * grime);
+                    Color rusty = Color.Lerp(worn * 0.62f, Color.Lerp(Rust, RustDark, grime) * Mathf.Lerp(0.7f, 1.1f, lum), RustBrown);
+                    Color o = Color.Lerp(worn, rusty, rust * RustMix);
                     o.a = col.a;
                     m.colors[k] = o;
                 }

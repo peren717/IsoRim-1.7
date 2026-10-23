@@ -19,7 +19,7 @@ namespace IsoRim
     // a hauled thing is held in front of it, it rises with a jump, and downed or dead it lies on its
     // side. While it works, the parts made for the work (brushes, cutter discs, sensor heads, digging
     // arms) move. A mech the game draws with its other look (the Ancient sprites of mechs over 100
-    // years old, which includes almost every raider) is drawn worn: darker, rusty, marks kept.
+    // years old, which includes almost every raider) is drawn worn: a little darker and duller, faint rust, marks kept.
     public static class Mechs
     {
         private enum Motion { Fixed, Wheel, Leg, Spin, Pitch, Arm, Upper, Head, Weapon, Turret, Open }
@@ -50,7 +50,7 @@ namespace IsoRim
             public Model[] bodyWornMarked;
         }
 
-        // Ancient mechs (the game's other sprite of the kind, over 100 years old) are drawn worn: darker, with rust
+        // Ancient mechs (the game's other sprite of the kind, over 100 years old) are drawn worn: a little darker, with faint rust
         // patches, in one of a few patterns picked by the mech's id (so each keeps its own).
         private const int WornVariants = 3;
 
