@@ -266,6 +266,13 @@
   <R3D_Settings_UprightPawnsTip>For people and animals without a model.</R3D_Settings_UprightPawnsTip>
   <R3D_Settings_HairUnderHats>  Show hair under hats</R3D_Settings_HairUnderHats>
   <R3D_Settings_HairUnderHatsTip>Hair shows below brimmed hats and caps, tucked in.</R3D_Settings_HairUnderHatsTip>
+  <R3D_Settings_KeepAsPaper>Keep as paper</R3D_Settings_KeepAsPaper>
+  <R3D_Settings_KeepAsPaperTip>Aliens that stay flat.</R3D_Settings_KeepAsPaperTip>
+  <R3D_AlienTune_Title>Alien tuning</R3D_AlienTune_Title>
+  <R3D_AlienTune_Pick>Pick an alien pawn</R3D_AlienTune_Pick>
+  <R3D_AlienTune_Copy>Copy XML</R3D_AlienTune_Copy>
+  <R3D_AlienTune_Copied>Copied.</R3D_AlienTune_Copied>
+  <R3D_AlienTune_Reset>Reset</R3D_AlienTune_Reset>
   <R3D_Settings_FaceDecal>  Facial Animation face on 3D heads</R3D_Settings_FaceDecal>
   <R3D_Settings_FaceDecalTip>Facial Animation's animated eyes, brows and mouth laid on the front of the 3D head instead of IsoRim's eyes.</R3D_Settings_FaceDecalTip>
   <R3D_Settings_FaceDecalSize>    Face size</R3D_Settings_FaceDecalSize>

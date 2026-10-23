@@ -203,8 +203,133 @@ half-set model), a new enough one gets the whole entry:
 
 `minVersion` by field: base fields and the plain binding 2; `hackedGlowOff`, `deadBellyUp`, `legFromHip`, `legLift`,
 `legYaw` 5; `rotationByFacing`, `byState`, `style`, `crownTop`, `doorLeafRise` 6; `wallTop` 11; `backHeight` 13; wing
-fields 14; `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20; `immatureModels`, `immatureHide` 24. The highest
-one used counts.
+fields 14; `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20; `immatureModels`, `immatureHide` 24; alien packs
+(`IsoRim.AlienModelDef`, `ApparelModelDef.aliens`) 25. The highest one used counts.
+
+## Alien packs
+
+Humanlike races from other mods (Humanoid Alien Races and the like) are drawn as flat cards in IsoRim's 3D view. An **alien
+pack** makes one a 3D figure (IsoRim Api 25). It is XML and `.obj` files like a model pack, plus the shared
+`IsoRimPackGate.dll`. Players can still keep any race flat with the setting **Keep as paper**.
+
+An alien pack gives each race an `IsoRim.AlienModelDef` with one of three figures:
+
+| `figure` | What it draws |
+|---|---|
+| `Human` | IsoRim's human figure, placed for the race: its size, head size and head offset are measured from the game (HAR's `customDrawSize`, `customHeadDrawSize`, `headOffset`); IsoRim's clothes, hats, hair and eyes as on people. For races close to humans. |
+| `Own` | The pack's own body (upper and lower) and head models, with named anchors and fits so IsoRim's clothes, hats, hair, eyes, weapons and other mods' attachments land on them. |
+| `Card` | A flat card (also what every race without a pack gets). |
+
+The race's own HAR body addons (ears, tails, horns, hair drawn as an addon) are drawn as cards of their sprites on a 3D race
+(with HAR's offsets, colours and conditions: a hat hides ears that HAR hides). A pack can give one a model or hide it.
+
+The def type is new in Api 25, so the whole pack is added by a gated patch (the defs themselves cannot be in `Defs/`). A def
+a patch adds has no mod of its own: name your mod in `modPackageId` so IsoRim finds the model files.
+
+```
+MyAlienPack/
+  About/About.xml                     loads after IsoRim (Peren.IsoRim17), HAR and the race mod
+  1.7/Assemblies/IsoRimPackGate.dll   the shared gate (IsoRim's Tools/PackGate/)
+  Patches/MyAlienPack.xml              the AlienModelDefs (and alien apparel bindings), gated on minVersion 25
+  Models/*.obj, *.mtl                 Own races: body, head, addon and apparel models
+```
+
+A full example (one `Human` race, one `Own` race with a tail model, a race-only hat):
+
+```xml
+<Patch>
+  <Operation Class="IsoRimPackGate.PatchOperation_IfIsoRimApi">
+    <minVersion>25</minVersion>
+    <apply Class="PatchOperationAdd">
+      <xpath>/Defs</xpath>
+      <value>
+        <IsoRim.AlienModelDef>
+          <defName>MyAlienPack_Close</defName>
+          <alien>MyRace_Close</alien>
+          <figure>Human</figure>
+          <build>
+            <MyRace_Slim>thin</MyRace_Slim>
+          </build>
+        </IsoRim.AlienModelDef>
+
+        <IsoRim.AlienModelDef>
+          <defName>MyAlienPack_Beast</defName>
+          <alien>MyRace_Beast</alien>
+          <figure>Own</figure>
+          <modPackageId>You.IsoRimWaylith.MyAlienPack</modPackageId>
+          <bodies>
+            <li><upper>Models/myrace_upper.obj</upper><lower>Models/myrace_lower.obj</lower><fitAs>male</fitAs></li>
+          </bodies>
+          <heads>
+            <li><graphicPath>Things/Pawn/Humanlike/Heads/</graphicPath><model>Models/myrace_head.obj</model></li>
+          </heads>
+          <addons>
+            <li><graphicPath>MyRace/Addons/Tail/Tail</graphicPath><model>Models/myrace_tail.obj</model><anchor>tailRoot</anchor><rotation>(-25, 0, 0)</rotation></li>
+            <li><graphicPath>MyRace/Addons/Ears/</graphicPath><hide>true</hide></li>
+          </addons>
+          <anchors>
+            <head>(0, 0.64, 0)</head>
+            <headFit>(0.72, 0.6, 0.75)</headFit>
+            <handLeft>(-0.275, 0.36, 0)</handLeft>
+            <handRight>(0.275, 0.36, 0)</handRight>
+            <tailRoot>(0, 0.3, -0.15)</tailRoot>
+            <bodyFit>(1.05, 0.88, 1.12)</bodyFit>
+          </anchors>
+        </IsoRim.AlienModelDef>
+
+        <IsoRim.ApparelModelDef>
+          <defName>MyAlienPack_BeastCowboyHat</defName>
+          <apparel>Apparel_CowboyHat</apparel>
+          <slot>Head</slot>
+          <model>Models/myrace_hat.obj</model>
+          <aliens><li>MyRace_Beast</li></aliens>
+        </IsoRim.ApparelModelDef>
+      </value>
+    </apply>
+  </Operation>
+</Patch>
+```
+
+`IsoRim.AlienModelDef` fields:
+
+| Field | Default | Meaning |
+|---|---|---|
+| `alien` / `aliens` | | The race's ThingDef defName (or a list). A later def for the same race wins. |
+| `figure` | Card | `Human`, `Own` or `Card`. |
+| `modPackageId` | | Your mod's packageId: model paths are relative to its folder. |
+| `scale` | measured / 1 | Size of the whole figure (1 = a human). `Human`: measured from the game's body mesh; `Own`: 1 (your models' own size). |
+| `headScale` | measured | `Human`: the head's size next to the body, about the neck. |
+| `headOffset` | measured | `Human`: the head moved, `(0, up, forward)` in cells of a figure of size 1. |
+| `build` | by name | The race's body types onto IsoRim's builds: `<MyBody>thin</MyBody>` (`male`, `female`, `thin`, `fat`, `hulk`). Without one: the vanilla types keep theirs, others by name (Female, Thin, Hulk, Fat), else by the body type's art, else male. |
+| `face` | IsoRim | `IsoRim`: IsoRim's face (eyes, Facial Animation's face, other mods' face drawers); on an `Own` head at the `face` anchor, scaled by `faceFit`. `None`: no face (your head model has its own). |
+| `hair` | IsoRim | `IsoRim`: IsoRim's hair shapes by the hairstyle; `Card`: the game's own hair and beard sprites as cards (races with hair art of their own); `None`: no hair. |
+| `addonCards` | true | The race's addons without a model of their own drawn as cards. |
+| `clothes` | Show | `Hide`: only apparel with a binding for this race (`ApparelModelDef.aliens`) shows. |
+| `bodies` | | `Own`: `<li>` with `upper`, `lower`, `fitAs` (the build whose clothes fit it), optional `bodyType`, `lifeStage`; first match. |
+| `heads` | | `Own`: `<li>` with `model` and `headType` or `graphicPath` (the head type's texture path; a trailing `/` matches all under it); first match. |
+| `addons` | | `<li>` with `graphicPath` (the addon's texture path, as HAR's `path`; trailing `/` for a prefix) and `model` (placed at `anchor`, then `offset`, `rotation`, `scale`; `colour` Material (HAR's colour channel), Skin, Hair or White) or `hide`; `hatLift` (head addons, card or model): while a hat is drawn, lifted that share of the way from its lowest point to the hat's top (1: standing on the hat; ears the game shows over hats). An entry with only options keeps the card. |
+| `anchors` | IsoRim's figure | `head` (the head's pivot; IsoRim's human neck is (0, 0.74, 0)), `headFit` (IsoRim's head parts scaled about it onto your head), `face`, `neck`, `back`, `waist`, `handLeft`, `handRight`, `tailRoot`, `bodyFit` (IsoRim's clothes for the `fitAs` build scaled onto your body), `faceFit` (IsoRim's face scaled about its eyes' middle onto the `face` anchor; default `headFit`). Other mods use the anchors through `FigureFrame.Anchor`. |
+
+Own models: the same axes and units as IsoRim's `person_*.obj` (one unit = one cell, +y up, feet at the origin, the figure
+faces -z of the file). The upper body takes the shirt colour (or the skin when bare), the lower body the trousers, the head
+the skin, on faces whose material name starts with `stuff`; other materials keep their colour. Keep shapes big and simple, as
+for any model. Dried to bones, an `Own` race keeps its card.
+
+Alien apparel: an `ApparelModelDef` (part 3 of `Docs/Api.md`) with `aliens` is used only for those races, before a binding
+without `aliens`; Body bindings can give `alienBodyModels` (`<li><bodyType>MyBody</bodyType><model>Models/x.obj</model></li>`).
+Apparel without a race binding is fitted onto the race (`Human`: as on people; `Own`: by `headFit` / `bodyFit`).
+
+Gene parts (Biotech tails, ears, horns) on people are not drawn by IsoRim; mods such as "IsoRim - Biotech Pawn Parts" do that.
+
+**Tuning in dev mode**: Debug actions > IsoRim > **Alien tuning...** on a race pawn: live sliders for the scale, head scale and
+offset, every anchor and `headFit` / `bodyFit` / `faceFit`, buttons for the figure and the face, and **Copy XML**, which puts
+the tuned fields and anchors on the clipboard as `AlienModelDef` XML to paste into your pack. Changes show on every pawn of
+the race until Reset or a new game.
+
+A race with hair and ears of its own art (tried on Kiiro Race): `Own` with simple body, head and tail models and
+`hair` `None`; its hair addons get shared 3D hair models by `graphicPath` (one model for each group of similar styles,
+anchored at `head`, the back-hair addons hidden), and its ears get solid ear models (`colour` Skin) with `hatLift`
+so they stay out of hats as in 2D.
 
 ## Pitfalls
 

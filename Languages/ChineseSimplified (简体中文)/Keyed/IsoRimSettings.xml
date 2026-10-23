@@ -266,6 +266,13 @@
   <R3D_Settings_UprightPawnsTip>用于没有模型的人和动物。</R3D_Settings_UprightPawnsTip>
   <R3D_Settings_HairUnderHats>  帽子下显示头发</R3D_Settings_HairUnderHats>
   <R3D_Settings_HairUnderHatsTip>头发会显示在帽子和便帽下面，并收进帽子里。</R3D_Settings_HairUnderHatsTip>
+  <R3D_Settings_KeepAsPaper>保持纸片人</R3D_Settings_KeepAsPaper>
+  <R3D_Settings_KeepAsPaperTip>这些异种族保持平面。</R3D_Settings_KeepAsPaperTip>
+  <R3D_AlienTune_Title>异种族调整</R3D_AlienTune_Title>
+  <R3D_AlienTune_Pick>选择一个异种族小人</R3D_AlienTune_Pick>
+  <R3D_AlienTune_Copy>复制 XML</R3D_AlienTune_Copy>
+  <R3D_AlienTune_Copied>已复制。</R3D_AlienTune_Copied>
+  <R3D_AlienTune_Reset>重置</R3D_AlienTune_Reset>
   <R3D_Settings_FaceDecal>  3D 头部显示 Facial Animation 的脸</R3D_Settings_FaceDecal>
   <R3D_Settings_FaceDecalTip>把 Facial Animation 的动态眼睛、眉毛和嘴巴贴在 3D 头部正面，代替 IsoRim 的眼睛。</R3D_Settings_FaceDecalTip>
   <R3D_Settings_FaceDecalSize>    脸部大小</R3D_Settings_FaceDecalSize>

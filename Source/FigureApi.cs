@@ -286,6 +286,31 @@ namespace IsoRim
 
         /// <summary>The parts hidden so far this frame by the hooks (<see cref="Hide"/>).</summary>
         public FigureParts Hidden => hidden;
+
+        /// <summary>How the figure is drawn (Api version 25): <see cref="FigureMode.Human"/> for people and races drawn with
+        /// IsoRim's human figure, <see cref="FigureMode.Own"/> for a race drawn with its alien pack's own models.</summary>
+        public FigureMode Mode => look != null && look.alien != null ? look.alien.mode : FigureMode.Human;
+
+        /// <summary>
+        /// A named point of the figure in drawn space (Api version 25), the same for people and races: <c>head</c> (the head's
+        /// pivot on the neck), <c>face</c> (the front of the face), <c>neck</c>, <c>back</c>, <c>waist</c>, <c>handLeft</c>,
+        /// <c>handRight</c>, <c>tailRoot</c> (case does not matter; <c>hand_l</c>, <c>hand_r</c>, <c>tail_root</c> too).
+        /// <c>head</c> and <c>face</c> move with the head (its pose, a race's head offset and fit), the others with the
+        /// body. For people they are IsoRim's figure's points with the body type's scale; an alien pack can set its own.
+        /// The matrix is the head or body frame moved to the point (not turned). False for an unknown name.
+        /// </summary>
+        public bool Anchor(string name, out Matrix4x4 matrix)
+        {
+            matrix = Matrix4x4.identity;
+            Vector3 p;
+            bool onHead;
+            if (!live || look == null || !AlienFigures.Anchor(look, name, out p, out onHead))
+            {
+                return false;
+            }
+            matrix = (onHead ? Head : Body) * Matrix4x4.Translate(p);
+            return true;
+        }
     }
 
     // Boxes of a figure's parts, worked out once per model (no allocation after the first).

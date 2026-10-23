@@ -49,10 +49,13 @@ namespace IsoRim
         // AddFaceDrawer(drawer, evenWhenHidden) with FaceFrame.HiddenByGame (FaceHiddenBy), Api21.cs; 23: claimed for hand
         // attach points and work tools, not in this build yet; 24: model packs: ModelDef.immatureModels and immatureHide (a
         // plant's young stage, StateModels.Choose) and "sheet" materials tinted by the thing's second colour (a bed's sheets,
-        // R3DTextures.SheetTint)).
+        // R3DTextures.SheetTint); 25: humanlike aliens: AlienModelDef alien packs (FigureMode Own, Human, Card), FigureModeOf,
+        // AddAlienFigureRule, RemoveAlienFigureRule, FigureFrame.Anchor, FigureFrame.Mode, FigureParts.Addons,
+        // ApparelModelDef.aliens and alienBodyModels, AlienModelDef.face (AlienFace) / hair (AlienHair) / faceFit / addon
+        // hatLift, the "Keep as paper" setting, the dev-mode alien tuning window; Aliens.cs, AlienCards.cs, AlienTune.cs).
         // The card overlay (IsCard, DrawOnCard,
         // CardLight; CardOverlay.cs) came in before version 8 without a number of its own: check >= 8 for it.
-        public static int Version => 24;
+        public static int Version => 25;
 
         // ---- facing holds (Version 19)
 

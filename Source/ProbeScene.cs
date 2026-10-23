@@ -1741,7 +1741,7 @@ namespace IsoRim
                     break;
                 }
                 default:
-                    if (CutKey(key, a) || MechKey(key, a, map) || EntityKey(key, a, map) || FixKey(key, a, map) || SeatKey(key, a, map) || GshipKey(key, a, map) || SkyKey(key, a, map) || StrikeKey(key, a, map) || SilKey(key, a, map) || WeaponKey(key, a, map) || CrawlKey(key, a, map) || CardApiKey(key, a) || Api8Key(key, a, map) || Api9Key(key, a, map) || Api12Key(key, a, map) || Api17Key(key, a, map) || FogKey(key, a, map) || BuildSeeKey(key, a, map) || MineMarkKey(key, a, map) || HairTuckKey(key, a, map) || GroundKey(key, a, map) || BinderKey(key, a, map) || BenchKey(key, a, map) || Young24Key(key, a, map) || BarKey(key, a, map) || GhostKey(key, a, map))
+                    if (CutKey(key, a) || MechKey(key, a, map) || EntityKey(key, a, map) || FixKey(key, a, map) || SeatKey(key, a, map) || GshipKey(key, a, map) || SkyKey(key, a, map) || StrikeKey(key, a, map) || SilKey(key, a, map) || WeaponKey(key, a, map) || CrawlKey(key, a, map) || CardApiKey(key, a) || Api8Key(key, a, map) || Api9Key(key, a, map) || Api12Key(key, a, map) || Api17Key(key, a, map) || FogKey(key, a, map) || BuildSeeKey(key, a, map) || MineMarkKey(key, a, map) || HairTuckKey(key, a, map) || GroundKey(key, a, map) || BinderKey(key, a, map) || BenchKey(key, a, map) || Young24Key(key, a, map) || BarKey(key, a, map) || GhostKey(key, a, map) || AlienKey(key, a, map))
                     {
                         break;
                     }

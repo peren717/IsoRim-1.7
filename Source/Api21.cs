@@ -92,6 +92,9 @@ namespace IsoRim
         Legs = 1024,
         /// <summary>A shield held on the left forearm (an <see cref="ApparelModelDef"/> shield binding).</summary>
         Shield = 2048,
+        /// <summary>A race's addon cards (Api version 25: the race's own render nodes, such as HAR body addons, drawn as cards on a
+        /// race shown as a 3D figure), for a hook that draws them itself. Addon models an alien pack gives stay.</summary>
+        Addons = 1 << 20,
     }
 
     /// <summary>
@@ -315,7 +318,7 @@ namespace IsoRim
             {
                 return FaceHiddenBy.NoHead;
             }
-            if (look.ownHead != null)
+            if (look.ownHead != null && !(look.alien != null && look.alien.faceShown && look.alien.ownHead == look.ownHead))   // (an Own race's head with IsoRim's face: as a person head, Api 25)
             {
                 return FaceHiddenBy.OwnHead;
             }
