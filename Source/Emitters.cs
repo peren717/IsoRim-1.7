@@ -30,6 +30,8 @@ namespace IsoRim
             public float height;
             public float rise;
             public int until;   // game tick after which the puff has certainly faded
+            public bool onFloor;
+            public Matrix4x4 floor;   // what it rises from is on an upper floor: that floor's matrix (Floors.ExtraMatrix)
         }
 
         private static readonly Dictionary<Vector3, Puff> puffs = new Dictionary<Vector3, Puff>();
@@ -135,15 +137,23 @@ namespace IsoRim
         // (rising by rise cells a second) until it has faded. Called while the game ticks.
         public static void Raise(Vector3 spawn, float height, float rise, FleckDef fleck)
         {
+            Raise(spawn, height, rise, fleck, Matrix4x4.identity);
+        }
+
+        // The same, drawn moved by floor (the upper floor's matrix of what it rises from: Floors.ExtraMatrix).
+        public static void Raise(Vector3 spawn, float height, float rise, FleckDef fleck, Matrix4x4 floor)
+        {
             Sweep();
             int lifeTicks = Mathf.CeilToInt((fleck.solidTime + fleck.fadeInTime + fleck.fadeOutTime) * 60f) + 120;
-            puffs[Key(spawn)] = new Puff { height = height, rise = rise, until = Find.TickManager.TicksGame + lifeTicks };
+            puffs[Key(spawn)] = new Puff { height = height, rise = rise, until = Find.TickManager.TicksGame + lifeTicks, floor = floor, onFloor = floor != Matrix4x4.identity };
         }
 
         // The game draws puffs on worker threads, so the puff being drawn is noted per thread and
         // its quad stood up in Patches.DrawBatch_Prefix (Stand), not through DrawHook's shared state.
         [ThreadStatic] private static bool standing;
         [ThreadStatic] private static float standHeight;
+        [ThreadStatic] private static bool standOnFloor;
+        [ThreadStatic] private static Matrix4x4 standFloor;
 
         public static bool On
         {
@@ -165,6 +175,8 @@ namespace IsoRim
             }
             standing = true;
             standHeight = p.height + p.rise * fleck.ageSecs;
+            standOnFloor = p.onFloor;
+            standFloor = p.floor;
             return true;
         }
 
@@ -180,10 +192,11 @@ namespace IsoRim
             Vector3 p = matrix.GetColumn(3);
             Matrix4x4 local = Matrix4x4.Translate(-p) * matrix;
             float s = View3D.Squash;
-            return Matrix4x4.Translate(new Vector3(p.x, p.y + standHeight / s, p.z))
+            Matrix4x4 stood = Matrix4x4.Translate(new Vector3(p.x, p.y + standHeight / s, p.z))
                 * Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f))
                 * Matrix4x4.Rotate(Quaternion.Euler(View3D.Pitch - 90f, View3D.Yaw, 0f))
                 * local;
+            return standOnFloor ? standFloor * stood : stood;
         }
 
         // Now and then, forgets puffs that have faded.

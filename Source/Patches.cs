@@ -509,6 +509,8 @@ namespace IsoRim
                 prefix: nameof(SprayerTick_Prefix), finalizer: nameof(SprayerTick_Finalizer));
             Patch("steam from 3D nozzles", AccessTools.Method(typeof(FleckMaker), nameof(FleckMaker.ThrowAirPuffUp)), prefix: nameof(AirPuff_Prefix));
             Patch("smoke from 3D nozzles", AccessTools.Method(typeof(FleckStatic), "Draw", new[] { typeof(float), typeof(DrawBatch) }), prefix: nameof(FleckDraw_Prefix), finalizer: nameof(FleckDraw_Finalizer));
+            // Icons thrown from a pawn's cell (downed "!", sleep Zs, hearts ...) over the 3D figure's head (Overhead).
+            Patch("icons over 3D figures' heads", AccessTools.Method(typeof(FleckManager), nameof(FleckManager.CreateFleck), new[] { typeof(FleckCreationData) }), prefix: nameof(OverheadFleck_Prefix));
 
             // Turret guns: a 3D gun turning on its 3D base.
             Type turretTop = AccessTools.TypeByName("RimWorld.TurretTop");
@@ -3388,6 +3390,7 @@ namespace IsoRim
             public bool wasPivoted;
             public Vector3 wasPivot;
             public int uprightMark;   // a thing's drawing: UprightScopes.Depth + 1 when it started (0: not marked)
+            public bool floorSet;     // the scope put the thing's upper-floor matrix on (Overhead: a pawn's status icon)
         }
 
         // Wraps the game's per-frame drawing of one thing. __0 is the drawing phase; only the
@@ -3466,7 +3469,10 @@ namespace IsoRim
                     }
                     return;
                 }
-                BeginBillboard(ref __state, OverheadHeight, false, Vector3.zero);
+                // An icon in a pawn's cell (an effecter's drifting emote: a berserk pawn's bits ...): over that pawn's head
+                // (Overhead), lying or standing; otherwise at a standing colonist's head height.
+                Pawn under = mote.Spawned && !Overhead.Off ? mote.Position.GetFirstPawn(mote.Map) : null;
+                BeginBillboard(ref __state, under != null ? Overhead.Height(under) : OverheadHeight, false, Vector3.zero);
                 return;
             }
             BeginLift(__instance, ref __state);
@@ -3678,8 +3684,40 @@ namespace IsoRim
         public static void OverlayRender_Prefix(Thing __0, out DrawScope __state)
         {
             __state = default(DrawScope);
-            if (!View3D.Ready || __0 == null || __0 is Pawn)
+            if (!View3D.Ready || __0 == null)
             {
+                return;
+            }
+            if (__0 is Pawn pawn)
+            {
+                if (Overhead.Off)
+                {
+                    return;
+                }
+                // A status icon over a pawn (the question mark over creepjoiners, visitors and traders; a mech's
+                // self-shutdown): one card over the 3D figure's head (Overhead), laid out round it as the game shows it
+                // from above (the question mark sits up and right of the pawn: its middle at the head's height).
+                try
+                {
+                    float iconBase = Overhead.Height(pawn) - OverlayAbove(pawn);
+                    BeginBillboard(ref __state, Mathf.Max(0f, iconBase), false, Vector3.zero);
+                    if (__state.changed)
+                    {
+                        DrawHook.hasPivot = true;
+                        DrawHook.billboardPivot = pawn.DrawPos;
+                        Matrix4x4 floorM = Overhead.Floor(pawn);
+                        if (floorM != Matrix4x4.identity && !DrawHook.floor)
+                        {
+                            __state.floorSet = true;
+                            DrawHook.floor = true;
+                            DrawHook.floorMatrix = floorM;
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.ErrorOnce("[IsoRim] Placing a pawn's status icon failed: " + e, 93611581);
+                }
                 return;
             }
             // Status icons (no power, forbidden, out of fuel ...) stand up and float above the thing.
@@ -3695,8 +3733,20 @@ namespace IsoRim
             BeginBillboard(ref __state, h + IconGap, true, __0.TrueCenter());
         }
 
+        // How far up the picture the game draws a pawn's status icon from the pawn (OverlayDrawer: the question mark at
+        // size.z - 0.45 cells up and to the right; the self-shutdown sign on the pawn itself).
+        private static float OverlayAbove(Pawn p)
+        {
+            return p.ShouldShowQuestionMark() ? p.def.size.z - 0.45f : 0f;
+        }
+
         public static void Scope_Finalizer(DrawScope __state)
         {
+            if (__state.floorSet)
+            {
+                DrawHook.floor = false;
+                DrawHook.floorMatrix = Matrix4x4.identity;
+            }
             if (__state.uprightMark > 0)
             {
                 UprightScopes.CloseFrom(__state.uprightMark - 1);
@@ -4157,6 +4207,18 @@ namespace IsoRim
         public static bool CreateFleck_Prefix(FleckCreationData fleckData)
         {
             return ShieldHits.CreateFleck(fleckData);
+        }
+
+        public static void OverheadFleck_Prefix(FleckManager __instance, FleckCreationData fleckData)
+        {
+            try
+            {
+                Overhead.OnFleck(__instance.parent, fleckData);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Raising an icon over a figure failed: " + e, 93611580);
+            }
         }
 
         public static IEnumerable<CodeInstruction> ShieldDraw_Transpiler(IEnumerable<CodeInstruction> instructions)
