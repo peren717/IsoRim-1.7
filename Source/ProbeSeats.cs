@@ -19,7 +19,8 @@ namespace IsoRim
     //   poses=0|1                    pawns posed on furniture (Poses.On, default 1) or not (before/after shots)
     //   settle=1                     every pawn's drawn position put where the game's tween would have eased it to (the
     //                                tween stands still while the harness keeps the game paused)
-    //   lovers=x1,z1,x2,z2           the two colonists made lovers (so they may share a bed)
+    //   lovers=x1,z1,x2,z2[,spouse]  the two colonists made lovers (so they may share a bed); spouse: married instead (an ideo that
+    //                                 lets only spouses share a bed then allows it too)
     //   seatcheck=1                  logs each colonist: job, cell, seat (Poses.Report), drawn position; with
     //                                seatcheck=expect, CHECK lines: a sitting job's pawn is seated, a walking one is not
     public static partial class Probe
@@ -161,7 +162,7 @@ namespace IsoRim
                     Pawn p2 = PawnAt(map, I(a[2]), I(a[3]));
                     if (p1 != null && p2 != null && p1.relations != null)
                     {
-                        p1.relations.AddDirectRelation(PawnRelationDefOf.Lover, p2);
+                        p1.relations.AddDirectRelation(a.Length > 4 && a[4] == "spouse" ? PawnRelationDefOf.Spouse : PawnRelationDefOf.Lover, p2);
                     }
                     return true;
                 }
