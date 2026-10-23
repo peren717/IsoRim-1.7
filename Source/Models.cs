@@ -951,6 +951,14 @@ namespace IsoRim
             return style != null && styled[t.def].TryGetValue(style.defName, out own) ? own : null;
         }
 
+        // The same for a def placed in a style (the placement preview).
+        public static ModelEntry StyledEntry(ThingDef def, ThingStyleDef style)
+        {
+            Dictionary<string, ModelEntry> forThing;
+            ModelEntry own;
+            return def != null && style != null && styled.TryGetValue(def, out forThing) && forThing.TryGetValue(style.defName, out own) ? own : null;
+        }
+
         // How a thing got its entry: "thingDef", "category:<name>", "match:<name part>" or
         // "fallback:SmallPlants"; null if it has none (for the harness's model sweep).
         public static string HowBound(ThingDef def)

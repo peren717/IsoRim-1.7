@@ -271,6 +271,10 @@ namespace IsoRim
             parts.Add(p);
         }
 
+        // While set, DrawLocal draws each model as a see-through placement ghost in GhostColour instead (Doors.Ghost).
+        internal static bool Ghosting;
+        internal static Color GhostColour;
+
         // The same for one part of something that moves as a whole, such as an animal's body
         // or one of its legs. local places the part within the whole, in cells, before the whole
         // is turned by yaw and put at position. The light stays where it is as the whole turns:
@@ -279,6 +283,14 @@ namespace IsoRim
         {
             if (m == null)
             {
+                return;
+            }
+            if (Ghosting)
+            {
+                // a placement preview (Doors.Ghost): the part as a see-through ghost, as Ghosts draws models
+                float gs = View3D.Squash;
+                Ghosts.DrawModel(m, Matrix4x4.Translate(new Vector3(position.x, position.y / gs, position.z))
+                    * Matrix4x4.Scale(new Vector3(1f, 1f / gs, 1f)) * Matrix4x4.Rotate(Quaternion.AngleAxis(yaw, Vector3.up)) * local, GhostColour);
                 return;
             }
             List<Part> parts = PartsFor(m, tint, swatch);
@@ -1581,6 +1593,34 @@ namespace IsoRim
         private static Model gateLeaf;
         private static Model gatePosts;
 
+        // Where and how a door is drawn: a built door's, or (Ghost) one still being placed.
+        private struct Site
+        {
+            public ThingDef def;
+            public Map map;
+            public IntVec3 cell;
+            public Rot4 rot;
+            public Vector3 at;          // the drawn middle (wide doors)
+            public CellRect rect;
+            public ModelEntry styled;   // the entry of its style, if the style has its own models
+            public bool supported;      // a Building_SupportedDoor
+            public Color tint;
+            public string swatch;
+            public float openPct;       // the game's OpenPct (gathering leaves)
+            public bool hackShown;      // its hacking terminal still stands
+        }
+
+        private static Site SiteOf(Building_Door door)
+        {
+            CompHackable hack = door.GetComp<CompHackable>();
+            return new Site
+            {
+                def = door.def, map = door.Map, cell = door.Position, rot = door.Rotation, at = door.DrawPos, rect = door.OccupiedRect(),
+                styled = ModelLibrary.StyledEntry(door), supported = door is Building_SupportedDoor, tint = door.DrawColor,
+                swatch = R3DTextures.StuffSwatch(door), openPct = Patches.DoorOpenPct(door), hackShown = hack != null && !hack.IsHacked
+            };
+        }
+
         // openDistance is how far each leaf has slid, in cells (0 = shut). Returns false if the
         // door could not be drawn, so the game draws its own.
         public static bool Draw(Building_Door door, float openDistance)
@@ -1588,7 +1628,7 @@ namespace IsoRim
             DynamicModels.SeeParts = true;   // door leaves go see-through while building (BuildSee)
             try
             {
-                return DrawOne(door, openDistance);
+                return DrawOne(SiteOf(door), openDistance);
             }
             finally
             {
@@ -1601,7 +1641,7 @@ namespace IsoRim
             DynamicModels.SeeParts = true;
             try
             {
-                return DrawWideOne(door, entry, openPct, stuckOpen);
+                return DrawWideOne(SiteOf(door), entry, openPct, stuckOpen);
             }
             finally
             {
@@ -1614,7 +1654,7 @@ namespace IsoRim
             DynamicModels.SeeParts = true;
             try
             {
-                return DrawSupportedOne(door, entry, openPct);
+                return DrawSupportedOne(SiteOf(door), entry, openPct);
             }
             finally
             {
@@ -1622,7 +1662,50 @@ namespace IsoRim
             }
         }
 
-        private static bool DrawOne(Building_Door door, float openDistance)
+        // The placement preview of a door (Ghosts.DrawPreview): the shut door as it will be drawn once built (the same
+        // choice of drawing as the game's DrawAt prefixes make), each model part a see-through ghost in col. False if
+        // IsoRim would not draw this door in 3D (the game's flat ghost then stands).
+        internal static bool Ghost(ThingDef def, IntVec3 cell, Rot4 rot, Map map, ThingStyleDef style, Color col)
+        {
+            IsoRimSettings st = IsoRimMod.Settings;
+            if (map == null || def == null || !typeof(Building_Door).IsAssignableFrom(def.thingClass) || !st.doors3D || !cell.InBounds(map))
+            {
+                return false;
+            }
+            bool supported = typeof(Building_SupportedDoor).IsAssignableFrom(def.thingClass);
+            Site d = new Site
+            {
+                def = def, map = map, cell = cell, rot = rot, at = GenThing.TrueCenter(cell, rot, def.size, 0f), rect = GenAdj.OccupiedRect(cell, rot, def.size),
+                styled = st.models3D ? ModelLibrary.StyledEntry(def, style) : null, supported = supported, tint = Color.white, swatch = R3DTextures.SwatchOf(null)
+            };
+            ModelEntry entry = null;
+            bool hasEntry = st.models3D && ModelLibrary.TryGet(def, out entry) && entry.HasModel;
+            if (!hasEntry)
+            {
+                entry = null;
+            }
+            DynamicModels.GhostColour = col;
+            DynamicModels.Ghosting = true;
+            try
+            {
+                if (def.size.x == 1 && def.size.z == 1)
+                {
+                    if (supported && entry != null)
+                    {
+                        d.rot = DoorUtility.DoorRotationAt(cell, map, def.building != null && def.building.preferConnectingToFences);   // as DoorPreDraw
+                        return DrawSupportedOne(d, entry, 0f);
+                    }
+                    return DrawOne(d, 0f);
+                }
+                return typeof(Building_MultiTileDoor).IsAssignableFrom(def.thingClass) && entry != null && entry.doorLeaf != null && DrawWideOne(d, entry, 0f, false);
+            }
+            finally
+            {
+                DynamicModels.Ghosting = false;
+            }
+        }
+
+        private static bool DrawOne(Site d, float openDistance)
         {
             if (!tried)
             {
@@ -1636,14 +1719,14 @@ namespace IsoRim
                     gatePosts = ModelLibrary.LoadFile(Path.Combine(root, "Models", "gate_posts.obj"));
                 }
             }
-            Map map = door.Map;
+            Map map = d.map;
             if (leaf == null || map == null)
             {
                 return false;
             }
 
             // The door lies along whichever line has more wall next to it.
-            IntVec3 c = door.Position;
+            IntVec3 c = d.cell;
             int eastWest = Block(map, c + IntVec3.East) + Block(map, c + IntVec3.West);
             int northSouth = Block(map, c + IntVec3.North) + Block(map, c + IntVec3.South);
             float yaw = eastWest >= northSouth ? 0f : 90f;
@@ -1655,9 +1738,9 @@ namespace IsoRim
             // leaves (doorLeafModel, the other the same turned half round) in place of the plain ones, slid as those;
             // as tall as the walls, cut down with them.
             // (Api 18) With no style entry, the door's own thingDef entry if it has a frame and a leaf (the animal flap).
-            ModelEntry own = IsoRimMod.Settings.models3D ? ModelLibrary.StyledEntry(door) : null;
+            ModelEntry own = IsoRimMod.Settings.models3D ? d.styled : null;
             ModelEntry e;
-            if (own == null && IsoRimMod.Settings.models3D && !(door is Building_SupportedDoor) && ModelLibrary.TryGet(door.def, out e)
+            if (own == null && IsoRimMod.Settings.models3D && !d.supported && ModelLibrary.TryGet(d.def, out e)
                 && e.HasModel && e.doorLeaf != null)
             {
                 own = e;
@@ -1669,13 +1752,13 @@ namespace IsoRim
                 Matrix4x4 ownSized = Matrix4x4.Scale(new Vector3(s, s * ownHeight / BuiltForWallHeight, s));
                 float ownYaw = yaw + own.def.rotation;
                 Vector3 ownAlong = Quaternion.AngleAxis(ownYaw, Vector3.up) * Vector3.right;
-                Color ownTint = door.DrawColor;
-                string ownSwatch = R3DTextures.StuffSwatch(door);
+                Color ownTint = d.tint;
+                string ownSwatch = d.swatch;
                 DynamicModels.DrawLocal(own.variants[0], centre, ownYaw, ownSized, ownTint, ownSwatch);
                 if (own.doorLeaf != null && own.def.doorLeafGather > 0f)
                 {
                     // (Api 18) Leaves gathered toward their jambs (x 0.5 of the leaf), like curtains drawn aside.
-                    float g = 1f - Mathf.Clamp01(own.def.doorLeafGather) * Mathf.Clamp01(Patches.DoorOpenPct(door));
+                    float g = 1f - Mathf.Clamp01(own.def.doorLeafGather) * Mathf.Clamp01(d.openPct);
                     Matrix4x4 gathered = ownSized * Matrix4x4.Translate(new Vector3(0.5f, 0f, 0f))
                         * Matrix4x4.Scale(new Vector3(g, 1f, 1f)) * Matrix4x4.Translate(new Vector3(-0.5f, 0f, 0f));
                     DynamicModels.DrawLocal(own.doorLeaf, centre, ownYaw, gathered, ownTint, ownSwatch);
@@ -1691,11 +1774,11 @@ namespace IsoRim
             }
 
             // A gate in a fence: two low leaves between a pair of posts, with no beam over them.
-            string defName = door.def.defName ?? "";
+            string defName = d.def.defName ?? "";
             if (gateLeaf != null && (defName.IndexOf("Gate", StringComparison.OrdinalIgnoreCase) >= 0 || defName.Contains("Fence")))
             {
-                Color gateTint = door.DrawColor;
-                string gateSwatch = R3DTextures.StuffSwatch(door);
+                Color gateTint = d.tint;
+                string gateSwatch = d.swatch;
                 float swing = Mathf.Clamp(openDistance, 0f, 0.44f);
                 DynamicModels.DrawLocal(gateLeaf, centre + along * swing, yaw, Matrix4x4.identity, gateTint, gateSwatch);
                 DynamicModels.DrawLocal(gateLeaf, centre - along * swing, yaw + 180f, Matrix4x4.identity, gateTint, gateSwatch);
@@ -1713,8 +1796,8 @@ namespace IsoRim
                 height *= WallBoxes.CutFraction;
             }
             Matrix4x4 sized = Matrix4x4.Scale(new Vector3(1f, height / BuiltForWallHeight, 1f));
-            Color tint = door.DrawColor;
-            string swatch = R3DTextures.StuffSwatch(door);
+            Color tint = d.tint;
+            string swatch = d.swatch;
             float open = Mathf.Clamp(openDistance, 0f, 0.48f);
 
             // The two leaves are the same model, one turned half way round. Drawn this way their
@@ -1735,23 +1818,23 @@ namespace IsoRim
         // (without the arch, which would float over the cut wall). openPct is the game's OpenPct;
         // a door stuck open shows no leaves, as in the game. doorUpperLeafModel (security door plates) is a second pair
         // sliding as the game's upper mover, 0.35 * clamp01(OpenPct * 2.5) door widths. Returns false if it drew nothing.
-        private static bool DrawWideOne(Building_Door door, ModelEntry entry, float openPct, bool stuckOpen)
+        private static bool DrawWideOne(Site d, ModelEntry entry, float openPct, bool stuckOpen)
         {
-            Map map = door.Map;
+            Map map = d.map;
             if (map == null || entry == null || !entry.HasModel || entry.doorLeaf == null)
             {
                 return false;
             }
             ModelDef def = entry.def;
-            float yaw = door.Rotation.AsAngle + def.rotation;
+            float yaw = d.rot.AsAngle + def.rotation;
             Vector3 along = Quaternion.AngleAxis(yaw, Vector3.up) * Vector3.right;
-            Vector3 at = door.DrawPos;
+            Vector3 at = d.at;
             Vector3 centre = new Vector3(at.x, 0f, at.z);
 
             float height = View3D.WallHeight;
             bool cut = false;
             bool slab = false;
-            foreach (IntVec3 c in door.OccupiedRect())
+            foreach (IntVec3 c in d.rect)
             {
                 cut |= WallBoxes.CellCut(map, c);
                 slab |= Floors.SlabOver(map, c);   // a stacked floor right above: no room for the arch
@@ -1776,8 +1859,8 @@ namespace IsoRim
                 }
             }
             Matrix4x4 sized = Matrix4x4.Scale(new Vector3(s, up, s));
-            Color tint = door.DrawColor;
-            string swatch = R3DTextures.StuffSwatch(door);
+            Color tint = d.tint;
+            string swatch = d.swatch;
 
             DynamicModels.DrawLocal(wallTop > 0f ? Crowns.Under(frame, wallTop, true) : frame, centre, yaw, sized, tint, swatch);
             if (entry.doorTop != null && !cut && !slab)
@@ -1803,13 +1886,13 @@ namespace IsoRim
             else if (!stuckOpen)
             {
                 // The game: each leaf's middle sits 0.25 + 0.35 * OpenPct door widths from the centre.
-                float slide = 0.35f * Mathf.Clamp01(openPct) * door.def.size.x * s;
+                float slide = 0.35f * Mathf.Clamp01(openPct) * d.def.size.x * s;
                 Model leaf = wallTop > 0f ? Crowns.Under(entry.doorLeaf, wallTop, false) : entry.doorLeaf;
                 DynamicModels.DrawLocal(leaf, centre + along * slide, yaw, sized, tint, swatch);
                 DynamicModels.DrawLocal(leaf, centre - along * slide, yaw + 180f, sized, tint, swatch);
                 if (entry.doorUpperLeaf != null)
                 {
-                    float slide2 = 0.35f * Mathf.Clamp01(openPct * 2.5f) * door.def.size.x * s;
+                    float slide2 = 0.35f * Mathf.Clamp01(openPct * 2.5f) * d.def.size.x * s;
                     Model upper = wallTop > 0f ? Crowns.Under(entry.doorUpperLeaf, wallTop, false) : entry.doorUpperLeaf;
                     DynamicModels.DrawLocal(upper, centre + along * slide2, yaw, sized, tint, swatch);
                     DynamicModels.DrawLocal(upper, centre - along * slide2, yaw + 180f, sized, tint, swatch);
@@ -1824,17 +1907,17 @@ namespace IsoRim
         // sliding apart as far as the game slides its own (0.45 * OpenPct). hackTerminalModel is drawn
         // while the door's CompHackable is not hacked. As tall as the walls, cut down with them (no
         // lintel over a cut wall). Returns false if it drew nothing.
-        private static bool DrawSupportedOne(Building_Door door, ModelEntry entry, float openPct)
+        private static bool DrawSupportedOne(Site d, ModelEntry entry, float openPct)
         {
-            Map map = door.Map;
+            Map map = d.map;
             if (map == null || entry == null || !entry.HasModel)
             {
                 return false;
             }
             ModelDef def = entry.def;
-            float yaw = door.Rotation.AsAngle + def.rotation;
+            float yaw = d.rot.AsAngle + def.rotation;
             Vector3 along = Quaternion.AngleAxis(yaw, Vector3.up) * Vector3.right;
-            IntVec3 c = door.Position;
+            IntVec3 c = d.cell;
             Vector3 centre = new Vector3(c.x + 0.5f, 0f, c.z + 0.5f);
 
             float height = View3D.WallHeight;
@@ -1845,8 +1928,8 @@ namespace IsoRim
             }
             float s = def.scale;
             Matrix4x4 sized = Matrix4x4.Scale(new Vector3(s, s * height / BuiltForWallHeight, s));
-            Color tint = door.DrawColor;
-            string swatch = R3DTextures.StuffSwatch(door);
+            Color tint = d.tint;
+            string swatch = d.swatch;
 
             DynamicModels.DrawLocal(entry.variants[0], centre, yaw, sized, tint, swatch);
             if (entry.doorTop != null && !cut)
@@ -1859,13 +1942,9 @@ namespace IsoRim
                 DynamicModels.DrawLocal(entry.doorLeaf, centre + along * slide, yaw, sized, tint, swatch);
                 DynamicModels.DrawLocal(entry.doorLeaf, centre - along * slide, yaw + 180f, sized, tint, swatch);
             }
-            if (entry.hackTerminal != null)
+            if (entry.hackTerminal != null && d.hackShown)
             {
-                CompHackable hack = door.GetComp<CompHackable>();
-                if (hack != null && !hack.IsHacked)
-                {
-                    DynamicModels.DrawLocal(entry.hackTerminal, centre, yaw, sized, tint, swatch);
-                }
+                DynamicModels.DrawLocal(entry.hackTerminal, centre, yaw, sized, tint, swatch);
             }
             return true;
         }
