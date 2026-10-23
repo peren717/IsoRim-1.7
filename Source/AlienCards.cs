@@ -15,7 +15,7 @@ namespace IsoRim
     // its angle, size and mirroring are all in it), its material (HAR's colour channels), its mesh and whether it shows
     // (CanDrawNow: conditions, skip flags such as a hat hiding the ears). Drawn with the figure: the card of the facing the
     // camera sees, in the head or body frame (it follows pose, lying, sitting, crawling, stacked floors and Api.DrawFigure).
-    internal static class RaceCards
+    internal static class AlienCards
     {
         internal sealed class Card
         {
@@ -46,7 +46,7 @@ namespace IsoRim
 
         private static readonly Matrix4x4[] PictureToFigure = new Matrix4x4[4];
 
-        static RaceCards()
+        static AlienCards()
         {
             // The game's flat picture (x right, z up the picture, y toward the viewer above) onto the figure (x its right,
             // y up, z forward) as the facing's sprite shows it: north from behind, east from its right, south from the front,
@@ -73,9 +73,9 @@ namespace IsoRim
         private static AdjustParmsCall adjustParms;
         private static bool looked;
 
-        internal static Set Collect(Pawn pawn, People.Look look, RaceLook r)
+        internal static Set Collect(Pawn pawn, People.Look look, AlienLook r)
         {
-            if (r.pack != null && !r.pack.addonCards && r.pack.hair != RaceHair.Card && (r.pack.addons == null || r.pack.addons.Count == 0))
+            if (r.pack != null && !r.pack.addonCards && r.pack.hair != AlienHair.Card && (r.pack.addons == null || r.pack.addons.Count == 0))
             {
                 return null;
             }
@@ -98,7 +98,7 @@ namespace IsoRim
                 tree.TryGetNodeByTag(PawnRenderNodeTagDefOf.Head, out headNode);
                 tree.TryGetNodeByTag(PawnRenderNodeTagDefOf.Body, out bodyNode);
                 List<PawnRenderNode> foreign = new List<PawnRenderNode>();
-                Walk(tree.rootNode, foreign, r.pack != null && r.pack.hair == RaceHair.Card);
+                Walk(tree.rootNode, foreign, r.pack != null && r.pack.hair == AlienHair.Card);
                 if (foreign.Count == 0)
                 {
                     return null;
@@ -246,7 +246,7 @@ namespace IsoRim
         // facing f: the picture's middle where the game's head (body) sprite middle lands on the figure (FigureBoxes),
         // the game's cells to the frame's (the race's sizes are already in the frame), pushed out to the front or the back
         // of the head (body) by the layer's sign.
-        private static Matrix4x4 Place(Matrix4x4 rel, int f, bool onHead, People.Look look, RaceLook r, FigureBoxes.Box hb, FigureBoxes.Box bb, out Vector3 push)
+        private static Matrix4x4 Place(Matrix4x4 rel, int f, bool onHead, People.Look look, AlienLook r, FigureBoxes.Box hb, FigureBoxes.Box bb, out Vector3 push)
         {
             float layer = rel.m13;
             rel.m13 = 0f;
@@ -259,7 +259,7 @@ namespace IsoRim
             }
             else
             {
-                float up = RaceFigures.SpriteToFigure(r.build);
+                float up = AlienFigures.SpriteToFigure(r.build);
                 float feet = r.build == "female" || r.build == "fat" ? -0.568f : (r.build == "hulk" ? -0.721f : -0.510f);
                 k = up / Mathf.Max(0.05f, r.bodyDraw);
                 origin = new Vector3(0f, -feet * up, 0f);
@@ -300,7 +300,7 @@ namespace IsoRim
         internal static void Draw(People.Look look, Vector3 at, float yaw, Matrix4x4 headPlace, Matrix4x4 bodyPlace, FigureParts hidden, bool bodyShown,
             bool lying = false, bool crawling = false)
         {
-            Set set = look.race != null ? look.race.cards : null;
+            Set set = look.alien != null ? look.alien.cards : null;
             if (set == null || set.nodes.Count == 0 || (hidden & FigureParts.Addons) != 0 || FigureScope.Measuring)
             {
                 return;
@@ -336,11 +336,11 @@ namespace IsoRim
                     continue;
                 }
                 Matrix4x4 frame = c.head ? headPlace : bodyPlace;
-                if (c.head && n.hatLift > 0f && !float.IsNaN(look.race.hatTop))
+                if (c.head && n.hatLift > 0f && !float.IsNaN(look.alien.hatTop))
                 {
                     // Out of the hat (hatLift): its lowest point lifted that share of the way up to the hat's top, in the head's middle plane
                     // (not on its front or back, where the hat would cover it or it would sit on the hat's face).
-                    frame = frame * Matrix4x4.Translate(new Vector3(0f, Mathf.Max(0f, look.race.hatTop - c.low) * n.hatLift, 0f) - c.push);
+                    frame = frame * Matrix4x4.Translate(new Vector3(0f, Mathf.Max(0f, look.alien.hatTop - c.low) * n.hatLift, 0f) - c.push);
                 }
                 FigureScope.DrawMesh(c.mesh, c.material, placed * frame * c.local);
             }

@@ -387,7 +387,7 @@ namespace IsoRim
             {
                 yaw = pawn.Rotation.AsAngle;
             }
-            float size = RaceFigures.SizeOf(pawn);   // (a race's scale too, Api 25)
+            float size = AlienFigures.SizeOf(pawn);   // (a race's scale too, Api 25)
             h.position = new Vector3(d.x, 0f, d.z);
             h.yaw = yaw;
             h.bob = Mathf.Abs(Mathf.Sin(phase)) * 0.035f * size * gait;

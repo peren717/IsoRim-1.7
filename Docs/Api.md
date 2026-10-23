@@ -3,7 +3,7 @@
 Model packs (XML and .obj files, no code), the dev-mode model binder and the coverage report: see [ModelPacks.md](ModelPacks.md).
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `RaceFace`, `RaceHair`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.RaceModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
 in any update, even when it is public: do not patch or reflect into it, ask for an Api member instead. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -36,8 +36,8 @@ if (IsoRim.Api.Version >= 20) { /* ModelDef.cutaway, view state, flat scopes, Sk
                                    projectile arcs, XrayPlacing, HasModel (part 14) */ }
 if (IsoRim.Api.Version >= 21) { /* face drawers: AddFaceDrawer, FaceFrame; FigureFrame.Hide (FigureParts) (part 15) */ }
 if (IsoRim.Api.Version >= 22) { /* AddFaceDrawer(drawer, evenWhenHidden), FaceFrame.HiddenByGame (part 15) */ }
-if (IsoRim.Api.Version >= 25) { /* humanlike races: RaceModelDef race packs, FigureModeOf, AddRaceFigureRule, FigureFrame.Anchor,
-                                   FigureFrame.Mode, FigureParts.Addons, ApparelModelDef.races / raceBodyModels (part 16) */ }
+if (IsoRim.Api.Version >= 25) { /* humanlike aliens: AlienModelDef alien packs, FigureModeOf, AddAlienFigureRule, FigureFrame.Anchor,
+                                   FigureFrame.Mode, FigureParts.Addons, ApparelModelDef.aliens / alienBodyModels (part 16) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
@@ -999,14 +999,14 @@ IsoRim.Api.AddFigureHook(f =>
 With no drawer and no hook registered nothing changes. Hooks registered before version 21 now run before the figure is
 drawn instead of after it; what they draw is the same.
 
-## Part 16: humanlike races (version 25)
+## Part 16: humanlike aliens (version 25)
 
-Every humanlike race other than the game's own people (Human, CreepJoiner) is drawn as a flat card, as before. A race
-becomes a 3D figure only through a **race pack** (`IsoRim.RaceModelDef`, see [ModelPacks.md](ModelPacks.md#race-packs)) or a
+Every humanlike race other than the game's own people (Human, CreepJoiner), called an **alien** here, is drawn as a flat card, as before. A race
+becomes a 3D figure only through an **alien pack** (`IsoRim.AlienModelDef`, see [ModelPacks.md](ModelPacks.md#alien-packs)) or a
 rule from code. The player's setting **Keep as paper** lists races that stay cards whatever packs and rules say. IsoRim has no
 reference to Humanoid Alien Races (HAR): it reads the vanilla calls HAR patches (the body and head mesh sets, which carry HAR's
 draw sizes; `PawnRenderer.BaseHeadOffsetAt`; the render tree with HAR's addon nodes; the apparel texture path), so any race
-framework that goes through them works the same. Without a race pack nothing changes, and people look the same with and without
+framework that goes through them works the same. Without an alien pack nothing changes, and people look the same with and without
 HAR.
 
 ```csharp
@@ -1016,7 +1016,7 @@ IsoRim.FigureMode mode = IsoRim.Api.FigureModeOf(pawn);   // Card, Human (IsoRim
 
 - `Api.FigureModeOf(Pawn)` → `FigureMode` `Card` (not a 3D person: animals, mechs, races without a pack or kept as paper),
   `Human` (people and races drawn with IsoRim's human figure), `Own` (a race drawn with its pack's own models).
-- `Api.AddRaceFigureRule(Func<ThingDef, FigureMode?> rule)` / `Api.RemoveRaceFigureRule(rule)`: asked once per humanlike race
+- `Api.AddAlienFigureRule(Func<ThingDef, FigureMode?> rule)` / `Api.RemoveAlienFigureRule(rule)`: asked once per humanlike race
   (not people); return a mode to force it, null to leave the race to its pack. "Keep as paper" still wins. Create the delegate
   explicitly inside a method that runs after the version check (part M, notes).
 - `FigureFrame.Mode`: the same for the figure a hook is drawing.
@@ -1024,12 +1024,12 @@ IsoRim.FigureMode mode = IsoRim.Api.FigureModeOf(pawn);   // Card, Human (IsoRim
   races: `head` (the head's pivot on the neck), `face` (the front of the face), `neck`, `back`, `waist`, `handLeft`, `handRight`,
   `tailRoot` (case does not matter; `hand_l`, `hand_r`, `tail_root` too). `head` and `face` move with the head (its pose, a
   race's head offset and fit), the others with the body. The matrix is the head or body frame moved to the point. For people
-  they are IsoRim's own figure points with the body type's scale; a race pack sets its own. Use them instead of hard-coded
+  they are IsoRim's own figure points with the body type's scale; an alien pack sets its own. Use them instead of hard-coded
   human offsets, so an attachment lands on any race.
 - `FigureParts.Addons`: hide a race's addon cards (its own render nodes drawn as cards, below) from a figure hook, for a mod that
   draws them itself.
-- `ApparelModelDef` (part 3) gets `races` (the binding is only for these races; for them it wins over a binding without races)
-  and `raceBodyModels` (Body: `<li><bodyType>MyBody</bodyType><model>Models/x.obj</model></li>`, before `bodyModels`).
+- `ApparelModelDef` (part 3) gets `aliens` (the binding is only for these races; for them it wins over a binding without `aliens`)
+  and `alienBodyModels` (Body: `<li><bodyType>MyBody</bodyType><model>Models/x.obj</model></li>`, before `bodyModels`).
 
 How a race figure is placed (all of it goes into the figure's root and head matrices, so everything placed on the figure
 follows: IsoRim's clothes, hats, hair and eyes, held weapons, work tools, carried things, figure hooks (part 1), face drawers
@@ -1057,9 +1057,9 @@ follows: IsoRim's clothes, hats, hair and eyes, held weapons, work tools, carrie
   the way from its lowest drawn point to the hat's top, in the head's middle plane, so ears the game shows over hats stick
   out of the 3D hat. The game's own gene parts on people are not drawn by IsoRim (they are left to other mods, such as
   "IsoRim - Biotech Pawn Parts"); a mod that draws a race's addons itself hides IsoRim's cards with `FigureParts.Addons`.
-- **Dev mode**: Debug actions > IsoRim > **Race tuning...** (a race pawn selected, or click one): live sliders for scale, head
+- **Dev mode**: Debug actions > IsoRim > **Alien tuning...** (a race pawn selected, or click one): live sliders for scale, head
   scale and offset, every anchor and `headFit`, `bodyFit`, `faceFit`, the figure and face buttons, and **Copy XML** (the
-  fields and anchors as `RaceModelDef` XML on the clipboard). Changes show at once on every pawn of the race until Reset or
+  fields and anchors as `AlienModelDef` XML on the clipboard). Changes show at once on every pawn of the race until Reset or
   a new game; untouched fields keep the pack's (or measured) values and are not written.
 
 ## Part M: model packs (IsoRim.ModelDef)
@@ -1163,10 +1163,10 @@ public class PatchOperation_IfIsoRimApi : PatchOperation
   helmets, masks, a burka, in beds and downed, with hairUnderHats off and on; with nothing registered the renders match
   version 20.
   Version 25 was tested with XML-only harness races outside this repository (HAR test races with a custom body type, draw
-  size 0.8, head draw size 0.9, head offsets, a tail and ear addons; a race pack with a `Human` race, an `Own` race with box
-  models, a tail model and a race-only hat binding; a race without a pack) and the probe keys `racepawn`, `racehooks`,
-  `keeppaper`, `goto`, `racecheck` (`Source/ProbeRaces.cs`): four facings, apparel, hats, weapons, packs, eating at a table,
+  size 0.8, head draw size 0.9, head offsets, a tail and ear addons; an alien pack with a `Human` race, an `Own` race with box
+  models, a tail model and a race-only hat binding; a race without a pack) and the probe keys `alienpawn`, `alienhooks`,
+  `keeppaper`, `goto`, `aliencheck` (`Source/ProbeAliens.cs`): four facings, apparel, hats, weapons, packs, eating at a table,
   resting in bed, crawling downed, carrying, aiming, walking, figure hooks and face drawers, "Keep as paper", the pack on an
   older IsoRim (no change, no error) and the races without the pack (cards). Round 2 added `face` on and off (set live in the
-  race tuning window, probe keys `racetune`, `racetuneset`, `racetunecopy`), cards while lying and crawling, and a trial pack for
+  alien tuning window, probe keys `alientune`, `alientuneset`, `alientunecopy`), cards while lying and crawling, and a trial pack for
   Kiiro Race (HAR, Workshop 2988200143) with `hair` Card, ear `hatLift` and Kiiro's own and vanilla hats.

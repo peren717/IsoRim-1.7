@@ -70,10 +70,10 @@ namespace IsoRim
 
         /// <summary>Api 25: only for these races (ThingDef defNames). For a race, a binding naming it wins over one without races;
         /// a binding with races is not used for anyone else.</summary>
-        public List<string> races;
+        public List<string> aliens;
 
         /// <summary>Api 25, Body: a model per race body type (BodyTypeDef defName), used before bodyModels.</summary>
-        public List<ApparelRaceBodyModel> raceBodyModels;
+        public List<ApparelAlienBodyModel> alienBodyModels;
 
         public override IEnumerable<string> ConfigErrors()
         {
@@ -85,7 +85,7 @@ namespace IsoRim
             {
                 yield return "no apparel";
             }
-            if (model.NullOrEmpty() && (bodyModels == null || !bodyModels.Any) && raceBodyModels.NullOrEmpty())
+            if (model.NullOrEmpty() && (bodyModels == null || !bodyModels.Any) && alienBodyModels.NullOrEmpty())
             {
                 yield return "no model";
             }
@@ -114,8 +114,8 @@ namespace IsoRim
         }
     }
 
-    /// <summary>A Body binding's model for one race body type (Api 25, ApparelModelDef.raceBodyModels).</summary>
-    public class ApparelRaceBodyModel
+    /// <summary>A Body binding's model for one race body type (Api 25, ApparelModelDef.alienBodyModels).</summary>
+    public class ApparelAlienBodyModel
     {
         public string bodyType;
         public string model;
@@ -182,7 +182,7 @@ namespace IsoRim
                 {
                     return null;
                 }
-                string path = slot == Slot.Body ? RaceBodyPath(def) : null;
+                string path = slot == Slot.Body ? AlienBodyPath(def) : null;
                 if (path.NullOrEmpty())
                 {
                     path = slot == Slot.Body && def.bodyModels != null ? def.bodyModels.For(build) : null;
@@ -231,7 +231,7 @@ namespace IsoRim
         }
 
         private static Dictionary<string, Binding> byApparel;
-        private static Dictionary<string, Binding> byRace;   // "apparel|race" (Api 25)
+        private static Dictionary<string, Binding> byAlien;   // "apparel|race" (Api 25)
         private static readonly Dictionary<int, Flame[]> flames = new Dictionary<int, Flame[]>();   // by Model.id
         internal static int Count;
 
@@ -257,7 +257,7 @@ namespace IsoRim
                 return;
             }
             byApparel = new Dictionary<string, Binding>();
-            byRace = new Dictionary<string, Binding>();
+            byAlien = new Dictionary<string, Binding>();
             foreach (ApparelModelDef d in DefDatabase<ApparelModelDef>.AllDefsListForReading)
             {
                 Slot slot = SlotOf(d.slot);
@@ -279,17 +279,17 @@ namespace IsoRim
                 Type cls = thing.thingClass ?? typeof(Apparel);
                 System.Reflection.MethodInfo extras = AccessTools.Method(cls, nameof(Apparel.DrawWornExtras));
                 b.drawsOwn = extras != null && extras.DeclaringType != typeof(Apparel) && extras.DeclaringType != typeof(ThingWithComps) && extras.DeclaringType != typeof(Thing);
-                if (!d.races.NullOrEmpty())
+                if (!d.aliens.NullOrEmpty())
                 {
-                    foreach (string race in d.races)
+                    foreach (string race in d.aliens)
                     {
-                        byRace[thing.defName + "|" + race] = b;   // (Api 25: only for that race)
+                        byAlien[thing.defName + "|" + race] = b;   // (Api 25: only for that race)
                     }
                     continue;
                 }
                 byApparel[thing.defName] = b;   // a later def for the same apparel wins (a pack overriding another)
             }
-            Count = byApparel.Count + byRace.Count;
+            Count = byApparel.Count + byAlien.Count;
         }
 
         // The binding of this apparel, or null (then IsoRim's own look).
@@ -300,7 +300,7 @@ namespace IsoRim
                 Build();
             }
             Binding b;
-            if (RaceFigures.dressingRace != null && Count > 0 && apparel != null && byRace.TryGetValue(apparel.defName + "|" + RaceFigures.dressingRace.defName, out b))
+            if (AlienFigures.dressingAlien != null && Count > 0 && apparel != null && byAlien.TryGetValue(apparel.defName + "|" + AlienFigures.dressingAlien.defName, out b))
             {
                 return b;   // a binding for the race the look is dressed for (Api 25)
             }
@@ -308,25 +308,25 @@ namespace IsoRim
         }
 
         // A binding of this apparel made for this race (Api 25), or null.
-        internal static Binding ForRace(ThingDef apparel, ThingDef race)
+        internal static Binding ForAlien(ThingDef apparel, ThingDef race)
         {
             if (byApparel == null)
             {
                 Build();
             }
             Binding b;
-            return Count > 0 && apparel != null && race != null && byRace.TryGetValue(apparel.defName + "|" + race.defName, out b) ? b : null;
+            return Count > 0 && apparel != null && race != null && byAlien.TryGetValue(apparel.defName + "|" + race.defName, out b) ? b : null;
         }
 
         // A race binding's model for the race body type the look is dressed for (Api 25), or null.
-        private static string RaceBodyPath(ApparelModelDef def)
+        private static string AlienBodyPath(ApparelModelDef def)
         {
-            BodyTypeDef body = RaceFigures.dressingBody;
-            if (def.raceBodyModels == null || body == null || RaceFigures.dressingRace == null)
+            BodyTypeDef body = AlienFigures.dressingBody;
+            if (def.alienBodyModels == null || body == null || AlienFigures.dressingAlien == null)
             {
                 return null;
             }
-            foreach (ApparelRaceBodyModel m in def.raceBodyModels)
+            foreach (ApparelAlienBodyModel m in def.alienBodyModels)
             {
                 if (m.bodyType == body.defName)
                 {

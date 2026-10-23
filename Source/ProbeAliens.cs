@@ -9,42 +9,42 @@ using Verse.AI;
 
 namespace IsoRim
 {
-    // Harness keys for Api 25 (humanlike races, Races.cs / RaceCards.cs):
-    //   racepawn=x,z,rot,<PawnKindDef>,age[:Body[:M|F]],Def[:Stuff[:RRGGBB]];...  a new drafted colonist of that kind (its race),
+    // Harness keys for Api 25 (humanlike races, Aliens.cs / AlienCards.cs):
+    //   alienpawn=x,z,rot,<PawnKindDef>,age[:Body[:M|F]],Def[:Stuff[:RRGGBB]];...  a new drafted colonist of that kind (its race),
     //                                as dressed= (fixed seed per cell; hair:<HairDef>, beard:<BeardDef>; "-" wears nothing)
-    //   racehooks=1                  a test figure hook (draws small cubes at the anchors tailRoot, handRight and face, counts
+    //   alienhooks=1                  a test figure hook (draws small cubes at the anchors tailRoot, handRight and face, counts
     //                                calls per person) and a test face drawer (counts, draws nothing) registered
     //   keeppaper=<ThingDef>|-       the "Keep as paper" list set to that race (or emptied), as the settings button does
     //   goto=px,pz,tx,tz             only the colonist in (px,pz) ordered to walk to (tx,tz) (a real Goto job; run tick= after it)
-    //   racetune=x,z | <race>        the race tuning window (dev) opened on the pawn in (x,z) or the first of the race; racetuneset=<field>,<i>,<value>
-    //                                moves a slider; racetunecopy=1 logs its "Copy XML" text (shot it with bindershot=<tag>)
+    //   alientune=x,z | <race>        the alien tuning window (dev) opened on the pawn in (x,z) or the first of the race; alientuneset=<field>,<i>,<value>
+    //                                moves a slider; alientunecopy=1 logs its "Copy XML" text (shot it with bindershot=<tag>)
     //   addonvariant=x,z,i:v;...      the pawn's HAR addon i shown with variant v (AlienComp.addonVariants by reflection, harness only)
-    //   racecheck=1                  logs every humanlike on the map: race, Api.FigureModeOf, drawn as a model, the look's
+    //   aliencheck=1                  logs every humanlike on the map: race, Api.FigureModeOf, drawn as a model, the look's
     //                                race placing (People.Report), the hook and face drawer counts
     public static partial class Probe
     {
         private static readonly Dictionary<int, int> hookCalls = new Dictionary<int, int>();
         private static readonly Dictionary<int, int> faceCalls = new Dictionary<int, int>();
         private static readonly Dictionary<int, string> hookModes = new Dictionary<int, string>();
-        private static bool raceHooks;
+        private static bool alienHooks;
         private static ModelHandle cubeA, cubeB, cubeC;
 
-        private static bool RaceKey(string key, string[] a, Map map)
+        private static bool AlienKey(string key, string[] a, Map map)
         {
             switch (key)
             {
-                case "racepawn":
-                    RacePawn(a, map);
+                case "alienpawn":
+                    AlienPawn(a, map);
                     return true;
-                case "racehooks":
-                    if (!raceHooks)
+                case "alienhooks":
+                    if (!alienHooks)
                     {
-                        raceHooks = true;
+                        alienHooks = true;
                         cubeA = new ModelHandle(ObjLoader.Box(new Vector3(-0.03f, -0.03f, -0.03f), new Vector3(0.03f, 0.03f, 0.03f), new Color(1f, 0f, 1f)));
                         cubeB = new ModelHandle(ObjLoader.Box(new Vector3(-0.025f, -0.025f, -0.025f), new Vector3(0.025f, 0.025f, 0.025f), new Color(0f, 1f, 1f)));
                         cubeC = new ModelHandle(ObjLoader.Box(new Vector3(-0.02f, -0.02f, -0.02f), new Vector3(0.02f, 0.02f, 0.02f), new Color(1f, 1f, 0f)));
-                        Api.AddFigureHook(new FigureHook(RaceHook));
-                        Api.AddFaceDrawer(new FaceDrawer(RaceFace));
+                        Api.AddFigureHook(new FigureHook(AlienHook));
+                        Api.AddFaceDrawer(new FaceDrawer(AlienFace));
                     }
                     return true;
                 case "keeppaper":
@@ -53,7 +53,7 @@ namespace IsoRim
                     {
                         IsoRimMod.Settings.keepPaper.Add(a[0]);
                     }
-                    RaceFigures.Clear();
+                    AlienFigures.Clear();
                     return true;
                 case "goto":
                 {
@@ -66,32 +66,32 @@ namespace IsoRim
                     }
                     return true;
                 }
-                case "racetune":
+                case "alientune":
                 {
-                    // racetune=x,z: the race tuning window opened on the pawn in the cell (as the debug action with it selected)
+                    // alientune=x,z: the alien tuning window opened on the pawn in the cell (as the debug action with it selected)
                     Pawn tp = a.Length == 1 ? map.mapPawns.AllPawnsSpawned.FirstOrDefault(x => x.def.defName == a[0])
                         : map.thingGrid.ThingsListAt(new IntVec3(I(a[0]), 0, I(a[1]))).OfType<Pawn>().FirstOrDefault();
                     if (tp != null)
                     {
-                        RaceTune.Open(tp);
+                        AlienTune.Open(tp);
                     }
                     return true;
                 }
-                case "racetuneset":
+                case "alientuneset":
                 {
-                    // racetuneset=<field>,<component 0-2>,<value>: as moving that slider (fields: scale, headScale, headOffset, the
+                    // alientuneset=<field>,<component 0-2>,<value>: as moving that slider (fields: scale, headScale, headOffset, the
                     // anchors, headFit, bodyFit, faceFit; figure 0-2, faceMode 0-1)
-                    RaceTuneWindow tw = Find.WindowStack.WindowOfType<RaceTuneWindow>();
+                    AlienTuneWindow tw = Find.WindowStack.WindowOfType<AlienTuneWindow>();
                     if (tw != null)
                     {
                         tw.Set(a[0], I(a[1]), F(a[2]));
                     }
                     return true;
                 }
-                case "racetunecopy":
+                case "alientunecopy":
                 {
-                    RaceTuneWindow tw = Find.WindowStack.WindowOfType<RaceTuneWindow>();
-                    Log.Message("[IsoRim probe] racetunecopy: " +  (tw != null ? tw.Xml() : "no window"));
+                    AlienTuneWindow tw = Find.WindowStack.WindowOfType<AlienTuneWindow>();
+                    Log.Message("[IsoRim probe] alientunecopy: " +  (tw != null ? tw.Xml() : "no window"));
                     return true;
                 }
                 case "addonvariant":
@@ -120,7 +120,7 @@ namespace IsoRim
                     People.Refresh(vp);
                     return true;
                 }
-                case "racecheck":
+                case "aliencheck":
                     foreach (Pawn p in map.mapPawns.AllPawnsSpawned.Where(x => x.RaceProps != null && x.RaceProps.Humanlike).OrderBy(x => x.Position.x * 1000 + x.Position.z))
                     {
                         int hc, fc;
@@ -128,7 +128,7 @@ namespace IsoRim
                         faceCalls.TryGetValue(p.thingIDNumber, out fc);
                         string hm;
                         hookModes.TryGetValue(p.thingIDNumber, out hm);
-                        Log.Message("[IsoRim probe] racecheck " + p.LabelShort + " at " + p.Position + " race " + p.def.defName + " mode " + Api.FigureModeOf(p)
+                        Log.Message("[IsoRim probe] aliencheck " + p.LabelShort + " at " + p.Position + " race " + p.def.defName + " mode " + Api.FigureModeOf(p)
                             + " drawnAsModel " + Patches.DrawnAsModel(p) + " hooks " + hc + " faces " + fc + " (" + (hm ?? "-") + ") posture " + p.GetPosture()
                             + " job " + (p.CurJobDef != null ? p.CurJobDef.defName : "-") + " carrying " + (p.carryTracker != null && p.carryTracker.CarriedThing != null ? p.carryTracker.CarriedThing.LabelShort : "-")
                             + "; " + People.Report(p));
@@ -138,7 +138,7 @@ namespace IsoRim
             return false;
         }
 
-        private static void RaceHook(FigureFrame f)
+        private static void AlienHook(FigureFrame f)
         {
             if (f.Pawn == null)
             {
@@ -163,7 +163,7 @@ namespace IsoRim
             }
         }
 
-        private static bool RaceFace(FaceFrame f)
+        private static bool AlienFace(FaceFrame f)
         {
             if (f.Pawn != null)
             {
@@ -174,7 +174,7 @@ namespace IsoRim
             return false;
         }
 
-        private static void RacePawn(string[] a, Map map)
+        private static void AlienPawn(string[] a, Map map)
         {
             PawnKindDef kind = DefDatabase<PawnKindDef>.GetNamed(a[3]);
             string[] ageBody = a[4].Split(':');
@@ -231,7 +231,7 @@ namespace IsoRim
             GenSpawn.Spawn(p, new IntVec3(I(a[0]), 0, I(a[1])), map, new Rot4(I(a[2])));
             p.drafter.Drafted = true;
             p.Rotation = new Rot4(I(a[2]));
-            Log.Message("[IsoRim probe] racepawn " + p.LabelShort + " (" + p.def.defName + ", " + p.story.bodyType.defName + ", " + p.story.headType.defName + ") at " + p.Position
+            Log.Message("[IsoRim probe] alienpawn " + p.LabelShort + " (" + p.def.defName + ", " + p.story.bodyType.defName + ", " + p.story.headType.defName + ") at " + p.Position
                 + ": " + string.Join(", ", p.apparel.WornApparel.Select(x => x.def.defName)) + (p.equipment.Primary != null ? " + " + p.equipment.Primary.def.defName : "")
                 + "; " + People.Report(p));
         }

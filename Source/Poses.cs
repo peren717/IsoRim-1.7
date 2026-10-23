@@ -113,7 +113,7 @@ namespace IsoRim
                 rise = p.at.y;
                 return true;
             }
-            float size = RaceFigures.SizeOf(pawn);   // (a race's scale too, Api 25)
+            float size = AlienFigures.SizeOf(pawn);   // (a race's scale too, Api 25)
             rise = Attachments.HeadRise(p.a.pose, p.at.y, size, Attachments.Hips);
             return true;
         }

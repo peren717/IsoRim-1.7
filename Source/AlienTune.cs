@@ -10,14 +10,14 @@ using Verse;
 
 namespace IsoRim
 {
-    // Api 25, dev mode only: the race tuning window (Debug actions > IsoRim > Race tuning...). For one race pawn: live sliders for
-    // the race pack's placing fields (scale, head scale and offset), every anchor and the fits, drawn at once on every pawn of
-    // that race (a live copy of its RaceModelDef, RaceFigures.SetLive; dropped with the game or by Reset). Sliders start from
+    // Api 25, dev mode only: the alien tuning window (Debug actions > IsoRim > Alien tuning...). For one race pawn: live sliders for
+    // the alien pack's placing fields (scale, head scale and offset), every anchor and the fits, drawn at once on every pawn of
+    // that race (a live copy of its AlienModelDef, AlienFigures.SetLive; dropped with the game or by Reset). Sliders start from
     // the figure as drawn now (measured values for fields the pack leaves out); only moved ones are written. "Copy XML" puts
-    // the RaceModelDef fields and anchors on the clipboard (and in the log).
-    internal static class RaceTune
+    // the AlienModelDef fields and anchors on the clipboard (and in the log).
+    internal static class AlienTune
     {
-        [DebugAction("IsoRim", "Race tuning...", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction("IsoRim", "Alien tuning...", allowedGameStates = AllowedGameStates.PlayingOnMap)]
         public static void OpenFromDebugMenu()
         {
             Pawn sel = Find.Selector.SingleSelectedThing as Pawn;
@@ -26,7 +26,7 @@ namespace IsoRim
                 Open(sel);
                 return;
             }
-            DebugTools.curTool = new DebugTool("R3D_RaceTune_Pick".Translate(), () =>
+            DebugTools.curTool = new DebugTool("R3D_AlienTune_Pick".Translate(), () =>
             {
                 Map map = Find.CurrentMap;
                 IntVec3 c = UI.MouseCell();
@@ -51,26 +51,26 @@ namespace IsoRim
             return p != null && p.RaceProps != null && p.RaceProps.Humanlike && p.story != null && p.def.defName != "Human" && p.def.defName != "CreepJoiner";
         }
 
-        internal static RaceTuneWindow Open(Pawn p)
+        internal static AlienTuneWindow Open(Pawn p)
         {
-            Find.WindowStack.TryRemove(typeof(RaceTuneWindow));
-            RaceTuneWindow w = new RaceTuneWindow(p);
+            Find.WindowStack.TryRemove(typeof(AlienTuneWindow));
+            AlienTuneWindow w = new AlienTuneWindow(p);
             Find.WindowStack.Add(w);
             return w;
         }
 
-        // A copy of a race pack entry (its lists shared, its anchors copied) to change live.
-        internal static RaceModelDef Clone(RaceModelDef src)
+        // A copy of an alien pack entry (its lists shared, its anchors copied) to change live.
+        internal static AlienModelDef Clone(AlienModelDef src)
         {
-            RaceModelDef d = new RaceModelDef();
-            foreach (FieldInfo f in typeof(RaceModelDef).GetFields(BindingFlags.Public | BindingFlags.Instance))
+            AlienModelDef d = new AlienModelDef();
+            foreach (FieldInfo f in typeof(AlienModelDef).GetFields(BindingFlags.Public | BindingFlags.Instance))
             {
                 f.SetValue(d, f.GetValue(src));
             }
-            d.anchors = new RaceAnchors();
+            d.anchors = new AlienAnchors();
             if (src.anchors != null)
             {
-                foreach (FieldInfo f in typeof(RaceAnchors).GetFields(BindingFlags.Public | BindingFlags.Instance))
+                foreach (FieldInfo f in typeof(AlienAnchors).GetFields(BindingFlags.Public | BindingFlags.Instance))
                 {
                     f.SetValue(d.anchors, f.GetValue(src.anchors));
                 }
@@ -79,11 +79,11 @@ namespace IsoRim
         }
     }
 
-    internal class RaceTuneWindow : Window
+    internal class AlienTuneWindow : Window
     {
         private readonly ThingDef race;
         private readonly Pawn pawn;
-        private readonly RaceModelDef live;
+        private readonly AlienModelDef live;
         private Vector2 scroll;
         private string note;
 
@@ -93,26 +93,26 @@ namespace IsoRim
             public string name;
             public int k;
             public float min, max;
-            public Func<RaceModelDef, Vector3> get;     // NaN components: not set in the pack
-            public Action<RaceModelDef, Vector3> set;
-            public Func<RaceLook, Vector3> now;         // as drawn now (the start for unset fields)
+            public Func<AlienModelDef, Vector3> get;     // NaN components: not set in the pack
+            public Action<AlienModelDef, Vector3> set;
+            public Func<AlienLook, Vector3> now;         // as drawn now (the start for unset fields)
         }
 
         private static readonly string[] Anchors = { "head", "face", "neck", "back", "waist", "handLeft", "handRight", "tailRoot" };
         private readonly List<Row> rows = new List<Row>();
 
-        public RaceTuneWindow(Pawn p)
+        public AlienTuneWindow(Pawn p)
         {
             pawn = p;
             race = p.def;
-            RaceModelDef pack = RaceFigures.PackFor(race);
-            live = pack != null ? RaceTune.Clone(pack) : new RaceModelDef { defName = race.defName + "_RacePack", race = race.defName, figure = FigureMode.Human, anchors = new RaceAnchors() };
+            AlienModelDef pack = AlienFigures.PackFor(race);
+            live = pack != null ? AlienTune.Clone(pack) : new AlienModelDef { defName = race.defName + "_AlienPack", alien = race.defName, figure = FigureMode.Human, anchors = new AlienAnchors() };
             if (live.figure == FigureMode.Card)
             {
                 live.figure = FigureMode.Human;
             }
-            RaceFigures.SetLive(race, live);
-            optionalTitle = "R3D_RaceTune_Title".Translate() + ": " + race.LabelCap + " (" + race.defName + ")";
+            AlienFigures.SetLive(race, live);
+            optionalTitle = "R3D_AlienTune_Title".Translate() + ": " + race.LabelCap + " (" + race.defName + ")";
             closeOnClickedOutside = false;
             closeOnCancel = true;
             draggable = true;
@@ -135,8 +135,8 @@ namespace IsoRim
             rows.Add(new Row { name = "headOffset", k = 3, min = -0.5f, max = 0.5f, get = d => d.headOffset, set = (d, v) => d.headOffset = new Vector3(0f, v.y, v.z), now = r => r.headShift });
             foreach (string a in Anchors)
             {
-                FieldInfo f = typeof(RaceAnchors).GetField(a);
-                string n = RaceFigures.Norm(a);
+                FieldInfo f = typeof(AlienAnchors).GetField(a);
+                string n = AlienFigures.Norm(a);
                 bool head = n == "head" || n == "face";
                 rows.Add(new Row
                 {
@@ -164,7 +164,7 @@ namespace IsoRim
         {
             Vector3 v = row.get(live);
             People.Look look = People.LastLook(pawn);
-            Vector3 now = look != null && look.race != null ? row.now(look.race) : Vector3.zero;
+            Vector3 now = look != null && look.alien != null ? row.now(look.alien) : Vector3.zero;
             for (int i = 0; i < 3; i++)
             {
                 if (float.IsNaN(v[i]))
@@ -175,7 +175,7 @@ namespace IsoRim
             return v;
         }
 
-        // A slider moved (also the harness probe, ProbeRaces): the field set, every pawn of the race drawn again.
+        // A slider moved (also the harness probe, ProbeAliens): the field set, every pawn of the race drawn again.
         internal void Set(string name, int component, float value)
         {
             // (figure, faceMode: the two mode buttons; any other name: a row)
@@ -186,24 +186,24 @@ namespace IsoRim
                     Vector3 v = Value(row);
                     v[component] = value;
                     row.set(live, v);
-                    RaceFigures.SetLive(race, live);
+                    AlienFigures.SetLive(race, live);
                     return;
                 }
             }
             if (name == "figure")
             {
                 live.figure = (FigureMode)(int)value;
-                RaceFigures.SetLive(race, live);
+                AlienFigures.SetLive(race, live);
             }
             else if (name == "hairMode")
             {
-                live.hair = (RaceHair)(int)value;
-                RaceFigures.SetLive(race, live);
+                live.hair = (AlienHair)(int)value;
+                AlienFigures.SetLive(race, live);
             }
             else if (name == "faceMode")
             {
-                live.face = (RaceFace)(int)value;
-                RaceFigures.SetLive(race, live);
+                live.face = (AlienFace)(int)value;
+                AlienFigures.SetLive(race, live);
             }
         }
 
@@ -219,17 +219,17 @@ namespace IsoRim
             }
             if (Widgets.ButtonText(new Rect(bar.x + w + 4f, y, w, 28f), "face " + live.face))
             {
-                Set("faceMode", 0, live.face == RaceFace.IsoRim ? (int)RaceFace.None : (int)RaceFace.IsoRim);
+                Set("faceMode", 0, live.face == AlienFace.IsoRim ? (int)AlienFace.None : (int)AlienFace.IsoRim);
             }
-            if (Widgets.ButtonText(new Rect(bar.x + 2f * (w + 4f), y, w, 28f), "R3D_RaceTune_Copy".Translate()))
+            if (Widgets.ButtonText(new Rect(bar.x + 2f * (w + 4f), y, w, 28f), "R3D_AlienTune_Copy".Translate()))
             {
                 GUIUtility.systemCopyBuffer = Xml();
-                note = "R3D_RaceTune_Copied".Translate();
-                Log.Message("[IsoRim] Race tuning, " + race.defName + ":\n" + GUIUtility.systemCopyBuffer);
+                note = "R3D_AlienTune_Copied".Translate();
+                Log.Message("[IsoRim] Alien tuning, " + race.defName + ":\n" + GUIUtility.systemCopyBuffer);
             }
-            if (Widgets.ButtonText(new Rect(bar.x + 3f * (w + 4f), y, w, 28f), "R3D_RaceTune_Reset".Translate()))
+            if (Widgets.ButtonText(new Rect(bar.x + 3f * (w + 4f), y, w, 28f), "R3D_AlienTune_Reset".Translate()))
             {
-                RaceFigures.SetLive(race, null);
+                AlienFigures.SetLive(race, null);
                 Close();
                 return;
             }
@@ -279,23 +279,23 @@ namespace IsoRim
             return k == 1 ? F(v.x) : "(" + F(v.x) + ", " + F(v.y) + ", " + F(v.z) + ")";
         }
 
-        // The live entry's fields and anchors as RaceModelDef XML (only what the pack sets or the sliders moved).
+        // The live entry's fields and anchors as AlienModelDef XML (only what the pack sets or the sliders moved).
         internal string Xml()
         {
             StringBuilder s = new StringBuilder();
-            s.AppendLine("<IsoRim.RaceModelDef>");
+            s.AppendLine("<IsoRim.AlienModelDef>");
             s.AppendLine("  <defName>" + live.defName + "</defName>");
-            s.AppendLine("  <race>" + race.defName + "</race>");
+            s.AppendLine("  <alien>" + race.defName + "</alien>");
             s.AppendLine("  <figure>" + live.figure + "</figure>");
             if (!live.modPackageId.NullOrEmpty())
             {
                 s.AppendLine("  <modPackageId>" + live.modPackageId + "</modPackageId>");
             }
-            if (live.hair != RaceHair.IsoRim)
+            if (live.hair != AlienHair.IsoRim)
             {
                 s.AppendLine("  <hair>" + live.hair + "</hair>");
             }
-            if (live.face != RaceFace.IsoRim)
+            if (live.face != AlienFace.IsoRim)
             {
                 s.AppendLine("  <face>" + live.face + "</face>");
             }
@@ -315,22 +315,22 @@ namespace IsoRim
             s.AppendLine("  <anchors>");
             foreach (string a in Anchors)
             {
-                Vector3 v = (Vector3)typeof(RaceAnchors).GetField(a).GetValue(live.anchors);
-                if (RaceAnchors.Set(v))
+                Vector3 v = (Vector3)typeof(AlienAnchors).GetField(a).GetValue(live.anchors);
+                if (AlienAnchors.Set(v))
                 {
                     s.AppendLine("    <" + a + ">" + Show(v, 3) + "</" + a + ">");
                 }
             }
             foreach (string a in new[] { "headFit", "bodyFit", "faceFit" })
             {
-                Vector3 v = (Vector3)typeof(RaceAnchors).GetField(a).GetValue(live.anchors);
-                if (RaceAnchors.Set(v) && (a == "faceFit" || v != Vector3.one))
+                Vector3 v = (Vector3)typeof(AlienAnchors).GetField(a).GetValue(live.anchors);
+                if (AlienAnchors.Set(v) && (a == "faceFit" || v != Vector3.one))
                 {
                     s.AppendLine("    <" + a + ">" + Show(v, 3) + "</" + a + ">");
                 }
             }
             s.AppendLine("  </anchors>");
-            s.Append("</IsoRim.RaceModelDef>");
+            s.Append("</IsoRim.AlienModelDef>");
             return s.ToString();
         }
     }

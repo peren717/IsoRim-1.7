@@ -9,37 +9,37 @@ using Verse;
 namespace IsoRim
 {
     // Api 25: humanlike races other than the game's own people (Humanoid Alien Races and other frameworks; design
-    // isorim-har-design.md). Every race but Human and CreepJoiner stays a flat card unless a race pack (RaceModelDef) makes it
+    // isorim-har-design.md). Every race but Human and CreepJoiner stays a flat card unless an alien pack (AlienModelDef) makes it
     // a 3D figure: with IsoRim's human figure placed for the race (Human) or with the race's own body and head models (Own).
     // The player's "Keep as paper" list wins over the packs. IsoRim never reads HAR: only the vanilla calls HAR patches
     // (the body and head mesh sets, which carry its draw sizes, BaseHeadOffsetAt, the render tree with its addon nodes).
     //
-    // One chokepoint: People.FigureRace asks RaceFigures.Drawn3D (all five callers: People.Draw, MeasureWeapon, Report,
-    // Patches.DrawnAsModel, Corpses.ShownAsModel). People.Work asks RaceFigures.Prepare / Finish for the race's placing
-    // (scale, head, build, its own models, addon models and cards) into Look.race; People.Draw puts the race's head
+    // One chokepoint: People.FigureRace asks AlienFigures.Drawn3D (all five callers: People.Draw, MeasureWeapon, Report,
+    // Patches.DrawnAsModel, Corpses.ShownAsModel). People.Work asks AlienFigures.Prepare / Finish for the race's placing
+    // (scale, head, build, its own models, addon models and cards) into Look.alien; People.Draw puts the race's head
     // transform into the head matrix and its hands shift into the hands matrix, so everything placed on the head or held
-    // (hats, hair, faces, figure hooks, face drawers, weapons, carried things) follows. Addon cards: RaceCards.
+    // (hats, hair, faces, figure hooks, face drawers, weapons, carried things) follows. Addon cards: AlienCards.
 
     /// <summary>How IsoRim draws a humanlike pawn (Api version 25; <see cref="Api.FigureModeOf"/>).</summary>
     public enum FigureMode
     {
-        /// <summary>A flat card standing up (the game's own sprite): every non-human race without a race pack.</summary>
+        /// <summary>A flat card standing up (the game's own sprite): every non-human race without an alien pack.</summary>
         Card = 0,
         /// <summary>IsoRim's human figure: people and creepjoiners, and races whose pack says <c>Human</c>.</summary>
         Human = 1,
-        /// <summary>The race's own body and head models from its race pack (<c>Own</c>).</summary>
+        /// <summary>The race's own body and head models from its alien pack (<c>Own</c>).</summary>
         Own = 2,
     }
 
     /// <summary>
-    /// A race pack entry (Api version 25): how one humanlike race is drawn in 3D. Without one, a race stays a card. See
-    /// Docs/ModelPacks.md (race packs) and Docs/Api.md part 16. Add it through a patch gated on Api 25 (the def type is new).
+    /// An alien pack entry (Api version 25): how one humanlike race is drawn in 3D. Without one, a race stays a card. See
+    /// Docs/ModelPacks.md (alien packs) and Docs/Api.md part 16. Add it through a patch gated on Api 25 (the def type is new).
     /// </summary>
-    public class RaceModelDef : Def
+    public class AlienModelDef : Def
     {
-        /// <summary>The race's ThingDef defName (or several in <see cref="races"/>).</summary>
-        public string race;
-        public List<string> races;
+        /// <summary>The race's ThingDef defName (or several in <see cref="aliens"/>).</summary>
+        public string alien;
+        public List<string> aliens;
 
         /// <summary>Own (the pack's own models), Human (IsoRim's human figure placed for the race) or Card.</summary>
         public FigureMode figure = FigureMode.Card;
@@ -61,45 +61,45 @@ namespace IsoRim
 
         /// <summary>The race's body types onto IsoRim's builds (male, female, thin, fat, hulk): &lt;build&gt;&lt;MyBody&gt;thin&lt;/MyBody&gt;&lt;/build&gt;.
         /// Without an entry: a vanilla body type keeps its own, others by name (Female, Thin, Hulk, Fat), else male.</summary>
-        public RaceBuildMap build;
+        public AlienBuildMap build;
 
         /// <summary>IsoRim: IsoRim's face (its eyes, Facial Animation's face, other mods' face drawers) on the head; on an Own race's
         /// head at the face anchor, sized by anchors.faceFit. None: no face (the head model has its own).</summary>
-        public RaceFace face = RaceFace.IsoRim;
+        public AlienFace face = AlienFace.IsoRim;
 
         /// <summary>The hair and beard: IsoRim (its hair shapes, by the hairstyle), Card (the game's own hair and beard sprites as cards,
         /// like the addons: for races whose hair art IsoRim's shapes do not match) or None (no hair; the head model or addons have it).</summary>
-        public RaceHair hair = RaceHair.IsoRim;
+        public AlienHair hair = AlienHair.IsoRim;
 
         /// <summary>The race's own render nodes (HAR body addons: ears, tails, horns) without a model of their own drawn as
         /// cards from the game's sprites.</summary>
         public bool addonCards = true;
 
         /// <summary>Show: worn apparel as on people (fitted by bodyFit / headFit); Hide: only apparel with an apparel model
-        /// binding for this race (ApparelModelDef.races) shows.</summary>
+        /// binding for this race (ApparelModelDef.aliens) shows.</summary>
         public string clothes = "Show";
 
         /// <summary>Own: body models by body type and life stage (first match; an entry with neither matches all).</summary>
-        public List<RaceBodyModel> bodies;
+        public List<AlienBodyModel> bodies;
 
         /// <summary>Own: head models by head type or the head's texture path (first match).</summary>
-        public List<RaceHeadModel> heads;
+        public List<AlienHeadModel> heads;
 
         /// <summary>Models (or hiding) for the race's render nodes, by the node's texture path.</summary>
-        public List<RaceAddonModel> addons;
+        public List<AlienAddonModel> addons;
 
         /// <summary>Named points on the race's figure and the fits of IsoRim's human parts onto it.</summary>
-        public RaceAnchors anchors;
+        public AlienAnchors anchors;
 
-        internal IEnumerable<string> Races()
+        internal IEnumerable<string> Aliens()
         {
-            if (!race.NullOrEmpty())
+            if (!alien.NullOrEmpty())
             {
-                yield return race;
+                yield return alien;
             }
-            if (races != null)
+            if (aliens != null)
             {
-                foreach (string r in races)
+                foreach (string r in aliens)
                 {
                     if (!r.NullOrEmpty())
                     {
@@ -115,9 +115,9 @@ namespace IsoRim
             {
                 yield return e;
             }
-            if (race.NullOrEmpty() && races.NullOrEmpty())
+            if (alien.NullOrEmpty() && aliens.NullOrEmpty())
             {
-                yield return "no race";
+                yield return "no alien";
             }
             if (clothes != "Show" && clothes != "Hide")
             {
@@ -135,7 +135,7 @@ namespace IsoRim
             }
             if (bodies != null)
             {
-                foreach (RaceBodyModel b in bodies)
+                foreach (AlienBodyModel b in bodies)
                 {
                     if (b.upper.NullOrEmpty() || b.lower.NullOrEmpty())
                     {
@@ -146,16 +146,16 @@ namespace IsoRim
         }
     }
 
-    /// <summary>RaceModelDef.face (Api 25): who draws the race's face.</summary>
-    /// <summary>RaceModelDef.hair (Api 25): how the race's hair and beard are drawn.</summary>
-    public enum RaceHair
+    /// <summary>AlienModelDef.face (Api 25): who draws the race's face.</summary>
+    /// <summary>AlienModelDef.hair (Api 25): how the race's hair and beard are drawn.</summary>
+    public enum AlienHair
     {
         IsoRim = 0,
         Card = 1,
         None = 2,
     }
 
-    public enum RaceFace
+    public enum AlienFace
     {
         /// <summary>IsoRim's face, as on people (and other mods' face drawers).</summary>
         IsoRim = 0,
@@ -163,8 +163,8 @@ namespace IsoRim
         None = 1,
     }
 
-    /// <summary>RaceModelDef.build: body type defName to IsoRim build, written as &lt;MyBody&gt;thin&lt;/MyBody&gt;.</summary>
-    public class RaceBuildMap
+    /// <summary>AlienModelDef.build: body type defName to IsoRim build, written as &lt;MyBody&gt;thin&lt;/MyBody&gt;.</summary>
+    public class AlienBuildMap
     {
         internal readonly Dictionary<string, string> map = new Dictionary<string, string>();
 
@@ -180,9 +180,9 @@ namespace IsoRim
         }
     }
 
-    /// <summary>One own body of a race pack (two models as IsoRim's person_&lt;build&gt;_upper / _lower: the upper part takes
+    /// <summary>One own body of an alien pack (two models as IsoRim's person_&lt;build&gt;_upper / _lower: the upper part takes
     /// the shirt colour or the skin, the lower the trousers; faces under a material named stuff... take it).</summary>
-    public class RaceBodyModel
+    public class AlienBodyModel
     {
         public string bodyType;
         public string lifeStage;
@@ -192,8 +192,8 @@ namespace IsoRim
         public string fitAs = "male";
     }
 
-    /// <summary>One own head of a race pack (modelled in the race figure's space, as the bodies).</summary>
-    public class RaceHeadModel
+    /// <summary>One own head of an alien pack (modelled in the race figure's space, as the bodies).</summary>
+    public class AlienHeadModel
     {
         public string headType;
         /// <summary>The head type's texture path; a trailing / matches every path under it.</summary>
@@ -202,7 +202,7 @@ namespace IsoRim
     }
 
     /// <summary>A model for a race's render node (a HAR body addon), or hiding it, by the node's texture path.</summary>
-    public class RaceAddonModel
+    public class AlienAddonModel
     {
         /// <summary>The node's texture path (case does not matter, \ = /); a trailing / matches every path under it.</summary>
         public string graphicPath;
@@ -224,7 +224,7 @@ namespace IsoRim
 
     /// <summary>Named points of a race's figure (cells, a figure of size 1, feet at the origin, y up, facing +z), and how
     /// IsoRim's human parts fit onto it. Points not given are IsoRim's person figure's.</summary>
-    public class RaceAnchors
+    public class AlienAnchors
     {
         private static readonly Vector3 Unset = new Vector3(float.NaN, float.NaN, float.NaN);
         /// <summary>The head's pivot: where IsoRim's human neck (0, 0.74, 0) goes; the head frame (hats, hair, eyes, face
@@ -251,11 +251,11 @@ namespace IsoRim
         }
     }
 
-    // A race's placing for one person, worked out with the look (People.Work) and kept in Look.race (null for people).
-    internal sealed class RaceLook
+    // A race's placing for one person, worked out with the look (People.Work) and kept in Look.alien (null for people).
+    internal sealed class AlienLook
     {
         public ThingDef race;
-        public RaceModelDef pack;
+        public AlienModelDef pack;
         public FigureMode mode;
         public string build;
         public float scale = 1f;          // in Look.size
@@ -276,11 +276,11 @@ namespace IsoRim
         public readonly List<Color> extraTints = new List<Color>();
         public readonly List<bool> extraHead = new List<bool>();
         public readonly List<bool> extraFace = new List<bool>();
-        public RaceCards.Set cards;
+        public AlienCards.Set cards;
         public string headType, bodyType;
         public float hatTop = float.NaN;  // the top of the drawn hat in the head frame (NaN: none), for addons' hatLift
 
-        public bool SameAs(RaceLook o)
+        public bool SameAs(AlienLook o)
         {
             if (o == null || o.pack != pack || o.mode != mode || o.build != build || o.scale != scale || o.headScale != headScale || o.headShift != headShift
                 || o.ownHead != ownHead || o.ownUpper != ownUpper || o.ownLower != ownLower || o.faceShown != faceShown || o.face != face || o.extraModels.Count != extraModels.Count
@@ -299,10 +299,10 @@ namespace IsoRim
         }
     }
 
-    internal static class RaceFigures
+    internal static class AlienFigures
     {
         private static readonly Dictionary<ThingDef, FigureMode> modes = new Dictionary<ThingDef, FigureMode>();
-        private static Dictionary<string, RaceModelDef> packs;
+        private static Dictionary<string, AlienModelDef> packs;
         private static readonly List<Func<ThingDef, FigureMode?>> rules = new List<Func<ThingDef, FigureMode?>>();
         private static readonly Dictionary<string, Model> fitted = new Dictionary<string, Model>();
         private static readonly Dictionary<string, Model> loaded = new Dictionary<string, Model>();
@@ -317,7 +317,7 @@ namespace IsoRim
         private const float VanillaHeadY = 0.34f;   // a vanilla body type's headOffset.y
 
         // The race the look being worked out is dressed for (ApparelModels.For: race bindings), set around People.Dress.
-        internal static ThingDef dressingRace;
+        internal static ThingDef dressingAlien;
         internal static BodyTypeDef dressingBody;
 
         // ---- the chokepoint
@@ -389,16 +389,16 @@ namespace IsoRim
                     Log.ErrorOnce("[IsoRim] A race figure rule failed: " + e, 93625000 ^ i);
                 }
             }
-            RaceModelDef pack = PackFor(def);
+            AlienModelDef pack = PackFor(def);
             return pack != null ? pack.figure : FigureMode.Card;
         }
 
-        // The race tuning window's live copies (dev mode, RaceTune.cs), by race defName; they stand in for the packs this game.
-        private static readonly Dictionary<string, RaceModelDef> live = new Dictionary<string, RaceModelDef>();
+        // The alien tuning window's live copies (dev mode, AlienTune.cs), by race defName; they stand in for the packs this game.
+        private static readonly Dictionary<string, AlienModelDef> live = new Dictionary<string, AlienModelDef>();
 
         private static Game liveGame;
 
-        internal static void SetLive(ThingDef race, RaceModelDef def)
+        internal static void SetLive(ThingDef race, AlienModelDef def)
         {
             if (liveGame != Current.Game)
             {
@@ -416,25 +416,25 @@ namespace IsoRim
             Clear();
         }
 
-        internal static RaceModelDef PackFor(ThingDef def)
+        internal static AlienModelDef PackFor(ThingDef def)
         {
-            RaceModelDef tuned;
+            AlienModelDef tuned;
             if (live.Count > 0 && def != null && liveGame == Current.Game && live.TryGetValue(def.defName, out tuned))
             {
                 return tuned;
             }
             if (packs == null)
             {
-                packs = new Dictionary<string, RaceModelDef>();
-                foreach (RaceModelDef d in DefDatabase<RaceModelDef>.AllDefsListForReading)
+                packs = new Dictionary<string, AlienModelDef>();
+                foreach (AlienModelDef d in DefDatabase<AlienModelDef>.AllDefsListForReading)
                 {
-                    foreach (string r in d.Races())
+                    foreach (string r in d.Aliens())
                     {
                         packs[r] = d;   // a later def for the same race wins (a pack overriding another)
                     }
                 }
             }
-            RaceModelDef p;
+            AlienModelDef p;
             return def != null && packs.TryGetValue(def.defName, out p) ? p : null;
         }
 
@@ -463,7 +463,7 @@ namespace IsoRim
         }
 
         // The humanlike races the player can keep as paper (settings): every loaded humanlike race but people.
-        internal static List<ThingDef> OtherRaces()
+        internal static List<ThingDef> OtherAliens()
         {
             List<ThingDef> list = new List<ThingDef>();
             foreach (ThingDef d in DefDatabase<ThingDef>.AllDefsListForReading)
@@ -487,7 +487,7 @@ namespace IsoRim
                 return size;
             }
             People.Look look = People.LastLook(pawn);
-            return look != null && look.race != null ? look.size : size;
+            return look != null && look.alien != null ? look.size : size;
         }
 
         // Dried to bones: a 3D skeleton for people and Human-figure races; an Own race keeps its card (IsoRim has no
@@ -505,9 +505,9 @@ namespace IsoRim
         // ---- the look
 
         // Before People.Work dresses the figure: the race's build and placing; null for people (nothing changes).
-        internal static RaceLook Prepare(Pawn pawn, ref string build)
+        internal static AlienLook Prepare(Pawn pawn, ref string build)
         {
-            dressingRace = null;
+            dressingAlien = null;
             dressingBody = null;
             if (pawn.def == null || pawn.def.defName == "Human" || pawn.def.defName == "CreepJoiner")
             {
@@ -518,21 +518,21 @@ namespace IsoRim
             {
                 return null;
             }
-            RaceModelDef pack = PackFor(pawn.def);
-            RaceLook r = new RaceLook { race = pawn.def, pack = pack, mode = mode };
+            AlienModelDef pack = PackFor(pawn.def);
+            AlienLook r = new AlienLook { race = pawn.def, pack = pack, mode = mode };
             Pawn_StoryTracker story = pawn.story;
             r.bodyType = story.bodyType != null ? story.bodyType.defName : null;
             r.headType = story.headType != null ? story.headType.defName : null;
             r.build = BuildFor(pack, story.bodyType);
             build = r.build;
             Measure(pawn, r);
-            RaceBodyModel body = mode == FigureMode.Own ? BodyFor(pack, pawn) : null;
+            AlienBodyModel body = mode == FigureMode.Own ? BodyFor(pack, pawn) : null;
             if (body != null && !body.fitAs.NullOrEmpty())
             {
                 r.build = body.fitAs.ToLowerInvariant();
                 build = r.build;
             }
-            RaceAnchors an = pack != null ? pack.anchors : null;
+            AlienAnchors an = pack != null ? pack.anchors : null;
             if (mode == FigureMode.Own)
             {
                 r.scale = pack != null && !float.IsNaN(pack.scale) ? pack.scale : 1f;
@@ -540,10 +540,10 @@ namespace IsoRim
                 r.headShift = Vector3.zero;
                 r.headFit = an != null ? an.headFit : Vector3.one;
                 r.bodyFit = an != null ? an.bodyFit : Vector3.one;
-                Vector3 pivot = an != null && RaceAnchors.Set(an.head) ? an.head : new Vector3(0f, Neck, 0f);
+                Vector3 pivot = an != null && AlienAnchors.Set(an.head) ? an.head : new Vector3(0f, Neck, 0f);
                 r.head = Matrix4x4.Translate(pivot) * Matrix4x4.Scale(r.headFit) * Matrix4x4.Translate(new Vector3(0f, -Neck, 0f));
-                Vector3 hl = an != null && RaceAnchors.Set(an.handLeft) ? an.handLeft : new Vector3(0f, HandY, 0f);
-                Vector3 hr = an != null && RaceAnchors.Set(an.handRight) ? an.handRight : new Vector3(0f, HandY, 0f);
+                Vector3 hl = an != null && AlienAnchors.Set(an.handLeft) ? an.handLeft : new Vector3(0f, HandY, 0f);
+                Vector3 hr = an != null && AlienAnchors.Set(an.handRight) ? an.handRight : new Vector3(0f, HandY, 0f);
                 r.handShift = (hl.y + hr.y) * 0.5f - HandY;
             }
             else
@@ -559,14 +559,14 @@ namespace IsoRim
             }
             r.headInv = r.head.inverse;
             r.clothesHidden = pack != null && pack.clothes == "Hide";
-            r.faceShown = pack == null || pack.face == RaceFace.IsoRim;
-            dressingRace = pawn.def;
+            r.faceShown = pack == null || pack.face == AlienFace.IsoRim;
+            dressingAlien = pawn.def;
             dressingBody = story.bodyType;
             return r;
         }
 
         // The body scale of the figure (Look.bodyScale): the build's for a Human figure, bodyFit for an Own one.
-        internal static Vector3 BodyScale(RaceLook r)
+        internal static Vector3 BodyScale(AlienLook r)
         {
             if (r.mode == FigureMode.Own)
             {
@@ -583,7 +583,7 @@ namespace IsoRim
         }
 
         // What People.Dress gets: all worn apparel, or with clothes Hide only what has a binding for this race.
-        internal static List<Apparel> Worn(Pawn pawn, RaceLook r)
+        internal static List<Apparel> Worn(Pawn pawn, AlienLook r)
         {
             List<Apparel> worn = pawn.apparel != null ? pawn.apparel.WornApparel : null;
             if (r == null || !r.clothesHidden || worn == null)
@@ -593,7 +593,7 @@ namespace IsoRim
             List<Apparel> kept = new List<Apparel>();
             for (int i = 0; i < worn.Count; i++)
             {
-                if (ApparelModels.ForRace(worn[i].def, pawn.def) != null)
+                if (ApparelModels.ForAlien(worn[i].def, pawn.def) != null)
                 {
                     kept.Add(worn[i]);
                 }
@@ -602,9 +602,9 @@ namespace IsoRim
         }
 
         // After People.Work: the race's own models, eyes, addon models and cards.
-        internal static void Finish(Pawn pawn, People.Look look, RaceLook r)
+        internal static void Finish(Pawn pawn, People.Look look, AlienLook r)
         {
-            dressingRace = null;
+            dressingAlien = null;
             dressingBody = null;
             Pawn_StoryTracker story = pawn.story;
             if (story.headType != null && !Has(story.headType.defName, "Female") && !Has(story.headType.defName, "Male"))
@@ -616,11 +616,11 @@ namespace IsoRim
                     look.headWide = 0.9f;
                 }
             }
-            RaceModelDef pack = r.pack;
+            AlienModelDef pack = r.pack;
             bool bones = look.skull != null;
             if (r.mode == FigureMode.Own && !bones)
             {
-                RaceBodyModel body = BodyFor(pack, pawn);
+                AlienBodyModel body = BodyFor(pack, pawn);
                 if (body != null)
                 {
                     Matrix4x4 unfit = Matrix4x4.Scale(Inverse(r.bodyFit));
@@ -634,7 +634,7 @@ namespace IsoRim
                         look.lower = low;
                     }
                 }
-                RaceHeadModel headModel = HeadFor(pack, story.headType);
+                AlienHeadModel headModel = HeadFor(pack, story.headType);
                 Model h = headModel != null ? Fitted(pack, headModel.model, r.headInv) : null;
                 if (h != null && !look.headHidden)
                 {
@@ -652,9 +652,9 @@ namespace IsoRim
             {
                 r.face = Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f));   // the person head's own place (fitted by headFit on an Own race)
             }
-            if (pack != null && pack.hair != RaceHair.IsoRim)
+            if (pack != null && pack.hair != AlienHair.IsoRim)
             {
-                look.hair = null;   // (Card: the game's hair and beard as cards, RaceCards)
+                look.hair = null;   // (Card: the game's hair and beard as cards, AlienCards)
                 look.hairTop = null;
                 look.beard = null;
             }
@@ -667,12 +667,12 @@ namespace IsoRim
             r.hatTop = look.hat != null ? look.hat.maxY : float.NaN;
             Anchors(r, look);
             // Addon models (by the render node's texture path) and cards for the rest.
-            r.cards = RaceCards.Collect(pawn, look, r);
+            r.cards = AlienCards.Collect(pawn, look, r);
             if (r.cards != null && pack != null && pack.addons != null)
             {
-                foreach (RaceCards.Node n in r.cards.nodes)
+                foreach (AlienCards.Node n in r.cards.nodes)
                 {
-                    RaceAddonModel a = AddonFor(pack, n.path);
+                    AlienAddonModel a = AddonFor(pack, n.path);
                     if (a == null)
                     {
                         continue;
@@ -715,7 +715,7 @@ namespace IsoRim
             }
         }
 
-        private static void AddExtra(RaceLook r, Model m, Matrix4x4 local, Color tint, bool head, bool face = false)
+        private static void AddExtra(AlienLook r, Model m, Matrix4x4 local, Color tint, bool head, bool face = false)
         {
             if (m == null)
             {
@@ -733,11 +733,11 @@ namespace IsoRim
         // field: fitted by headFit like the rest of the head parts (identity in the head frame).
         internal static readonly Vector3 FacePoint = new Vector3(0f, 0.95f, 0.22f);
 
-        private static Matrix4x4 FaceOnOwnHead(RaceLook r)
+        private static Matrix4x4 FaceOnOwnHead(AlienLook r)
         {
-            RaceAnchors an = r.pack != null ? r.pack.anchors : null;
-            bool anchor = an != null && RaceAnchors.Set(an.face);
-            bool fit = an != null && RaceAnchors.Set(an.faceFit);
+            AlienAnchors an = r.pack != null ? r.pack.anchors : null;
+            bool anchor = an != null && AlienAnchors.Set(an.face);
+            bool fit = an != null && AlienAnchors.Set(an.faceFit);
             if (!anchor && !fit)
             {
                 return Matrix4x4.identity;
@@ -771,7 +771,7 @@ namespace IsoRim
         internal static void AddParts(People.Look look, bool headPart, int hide, List<Model> models, List<Matrix4x4> locals, List<Color> tints,
             float clip = float.NegativeInfinity)
         {
-            RaceLook r = look.race;
+            AlienLook r = look.alien;
             if (r == null)
             {
                 return;
@@ -826,9 +826,9 @@ namespace IsoRim
         }
 
         // The named anchors (body frame; head and face in the head frame as IsoRim's own head is modelled).
-        private static void Anchors(RaceLook r, People.Look look)
+        private static void Anchors(AlienLook r, People.Look look)
         {
-            RaceAnchors an = r.pack != null ? r.pack.anchors : null;
+            AlienAnchors an = r.pack != null ? r.pack.anchors : null;
             Vector3 bs = look.bodyScale;
             float half = look.upper != null ? look.upper.halfDepth * bs.z : 0.12f;
             float side = look.upper != null ? Mathf.Max(-look.upper.minX, look.upper.maxX) * bs.x : 0.2f;
@@ -846,14 +846,14 @@ namespace IsoRim
         private static readonly Vector3 Unset = new Vector3(float.NaN, float.NaN, float.NaN);
 
         // A pack anchor is in the race figure's space; head and face of an Own race go into the head frame (headInv).
-        private static void Put(RaceLook r, string name, Vector3 given, Vector3 fallback, bool headFrameFromRace)
+        private static void Put(AlienLook r, string name, Vector3 given, Vector3 fallback, bool headFrameFromAlien)
         {
-            if (!RaceAnchors.Set(given))
+            if (!AlienAnchors.Set(given))
             {
                 r.anchors[name] = fallback;
                 return;
             }
-            r.anchors[name] = headFrameFromRace ? r.headInv.MultiplyPoint3x4(given) : given;
+            r.anchors[name] = headFrameFromAlien ? r.headInv.MultiplyPoint3x4(given) : given;
         }
 
         // FigureFrame.Anchor: a named point (a head one in the head frame) for a person figure; false for unknown names.
@@ -861,9 +861,9 @@ namespace IsoRim
         {
             string n = Norm(name);
             head = n == "head" || n == "face";
-            if (look.race != null)
+            if (look.alien != null)
             {
-                return look.race.anchors.TryGetValue(n, out point);
+                return look.alien.anchors.TryGetValue(n, out point);
             }
             Vector3 bs = look.bodyScale;
             float half = look.upper != null ? look.upper.halfDepth * bs.z : 0.12f;
@@ -904,7 +904,7 @@ namespace IsoRim
 
         // The game's body and head mesh sizes against a human's of the same life stage (HAR's draw sizes, any mod that
         // resizes them), and its head offset against the body type's own: the head's shift in figure cells.
-        private static void Measure(Pawn pawn, RaceLook r)
+        private static void Measure(Pawn pawn, AlienLook r)
         {
             try
             {
@@ -973,7 +973,7 @@ namespace IsoRim
 
         // ---- packs
 
-        private static string BuildFor(RaceModelDef pack, BodyTypeDef type)
+        private static string BuildFor(AlienModelDef pack, BodyTypeDef type)
         {
             string name = type != null ? type.defName ?? "" : "";
             string b;
@@ -1011,7 +1011,7 @@ namespace IsoRim
             return "male";
         }
 
-        private static RaceBodyModel BodyFor(RaceModelDef pack, Pawn pawn)
+        private static AlienBodyModel BodyFor(AlienModelDef pack, Pawn pawn)
         {
             if (pack == null || pack.bodies == null)
             {
@@ -1019,7 +1019,7 @@ namespace IsoRim
             }
             string type = pawn.story.bodyType != null ? pawn.story.bodyType.defName : "";
             string stage = pawn.ageTracker != null && pawn.ageTracker.CurLifeStage != null ? pawn.ageTracker.CurLifeStage.defName : "";
-            foreach (RaceBodyModel b in pack.bodies)
+            foreach (AlienBodyModel b in pack.bodies)
             {
                 if ((b.bodyType.NullOrEmpty() || b.bodyType == type) && (b.lifeStage.NullOrEmpty() || b.lifeStage == stage))
                 {
@@ -1029,7 +1029,7 @@ namespace IsoRim
             return null;
         }
 
-        private static RaceHeadModel HeadFor(RaceModelDef pack, HeadTypeDef type)
+        private static AlienHeadModel HeadFor(AlienModelDef pack, HeadTypeDef type)
         {
             if (pack == null || pack.heads == null)
             {
@@ -1037,7 +1037,7 @@ namespace IsoRim
             }
             string name = type != null ? type.defName : "";
             string path = type != null ? ModelLibrary.NormalPath(type.graphicPath) : null;
-            foreach (RaceHeadModel h in pack.heads)
+            foreach (AlienHeadModel h in pack.heads)
             {
                 if (!h.headType.NullOrEmpty() && h.headType == name)
                 {
@@ -1055,13 +1055,13 @@ namespace IsoRim
             return null;
         }
 
-        internal static RaceAddonModel AddonFor(RaceModelDef pack, string path)
+        internal static AlienAddonModel AddonFor(AlienModelDef pack, string path)
         {
             if (pack == null || pack.addons == null || path == null)
             {
                 return null;
             }
-            foreach (RaceAddonModel a in pack.addons)
+            foreach (AlienAddonModel a in pack.addons)
             {
                 if (PathMatches(a.graphicPath, path))
                 {
@@ -1085,7 +1085,7 @@ namespace IsoRim
         }
 
         // A pack's model file (relative to its mod: modPackageId, its own mod, or the first active mod with the file).
-        internal static Model Load(RaceModelDef pack, string path)
+        internal static Model Load(AlienModelDef pack, string path)
         {
             if (pack == null || path.NullOrEmpty())
             {
@@ -1101,14 +1101,14 @@ namespace IsoRim
             m = root != null ? ModelLibrary.LoadFile(Path.GetFullPath(Path.Combine(root, path))) : null;
             if (m == null)
             {
-                Log.ErrorOnce("[IsoRim] Race pack " + pack.defName + ": " + path + " not found.", pack.shortHash ^ 93625002 ^ path.GetHashCode());
+                Log.ErrorOnce("[IsoRim] Alien pack " + pack.defName + ": " + path + " not found.", pack.shortHash ^ 93625002 ^ path.GetHashCode());
             }
             loaded[key] = m;
             return m;
         }
 
         // A pack model moved into the frame IsoRim draws it in (bodyFit / head fit taken back out), made once.
-        private static Model Fitted(RaceModelDef pack, string path, Matrix4x4 local)
+        private static Model Fitted(AlienModelDef pack, string path, Matrix4x4 local)
         {
             Model raw = Load(pack, path);
             if (raw == null)
@@ -1130,7 +1130,7 @@ namespace IsoRim
             return m;
         }
 
-        private static string RootFor(RaceModelDef pack, string path)
+        private static string RootFor(AlienModelDef pack, string path)
         {
             if (!pack.modPackageId.NullOrEmpty())
             {
@@ -1169,7 +1169,7 @@ namespace IsoRim
         // For People.Report (harness): the race's mode and placing.
         internal static string Report(People.Look look)
         {
-            RaceLook r = look != null ? look.race : null;
+            AlienLook r = look != null ? look.alien : null;
             if (r == null)
             {
                 return "";
@@ -1177,7 +1177,7 @@ namespace IsoRim
             int cards = 0, bound = 0;
             if (r.cards != null)
             {
-                foreach (RaceCards.Node n in r.cards.nodes)
+                foreach (AlienCards.Node n in r.cards.nodes)
                 {
                     if (n.bound)
                     {
@@ -1189,11 +1189,11 @@ namespace IsoRim
                     }
                 }
             }
-            return ", raceMode " + r.mode + ", pack " + (r.pack != null ? r.pack.defName : "-") + ", build " + r.build + ", bodyDraw " + r.bodyDraw.ToString("0.000")
+            return ", alienMode " + r.mode + ", pack " + (r.pack != null ? r.pack.defName : "-") + ", build " + r.build + ", bodyDraw " + r.bodyDraw.ToString("0.000")
                 + ", headDraw " + r.headDraw.ToString("0.000") + ", scale " + r.scale.ToString("0.000") + ", headScale " + r.headScale.ToString("0.000")
                 + ", headShift " + r.headShift.ToString("F3") + ", handShift " + r.handShift.ToString("0.000") + ", size " + look.size.ToString("0.000")
                 + ", ownHead " + (r.ownHead != null) + ", ownBody " + (r.ownUpper != null) + ", extras " + r.extraModels.Count + ", addon nodes "
-                + (r.cards != null ? r.cards.nodes.Count : 0) + " (cards " + cards + ", bound " + bound + "), clothesHidden " + r.clothesHidden + ", face " + (r.faceShown ? "IsoRim" : "None") + " at " + r.face.MultiplyPoint3x4(RaceFigures.FacePoint).ToString("F3") + ", hatTop " + r.hatTop.ToString("0.000") + RaceCards.Report(r.cards);
+                + (r.cards != null ? r.cards.nodes.Count : 0) + " (cards " + cards + ", bound " + bound + "), clothesHidden " + r.clothesHidden + ", face " + (r.faceShown ? "IsoRim" : "None") + " at " + r.face.MultiplyPoint3x4(AlienFigures.FacePoint).ToString("F3") + ", hatTop " + r.hatTop.ToString("0.000") + AlienCards.Report(r.cards);
         }
     }
 
@@ -1203,22 +1203,22 @@ namespace IsoRim
 
         /// <summary>
         /// How IsoRim draws this pawn now (Api version 25): <see cref="FigureMode.Card"/> for every pawn that is not a
-        /// humanlike drawn as a 3D figure (animals, mechs, races without a race pack or kept as paper by the player),
+        /// humanlike drawn as a 3D figure (animals, mechs, races without an alien pack or kept as paper by the player),
         /// <see cref="FigureMode.Human"/> for people and races drawn with IsoRim's human figure, <see cref="FigureMode.Own"/>
         /// for races drawn with their pack's own models. It says what the pawn would be drawn as with the 3D view and
         /// person figures on.
         /// </summary>
-        public static FigureMode FigureModeOf(Pawn pawn) => RaceFigures.ModeOf(pawn);
+        public static FigureMode FigureModeOf(Pawn pawn) => AlienFigures.ModeOf(pawn);
 
         /// <summary>
         /// Adds a rule asked for each humanlike race but people (Api version 25): return a mode to force it, or null to
-        /// leave the race to the other rules and its race pack. The player's "Keep as paper" list still wins. Asked once per
+        /// leave the race to the other rules and its alien pack. The player's "Keep as paper" list still wins. Asked once per
         /// race (the answer is kept until a rule is added or removed). Use it from a framework or pack with code; XML packs
-        /// use <see cref="RaceModelDef"/>.
+        /// use <see cref="AlienModelDef"/>.
         /// </summary>
-        public static void AddRaceFigureRule(Func<ThingDef, FigureMode?> rule) => RaceFigures.AddRule(rule);
+        public static void AddAlienFigureRule(Func<ThingDef, FigureMode?> rule) => AlienFigures.AddRule(rule);
 
-        /// <summary>Removes a rule added with <see cref="AddRaceFigureRule"/>.</summary>
-        public static void RemoveRaceFigureRule(Func<ThingDef, FigureMode?> rule) => RaceFigures.RemoveRule(rule);
+        /// <summary>Removes a rule added with <see cref="AddAlienFigureRule"/>.</summary>
+        public static void RemoveAlienFigureRule(Func<ThingDef, FigureMode?> rule) => AlienFigures.RemoveRule(rule);
     }
 }

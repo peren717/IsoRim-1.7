@@ -6,9 +6,9 @@ using Verse;
 namespace IsoRim
 {
     // Api 25: the "Keep as paper" setting (IsoRimSettings.keepPaper): a button under the person figures that opens a list of
-    // the loaded humanlike races other than people; ticked races stay cards even when a race pack makes them 3D. Shown only
+    // the loaded humanlike races other than people; ticked races stay cards even when an alien pack makes them 3D. Shown only
     // when such races are loaded.
-    internal static class RacesUI
+    internal static class AliensUI
     {
         private static List<ThingDef> races;
 
@@ -16,7 +16,7 @@ namespace IsoRim
         {
             if (races == null)
             {
-                races = RaceFigures.OtherRaces();
+                races = AlienFigures.OtherAliens();
             }
             if (races.Count == 0)
             {
@@ -75,7 +75,7 @@ namespace IsoRim
                     {
                         st.keepPaper.Remove(d.defName);
                     }
-                    RaceFigures.Clear();
+                    AlienFigures.Clear();
                 }
             }
             Widgets.EndScrollView();

@@ -114,7 +114,7 @@ namespace IsoRim
         public int lookMode = 0;         // free look drag button: 0 = middle button with R3D_LookModifier (Ctrl), 1 = right button with nothing selected
         public bool pawns3D = true;
         public bool hairUnderHats = false;   // hair shown, tucked in, under headgear that covers only the upper head (People.HairUnderHat)
-        public List<string> keepPaper = new List<string>();   // races (ThingDef defNames) kept as cards although a race pack makes them 3D (Api 25, RaceFigures)
+        public List<string> keepPaper = new List<string>();   // races (ThingDef defNames) kept as cards although an alien pack makes them 3D (Api 25, AlienFigures)
         public bool effects3D = true;
         public bool collapseDebris = true;
         public bool groundShadows = true;
@@ -1065,7 +1065,7 @@ namespace IsoRim
                 if (st.pawns3D)
                 {
                     Check(r, "R3D_Settings_HairUnderHats".Translate(), ref st.hairUnderHats, "R3D_Settings_HairUnderHatsTip".Translate());
-                    RacesUI.KeepAsPaper(r, st);   // (Api 25: only with other humanlike races loaded)
+                    AliensUI.KeepAsPaper(r, st);   // (Api 25: only with other humanlike races loaded)
                 }
                 if (st.pawns3D && ModsConfig.IsActive("Nals.FacialAnimation"))
                 {
