@@ -10,7 +10,8 @@ namespace IsoRim
     //                                    game ticks until no blueprint or frame of the player's is left on the map (at most N);
     //                                    the storyteller is held off meanwhile
     //   tickspray=x,z,N                  game ticks until the steam generator in the cell is spraying (its IntermittentSteamSprayer,
-    //                                    CompPowerPlantSteam), then 40 more so the puffs are up (at most N)
+    //                                    CompPowerPlantSteam), then 40 more so the puffs are up (at most N); logs how many puffs
+    //                                IsoRim stood up at model nozzles (Emitters.Count)
     public static partial class Probe
     {
         private static bool GeoKey(string key, string[] a, Map map)
@@ -83,7 +84,7 @@ namespace IsoRim
                         }
                     });
                     Log.Message("[IsoRim probe] tickspray " + b.def.defName + " " + b.Position + ": " + done + " ticks, spraying " + (left() > 0)
-                        + ", building centre " + b.TrueCenter().ToString("F2"));
+                        + ", building centre " + b.TrueCenter().ToString("F2") + ", nozzle puffs " + Emitters.Count);
                     TweenToRoot(map);
                     return true;
                 }

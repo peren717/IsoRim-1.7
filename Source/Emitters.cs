@@ -16,6 +16,13 @@ namespace IsoRim
     // Puffs are plain structs in the game's fleck lists, so the ones thrown here are known by
     // their exact spawn position (kept until they have faded). Shots' muzzle flashes are stood up
     // the same way (Raise, from Projectiles.ShotFlash).
+    //
+    // Steam sprayers (the game's IntermittentSteamSprayer: a geothermal generator over its geyser, the bare geyser) throw
+    // their air puffs from the building's centre the same way; for a building whose model lists emitters they come out of a
+    // nozzle too (Spray). The call sites: IntermittentSteamSprayer.SteamSprayerTick is the only place the game throws a
+    // sprayer's puffs (FleckMaker.ThrowAirPuffUp); its users are CompPowerPlantSteam (geothermal generator) and
+    // Building_SteamGeyser (no emitters in its binding: unchanged). Other ThrowAirPuffUp callers (pawn breath, ambushes) are
+    // not inside a sprayer's tick and stay the game's.
     public static class Emitters
     {
         private struct Puff
@@ -79,6 +86,48 @@ namespace IsoRim
                 puffs[Key(data.spawnPosition)] = new Puff { height = nozzle.y * fit.y, rise = def.emitterRise, until = Find.TickManager.TicksGame + lifeTicks };
                 parent.Map.flecks.CreateFleck(data);
             }
+            return false;
+        }
+
+        // The building whose steam sprayer is ticking (set around IntermittentSteamSprayer.SteamSprayerTick, which runs
+        // while the game ticks), or null.
+        [ThreadStatic] internal static Thing sprayer;
+
+        // In place of FleckMaker.ThrowAirPuffUp while a sprayer ticks: for a building whose model lists emitters, the game's
+        // air puff (same size, spin and drift) from one of its nozzles, drawn standing up at the nozzle's height and rising.
+        // Returns false if it threw the puff itself.
+        public static bool Spray(Vector3 loc, Map map)
+        {
+            Thing parent = sprayer;
+            if (parent == null || !View3D.Ready || !parent.Spawned || parent.Map != map)
+            {
+                return true;
+            }
+            ThingForm form = Forms.For(parent.def);
+            if (form.form != Form3D.Model || !Has(form.model))
+            {
+                return true;
+            }
+            Sweep();
+            ModelEntry entry = form.model;
+            ModelDef def = entry.def;
+            Quaternion turn = Quaternion.AngleAxis(entry.Yaw(parent.Rotation) + (entry.Swapped(parent.def) ? 90f : 0f), Vector3.up);
+            Vector3 fit = entry.Fit(parent.def) * def.scale;
+            Vector3 nozzle = def.emitters[Rand.Range(0, def.emitters.Count)];
+            Vector3 local = Vector3.Scale(new Vector3(nozzle.x + Rand.Range(-0.08f, 0.08f), 0f, nozzle.z + Rand.Range(-0.08f, 0.08f)), fit);
+            Vector3 at = parent.DrawPos + turn * local;
+            if (!at.ToIntVec3().ShouldSpawnMotesAt(map))
+            {
+                return false;
+            }
+            // as FleckMaker.ThrowAirPuffUp
+            FleckCreationData data = FleckMaker.GetDataStatic(at, map, FleckDefOf.AirPuff, 1.5f);
+            data.rotationRate = Rand.RangeInclusive(-240, 240);
+            data.velocityAngle = Rand.Range(-45, 45);
+            data.velocitySpeed = Rand.Range(1.2f, 1.5f);
+            int lifeTicks = Mathf.CeilToInt((FleckDefOf.AirPuff.solidTime + FleckDefOf.AirPuff.fadeInTime + FleckDefOf.AirPuff.fadeOutTime) * 60f) + 120;
+            puffs[Key(data.spawnPosition)] = new Puff { height = nozzle.y * fit.y, rise = def.emitterRise, until = Find.TickManager.TicksGame + lifeTicks };
+            map.flecks.CreateFleck(data);
             return false;
         }
 

@@ -502,6 +502,9 @@ namespace IsoRim
 
             // Smoke and dust the game throws from a building: from the model's nozzles, standing up at their height (Emitters).
             Patch("smoke from 3D nozzles", AccessTools.Method(typeof(CompThrownFleckEmitter), "Emit"), prefix: nameof(FleckEmit_Prefix));
+            Patch("steam from 3D nozzles", AccessTools.Method(typeof(IntermittentSteamSprayer), nameof(IntermittentSteamSprayer.SteamSprayerTick)),
+                prefix: nameof(SprayerTick_Prefix), finalizer: nameof(SprayerTick_Finalizer));
+            Patch("steam from 3D nozzles", AccessTools.Method(typeof(FleckMaker), nameof(FleckMaker.ThrowAirPuffUp)), prefix: nameof(AirPuff_Prefix));
             Patch("smoke from 3D nozzles", AccessTools.Method(typeof(FleckStatic), "Draw", new[] { typeof(float), typeof(DrawBatch) }), prefix: nameof(FleckDraw_Prefix), finalizer: nameof(FleckDraw_Finalizer));
 
             // Turret guns: a 3D gun turning on its 3D base.
@@ -3878,6 +3881,37 @@ namespace IsoRim
                 && callee.DeclaringType == typeof(Graphics)
                 && callee.Name == "DrawMesh"
                 && DrawHook.ReplacementFor(callee) != null;
+        }
+
+        private static readonly AccessTools.FieldRef<IntermittentSteamSprayer, Thing> sprayerParent = AccessTools.FieldRefAccess<IntermittentSteamSprayer, Thing>("parent");
+
+        // Notes whose steam sprayer is ticking, so its air puffs can come out of the model's nozzle (Emitters.Spray).
+        public static void SprayerTick_Prefix(IntermittentSteamSprayer __instance)
+        {
+            Emitters.sprayer = sprayerParent(__instance);
+        }
+
+        public static Exception SprayerTick_Finalizer(Exception __exception)
+        {
+            Emitters.sprayer = null;
+            return __exception;
+        }
+
+        public static bool AirPuff_Prefix(Vector3 loc, Map map)
+        {
+            if (Emitters.sprayer == null)
+            {
+                return true;
+            }
+            try
+            {
+                return Emitters.Spray(loc, map);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Throwing steam from a model failed: " + e, 93611222);
+                return true;
+            }
         }
 
         public static bool FleckEmit_Prefix(CompThrownFleckEmitter __instance)
