@@ -931,8 +931,34 @@ namespace IsoRim
 
         private static HarmonyMethod Hook(string name)
         {
-            return name == null ? null : new HarmonyMethod(AccessTools.Method(typeof(Patches), name));
+            if (name == null)
+            {
+                return null;
+            }
+            HarmonyMethod hook = new HarmonyMethod(AccessTools.Method(typeof(Patches), name));
+            if (ModelTakeovers.Contains(name))
+            {
+                hook.priority = Priority.High;
+            }
+            return hook;
         }
+
+        // The "draw a model instead" prefixes: each returns false only when IsoRim has a model (or 3D part) standing in for
+        // the thing and has drawn it, and true otherwise. They run at high priority, before other mods' prefixes on the same
+        // draw: Harmony 3 skips every later prefix that could skip the original once one returns false, so at the default
+        // priority a mod that draws its own version and registers earlier would hide IsoRim's model for good. With a model,
+        // IsoRim's takes over; without one, the other mod draws as it intends. Not here: pawns and held weapons (animation
+        // mods draw those on purpose) and projectiles, skyfallers and strikes (IsoRim only places those in 3D).
+        private static readonly HashSet<string> ModelTakeovers = new HashSet<string>
+        {
+            nameof(DrawTurret_Prefix), nameof(DrawMovers_Prefix), nameof(MultiTileDoorDrawAt_Prefix), nameof(SupportedDoorDrawAt_Prefix),
+            nameof(HackablePostDraw_Prefix), nameof(ThingDrawAt_Prefix), nameof(BookcaseDrawAt_Prefix), nameof(GibbetDrawAt_Prefix),
+            nameof(CaveExitDrawAt_Prefix), nameof(DryadHolderPostDraw_Prefix), nameof(MechGestatorDrawAt_Prefix), nameof(GrowthVatDrawAt_Prefix),
+            nameof(HoldingPlatformDrawAt_Prefix), nameof(OutfitStandDrawAt_Prefix), nameof(DrawAdditionalGraphicsPostDraw_Prefix),
+            nameof(AtomizerDrawAt_Prefix), nameof(CableConnectionPostDraw_Prefix), nameof(BiosculpterPostDraw_Prefix), nameof(GravEngineDrawAt_Prefix),
+            nameof(CerebrexDrawAt_Prefix), nameof(MechRelayDrawAt_Prefix), nameof(FleshmassHeartDrawAt_Prefix), nameof(StatueDrawAt_Prefix),
+            nameof(EmptyStatePostDraw_Prefix), nameof(MoteDrawAt_Prefix),
+        };
 
         private static bool StartsWith(MethodInfo m, params Type[] types)
         {
