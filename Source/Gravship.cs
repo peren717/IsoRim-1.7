@@ -57,26 +57,59 @@ namespace IsoRim
             }
         }
 
-        // Whether hull corners are drawn in 3D: the 3D view with textured 3D walls, hull drawn as blocks.
+        // Whether hull corners are drawn in 3D: the 3D view with textured 3D walls, and the vanilla hull (Odyssey) or a
+        // wall registered with corner wedges (Api 26, WallPieces) drawn as blocks.
         public static bool Active
         {
             get
             {
                 IsoRimSettings st = IsoRimMod.Settings;
-                return hullDef != null && View3D.Active && st.walls3D && st.texturedWalls && ModsConfig.OdysseyActive
-                    && Forms.For(hullDef).form == Form3D.Block;
+                if (!View3D.Active || !st.walls3D || !st.texturedWalls)
+                {
+                    return false;
+                }
+                return VanillaOn || WallPieces.corners.Count > 0;
             }
         }
 
-        // The game's rule for one cell (ShouldDrawCornerPiece), safe at the map edge.
+        private static bool VanillaOn => hullDef != null && ModsConfig.OdysseyActive && Forms.For(hullDef).form == Form3D.Block;
+
+        // The corner wedge type for two legs (Api 26 rules give legs; the code below works on the vanilla types).
+        private static CornerType TypeOf(IntVec3 a, IntVec3 b)
+        {
+            bool w = a == IntVec3.West || b == IntVec3.West, n = a == IntVec3.North || b == IntVec3.North;
+            bool e = a == IntVec3.East || b == IntVec3.East, s = a == IntVec3.South || b == IntVec3.South;
+            return w && n ? CornerType.Corner_NW : n && e ? CornerType.Corner_NE : e && s ? CornerType.Corner_SE : s && w ? CornerType.Corner_SW : CornerType.None;
+        }
+
+        // A corner piece in the cell: the game's hull rule (ShouldDrawCornerPiece), then the walls registered with corner
+        // wedges (Api 26), each only while its wall is drawn as a block; safe at the map edge.
         public static bool At(Map map, IntVec3 c, out CornerType type, out Color color)
         {
             type = CornerType.None;
             color = Color.white;
-            if (map == null || !c.InBounds(map) || hullDef == null)
+            if (map == null || !c.InBounds(map))
             {
                 return false;
             }
+            if (VanillaOn && VanillaAt(map, c, out type, out color))
+            {
+                return true;
+            }
+            IntVec3 a, b;
+            ThingDef wall;
+            if (WallPieces.corners.Count > 0 && WallPieces.Corner(map, c, out a, out b, out color, out wall) && Forms.For(wall).form == Form3D.Block)
+            {
+                type = TypeOf(a, b);
+                return type != CornerType.None;
+            }
+            type = CornerType.None;
+            color = Color.white;
+            return false;
+        }
+
+        private static bool VanillaAt(Map map, IntVec3 c, out CornerType type, out Color color)
+        {
             if (!SectionLayer_GravshipHull.ShouldDrawCornerPiece(c, map, map.terrainGrid, out type, out color))
             {
                 return false;
@@ -143,7 +176,7 @@ namespace IsoRim
                 return false;
             }
             Building fb = from.GetEdifice(map);
-            if (fb == null || fb.def != hullDef || !SectionLayer_IsoRimWalls.Handles(fb))
+            if (fb == null || (fb.def != hullDef && !WallPieces.cornerWalls.Contains(fb.def)) || !SectionLayer_IsoRimWalls.Handles(fb))
             {
                 return false;   // only hull cells are legs (the game's rule needs the other two sides not hull)
             }
@@ -164,6 +197,7 @@ namespace IsoRim
         // The walls layer redraws on the game's hull-layer changes too (buildings, terrain, things, roofs).
         public static void AddChangeFlags(SectionLayer layer, Section section)
         {
+            layer.relevantChangeTypes |= WallPieces.extraFlags;   // (Api 26: what registered corner and shape rules need)
             if (!ModsConfig.OdysseyActive)
             {
                 return;

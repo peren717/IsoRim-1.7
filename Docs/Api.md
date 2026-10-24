@@ -3,7 +3,7 @@
 Model packs (XML and .obj files, no code), the dev-mode model binder and the coverage report: see [ModelPacks.md](ModelPacks.md).
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`, `WallShapeRule`, `WallShape`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
 in any update, even when it is public: do not patch or reflect into it, ask for an Api member instead. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -39,10 +39,11 @@ if (IsoRim.Api.Version >= 22) { /* AddFaceDrawer(drawer, evenWhenHidden), FaceFr
 if (IsoRim.Api.Version >= 24) { /* ModelDef.immatureModels, immatureHide (young plants); sheet* materials take the thing's second colour (part M) */ }
 if (IsoRim.Api.Version >= 25) { /* humanlike aliens: AlienModelDef alien packs, FigureModeOf, AddAlienFigureRule, FigureFrame.Anchor,
                                    FigureFrame.Mode, FigureParts.Addons, ApparelModelDef.aliens / alienBodyModels (part 16) */ }
+if (IsoRim.Api.Version >= 26) { /* AddWallCorners, AddWallShapes, HideFlatLayer, RefreshWallShapes, FlyLayer, NotGeometryLayer (part 17) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16 (23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17 (23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1062,6 +1063,41 @@ follows: IsoRim's clothes, hats, hair and eyes, held weapons, work tools, carrie
   scale and offset, every anchor and `headFit`, `bodyFit`, `faceFit`, the figure and face buttons, and **Copy XML** (the
   fields and anchors as `AlienModelDef` XML on the clipboard). Changes show at once on every pawn of the race until Reset or
   a new game; untouched fields keep the pack's (or measured) values and are not written.
+
+## Part 17: angled wall pieces and the gravship scene (version 26)
+
+A mod that draws its own wall corners or trimmed wall cells in a flat section layer (gravship armour corners, diagonal wall
+joins) can have IsoRim stand 3D pieces there, drawn like its wall blocks. A mod with its own section layers on a gravship can
+have them fly with the ship in IsoRim's take-off and landing scene.
+
+```csharp
+// IsoRim.Api.Version >= 26
+IsoRim.Api.AddWallCorners(myWallDef, MyCornerRule);                     // wedges in empty cells between two blocks
+IsoRim.Api.HideFlatLayer(typeof(MyCornerLayer), m => m.mainTexture.name.StartsWith("MyCorner"));
+IsoRim.Api.FlyLayer(typeof(MyCornerLayer), flatPieces: true);
+IsoRim.Api.NotGeometryLayer(typeof(MyMaskLayer));
+```
+
+- `Api.AddWallCorners(ThingDef wall, CornerRule rule, ulong changeFlags = 0)`: in an empty cell between two blocks of that wall
+  the rule says yes for, IsoRim stands the same wedge as the vanilla gravship hull's corner pieces: the half of the cell
+  against the two legs, as tall as the lower leg, slanted face looking out, with the wall's look and the rule's colour.
+  `CornerRule(Map, IntVec3 cell, out IntVec3 legA, out IntVec3 legB, out Color colour)`: the legs are two directions at a right
+  angle (two of `IntVec3.North`, `East`, `South`, `West`).
+- `Api.AddWallShapes(WallShapeRule rule, ulong changeFlags = 0)`: `WallShapeRule(Map, IntVec3 cell, WallShape into)` fills the
+  cell with convex polygons (`into.Add(points, owner)`: cell-local 0..1, x east, z north), each drawn with the look, colour and
+  height of IsoRim's block of the owner building. `into.ReplacesBlock = true` leaves out the cell's own block (a trimmed cell).
+  Return false for cells the rule doesn't touch.
+- Both are asked while a block of the map is redrawn, on the main thread, only while walls are IsoRim blocks (3D view, textured
+  3D walls). `changeFlags` (the game's `MapMeshFlag` bits) are added to what redraws IsoRim's walls layer, for rules that
+  depend on more than buildings; `Api.RefreshWallShapes(map, cell)` redraws the walls around a cell when nothing else reports
+  the change. A rule that throws is logged once and left out.
+- `Api.HideFlatLayer(Type sectionLayer, Func<Material, bool> which = null)`: while IsoRim's 3D walls stand in for them, the
+  layer's sub-meshes whose material the filter accepts (all if null) are emptied after each rebuild. With the 3D view or the
+  textured 3D walls off the layer draws as before. Give a filter when the layer also holds things that must stay.
+- `Api.FlyLayer(Type sectionLayer, bool flatPieces = false)`: the layer's geometry over the ship's cells goes with IsoRim's ship
+  snapshot; `flatPieces` adds one ring of cells round the ship (pieces just past the hull, like the game's hull corners).
+- `Api.NotGeometryLayer(Type sectionLayer)`: a mask or overlay layer: not flown and not reported as a layer left behind.
+- Call them once, at startup, from code that runs after the version check (part M, notes).
 
 ## Part M: model packs (IsoRim.ModelDef)
 

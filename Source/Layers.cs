@@ -543,11 +543,16 @@ namespace IsoRim
                         WallBoxes.PrintGround(this, b);   // (Api 11) rubble: a low shape on the ground, not a wall
                         continue;
                     }
+                    if (WallPieces.Replaces(map, c))
+                    {
+                        continue;   // (Api 26) a registered wall shape stands here instead of the block
+                    }
                     float height = WallBoxes.HeightFor(b, form.height);
                     GroundShadows.AroundBlock(this, b);
                     WallBoxes.PrintBlock(this, b, height);
                 }
                 HullCorners.Print(this, map, section.CellRect);   // gravship hull corner pieces (Gravship.cs)
+                WallPieces.PrintShapes(this, map, section.CellRect);   // (Api 26) other mods' wall shapes
                 CutTags.Finish(this);
             }
             catch (Exception e)
