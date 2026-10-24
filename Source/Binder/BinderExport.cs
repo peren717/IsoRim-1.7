@@ -41,6 +41,7 @@ namespace IsoRim
             { "doorLeafGather", 18 },
             { "cutaway", 20 },
             { "immatureModels", 24 }, { "immatureHide", 24 },
+            { "bobByState", 27 },
         };
         private const int BaseVersion = 2;
 

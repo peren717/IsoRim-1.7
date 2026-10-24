@@ -57,7 +57,7 @@ namespace IsoRim
         // HideFlatLayer, RefreshWallShapes, FlyLayer, NotGeometryLayer; Api26.cs).
         // The card overlay (IsCard, DrawOnCard,
         // CardLight; CardOverlay.cs) came in before version 8 without a number of its own: check >= 8 for it.
-        public static int Version => 26;
+        public static int Version => 27;
 
         // ---- facing holds (Version 19)
 

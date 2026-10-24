@@ -192,6 +192,10 @@ namespace IsoRim
         // its lowest point; it rises bobHeight cells and sinks back once every bobPeriod game ticks (the game's own sine),
         // standing still while the game is paused. The game's own flat sprite of that part is left out (Bobbers prefixes).
         public string bobModel;
+        // (Api 27) A different bob part for things in a state an addon names (Api.AddModelState), the same list as byState:
+        // <li><state>cooldown</state><model>Models/x_orb_cool.obj</model></li>; other states (and none) use bobModel. Asked
+        // each frame the part is drawn, so it follows the state at once (no rebuild).
+        public List<StateModel> bobByState;
         public float bobHeight = 0.3f;
         public int bobPeriod = 500;
         // Parts that beat (the fleshmass heart, Pulses.cs): each built round its own pivot, drawn every frame at that
@@ -576,7 +580,7 @@ namespace IsoRim
         public string model;
     }
 
-    // One entry of ModelDef.byState.
+    // One entry of ModelDef.byState (and of bobByState, Api 27).
     public class StateModel
     {
         public string state;    // a state name an addon gives things (Api.AddModelState)
@@ -611,6 +615,7 @@ namespace IsoRim
         public Model spin;        // spinModel, or null
         public Model spinLit;     // spinModel with its litMaterial lit, or null
         public Model bob;         // bobModel, or null
+        public Dictionary<string, Model> bobByState;   // (Api 27) addon state name -> bob part (bobByState); null if none
         public Model[] pulse;     // pulseParts' models (same order), or null
         public Model activityGlow; // activityGlowModel with its glowing faces lit (ObjLoader.Glowing), or null
         public Color activityGlowBase; // the lit faces' own colour
@@ -1206,6 +1211,23 @@ namespace IsoRim
             if (!md.bobModel.NullOrEmpty() && md.modContentPack != null)
             {
                 entry.bob = LoadFile(Path.Combine(md.modContentPack.RootDir, md.bobModel));
+                if (md.bobByState != null)
+                {
+                    for (int i = 0; i < md.bobByState.Count; i++)
+                    {
+                        StateModel st = md.bobByState[i];
+                        Model m = st != null && !st.state.NullOrEmpty() && !st.model.NullOrEmpty()
+                            ? LoadFile(Path.Combine(md.modContentPack.RootDir, st.model)) : null;
+                        if (m != null)
+                        {
+                            if (entry.bobByState == null)
+                            {
+                                entry.bobByState = new Dictionary<string, Model>();
+                            }
+                            entry.bobByState[st.state] = m;
+                        }
+                    }
+                }
             }
             if (md.pulseParts != null && md.pulseParts.Count > 0 && md.modContentPack != null)
             {

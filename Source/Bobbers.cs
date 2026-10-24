@@ -141,8 +141,24 @@ namespace IsoRim
             }
             Vector3 at = t.TrueCenter();
             Vector3 offset = Quaternion.AngleAxis(yaw, Vector3.up) * def.offset;
-            DynamicModels.Draw(ObjLoader.SheetTinted(entry.bob, R3DTextures.SheetTint(t)), new Vector3(at.x + offset.x, offset.y + Rise(t, def), at.z + offset.z), yaw,
+            DynamicModels.Draw(ObjLoader.SheetTinted(BobFor(t, entry), R3DTextures.SheetTint(t)), new Vector3(at.x + offset.x, offset.y + Rise(t, def), at.z + offset.z), yaw,
                 entry.Fit(t.def) * def.scale, R3DTextures.ModelTint(t), R3DTextures.ModelSwatch(t));
+        }
+
+        // (Api 27) The bob part for the thing now: its state's (ModelDef.bobByState, the addons' Api.AddModelState), else
+        // bobModel. Asked each frame the part is drawn.
+        internal static Model BobFor(Thing t, ModelEntry entry)
+        {
+            if (entry.bobByState != null)
+            {
+                string st = StateModels.StateOf(t);
+                Model m;
+                if (st != null && entry.bobByState.TryGetValue(st, out m))
+                {
+                    return m;
+                }
+            }
+            return entry.bob;
         }
 
         // Building_GravEngine.DrawAt prefix: while the model stands in (body baked, orb drawn here), the engine is drawn
