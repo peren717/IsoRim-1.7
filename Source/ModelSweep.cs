@@ -75,6 +75,11 @@ namespace IsoRim
                     drawnBy = "Doors.DrawWide";
                     door = true;   // drawn every frame by the door code, not baked
                 }
+                else if (Ghosts.WideSupported(def) && listed && entry.HasModel && st.doors3D && st.models3D)
+                {
+                    drawnBy = "Doors.DrawSupported";   // (Api 29) a multi-cell supported door
+                    door = true;
+                }
 
                 // Which name entry the <match> lists pick, with the old substring rule and with the
                 // current word rule (only for things with no entry of their own or of a category).

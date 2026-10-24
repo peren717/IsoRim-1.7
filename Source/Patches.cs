@@ -2822,8 +2822,9 @@ namespace IsoRim
         // The supported door's model entry while it is drawn by Doors.DrawSupported; else null.
         private static ModelEntry SupportedDoorModel(Thing t)
         {
+            // (Api 29: multi-cell supported doors too; the game's Building_MultiTileDoor has its own path, DrawWide)
             if (!View3D.Ready || t == null || !IsoRimMod.Settings.doors3D || !IsoRimMod.Settings.models3D || !(t is Building_SupportedDoor)
-                || t.def.size.x != 1 || t.def.size.z != 1)
+                || (t.def.size.x != 1 || t.def.size.z != 1) && t is Building_MultiTileDoor)
             {
                 return null;
             }

@@ -325,7 +325,8 @@ namespace IsoRim
                 }
                 ModelEntry e;
                 return def.size.x == 1 && def.size.z == 1
-                    || typeof(Building_MultiTileDoor).IsAssignableFrom(def.thingClass) && ModelLibrary.TryGet(def, out e) && e.HasModel && e.doorLeaf != null;
+                    || typeof(Building_MultiTileDoor).IsAssignableFrom(def.thingClass) && ModelLibrary.TryGet(def, out e) && e.HasModel && e.doorLeaf != null
+                    || WideSupported(def) && IsoRimMod.Settings.models3D && ModelLibrary.TryGet(def, out e) && e.HasModel;   // (Api 29)
             }
             ThingForm form = Forms.For(def);
             switch (form.form)
@@ -340,6 +341,13 @@ namespace IsoRim
             return false;
         }
 
+        // (Api 29) A multi-cell supported door other than the game's Building_MultiTileDoor (drawn by Doors.DrawSupported).
+        internal static bool WideSupported(ThingDef def)
+        {
+            return def?.thingClass != null && (def.size.x != 1 || def.size.z != 1) && typeof(Building_SupportedDoor).IsAssignableFrom(def.thingClass)
+                && !typeof(Building_MultiTileDoor).IsAssignableFrom(def.thingClass);
+        }
+
         // How the placement preview shows a def in 3D (probe inventory): "model", "block", or "2d:<why>".
         public static string PreviewKind(ThingDef def)
         {
@@ -350,7 +358,8 @@ namespace IsoRim
             {
                 bool one = def.size.x == 1 && def.size.z == 1;
                 return !IsoRimMod.Settings.doors3D ? "2d:3D doors off"
-                    : one || typeof(Building_MultiTileDoor).IsAssignableFrom(def.thingClass) && listed && e.HasModel && e.doorLeaf != null ? "door"
+                    : one || typeof(Building_MultiTileDoor).IsAssignableFrom(def.thingClass) && listed && e.HasModel && e.doorLeaf != null
+                      || WideSupported(def) && listed && e.HasModel ? "door"
                     : "2d:wide door without its own models";
             }
             if (form.form == Form3D.Model && form.model != null && form.model.HasModel)

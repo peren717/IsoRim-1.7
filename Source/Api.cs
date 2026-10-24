@@ -57,7 +57,9 @@ namespace IsoRim
         // HideFlatLayer, RefreshWallShapes, FlyLayer, NotGeometryLayer; Api26.cs).
         // The card overlay (IsCard, DrawOnCard,
         // CardLight; CardOverlay.cs) came in before version 8 without a number of its own: check >= 8 for it.
-        public static int Version => 27;
+        // 27: ModelDef.bobByState; 29: multi-cell supported doors (Building_SupportedDoor subclasses other than the game's
+        // Building_MultiTileDoor) drawn from their models (model, doorTopModel, doorLeafModel), as one-cell ones; Doors in Dynamic.cs.
+        public static int Version => 29;
 
         // ---- facing holds (Version 19)
 

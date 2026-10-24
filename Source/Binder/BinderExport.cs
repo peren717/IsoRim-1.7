@@ -45,6 +45,9 @@ namespace IsoRim
         };
         private const int BaseVersion = 2;
 
+        // A multi-cell supported door (not the game's Building_MultiTileDoor) is drawn from its models since this version.
+        private const int WideSupportedDoorVersion = 29;
+
         // Fields never written: the binding (the patch adds it) and the matching rules of shared entries.
         private static readonly HashSet<string> Skip = new HashSet<string> { "thingDef", "thingCategory", "match", "graphicPath", "fallback", "style" };
 
@@ -106,6 +109,10 @@ namespace IsoRim
                 foreach (string f in used)
                 {
                     minVersion = Math.Max(minVersion, VersionOf(f));
+                }
+                if (Ghosts.WideSupported(thing))
+                {
+                    minVersion = Math.Max(minVersion, WideSupportedDoorVersion);   // drawn from its models only since Api 29
                 }
 
                 string source = string.Join(", ", new List<string>(copied.Keys).ConvertAll(Path.GetFullPath));

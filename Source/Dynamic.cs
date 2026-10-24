@@ -1703,6 +1703,10 @@ namespace IsoRim
                     }
                     return DrawOne(d, 0f);
                 }
+                if (supported && entry != null && !typeof(Building_MultiTileDoor).IsAssignableFrom(def.thingClass))
+                {
+                    return DrawSupportedOne(d, entry, 0f);   // (Api 29) a multi-cell supported door, as placed
+                }
                 return typeof(Building_MultiTileDoor).IsAssignableFrom(def.thingClass) && entry != null && entry.doorLeaf != null && DrawWideOne(d, entry, 0f, false);
             }
             finally
@@ -1907,12 +1911,13 @@ namespace IsoRim
             return true;
         }
 
-        // A one-cell door with its own models (Building_SupportedDoor: vac barrier, ancient blast door):
-        // the fixed frame (model) and lintel (doorTopModel) across the doorway, along the door's rotation
-        // as the game sets it (North: walls east and west), and, if it has doorLeafModel, two leaves
-        // sliding apart as far as the game slides its own (0.45 * OpenPct). hackTerminalModel is drawn
-        // while the door's CompHackable is not hacked. As tall as the walls, cut down with them (no
-        // lintel over a cut wall). Returns false if it drew nothing.
+        // A supported door with its own models (Building_SupportedDoor: vac barrier, ancient blast door; Api 29: also
+        // multi-cell ones, not the game's Building_MultiTileDoor, which has its own path): the fixed frame (model) and
+        // lintel (doorTopModel) across the doorway, along the door's rotation as the game sets it (North: walls east and
+        // west), and, if it has doorLeafModel, two leaves sliding apart as far as the game slides its own movers (0.45 *
+        // OpenPct, times the door's width for a multi-cell door). A multi-cell door's models are built for its builtFor
+        // footprint around its drawn middle. hackTerminalModel is drawn while the door's CompHackable is not hacked. As
+        // tall as the walls, cut down with them (no lintel over a cut wall). Returns false if it drew nothing.
         private static bool DrawSupportedOne(Site d, ModelEntry entry, float openPct)
         {
             Map map = d.map;
@@ -1924,10 +1929,22 @@ namespace IsoRim
             float yaw = d.rot.AsAngle + def.rotation;
             Vector3 along = Quaternion.AngleAxis(yaw, Vector3.up) * Vector3.right;
             IntVec3 c = d.cell;
-            Vector3 centre = new Vector3(c.x + 0.5f, 0f, c.z + 0.5f);
+            bool wide = d.def.size.x > 1 || d.def.size.z > 1;
+            Vector3 centre = wide ? new Vector3(d.at.x, 0f, d.at.z) : new Vector3(c.x + 0.5f, 0f, c.z + 0.5f);
 
             float height = View3D.WallHeight;
             bool cut = WallBoxes.CellCut(map, c);
+            if (wide && !cut)
+            {
+                foreach (IntVec3 x in d.rect)
+                {
+                    if (x.InBounds(map) && WallBoxes.CellCut(map, x))
+                    {
+                        cut = true;
+                        break;
+                    }
+                }
+            }
             if (cut)
             {
                 height *= WallBoxes.CutFraction;
@@ -1944,7 +1961,7 @@ namespace IsoRim
             }
             if (entry.doorLeaf != null)
             {
-                float slide = 0.45f * Mathf.Clamp01(openPct) * s;
+                float slide = 0.45f * Mathf.Clamp01(openPct) * s * Mathf.Max(1, d.def.size.x);
                 DynamicModels.DrawLocal(entry.doorLeaf, centre + along * slide, yaw, sized, tint, swatch);
                 DynamicModels.DrawLocal(entry.doorLeaf, centre - along * slide, yaw + 180f, sized, tint, swatch);
             }

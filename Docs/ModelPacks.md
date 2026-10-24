@@ -204,7 +204,8 @@ half-set model), a new enough one gets the whole entry:
 `minVersion` by field: base fields and the plain binding 2; `hackedGlowOff`, `deadBellyUp`, `legFromHip`, `legLift`,
 `legYaw` 5; `rotationByFacing`, `byState`, `style`, `crownTop`, `doorLeafRise` 6; `wallTop` 11; `backHeight` 13; wing
 fields 14; `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20; `immatureModels`, `immatureHide` 24; alien packs
-(`IsoRim.AlienModelDef`, `ApparelModelDef.aliens`) 25. The highest one used counts.
+(`IsoRim.AlienModelDef`, `ApparelModelDef.aliens`) 25; `bobByState` 27; any binding of a multi-cell supported door (not the
+game's `Building_MultiTileDoor`) 29, which draws it from its models (Api part 18). The highest one used counts.
 
 ## Alien packs
 
@@ -343,7 +344,7 @@ so they stay out of hats as in 2D.
 - **Items** use the game's art by default ("Items and weapons use the game's art"); only entries with `overArt` show
   their model then, and only with "3D raw materials" on. Apparel and weapons on the ground are drawn by IsoRim's ground gear
   (worn clothes laid down, held sprites), not by a model entry.
-- **Doors, turrets, animals, mechs** need their special fields and drawers; a plain `model` on them is not enough.
+- **Doors, turrets, animals, mechs** need their special fields and drawers; a plain `model` on them is not enough. Supported doors, one-cell and (version 29) multi-cell: Api part 18.
 - **Textures** named in an `.mtl` are loaded once; a changed texture needs a game restart (a changed `.obj` doesn't, see
   Reload below).
 - **Load order:** after IsoRim and after the mod whose things you model. A binding for a thing from a mod that is not

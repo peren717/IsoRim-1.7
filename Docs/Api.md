@@ -41,10 +41,11 @@ if (IsoRim.Api.Version >= 25) { /* humanlike aliens: AlienModelDef alien packs, 
                                    FigureFrame.Mode, FigureParts.Addons, ApparelModelDef.aliens / alienBodyModels (part 16) */ }
 if (IsoRim.Api.Version >= 26) { /* AddWallCorners, HideFlatLayer, RefreshWallShapes, FlyLayer, NotGeometryLayer (part 17) */ }
 if (IsoRim.Api.Version >= 27) { /* ModelDef.bobByState: state models for the bobbing part (part M) */ }
+if (IsoRim.Api.Version >= 29) { /* multi-cell supported doors drawn from their models (part 18) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState) (23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 29 part 18 (23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1094,6 +1095,37 @@ IsoRim.Api.NotGeometryLayer(typeof(MyMaskLayer));
   snapshot; `flatPieces` adds one ring of cells round the ship (pieces just past the hull, like the game's hull corners).
 - `Api.NotGeometryLayer(Type sectionLayer)`: a mask or overlay layer: not flown and not reported as a layer left behind.
 - Call them once, at startup, from code that runs after the version check (part M, notes).
+
+## Part 18: supported doors with their own models, also multi-cell (version 29)
+
+A supported door (`Building_SupportedDoor` and its subclasses: the vac barrier, the ancient blast door, a mod's airlock)
+is drawn from an ordinary `thingDef` entry with its parts: `model` is the frame, drawn fixed; `doorTopModel` the lintel
+across the doorway (left out where the cut-away lowers the walls); `doorLeafModel` one panel, the other the same turned
+half round; `hackTerminalModel` a hacking terminal, drawn while the door's `CompHackable` is not hacked. Leaves are
+optional (a vac barrier has none: the game's own field sprite stays). One-cell supported doors work since IsoRim's coop
+batch 3; since version 29 a multi-cell one does too, except the game's `Building_MultiTileDoor`, which keeps its own
+wide-door path.
+
+- Build the models in door space: North rotation, so the doorway runs along x with walls east and west; origin at the
+  door's middle on the ground (a multi-cell door: the middle of its footprint); walls 1.2 high; `builtFor` = the door's
+  size. IsoRim scales the height to the current wall height and cuts it down with the walls.
+- A leaf spans x 0 to half the door's width from the middle. The leaves slide apart as the game's movers do, each
+  `0.45 x width x OpenPct` (a one-cell door: 0.45).
+- The placement preview shows the parts as ghosts. With the 3D view or IsoRim's 3D doors off, the game's sprites stand.
+
+```xml
+<IsoRim.ModelDef>
+  <defName>MyPack_WideAirlock</defName>
+  <thingDef>MyMod_Airlock3x1</thingDef>
+  <model>Models/airlock_3x1_frame.obj</model>
+  <doorTopModel>Models/airlock_3x1_top.obj</doorTopModel>
+  <doorLeafModel>Models/airlock_3x1_leaf.obj</doorLeafModel>
+  <builtFor>(3, 1)</builtFor>
+</IsoRim.ModelDef>
+```
+
+An older IsoRim leaves a multi-cell supported door with these fields as the game's flat sprites (no error), so a pack
+needs no patch for it; the model binder's export gates such a binding on version 29.
 
 ## Part M: model packs (IsoRim.ModelDef)
 
