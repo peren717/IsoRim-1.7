@@ -42,10 +42,12 @@ if (IsoRim.Api.Version >= 25) { /* humanlike aliens: AlienModelDef alien packs, 
 if (IsoRim.Api.Version >= 26) { /* AddWallCorners, HideFlatLayer, RefreshWallShapes, FlyLayer, NotGeometryLayer (part 17) */ }
 if (IsoRim.Api.Version >= 27) { /* ModelDef.bobByState: state models for the bobbing part (part M) */ }
 if (IsoRim.Api.Version >= 29) { /* multi-cell supported doors drawn from their models (part 18) */ }
+if (IsoRim.Api.Version >= 30) { /* glass parts per thing: ModelDef glassTint / glassOpacity / glassGlow, AddGlassColor,
+                                   RemoveGlassColor; supported doors draw their glassModel (part 19) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 29 part 18 (23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 29 part 18, version 30 part 19 (23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1126,6 +1128,31 @@ wide-door path.
 
 An older IsoRim leaves a multi-cell supported door with these fields as the game's flat sprites (no error), so a pack
 needs no patch for it; the model binder's export gates such a binding on version 29.
+
+## Part 19: glass parts per thing (version 30)
+
+A `glassModel` (part M) is drawn see-through over the body, in IsoRim's one pale glass colour. Since version 30 a def or
+an addon can give it its own look, and a supported door (part 18) draws its `glassModel` too (built in door space, like
+its frame): a window, or a vac barrier's field.
+
+- `glassTint` (r, g, b): the glass colour; unset = IsoRim's pale glass. `glassOpacity` (0 to 1): -1 = IsoRim's 0.4.
+  `glassGlow`: drawn unlit, so it keeps its brightness at night (a force field); otherwise it darkens with the scene.
+- A vac barrier's (`Building_VacBarrier`) glass part is its field: it shows only while the game shows the field sprite
+  (the barrier powered and on), in place of that sprite. Its colour: a colour source's, else the def's `glassTint`,
+  else the field sprite's colour.
+- `AddGlassColor(Func<Thing, Color?> source)`, `RemoveGlassColor(source)`: a colour source, asked each frame for each
+  thing whose glass part is drawn. Return r, g, b = tint and a = opacity (0 = not drawn), or null to leave the thing to
+  its def. The first source that answers wins. Keep it cheap; an exception is logged once and the source is left out.
+- Things with none of these keep IsoRim's one glass look exactly. With the 3D view off the game's sprites stand.
+
+```csharp
+if (IsoRim.Api.Version >= 30)
+{
+    IsoRim.Api.AddGlassColor(t => t is MyRecolourableBarrier b ? new Color(b.colour.r, b.colour.g, b.colour.b, 0.35f) : (Color?)null);
+}
+```
+
+An older IsoRim ignores these fields and a door's `glassModel` (no error); the model binder's export gates them on version 30.
 
 ## Part M: model packs (IsoRim.ModelDef)
 

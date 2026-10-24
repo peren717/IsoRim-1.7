@@ -59,7 +59,22 @@ namespace IsoRim
         // CardLight; CardOverlay.cs) came in before version 8 without a number of its own: check >= 8 for it.
         // 27: ModelDef.bobByState; 29: multi-cell supported doors (Building_SupportedDoor subclasses other than the game's
         // Building_MultiTileDoor) drawn from their models (model, doorTopModel, doorLeafModel), as one-cell ones; Doors in Dynamic.cs.
-        public static int Version => 29;
+        // 30: glass parts per thing: ModelDef glassTint / glassOpacity / glassGlow, AddGlassColor / RemoveGlassColor; supported
+        // doors draw their glass part (a window, a vac barrier's field across the doorway); Glass.cs.
+        public static int Version => 30;
+
+        // ---- glass parts (Version 30)
+
+        /// <summary>
+        /// Adds a colour source for glass parts (ModelDef.glassModel; Api version 30): asked each frame for each thing whose
+        /// glass part is drawn; return its colour (r, g, b = tint, a = opacity, 0 = not drawn) or null to leave it to the
+        /// def's glassTint / glassOpacity (else IsoRim's own glass look). The first source that answers wins. Main thread;
+        /// an exception is logged once and the source is left out. Adding the same delegate twice adds it once.
+        /// </summary>
+        public static void AddGlassColor(Func<Thing, Color?> source) => Glass.AddSource(source);
+
+        /// <summary>Removes a colour source added with AddGlassColor (Api version 30).</summary>
+        public static void RemoveGlassColor(Func<Thing, Color?> source) => Glass.RemoveSource(source);
 
         // ---- facing holds (Version 19)
 

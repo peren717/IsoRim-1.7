@@ -1,0 +1,10 @@
+# IsoRim vac_barrier_field; the barrier's field (glass part, Api 30): one upright plane between the posts
+mtllib isorim.mtl
+o vac_barrier_field
+v -0.342000 0.035000 0.000000
+v 0.342000 0.035000 0.000000
+v 0.342000 0.995000 0.000000
+v -0.342000 0.995000 0.000000
+usemtl anomaly_cyan
+f 1 2 3
+f 1 3 4

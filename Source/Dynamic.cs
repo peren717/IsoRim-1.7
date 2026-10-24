@@ -1614,6 +1614,7 @@ namespace IsoRim
             public string swatch;
             public float openPct;       // the game's OpenPct (gathering leaves)
             public bool hackShown;      // its hacking terminal still stands
+            public Thing thing;         // the built door (null for a placement ghost)
         }
 
         private static Site SiteOf(Building_Door door)
@@ -1623,7 +1624,8 @@ namespace IsoRim
             {
                 def = door.def, map = door.Map, cell = door.Position, rot = door.Rotation, at = door.DrawPos, rect = door.OccupiedRect(),
                 styled = ModelLibrary.StyledEntry(door), supported = door is Building_SupportedDoor, tint = door.DrawColor,
-                swatch = R3DTextures.StuffSwatch(door), openPct = Patches.DoorOpenPct(door), hackShown = hack != null && !hack.IsHacked
+                swatch = R3DTextures.StuffSwatch(door), openPct = Patches.DoorOpenPct(door), hackShown = hack != null && !hack.IsHacked,
+                thing = door
             };
         }
 
@@ -1918,22 +1920,18 @@ namespace IsoRim
         // OpenPct, times the door's width for a multi-cell door). A multi-cell door's models are built for its builtFor
         // footprint around its drawn middle. hackTerminalModel is drawn while the door's CompHackable is not hacked. As
         // tall as the walls, cut down with them (no lintel over a cut wall). Returns false if it drew nothing.
-        private static bool DrawSupportedOne(Site d, ModelEntry entry, float openPct)
+        // Where a supported door's parts go: its middle on the ground, its yaw, the parts' scale (wall height) and whether
+        // the cut-away lowers it.
+        private static void SupportedFrame(Site d, ModelEntry entry, out Vector3 centre, out float yaw, out Matrix4x4 sized, out bool cut)
         {
             Map map = d.map;
-            if (map == null || entry == null || !entry.HasModel)
-            {
-                return false;
-            }
             ModelDef def = entry.def;
-            float yaw = d.rot.AsAngle + def.rotation;
-            Vector3 along = Quaternion.AngleAxis(yaw, Vector3.up) * Vector3.right;
+            yaw = d.rot.AsAngle + def.rotation;
             IntVec3 c = d.cell;
             bool wide = d.def.size.x > 1 || d.def.size.z > 1;
-            Vector3 centre = wide ? new Vector3(d.at.x, 0f, d.at.z) : new Vector3(c.x + 0.5f, 0f, c.z + 0.5f);
-
+            centre = wide ? new Vector3(d.at.x, 0f, d.at.z) : new Vector3(c.x + 0.5f, 0f, c.z + 0.5f);
             float height = View3D.WallHeight;
-            bool cut = WallBoxes.CellCut(map, c);
+            cut = WallBoxes.CellCut(map, c);
             if (wide && !cut)
             {
                 foreach (IntVec3 x in d.rect)
@@ -1950,7 +1948,37 @@ namespace IsoRim
                 height *= WallBoxes.CutFraction;
             }
             float s = def.scale;
-            Matrix4x4 sized = Matrix4x4.Scale(new Vector3(s, s * height / BuiltForWallHeight, s));
+            sized = Matrix4x4.Scale(new Vector3(s, s * height / BuiltForWallHeight, s));
+        }
+
+        // (Api 30) A supported door's glass part (glassModel) where its other parts stand: a vac barrier's field (drawn only
+        // where the game draws its field sprite, in its place: Patches.GraphicDraw_Prefix) or a window. fieldColour: the
+        // colour of the game's own sprite, the default tint of a field.
+        internal static void DrawSupportedGlass(Building_Door door, ModelEntry entry, Color? fieldColour)
+        {
+            if (door == null || entry == null || entry.glass == null || !door.Spawned)
+            {
+                return;
+            }
+            Site d = SiteOf(door);
+            Patches.PreDrawDoor(door);   // (the game's rotation of a one-cell door, from the walls beside it)
+            d.rot = door.Rotation;
+            SupportedFrame(d, entry, out Vector3 centre, out float yaw, out Matrix4x4 sized, out bool cut);
+            Glass.DrawPart(door, entry, centre, yaw, sized, fieldColour);
+        }
+
+        private static bool DrawSupportedOne(Site d, ModelEntry entry, float openPct)
+        {
+            Map map = d.map;
+            if (map == null || entry == null || !entry.HasModel)
+            {
+                return false;
+            }
+            ModelDef def = entry.def;
+            SupportedFrame(d, entry, out Vector3 centre, out float yaw, out Matrix4x4 sized, out bool cut);
+            Vector3 along = Quaternion.AngleAxis(yaw, Vector3.up) * Vector3.right;
+            float s = def.scale;
+            IntVec3 c = d.cell;
             Color tint = d.tint;
             string swatch = d.swatch;
 
@@ -1968,6 +1996,12 @@ namespace IsoRim
             if (entry.hackTerminal != null && d.hackShown)
             {
                 DynamicModels.DrawLocal(entry.hackTerminal, centre, yaw, sized, tint, swatch);
+            }
+            // (Api 30) a window of glass in the door, every frame; a vac barrier's field instead goes where the game draws
+            // its field sprite (Patches.GraphicDraw_Prefix), so it shows exactly while the game shows the field
+            if (entry.glass != null && d.thing != null && !DynamicModels.Ghosting && !(d.thing is Building_VacBarrier))
+            {
+                Glass.DrawPart(d.thing, entry, centre, yaw, sized, null);
             }
             return true;
         }

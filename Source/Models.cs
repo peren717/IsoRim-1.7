@@ -213,6 +213,14 @@ namespace IsoRim
         // with the scene at night. The game's flat glass, top and window sprites over the contents are
         // left out in 3D (mech gestators, growth vat, biosculpter pod, wastepack atomizer).
         public string glassModel;
+        // (Api 30) The glass part's look for this def: glassTint (r, g, b; unset = IsoRim's pale glass), glassOpacity (0 to 1;
+        // -1 = IsoRim's 0.4) and glassGlow (drawn unlit, keeping its brightness at night: a force field). A colour source
+        // (Api.AddGlassColor) can set tint and opacity per thing. Things with none of these keep IsoRim's one glass look.
+        // Supported doors draw their glass part too (Doors in Dynamic.cs): a window, or a vac barrier's field, shown while
+        // the game shows its field sprite and tinted by that sprite's colour unless set here or by a colour source.
+        public Color glassTint = new Color(0f, 0f, 0f, 0f);
+        public float glassOpacity = -1f;
+        public bool glassGlow = false;
         public float contentTop = -1f;      // roof of the chamber under the glass: what stands inside (a forming
                                             // mech, a vat embryo or child) is fitted between surfaceHeight and this
         public bool heldPawnUpright = false; // the person held inside floats upright (growth vat) instead of lying

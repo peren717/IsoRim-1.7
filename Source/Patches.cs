@@ -390,6 +390,11 @@ namespace IsoRim
             // leaves and hacking terminal (Doors.DrawSupported); the game's flat terminal is then left out.
             Patch("3D supported doors", AccessTools.DeclaredMethod(typeof(Building_SupportedDoor), "DrawAt", new[] { typeof(Vector3), typeof(bool) }),
                 prefix: nameof(SupportedDoorDrawAt_Prefix));
+            // (Api 30) a vac barrier's field as its door's glass part
+            Patch("3D vac barrier fields", AccessTools.DeclaredMethod(typeof(Building_VacBarrier), "DrawAt", new[] { typeof(Vector3), typeof(bool) }),
+                prefix: nameof(VacBarrierDrawAt_Prefix), finalizer: nameof(VacBarrierDrawAt_Finalizer));
+            Patch("3D vac barrier fields", AccessTools.Method(typeof(Graphic), nameof(Graphic.Draw), new[] { typeof(Vector3), typeof(Rot4), typeof(Thing), typeof(float) }),
+                prefix: nameof(GraphicDraw_Prefix));
             Patch("3D supported doors", AccessTools.DeclaredMethod(typeof(CompHackable), "PostDraw"),
                 prefix: nameof(HackablePostDraw_Prefix));
 
@@ -2818,6 +2823,53 @@ namespace IsoRim
         }
 
         private static Action<Building_Door> doorPreDraw;
+
+        // The game's rotation of a one-cell door from the walls beside it (Building_Door.DoorPreDraw).
+        internal static void PreDrawDoor(Building_Door door)
+        {
+            if (doorPreDraw == null)
+            {
+                doorPreDraw = AccessTools.MethodDelegate<Action<Building_Door>>(AccessTools.Method(typeof(Building_Door), "DoorPreDraw"));
+            }
+            doorPreDraw(door);
+        }
+
+        // (Api 30) A vac barrier drawn with a glass part: its field. Building_VacBarrier.DrawAt draws the field sprite (its own
+        // Graphic) after the door, only while the barrier is on; while such a door is drawn, that one draw becomes the glass
+        // part across the doorway, tinted by the sprite's own colour unless a colour source or the def says otherwise.
+        [ThreadStatic] private static Building_Door fieldDoor;
+        [ThreadStatic] private static ModelEntry fieldEntry;
+
+        public static void VacBarrierDrawAt_Prefix(Building_VacBarrier __instance)
+        {
+            ModelEntry entry = SupportedDoorModel(__instance);
+            fieldDoor = entry != null && entry.glass != null ? __instance : null;
+            fieldEntry = fieldDoor != null ? entry : null;
+        }
+
+        public static void VacBarrierDrawAt_Finalizer()
+        {
+            fieldDoor = null;
+            fieldEntry = null;
+        }
+
+        public static bool GraphicDraw_Prefix(Graphic __instance, Thing thing)
+        {
+            if (fieldDoor == null || thing != fieldDoor)
+            {
+                return true;
+            }
+            try
+            {
+                Doors.DrawSupportedGlass(fieldDoor, fieldEntry, __instance.Color);
+                return false;
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Drawing a vac barrier's field failed: " + e, 93611301);
+                return true;
+            }
+        }
 
         // The supported door's model entry while it is drawn by Doors.DrawSupported; else null.
         private static ModelEntry SupportedDoorModel(Thing t)

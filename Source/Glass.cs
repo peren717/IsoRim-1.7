@@ -23,6 +23,176 @@ namespace IsoRim
 
         private static List<ThingDef> defs;
         private static Material material;
+        private static Material tinted, glowing;
+        private static readonly Dictionary<int, Mesh> whiteMeshes = new Dictionary<int, Mesh>();
+        private static readonly MaterialPropertyBlock block = new MaterialPropertyBlock();
+        private static readonly List<Func<Thing, Color?>> sources = new List<Func<Thing, Color?>>();
+        private static readonly HashSet<Func<Thing, Color?>> failedSources = new HashSet<Func<Thing, Color?>>();
+
+        // ---- (Api 30) per-thing glass: colour sources, the def's tint / opacity / glow
+
+        internal static void AddSource(Func<Thing, Color?> source)
+        {
+            if (source != null && !sources.Contains(source))
+            {
+                sources.Add(source);
+            }
+        }
+
+        internal static void RemoveSource(Func<Thing, Color?> source)
+        {
+            sources.Remove(source);
+        }
+
+        // The look of t's glass part when it is not IsoRim's one glass look: a colour source's answer (rgb tint, a opacity;
+        // the first that answers), else the def's glassTint / glassOpacity, else fallback (a field's own sprite colour) at the
+        // def's or IsoRim's opacity. False: IsoRim's own glass, exactly as before.
+        internal static bool CustomLook(Thing t, ModelDef def, Color? fallback, out Color c)
+        {
+            for (int i = 0; i < sources.Count; i++)
+            {
+                Func<Thing, Color?> src = sources[i];
+                if (failedSources.Contains(src))
+                {
+                    continue;
+                }
+                try
+                {
+                    Color? r = src(t);
+                    if (r.HasValue)
+                    {
+                        c = r.Value;
+                        return true;
+                    }
+                }
+                catch (Exception e)
+                {
+                    failedSources.Add(src);
+                    Log.Error("[IsoRim] A glass colour source failed (left out from now on): " + e);
+                }
+            }
+            bool tintSet = def.glassTint.a > 0f;
+            if (!tintSet && def.glassOpacity < 0f && !def.glassGlow && !fallback.HasValue)
+            {
+                c = default(Color);
+                return false;
+            }
+            Color rgb = tintSet ? def.glassTint : (fallback ?? Tint);
+            c = new Color(rgb.r, rgb.g, rgb.b, def.glassOpacity >= 0f ? Mathf.Clamp01(def.glassOpacity) : Opacity);
+            return true;
+        }
+
+        private static Material TintedMat(bool glow)
+        {
+            if (glow)
+            {
+                if (glowing == null)
+                {
+                    glowing = R3DMaterials.Make(R3DMaterials.BlendDef, "IsoRim_GlassGlow", 3101, R3DMaterials.LightUnlit);
+                }
+                return glowing;
+            }
+            if (tinted == null)
+            {
+                tinted = R3DMaterials.Make(R3DMaterials.BlendDef, "IsoRim_GlassTinted", 3101, R3DMaterials.LightModel);
+                if (tinted != null)
+                {
+                    IsoGlow.Use(tinted, IsoGlow.OwnCellUnmarked);
+                }
+            }
+            return tinted;
+        }
+
+        // The glass mesh with white vertices (the tint comes from the draw's colour).
+        private static Mesh WhiteMeshFor(Model m)
+        {
+            Mesh mesh;
+            if (whiteMeshes.TryGetValue(m.id, out mesh) && mesh != null)
+            {
+                return mesh;
+            }
+            int n = m.positions.Length - m.positions.Length % 3;
+            Vector3[] verts = new Vector3[n];
+            Color32[] colors = new Color32[n];
+            int[] tris = new int[n];
+            for (int i = 0; i < n; i++)
+            {
+                verts[i] = m.positions[i];
+                colors[i] = new Color32(255, 255, 255, 255);
+                tris[i] = i;
+            }
+            mesh = new Mesh();
+            mesh.vertices = verts;
+            mesh.colors32 = colors;
+            mesh.triangles = tris;
+            mesh.RecalculateBounds();
+            MeshGuard.Check(mesh, "glass");
+            whiteMeshes[m.id] = mesh;
+            return mesh;
+        }
+
+        // Draws a glass mesh with the matrix (the thing's rows): IsoRim's own glass, or (custom) in colour c (a = opacity;
+        // 0 = not drawn). A thing on an upper floor: moved onto its floor and faded with it while peeking, as the models
+        // (DynamicModels.Submit); a gravship's glass is noted for its flight scene in its rows, as there.
+        private static void Submit(Model glass, Matrix4x4 matrix, bool custom, Color c, bool glow)
+        {
+            if (custom && c.a <= 0.001f)
+            {
+                return;
+            }
+            Material mat = custom ? TintedMat(glow) : Mat;
+            Mesh mesh = custom ? WhiteMeshFor(glass) : MeshFor(glass);
+            if (mat == null)
+            {
+                return;
+            }
+            MaterialPropertyBlock props = null;
+            if (custom)
+            {
+                block.Clear();
+                block.SetColor(ShaderPropertyIDs.Color, c);
+                props = block;
+            }
+            if (ShipCapture.Note(mesh, matrix, mat, props))
+            {
+                return;
+            }
+            Matrix4x4 drawn = Floors.DrawnMatrix(matrix, out int floor);
+            if (!Cull.MeshVisible(mesh, drawn))
+            {
+                return;
+            }
+            int fadeWas = Floors.FadeSlot;
+            if (fadeWas == 0 && floor > 0)
+            {
+                Floors.FadeSlot = Floors.FadeOfFloor(floor);
+            }
+            try
+            {
+                Graphics.DrawMesh(mesh, drawn, mat, 0, null, 0, props);
+            }
+            finally
+            {
+                Floors.FadeSlot = fadeWas;
+            }
+        }
+
+        // A door's glass part (Doors in Dynamic.cs: a window, a vac barrier's field) at the door's parts' place (door
+        // space: centre on the ground, yaw, the parts' scale). fallback: the colour used when neither a colour source nor
+        // the def sets one (a field's own sprite colour); null keeps IsoRim's glass.
+        internal static void DrawPart(Thing t, ModelEntry entry, Vector3 centre, float yaw, Matrix4x4 sized, Color? fallback)
+        {
+            if (entry?.glass == null || !IsoRimMod.Settings.models3D)
+            {
+                return;
+            }
+            bool custom = CustomLook(t, entry.def, fallback, out Color c);
+            float s = View3D.Squash;
+            Matrix4x4 matrix = Matrix4x4.Translate(new Vector3(centre.x, 0f, centre.z))
+                * Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f))
+                * Matrix4x4.Rotate(Quaternion.AngleAxis(yaw, Vector3.up)) * sized;
+            Submit(entry.glass, matrix, custom, c, entry.def.glassGlow);
+        }
         private static readonly Dictionary<int, Mesh> meshes = new Dictionary<int, Mesh>();
 
         // The thing's model entry while it is drawn as a model that has glass; else null.
@@ -154,14 +324,8 @@ namespace IsoRim
             Matrix4x4 matrix = Matrix4x4.Translate(new Vector3(at.x + offset.x, offset.y / s, at.z + offset.z))
                 * Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f))
                 * Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(yaw, Vector3.up), entry.Fit(t.def) * def.scale);
-            Mesh mesh = MeshFor(entry.glass);
-            if (Cull.MeshVisible(mesh, matrix))
-            {
-                if (!ShipCapture.Note(mesh, matrix, Mat, null))
-                {
-                    Graphics.DrawMesh(mesh, matrix, Mat, 0);
-                }
-            }
+            bool custom = CustomLook(t, def, null, out Color c);
+            Submit(entry.glass, matrix, custom, c, def.glassGlow);
         }
 
         // Where the contents stand: the middle of the thing moved by contentOffset (model space, turned with it).

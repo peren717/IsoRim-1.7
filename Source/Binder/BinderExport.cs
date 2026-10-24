@@ -42,11 +42,15 @@ namespace IsoRim
             { "cutaway", 20 },
             { "immatureModels", 24 }, { "immatureHide", 24 },
             { "bobByState", 27 },
+            { "glassTint", 30 }, { "glassOpacity", 30 }, { "glassGlow", 30 },
         };
         private const int BaseVersion = 2;
 
         // A multi-cell supported door (not the game's Building_MultiTileDoor) is drawn from its models since this version.
         private const int WideSupportedDoorVersion = 29;
+
+        // A door's glassModel (a window, a vac barrier's field) is drawn since this version.
+        private const int DoorGlassVersion = 30;
 
         // Fields never written: the binding (the patch adds it) and the matching rules of shared entries.
         private static readonly HashSet<string> Skip = new HashSet<string> { "thingDef", "thingCategory", "match", "graphicPath", "fallback", "style" };
@@ -113,6 +117,10 @@ namespace IsoRim
                 if (Ghosts.WideSupported(thing))
                 {
                     minVersion = Math.Max(minVersion, WideSupportedDoorVersion);   // drawn from its models only since Api 29
+                }
+                if (used.Contains("glassModel") && typeof(RimWorld.Building_Door).IsAssignableFrom(thing.thingClass))
+                {
+                    minVersion = Math.Max(minVersion, DoorGlassVersion);           // a door's glass part is drawn since Api 30
                 }
 
                 string source = string.Join(", ", new List<string>(copied.Keys).ConvertAll(Path.GetFullPath));

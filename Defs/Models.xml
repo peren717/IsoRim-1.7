@@ -6251,6 +6251,10 @@
     <thingDef>VacBarrier</thingDef>
     <model>Models/vac_barrier.obj</model>
     <doorTopModel>Models/vac_barrier_top.obj</doorTopModel>
+    <glassModel>Models/vac_barrier_field.obj</glassModel>
+    <glassTint>(0.55, 0.80, 1.0)</glassTint>
+    <glassOpacity>0.35</glassOpacity>
+    <glassGlow>true</glassGlow>
     <builtFor>(1, 1)</builtFor>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
