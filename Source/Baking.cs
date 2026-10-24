@@ -2453,6 +2453,20 @@ namespace IsoRim
                 {
                     return false;
                 }
+                if (entry.roofPart != null)
+                {
+                    // (Api 31) ModelDef.roofModel: placed as the model, tagged to rise through a roof over it (its own mark
+                    // inside Bake's: the outer tag only adds to tags already set, so ThroughRoof stays)
+                    int roofMark = RoofClip.Mark(layer);
+                    try
+                    {
+                        Write(layer, thing, entry.roofPart, center, turn, lay, layLift, fit, offset, baseHeight, tint, bare, def.outline);
+                    }
+                    finally
+                    {
+                        RoofClip.Tag(layer, roofMark, thing.TrueCenter().ToIntVec3(), BuildSee.Takes(thing, entry), throughRoof: true);
+                    }
+                }
 
                 bool isTree = plant != null && plant.def.plant != null && plant.def.plant.IsTree;
                 if (Ghost.a > 0f || DamageMarks > 0)

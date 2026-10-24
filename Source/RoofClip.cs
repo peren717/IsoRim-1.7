@@ -136,7 +136,8 @@ namespace IsoRim
         // After it: every vertex written since the mark is clipped under the roof of owner's cell. Vertices that already
         // carry a cut-away tag (a tree's leaves) keep it and its cell, and get the flag added. see: they also go
         // see-through near the pointer while building (ShaderCut.See, BuildSee).
-        public static void Tag(SectionLayer layer, int mark, IntVec3 owner, bool see = false)
+        // throughRoof (Api 31, ModelDef.roofModel): the vertices also get ThroughRoof (roofs leave them alone).
+        public static void Tag(SectionLayer layer, int mark, IntVec3 owner, bool see = false, bool throughRoof = false)
         {
             if (mark < 0)
             {
@@ -144,7 +145,7 @@ namespace IsoRim
             }
             depth = mark;
             int[] m = marks[mark];
-            int add = see ? Own | ShaderCut.See : Own;
+            int add = (see ? Own | ShaderCut.See : Own) | (throughRoof ? ThroughRoof : 0);
             Vector3 tag = new Vector3(owner.x + 0.5f, owner.z + 0.5f, add);
             List<LayerSubMesh> subs = layer.subMeshes;
             for (int i = 0; i < subs.Count; i++)

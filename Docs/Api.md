@@ -44,7 +44,7 @@ if (IsoRim.Api.Version >= 27) { /* ModelDef.bobByState: state models for the bob
 if (IsoRim.Api.Version >= 29) { /* multi-cell supported doors drawn from their models (part 18) */ }
 if (IsoRim.Api.Version >= 30) { /* glass parts per thing: ModelDef glassTint / glassOpacity / glassGlow, AddGlassColor,
                                    RemoveGlassColor; supported doors draw their glassModel (part 19) */ }
-if (IsoRim.Api.Version >= 31) { /* ModelDef.topThroughRoof: a turret's gun rises through roofs (part 20) */ }
+if (IsoRim.Api.Version >= 31) { /* ModelDef.topThroughRoof, roofModel: a turret's gun and a fixed part rise through roofs (part 20) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
@@ -1155,13 +1155,18 @@ if (IsoRim.Api.Version >= 30)
 
 An older IsoRim ignores these fields and a door's `glassModel` (no error); the model binder's export gates them on version 30.
 
-## Part 20: turret guns through roofs (version 31)
+## Part 20: parts through roofs (version 31)
 
-What stands under a roof is clipped at the roof's underside, so nothing pokes out of it (RoofClip). A turret taller than
-a storey (a ship gun on a frame, its gun meant to sit over the roof) sets `topThroughRoof` (bool) on its entry: its
-gun (`topModel`) is then not clipped by a built, rock or ship roof over it and shows above the roof. The fog still
-hides it like anything else, and so does a floor's slab over it (with stacked floors). The base (`model`) stays
-clipped under the roof as before.
+What stands under a roof is clipped at the roof's underside, so nothing pokes out of it (RoofClip). A thing meant to show
+above its roof (a ship gun on a frame, its pedestal and gun over the roof; a mast) uses:
+
+- `topThroughRoof` (bool): a turret's gun (`topModel`) is not clipped by a built, rock or ship roof over it.
+- `roofModel` (OBJ path): a fixed part built in the same space as `model` and baked with it (placed, turned and fitted
+  as the model; blueprints and frames too), not clipped by a roof over it. It counts for the thing's drawn height.
+
+The fog still hides both like anything else, and so does a floor's slab over them (with stacked floors). The base
+(`model`) stays clipped under the roof as before. Roofs clip by the thing's own cell: keep a `roofModel` part over the
+thing's middle.
 
 ```xml
 <IsoRim.ModelDef>
@@ -1172,6 +1177,7 @@ clipped under the roof as before.
   <topModel>Models/ship_gun.obj</topModel>
   <topHeight>1.74</topHeight>
   <topThroughRoof>true</topThroughRoof>
+  <roofModel>Models/ship_gun_pedestal.obj</roofModel>
 </IsoRim.ModelDef>
 ```
 

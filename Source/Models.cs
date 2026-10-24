@@ -127,6 +127,10 @@ namespace IsoRim
         public List<string> match;
         public Vector2 builtFor = Vector2.zero; // the footprint (x, z) in cells the model was built for; it is stretched to the thing's real size
         public string topModel;             // turrets: the gun that turns, drawn every frame
+        public string roofModel;            // (Api 31) a fixed part built in the same space as model and baked with it (placed,
+                                            // turned and fitted as the model), which a roof over it does not clip: it rises
+                                            // through the roof (a ship gun's pedestal, a mast); the fog and a floor's slab still
+                                            // clip it (RoofClip.ThroughRoof)
         public float topHeight = 0.5f;      // height of the turret's pivot, in cells
         public bool topThroughRoof = false; // (Api 31) the gun (topModel) is not clipped by a roof over it (RoofClip): it rises
                                             // through the roof; the fog and a floor's slab still clip it, and the base stays
@@ -631,6 +635,7 @@ namespace IsoRim
         public Model activityGlow; // activityGlowModel with its glowing faces lit (ObjLoader.Glowing), or null
         public Color activityGlowBase; // the lit faces' own colour
         public Model glass;       // glassModel, or null
+        public Model roofPart;    // roofModel, or null (Api 31)
         public Model hackTerminal; // hackTerminalModel, or null
         public Model head;        // headModel, or null
         public Model open;        // openModel (with openParts), or null
@@ -887,6 +892,10 @@ namespace IsoRim
                 {
                     tallest = Mathf.Max(tallest, m != null ? m.maxY : 0f);
                 }
+            }
+            if (roofPart != null)
+            {
+                tallest = Mathf.Max(tallest, roofPart.maxY);   // (Api 31) the part over the roof
             }
             return tallest;
         }
@@ -1285,6 +1294,10 @@ namespace IsoRim
             if (!md.glassModel.NullOrEmpty() && md.modContentPack != null)
             {
                 entry.glass = LoadFile(Path.Combine(md.modContentPack.RootDir, md.glassModel));
+            }
+            if (!md.roofModel.NullOrEmpty() && md.modContentPack != null)
+            {
+                entry.roofPart = LoadFile(Path.Combine(md.modContentPack.RootDir, md.roofModel));
             }
             Aged.Apply(entry, Aged.StrengthOf(md));   // ModelDef.aged: its body models old and rusty
             return entry;

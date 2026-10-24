@@ -273,6 +273,14 @@ namespace IsoRim
                     * Matrix4x4.Rotate(turn)
                     * Matrix4x4.Scale(fit);
                 Draw(mesh, matrix, col);
+                if (entry.roofPart != null)
+                {
+                    Mesh roofMesh = MeshFor(entry.roofPart);   // (Api 31) ModelDef.roofModel, placed as the model
+                    if (roofMesh != null)
+                    {
+                        Draw(roofMesh, matrix, col);
+                    }
+                }
                 return true;
             }
             if (form.form == Form3D.Block)

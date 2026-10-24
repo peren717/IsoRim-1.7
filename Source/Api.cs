@@ -61,7 +61,8 @@ namespace IsoRim
         // Building_MultiTileDoor) drawn from their models (model, doorTopModel, doorLeafModel), as one-cell ones; Doors in Dynamic.cs.
         // 30: glass parts per thing: ModelDef glassTint / glassOpacity / glassGlow, AddGlassColor / RemoveGlassColor; supported
         // doors draw their glass part (a window, a vac barrier's field across the doorway); Glass.cs.
-        // 31: ModelDef.topThroughRoof: a turret's gun not clipped by a roof over it (the fog and floor slabs still clip it).
+        // 31: ModelDef.topThroughRoof (a turret's gun) and ModelDef.roofModel (a fixed part baked with the model) not clipped
+        // by a roof over them (the fog and floor slabs still clip them).
         public static int Version => 31;
 
         // ---- glass parts (Version 30)
