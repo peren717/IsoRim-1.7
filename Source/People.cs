@@ -488,7 +488,7 @@ namespace IsoRim
                 {
                     // In a bed the person's place is where their head is, and they lie along the bed.
                     yaw = bed.Rotation.AsAngle;
-                    ground = Forms.HeightOf(bed);
+                    ground = Poses.SleeperHeight(pawn, bed);   // the bed's surface, or their slot's (Api 28: a bunk's level)
                     headOnly = ground > 0.05f && bed.def.building != null && !bed.def.building.bed_showSleeperBody;
                     pose = Matrix4x4.Translate(new Vector3(0f, (headOnly ? 0.24f : 0.15f) * size, HeadHeight * size)) * Matrix4x4.Rotate(onBack);
                 }

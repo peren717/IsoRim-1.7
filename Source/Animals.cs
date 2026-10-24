@@ -145,7 +145,7 @@ namespace IsoRim
                 Building_Bed bed = pawn.CurrentBed();
                 if (bed != null)
                 {
-                    ground = Forms.HeightOf(bed);
+                    ground = Poses.SleeperHeight(pawn, bed);   // or their slot's (Api 28)
                 }
                 if (pawn.ParentHolder is Building_HoldingPlatform platform)
                 {
@@ -322,7 +322,7 @@ namespace IsoRim
                 Building_Bed bed = pawn.CurrentBed();
                 if (bed != null)
                 {
-                    ground = Forms.HeightOf(bed);
+                    ground = Poses.SleeperHeight(pawn, bed);   // or their slot's (Api 28)
                 }
             }
             float rise;

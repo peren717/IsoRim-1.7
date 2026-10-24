@@ -42,6 +42,7 @@ namespace IsoRim
             { "cutaway", 20 },
             { "immatureModels", 24 }, { "immatureHide", 24 },
             { "bobByState", 27 },
+            { "slots", 28 },
         };
         private const int BaseVersion = 2;
 

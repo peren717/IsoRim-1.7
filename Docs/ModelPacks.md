@@ -106,6 +106,7 @@ Common fields:
 | `rotationByFacing` | | Api 6: one more turn per facing (north, east, south, west), for things whose game sprite for one facing is another's |
 | `scale` | 1 | Uniform size |
 | `surfaceHeight` | -1 | Where a lying pawn or things placed on it rest (shelves; work tables and tables, i.e. defs with a `surfaceType`, carry items and bill ingredients here; 0 = no top, items stay on the ground, e.g. a campfire); -1 = top of the model. `seatHeight`, `beddingTop` for seats and beds |
+| `slots` | | Api 28: one entry per sleeping slot, in the game's slot order: `<li><height>1.25</height></li>` is that slot's surface height (like `surfaceHeight`; -1 keeps it). For stacked beds (a bunk bed mod's levels): each sleeper lies on their own level. Missing or too short: `surfaceHeight` |
 | `wallMounted`, `mountHeight` | false, -1 | Hung on the wall the thing faces. Build it in the cell in front of the wall, against the wall at z = +0.5 (north) |
 | `wallFit` | 0 | The model was built for walls this tall; its height follows the wall height setting |
 | `cutaway` | Auto | Api 20: whether the cut-away lowers this wall: `Auto` (built walls, low walls included), `Never` (e.g. a half wall that keeps its window), `Always` (also a block IsoRim would not count as a wall). Walls only; see `Docs/Api.md` |

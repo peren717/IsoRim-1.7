@@ -1897,7 +1897,7 @@ namespace IsoRim
                         Building_Bed bed = pawn.Dead ? null : pawn.CurrentBed();
                         Building holder = pawn.Dead ? null : Glass.HolderOf(pawn);
                         // A flat sprite lies on the top of the bedding, not under the pillow and blanket (Poses).
-                        float bedTop = Poses.FlatLyingHeight((Building)bed ?? holder);
+                        float bedTop = Poses.FlatLyingHeight((Building)bed ?? holder, pawn);   // on their slot (Api 28)
                         Building_GibbetCage gibbet = pawn.Dead ? People.GibbetOf(pawn) : null;
                         if (gibbet != null)
                         {

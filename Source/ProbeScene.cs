@@ -99,6 +99,9 @@ namespace IsoRim
     //                                bx,bz (LayDown); nomed first turns the bed's medical toggle off (hospital beds start medical)
     //   downpawn=x,z                 the colonist in the cell hurt until downed (no bleeding wounds)
     //   bedcheck=1                   logs each free colonist: posture, bed, job, People.Report (hat, skips)
+    //   testslots=Def,h0,h1..        (Api 28 test) gives the live ModelDef of that thing ModelDef.slots with those heights
+    //                                (model units; -1 keeps the surface); testslots=Def,none takes them off again
+    //   slotcheck=1                  logs each pawn in a bed: its slot and the heights worked out for it (Poses.SlotReport)
     //   standcheck=1                 logs each outfit stand: apparel, weapon, head hidden, side seen, drawn as its model
     //   workcheck=1                  logs each building with platform cables: work panel running or idle, cables drawn in 3D
     //   glasscheck=1                 logs each building drawn with glass (Glass.cs): its contents state and floor height
@@ -1185,6 +1188,39 @@ namespace IsoRim
                     }
                     break;
                 }
+                case "testslots":
+                {
+                    // testslots=Def,h0,h1..: the live ModelDef of that thing gets ModelDef.slots with those heights (Api 28 test);
+                    // testslots=Def,none takes them off again.
+                    ThingDef sd = DefDatabase<ThingDef>.GetNamedSilentFail(a[0]);
+                    ThingForm sf = sd != null ? Forms.For(sd) : null;
+                    ModelDef smd = sf != null && sf.model != null ? sf.model.def : null;
+                    if (smd == null)
+                    {
+                        Log.Warning("[IsoRim probe] testslots: no model for " + a[0]);
+                        break;
+                    }
+                    if (a.Length > 1 && a[1] == "none")
+                    {
+                        smd.slots = null;
+                    }
+                    else
+                    {
+                        smd.slots = new List<ModelSlot>();
+                        for (int si = 1; si < a.Length; si++)
+                        {
+                            smd.slots.Add(new ModelSlot { height = F(a[si]) });
+                        }
+                    }
+                    Log.Message("[IsoRim probe] testslots " + smd.defName + ": " + (smd.slots == null ? "none" : string.Join(", ", smd.slots.Select(x => x.height.ToString("0.00")))));
+                    break;
+                }
+                case "slotcheck":
+                    foreach (Pawn sp in map.mapPawns.AllPawnsSpawned.Where(x => x.CurrentBed() != null).OrderBy(x => x.Position.x).ThenBy(x => x.Position.z).ToList())
+                    {
+                        Log.Message("[IsoRim probe] slotcheck " + sp.LabelShort + " " + sp.Position + ": " + Poses.SlotReport(sp));
+                    }
+                    break;
                 case "bedcheck":
                     foreach (Pawn bp in map.mapPawns.FreeColonistsSpawned.ToList())
                     {
