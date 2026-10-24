@@ -53,7 +53,7 @@ namespace IsoRim
         // AddAlienFigureRule, RemoveAlienFigureRule, FigureFrame.Anchor, FigureFrame.Mode, FigureParts.Addons,
         // ApparelModelDef.aliens and alienBodyModels, AlienModelDef.face (AlienFace) / hair (AlienHair) / faceFit / addon
         // hatLift, the "Keep as paper" setting, the dev-mode alien tuning window; Aliens.cs, AlienCards.cs, AlienTune.cs; 26: other mods'
-        // angled wall pieces and gravship scene layers: AddWallCorners (CornerRule), AddWallShapes (WallShapeRule, WallShape),
+        // angled wall pieces and gravship scene layers: AddWallCorners (CornerRule),
         // HideFlatLayer, RefreshWallShapes, FlyLayer, NotGeometryLayer; Api26.cs).
         // The card overlay (IsCard, DrawOnCard,
         // CardLight; CardOverlay.cs) came in before version 8 without a number of its own: check >= 8 for it.

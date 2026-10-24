@@ -197,7 +197,7 @@ namespace IsoRim
         // The walls layer redraws on the game's hull-layer changes too (buildings, terrain, things, roofs).
         public static void AddChangeFlags(SectionLayer layer, Section section)
         {
-            layer.relevantChangeTypes |= WallPieces.extraFlags;   // (Api 26: what registered corner and shape rules need)
+            layer.relevantChangeTypes |= WallPieces.extraFlags;   // (Api 26: what registered corner rules need)
             if (!ModsConfig.OdysseyActive)
             {
                 return;
