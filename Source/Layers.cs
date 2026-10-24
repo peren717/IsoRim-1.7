@@ -547,7 +547,7 @@ namespace IsoRim
                     GroundShadows.AroundBlock(this, b);
                     WallBoxes.PrintBlock(this, b, height);
                 }
-                HullCorners.Print(this, map, section.CellRect);   // gravship hull corner pieces (Gravship.cs)
+                HullCorners.Print(this, map, section.CellRect);   // gravship hull corner pieces (Gravship.cs; + Api 26 corners)
                 CutTags.Finish(this);
             }
             catch (Exception e)

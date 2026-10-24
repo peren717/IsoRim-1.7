@@ -1123,7 +1123,8 @@ namespace IsoRim
                 case "SectionLayer_GravshipHull":
                     return 2;
             }
-            return 0;
+            int extra;
+            return WallPieces.flown.TryGetValue(layer.GetType().Name, out extra) ? extra : 0;   // (Api 26) FlyLayer
         }
 
         // Layers that are not geometry of the ship (overlays, masks, shadows): not reported as skipped.
@@ -1135,7 +1136,7 @@ namespace IsoRim
 
         private static bool Touches(SectionLayer layer, Func<float, float, byte> cellAt)
         {
-            if (notGeometry.Contains(layer.GetType().Name))
+            if (notGeometry.Contains(layer.GetType().Name) || WallPieces.notGeometry.Contains(layer.GetType().Name))
             {
                 return false;
             }
