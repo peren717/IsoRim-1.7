@@ -44,10 +44,11 @@ if (IsoRim.Api.Version >= 27) { /* ModelDef.bobByState: state models for the bob
 if (IsoRim.Api.Version >= 29) { /* multi-cell supported doors drawn from their models (part 18) */ }
 if (IsoRim.Api.Version >= 30) { /* glass parts per thing: ModelDef glassTint / glassOpacity / glassGlow, AddGlassColor,
                                    RemoveGlassColor; supported doors draw their glassModel (part 19) */ }
+if (IsoRim.Api.Version >= 31) { /* ModelDef.topThroughRoof: a turret's gun rises through roofs (part 20) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 29 part 18, version 30 part 19 (23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 29 part 18, version 30 part 19, version 31 part 20 (23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1153,6 +1154,29 @@ if (IsoRim.Api.Version >= 30)
 ```
 
 An older IsoRim ignores these fields and a door's `glassModel` (no error); the model binder's export gates them on version 30.
+
+## Part 20: turret guns through roofs (version 31)
+
+What stands under a roof is clipped at the roof's underside, so nothing pokes out of it (RoofClip). A turret taller than
+a storey (a ship gun on a frame, its gun meant to sit over the roof) sets `topThroughRoof` (bool) on its entry: its
+gun (`topModel`) is then not clipped by a built, rock or ship roof over it and shows above the roof. The fog still
+hides it like anything else, and so does a floor's slab over it (with stacked floors). The base (`model`) stays
+clipped under the roof as before.
+
+```xml
+<IsoRim.ModelDef>
+  <defName>MyPack_ShipGun</defName>
+  <thingDef>MyMod_ShipGun</thingDef>
+  <model>Models/ship_gun_frame.obj</model>
+  <builtFor>(3, 3)</builtFor>
+  <topModel>Models/ship_gun.obj</topModel>
+  <topHeight>1.74</topHeight>
+  <topThroughRoof>true</topThroughRoof>
+</IsoRim.ModelDef>
+```
+
+A pitched built roof over a wide room can rise higher than the gun; the roof then hides it where it is higher. An older
+IsoRim does not know the field (an XML error in Defs): add it through `PatchOperation_IfIsoRimApi` (minVersion 31).
 
 ## Part M: model packs (IsoRim.ModelDef)
 

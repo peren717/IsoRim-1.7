@@ -206,7 +206,7 @@ half-set model), a new enough one gets the whole entry:
 fields 14; `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20; `immatureModels`, `immatureHide` 24; alien packs
 (`IsoRim.AlienModelDef`, `ApparelModelDef.aliens`) 25; `bobByState` 27; any binding of a multi-cell supported door (not the
 game's `Building_MultiTileDoor`) 29, which draws it from its models (Api part 18); `glassTint`, `glassOpacity`, `glassGlow`
-and a door's `glassModel` 30 (Api part 19). The highest one used counts.
+and a door's `glassModel` 30 (Api part 19); `topThroughRoof` 31 (Api part 20). The highest one used counts.
 
 ## Alien packs
 

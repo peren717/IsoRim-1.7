@@ -128,6 +128,9 @@ namespace IsoRim
         public Vector2 builtFor = Vector2.zero; // the footprint (x, z) in cells the model was built for; it is stretched to the thing's real size
         public string topModel;             // turrets: the gun that turns, drawn every frame
         public float topHeight = 0.5f;      // height of the turret's pivot, in cells
+        public bool topThroughRoof = false; // (Api 31) the gun (topModel) is not clipped by a roof over it (RoofClip): it rises
+                                            // through the roof; the fog and a floor's slab still clip it, and the base stays
+                                            // clipped under the roof (a tall ship gun on a frame, its gun over the roof)
         public bool ignoreRotation = false; // drawn as built (facing north) whatever the thing's rotation, as the game draws a
                                             // rotatable thing whose sprite does not turn (the mech inferno turret's base; its
                                             // gun still turns). Square footprints only (ModelEntry.Yaw)

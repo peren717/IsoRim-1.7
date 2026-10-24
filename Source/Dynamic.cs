@@ -41,6 +41,10 @@ namespace IsoRim
         // Set while doors are drawn: the meshes made then also go see-through near the pointer while building (BuildSee).
         public static bool SeeParts;
 
+        // (Api 31) Set while a turret's gun with ModelDef.topThroughRoof is drawn (Patches.DrawTurret_Prefix): its meshes,
+        // kept apart in the cache, are tagged to rise through roofs (RoofClip.ThroughRoof).
+        public static bool ThroughRoof;
+
         public class Part
         {
             public Mesh mesh;
@@ -73,7 +77,8 @@ namespace IsoRim
                 List<Vector3> tags = new List<Vector3>(verts.Count);
                 for (int i = 0; i < verts.Count; i++)
                 {
-                    tags.Add(SeeParts ? RoofClip.MovingSeeTag : RoofClip.MovingTag);   // clipped under the roof over where it is drawn (RoofClip)
+                    tags.Add(ThroughRoof ? (SeeParts ? RoofClip.MovingSeeThroughRoofTag : RoofClip.MovingThroughRoofTag)
+                        : SeeParts ? RoofClip.MovingSeeTag : RoofClip.MovingTag);   // clipped under the roof over where it is drawn (RoofClip)
                 }
                 mesh.SetUVs(1, tags);
                 mesh.SetTriangles(tris, 0);
@@ -391,7 +396,7 @@ namespace IsoRim
             {
                 Forget();
             }
-            long key = ((long)m.id << 34) | ((long)(textured ? 1 : 0) << 27) | ((long)R3DTextures.SwatchIndex(swatch) << 24)
+            long key = ((long)m.id << 34) | ((long)(ThroughRoof ? 1 : 0) << 28) | ((long)(textured ? 1 : 0) << 27) | ((long)R3DTextures.SwatchIndex(swatch) << 24)
                 | (uint)((t.r << 16) | (t.g << 8) | t.b);
 
             List<Part> parts;

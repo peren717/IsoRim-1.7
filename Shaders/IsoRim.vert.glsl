@@ -274,6 +274,8 @@ void main()
     vUv = uv;
     vWorldPos = world.xyz;
     // See-through while building (BuildSee, ShaderCut.See = bit 15): vNormal.x + 10 tells IsoRimSolid.frag.glsl.
+    // Through roofs (RoofClip.ThroughRoof = bit 16, Api 31): x = 5 instead of 4 (only the fog and floor slabs clip).
     bool see = (int(inUv1.z + 0.5) & 32768) != 0;
-    vNormal = roofClip ? vec3(see ? 14.0 : 4.0, roofOwner) : (see ? vec3(10.0, 0.0, 0.0) : inNormal);
+    float clipCode = (int(inUv1.z + 0.5) & 65536) != 0 ? 5.0 : 4.0;
+    vNormal = roofClip ? vec3(see ? clipCode + 10.0 : clipCode, roofOwner) : (see ? vec3(10.0, 0.0, 0.0) : inNormal);
 }

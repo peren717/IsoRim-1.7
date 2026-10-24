@@ -240,5 +240,14 @@ namespace IsoRim
 
         // The same for a moving model that also goes see-through near the pointer while building (door leaves, BuildSee).
         public static readonly Vector3 MovingSeeTag = new Vector3(0f, 0f, Moving | ShaderCut.See);
+
+        // (Api 31) Bit 16: a clipped vertex that roofs (lid kinds 1 to 3) leave alone; the fog and a floor's slab still clip
+        // it (ModelDef.topThroughRoof: a turret's gun over the roof). IsoRim.vert.glsl / IsoRimTex.vert.glsl hand it on as
+        // vNormal.x = 5 (15 see-through) to IsoRimSolid.frag.glsl.
+        public const int ThroughRoof = 65536;
+
+        // A moving model's tag (MovingTag / MovingSeeTag) for a part drawn through roofs.
+        public static readonly Vector3 MovingThroughRoofTag = new Vector3(0f, 0f, Moving | ThroughRoof);
+        public static readonly Vector3 MovingSeeThroughRoofTag = new Vector3(0f, 0f, Moving | ShaderCut.See | ThroughRoof);
     }
 }

@@ -43,6 +43,7 @@ namespace IsoRim
             { "immatureModels", 24 }, { "immatureHide", 24 },
             { "bobByState", 27 },
             { "glassTint", 30 }, { "glassOpacity", 30 }, { "glassGlow", 30 },
+            { "topThroughRoof", 31 },
         };
         private const int BaseVersion = 2;
 

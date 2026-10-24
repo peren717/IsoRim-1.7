@@ -178,14 +178,23 @@ bool FogHides(vec3 p, vec2 owner)
 }
 
 // True: a fragment of a thing standing in cell owner, at p (roof space), is above the underside of a roof drawn over it,
-// or above the fog lid (FogHides).
-bool RoofHides(vec3 p, vec2 owner)
+// or above the fog lid (FogHides). roofs false (RoofClip.ThroughRoof, Api 31): built, rock and ship roofs (kinds 1-3)
+// leave it alone; the fog and a floor's slab still clip it.
+bool RoofHides(vec3 p, vec2 owner, bool roofs)
 {
     int mode = int(round(uMaterial._IsoRoof.x));
     if ((mode & 2) != 0 && FogHides(p, owner))
         return true;
     if ((mode & 5) == 0)
         return false;   // neither roofs nor slabs clip
+    if (!roofs)
+    {
+        vec4 rs;
+        if (RoofLid(ivec2(floor(owner)), true, rs) != 4)
+            return false;   // not under a shown slab
+        ivec2 cs = ivec2(floor(p.xz));
+        return RoofLid(cs, false, rs) == 4 && p.y > RoofUnderside(4, rs, p.xz - vec2(cs));
+    }
     vec4 r;
     if (RoofLid(ivec2(floor(owner)), true, r) == 0)
         return false;   // only things that stand under a roof (open or not) are clipped
@@ -322,7 +331,7 @@ void main()
             discard;
     }
     // Roof clipping: whatever of a thing under a drawn roof rises above its underside is hidden by the roof anyway.
-    if (tagged > 3.0 && RoofHides(vPosLocal, vNormal.yz))
+    if (tagged > 3.0 && RoofHides(vPosLocal, vNormal.yz, tagged < 4.5))
         discard;
 
     vec4 color = vColor * uMaterial._Color;
