@@ -291,7 +291,14 @@ namespace IsoRim
             {
                 // A turning part drawn over the body (the lightball's ball) may stand taller than it.
                 float top = f.model.spin != null ? Mathf.Max(f.model.variants[0].maxY, f.model.spin.maxY) : f.model.variants[0].maxY;
-                return Mathf.Max(Forms.HeightOf(t), top * f.model.def.scale * f.model.Fit(t.def).y);
+                float s = f.model.def.scale * f.model.Fit(t.def).y;
+                float h = top * s;
+                if (f.model.bob != null)
+                {
+                    // a bobbing part (the grav engine's orb) at the top of its rise, as Bobbers draws it
+                    h = Mathf.Max(h, f.model.bob.maxY * s + f.model.def.offset.y + f.model.def.bobHeight);
+                }
+                return Mathf.Max(Forms.HeightOf(t), h);
             }
             return Forms.HeightOf(t);
         }
