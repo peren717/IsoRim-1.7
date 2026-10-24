@@ -327,13 +327,26 @@ namespace IsoRim
             int overlayHooks = 0;
             if (overlays != null)
             {
+                // One scope per thing round everything the overlay pass draws for it (StatusIcons): the game's own
+                // icons and any a mod adds into that pass (its own overlay types drawn into the same batch).
+                MethodInfo drawAll = FindMethod(overlays, "DrawAllOverlays");
+                if (drawAll != null && Patch("status icons", drawAll, prefix: nameof(DrawAllOverlays_Prefix),
+                    finalizer: nameof(DrawAllOverlays_Finalizer), transpiler: nameof(DrawAllOverlays_Transpiler)) && statusPerThing)
+                {
+                    overlayHooks++;
+                }
                 foreach (MethodInfo m in AccessTools.GetDeclaredMethods(overlays))
                 {
                     ParameterInfo[] ps = m.GetParameters();
                     if (m.Name.StartsWith("Render") && ps.Length > 0 && ps[0].ParameterType == typeof(Thing)
                         && !m.IsAbstract && !m.ContainsGenericParameters)
                     {
-                        bool hooked = m.Name.Contains("Forbidden") && !m.Name.Contains("Big") && !m.Name.Contains("Refuel")
+                        bool forbidden = m.Name.Contains("Forbidden") && !m.Name.Contains("Big") && !m.Name.Contains("Refuel");
+                        if (!forbidden && statusPerThing)
+                        {
+                            continue;   // inside the per-thing scope above
+                        }
+                        bool hooked = forbidden
                             ? Patch("forbidden icons", m, prefix: nameof(ForbiddenOverlay_Prefix))
                             : Patch("status icons", m, prefix: nameof(OverlayRender_Prefix), finalizer: nameof(Scope_Finalizer));
                         if (hooked)
@@ -3731,13 +3744,7 @@ namespace IsoRim
                     {
                         DrawHook.hasPivot = true;
                         DrawHook.billboardPivot = pawn.DrawPos;
-                        Matrix4x4 floorM = Overhead.Floor(pawn);
-                        if (floorM != Matrix4x4.identity && !DrawHook.floor)
-                        {
-                            __state.floorSet = true;
-                            DrawHook.floor = true;
-                            DrawHook.floorMatrix = floorM;
-                        }
+                        IconFloor(pawn, ref __state);
                     }
                 }
                 catch (Exception e)
@@ -3757,6 +3764,94 @@ namespace IsoRim
                 Log.ErrorOnce("[IsoRim] Finding the height for a status icon failed: " + e, 93611191);
             }
             BeginBillboard(ref __state, h + IconGap, true, __0.TrueCenter());
+            if (__state.changed)
+            {
+                try
+                {
+                    IconFloor(__0, ref __state);   // a building on an upper floor or deck: its icons over it there
+                }
+                catch (Exception e)
+                {
+                    Log.ErrorOnce("[IsoRim] Placing a status icon on an upper floor failed: " + e, 93611582);
+                }
+            }
+        }
+
+        // Puts the upper floor's matrix of the thing an icon belongs to on for the scope (nothing on the ground).
+        private static void IconFloor(Thing t, ref DrawScope state)
+        {
+            Matrix4x4 floorM = Overhead.Floor(t);
+            if (floorM != Matrix4x4.identity && !DrawHook.floor)
+            {
+                state.floorSet = true;
+                DrawHook.floor = true;
+                DrawHook.floorMatrix = floorM;
+            }
+        }
+
+        // ---- the game's overlay pass (OverlayDrawer.DrawAllOverlays), one scope per thing
+        // The pass walks the things with icons and draws everything for one thing before the next: the game's own
+        // icons (no power, broken down, out of fuel, the question mark ...) and whatever a mod draws into the same
+        // pass for that thing (its own overlay types, drawn into the pass's batch from its own code). The transpiler
+        // marks each thing as the walk reaches it; everything drawn until the next one stands up over it as one card
+        // (OverlayRender_Prefix). If the walk is not found the game's icon methods are wrapped one by one instead.
+        private static bool statusPerThing;   // the transpiler found the walk
+        private static bool statusPass;       // inside DrawAllOverlays
+        private static DrawScope statusScope; // the scope of the thing being drawn
+
+        public static IEnumerable<CodeInstruction> DrawAllOverlays_Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            MethodInfo next = AccessTools.Method(typeof(Patches), nameof(StatusIconsFor));
+            MethodInfo key = AccessTools.PropertyGetter(typeof(KeyValuePair<Thing, OverlayTypes>), "Key");
+            int found = 0;
+            foreach (CodeInstruction ci in instructions)
+            {
+                yield return ci;
+                if (key != null && ci.Calls(key))
+                {
+                    // the thing just taken from the walk stays on the stack for the game; a copy goes to StatusIconsFor
+                    yield return new CodeInstruction(OpCodes.Dup);
+                    yield return new CodeInstruction(OpCodes.Call, next);
+                    found++;
+                }
+            }
+            statusPerThing = found > 0;
+        }
+
+        public static void DrawAllOverlays_Prefix()
+        {
+            statusScope = default(DrawScope);
+            statusPass = true;
+        }
+
+        public static void DrawAllOverlays_Finalizer()
+        {
+            EndStatusIcons();
+            statusPass = false;
+        }
+
+        public static void StatusIconsFor(Thing t)
+        {
+            if (!statusPass)
+            {
+                return;
+            }
+            EndStatusIcons();
+            try
+            {
+                OverlayRender_Prefix(t, out statusScope);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Standing up a thing's status icons failed: " + e, 93611583);
+            }
+        }
+
+        private static void EndStatusIcons()
+        {
+            DrawScope s = statusScope;
+            statusScope = default(DrawScope);
+            Scope_Finalizer(s);
         }
 
         // How far up the picture the game draws a pawn's status icon from the pawn (OverlayDrawer: the question mark at
