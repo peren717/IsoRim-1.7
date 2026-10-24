@@ -298,6 +298,9 @@ namespace IsoRim
                     // a bobbing part (the grav engine's orb) at the top of its rise, as Bobbers draws it
                     h = Mathf.Max(h, f.model.bob.maxY * s + f.model.def.offset.y + f.model.def.bobHeight);
                 }
+                // the whole drawn model: a turret's gun on its pivot (topModel) and a part over the roof (roofModel), so icons
+                // stand above the gun and the pointer picks a turret by its gun too
+                h = Mathf.Max(h, f.model.DrawnHeight(t.def));
                 return Mathf.Max(Forms.HeightOf(t), h);
             }
             return Forms.HeightOf(t);
