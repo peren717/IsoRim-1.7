@@ -707,9 +707,11 @@ namespace IsoRim
     // filler blocks at the others. Built from SectionLayer_IsoRimRoofs, so it follows "show roofs", the roof
     // lifted under the pointer or over colonists, and the sky colour at night, like the house roofs.
     //
-    // A ship roof cell (lid kind 3 in SectionLayer_IsoRimRoofs) is a built roof whose cell has Substructure
-    // as its foundation (TerrainGrid.FoundationAt(c).IsSubstructure, the test the game's hull layer uses),
-    // or a wall, door or vac barrier standing on Substructure beside one (the edge of the roof). Every other
+    // A ship roof cell (lid kind 3 in SectionLayer_IsoRimRoofs) is a built roof whose cell has a gravship deck as its
+    // foundation (IsDeck: Substructure and its kin, TerrainDef.IsSubstructure, the test the game's hull layer uses, or any
+    // foundation that carries the game's Substructure affordance, as modded ship decks do: Vanilla Gravship Expanded's
+    // enemy substructure and subarmor have the affordance but not the tag), or a wall, door or vac barrier standing on
+    // one beside one (the edge of the roof). Every other
     // built roof keeps the pitched house roof (an upper-floor opening in a ship's deck, IFloorLayout.ShipCell, counts
     // as Substructure here). A corner piece cell gets a triangle when either of its two
     // hull neighbours carries the ship roof.
@@ -738,7 +740,7 @@ namespace IsoRim
                 return false;
             }
             TerrainDef f = map.terrainGrid.FoundationAt(c);
-            if (f != null && f.IsSubstructure)
+            if (IsDeck(f))
             {
                 return true;
             }
@@ -749,6 +751,29 @@ namespace IsoRim
             }
             int ground = Api.Floors.GroundRows(map);
             return ground > 0 && c.z >= ground && Api.Floors.ShipCell(map, c);
+        }
+
+        private static TerrainAffordanceDef deckAffordance;
+        private static bool deckAffordanceLooked;
+
+        // A gravship deck foundation: Substructure's tag (TerrainDef.IsSubstructure), or the game's Substructure affordance
+        // (what only a gravship deck carries in the game: where things built for a ship may stand).
+        public static bool IsDeck(TerrainDef f)
+        {
+            if (f == null)
+            {
+                return false;
+            }
+            if (f.IsSubstructure)
+            {
+                return true;
+            }
+            if (!deckAffordanceLooked)
+            {
+                deckAffordanceLooked = true;
+                deckAffordance = DefDatabase<TerrainAffordanceDef>.GetNamedSilentFail("Substructure");
+            }
+            return deckAffordance != null && f.affordances != null && f.affordances.Contains(deckAffordance);
         }
 
         // The deck's material: plain colours, shaded by the sun like the house roof's slates, sky light only.
