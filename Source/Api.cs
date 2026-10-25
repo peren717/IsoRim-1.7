@@ -63,7 +63,8 @@ namespace IsoRim
         // doors draw their glass part (a window, a vac barrier's field across the doorway); Glass.cs.
         // 31: ModelDef.topThroughRoof (a turret's gun) and ModelDef.roofModel (a fixed part baked with the model) not clipped
         // by a roof over them (the fog and floor slabs still clip them).
-        public static int Version => 31;
+        // 32: ModelDef.hoverHeight / hoverBob: animals and mechs that float over the ground while up and about (Hover.cs).
+        public static int Version => 32;
 
         // ---- glass parts (Version 30)
 
@@ -560,6 +561,11 @@ namespace IsoRim
             // Version 19: the yaw a figure (person, animal, mech model) was last drawn facing, degrees clockwise from north,
             // and how many frames ago; null if it was never drawn as one.
             public static float? DrawnYaw(Pawn pawn, out int age) => Animals.DrawnYaw(pawn, out age);
+
+            // (Api 32) Hovering, for tests: how far the pawn's figure is raised as last drawn (cells), and its easing
+            // state (0 on the ground .. 1 afloat; -1 not drawn yet or not hovering).
+            public static float HoverLift(Pawn pawn) => Hover.Current(pawn);
+            public static float HoverState(Pawn pawn) => Hover.UpOf(pawn);
 
             // Version 19: aim pies drawn at a muzzle so far, the last one's wedge angle on screen (degrees clockwise from up the
             // screen) and its width in degrees; MuzzlePies off: the game's pie on the ground for every pawn.

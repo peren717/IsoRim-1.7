@@ -45,10 +45,11 @@ if (IsoRim.Api.Version >= 29) { /* multi-cell supported doors drawn from their m
 if (IsoRim.Api.Version >= 30) { /* glass parts per thing: ModelDef glassTint / glassOpacity / glassGlow, AddGlassColor,
                                    RemoveGlassColor; supported doors draw their glassModel (part 19) */ }
 if (IsoRim.Api.Version >= 31) { /* ModelDef.topThroughRoof, roofModel: a turret's gun and a fixed part rise through roofs (part 20) */ }
+if (IsoRim.Api.Version >= 32) { /* ModelDef.hoverHeight, hoverBob: hovering animals and mechs (part 21) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 29 part 18, version 30 part 19, version 31 part 20 (23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21 (23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1183,6 +1184,37 @@ thing's middle.
 
 A pitched built roof over a wide room can rise higher than the gun; the roof then hides it where it is higher. An older
 IsoRim does not know the field (an XML error in Defs): add it through `PatchOperation_IfIsoRimApi` (minVersion 31).
+
+## Part 21: hovering animals and mechs (version 32)
+
+An animal (`animal`) or mech (`mech`) binding can make its pawn float over the ground, for drones, floating worms and
+the like whose game sprite has no legs or wheels under it:
+
+- `hoverHeight` (cells, default 0): while the pawn is up and about (standing, walking, working, aiming) its whole figure
+  (body, legs, parts, gun, what it carries) is raised this far, times its size.
+- `hoverBob` (cells, default 0): it drifts up and down by this much around `hoverHeight`, a slow swell (about 2.7 s at
+  normal speed) with its own phase per pawn. Keep it below `hoverHeight` so it never dips into the ground.
+
+Downed, dead, asleep or resting (any posture but standing) it settles onto the ground, lying as it would without the
+fields; getting up it rises again. Both are eased over about 45 ticks and stop while the game is paused. Its ground
+shadow stays on the ground under it, a little smaller the higher it floats. Flying (Pawn_FlightTracker), carried or
+attached pawns are placed as before (no hover on top). Build the model standing on the ground as usual; the hover is
+added when drawn. Icons over the pawn and picking follow it.
+
+```xml
+<IsoRim.ModelDef>
+  <defName>MyPack_Drone</defName>
+  <thingDef>MyMod_Drone</thingDef>
+  <model>Models/drone_body.obj</model>
+  <mech>true</mech>
+  <hoverHeight>0.45</hoverHeight>
+  <hoverBob>0.06</hoverBob>
+</IsoRim.ModelDef>
+```
+
+An older IsoRim does not know the fields (an XML error in Defs): add them through `PatchOperation_IfIsoRimApi`
+(minVersion 32). Tests: `Api.Dev.HoverLift(pawn)` (cells, as last drawn) and `Api.Dev.HoverState(pawn)` (0 on the
+ground .. 1 afloat, -1 none).
 
 ## Part M: model packs (IsoRim.ModelDef)
 

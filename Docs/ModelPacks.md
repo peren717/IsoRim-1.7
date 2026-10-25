@@ -116,6 +116,7 @@ Common fields:
 | `byAppearance`, `byState`, `byStyle` | | Other models by stuff look (Planks, Bricks ...), by an addon's state (Api 6), by Ideology style |
 | `aged` | 0 | Api 15: drawn old and rusty |
 | `immatureModels`, `immatureHide` | | Api 24, plants: the young stage, drawn while the plant is not yet harvestable (as the game's `immatureGraphic`, growth up to `harvestMinGrowth`). `immatureModels`: own models, one per variant of `models` (same order). `immatureHide`: material names left out of the young stage, e.g. the produce; with no `immatureModels` the young stage is the mature model without them. `growthScale` still shrinks it |
+| `hoverHeight`, `hoverBob` | 0 | Api 32, animals and mechs: the figure floats this many cells over the ground (times its size) while up and about, drifting up and down by `hoverBob`; downed, dead or lying it settles onto the ground (Api part 21) |
 
 Doors (`doorLeafModel`, ...), turrets (`topModel`), animals, mechs and many special parts have their own fields; see the
 comments in IsoRim's `Source/Models.cs` and `Docs/Api.md`.
@@ -206,7 +207,7 @@ half-set model), a new enough one gets the whole entry:
 fields 14; `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20; `immatureModels`, `immatureHide` 24; alien packs
 (`IsoRim.AlienModelDef`, `ApparelModelDef.aliens`) 25; `bobByState` 27; any binding of a multi-cell supported door (not the
 game's `Building_MultiTileDoor`) 29, which draws it from its models (Api part 18); `glassTint`, `glassOpacity`, `glassGlow`
-and a door's `glassModel` 30 (Api part 19); `topThroughRoof`, `roofModel` 31 (Api part 20). The highest one used counts.
+and a door's `glassModel` 30 (Api part 19); `topThroughRoof`, `roofModel` 31 (Api part 20); `hoverHeight`, `hoverBob` 32 (Api part 21). The highest one used counts.
 
 ## Alien packs
 

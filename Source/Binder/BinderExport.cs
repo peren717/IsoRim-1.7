@@ -44,6 +44,7 @@ namespace IsoRim
             { "bobByState", 27 },
             { "glassTint", 30 }, { "glassOpacity", 30 }, { "glassGlow", 30 },
             { "topThroughRoof", 31 }, { "roofModel", 31 },
+            { "hoverHeight", 32 }, { "hoverBob", 32 },
         };
         private const int BaseVersion = 2;
 

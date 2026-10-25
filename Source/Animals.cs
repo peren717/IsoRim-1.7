@@ -206,6 +206,15 @@ namespace IsoRim
                 bodyPose = Matrix4x4.Translate(new Vector3(0f, bob, 0f));
             }
 
+            // (Api 32) hovering: body and legs raised over the ground while it is up and about (not flying, attached or carried)
+            float hover = Hover.Lift(pawn, def, size, !lying && !attached && air <= 0f && lift <= 0f, true);
+            if (hover > 0f)
+            {
+                Matrix4x4 up = Matrix4x4.Translate(new Vector3(0f, hover, 0f));
+                bodyPose = up * bodyPose;
+                legPose = up * legPose;
+            }
+
             // rotation turns the body model only (one built facing south); its hips and legs are given facing north.
             Matrix4x4 bodyTurn = def.rotation != 0f ? Matrix4x4.Rotate(Quaternion.AngleAxis(def.rotation, Vector3.up)) : Matrix4x4.identity;
             FigureScope.Root(position, yaw);   // (Api.DrawFigure: placed elsewhere)
@@ -214,7 +223,8 @@ namespace IsoRim
             if (ground - flight <= 0f)
             {
                 // On the ground, or flying: the shadow stays on the ground (the blob is drawn at ground height).
-                GroundShadows.Blob(position, yaw, def.bodyHalfWidth * size * 1.5f, def.bodyHalfLength * size * 1.25f);
+                float spread = Hover.ShadowScale(hover);   // (Api 32) under a hovering animal, a little smaller
+                GroundShadows.Blob(position, yaw, def.bodyHalfWidth * size * 1.5f * spread, def.bodyHalfLength * size * 1.25f * spread);
             }
 
             if (drawLegs && entry.leg != null && def.legs != null)
@@ -270,7 +280,7 @@ namespace IsoRim
                 // Held in the mouth, in front of the head: the front of the body, at the top of the legs.
                 Vector3 front = Quaternion.AngleAxis(yaw, Vector3.up) * Vector3.forward;
                 float reach = def.bodyHalfLength * size * 1.1f;
-                Carried.Draw(pawn, new Vector3(position.x + front.x * reach, position.y + def.legLength * size, position.z + front.z * reach), yaw);
+                Carried.Draw(pawn, new Vector3(position.x + front.x * reach, position.y + def.legLength * size + hover, position.z + front.z * reach), yaw);
             }
             return true;
         }
@@ -333,6 +343,10 @@ namespace IsoRim
             else
             {
                 rise = flight > 0f || (!dead && AirborneFactor(pawn) > 0f) ? 0f : Mathf.Abs(Mathf.Sin(phase)) * 0.05f * def.legLength * size * gait;
+                if (flight <= 0f && lift <= 0f)
+                {
+                    rise += Hover.Lift(pawn, def, size, true, false);   // (Api 32) hovering, as its Draw last placed it
+                }
             }
             Vector3 mid;
             float back = BackHeight(def, body, out mid);

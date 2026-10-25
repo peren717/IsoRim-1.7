@@ -298,6 +298,11 @@ namespace IsoRim
         public float wingBeat = 6f;         // in flight: beats per second at normal game speed (insects ~6, big birds ~2)
         // (rotation, for an animal, turns its body model only; legs and hips are given facing north.)
         public float stride = 1f;           // cells walked for one full swing of the legs
+        // Hovering (Api 32; Hover.cs), for animals and mechs: while it is up and about (standing, walking, working) the whole
+        // figure floats hoverHeight cells over the ground (times its size) and drifts up and down by hoverBob cells; downed,
+        // dead, asleep or resting it settles onto the ground (eased, not snapped). Its ground shadow stays on the ground under it.
+        public float hoverHeight = 0f;
+        public float hoverBob = 0f;
         public float bodyCentre = 0f;       // height of the middle of the trunk
         public float bodyHalfWidth = 0.2f;  // half the width of the trunk; where it rests when on its side
         public float bodyHalfLength = 0.4f; // half the length of the animal, for the shading under it

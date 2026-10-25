@@ -271,7 +271,7 @@ namespace IsoRim
                 }
                 float onHost;
                 Poses.AttachRise(pawn, out onHost);   // attached to a host (Api 13): on its anchor
-                return Mathf.Clamp(0.35f + 0.45f * pawn.BodySize, 0.3f, 2.4f) + onHost;
+                return Mathf.Clamp(0.35f + 0.45f * pawn.BodySize, 0.3f, 2.4f) + onHost + Hover.Current(pawn);   // (Api 32) hovering
             }
             if (t.def == null)
             {

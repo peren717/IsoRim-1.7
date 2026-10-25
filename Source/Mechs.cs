@@ -236,6 +236,12 @@ namespace IsoRim
             {
                 pose = Matrix4x4.identity;
             }
+            // (Api 32) hovering: the whole mech raised over the ground while it is up and about
+            float hover = Hover.Lift(pawn, def, size, !lying && platform == null && lift <= 0f, true);
+            if (hover > 0f)
+            {
+                pose = Matrix4x4.Translate(new Vector3(0f, hover, 0f)) * pose;
+            }
             Matrix4x4 whole = pose * sized;
             Vector3 at = new Vector3(drawLoc.x, lift, drawLoc.z);
             FigureScope.Root(at, yaw);   // (Api.DrawFigure: placed elsewhere)
@@ -383,13 +389,14 @@ namespace IsoRim
             {
                 float halfX = Mathf.Max(-rig.minX, rig.maxX) * size;
                 float halfZ = Mathf.Max(-rig.minZ, rig.maxZ) * size;
+                float spread = Hover.ShadowScale(hover);   // (Api 32) a hovering mech's shadow, on the ground, a little smaller
                 if (onSide)
                 {
-                    GroundShadows.Blob(at, yaw, rig.height * 0.5f * size * 1.2f, halfZ * 1.15f);
+                    GroundShadows.Blob(at, yaw, rig.height * 0.5f * size * 1.2f * spread, halfZ * 1.15f * spread);
                 }
                 else
                 {
-                    GroundShadows.Blob(at, yaw, halfX * 1.2f, halfZ * 1.15f);
+                    GroundShadows.Blob(at, yaw, halfX * 1.2f * spread, halfZ * 1.15f * spread);
                 }
             }
 
