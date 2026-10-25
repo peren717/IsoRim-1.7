@@ -65,6 +65,9 @@
   <R3D_Settings_ViewDistanceTip>镜头较低时，地图从屏幕中央向远处绘制多远。越远越耗性能。</R3D_Settings_ViewDistanceTip>
   <R3D_Settings_Sky>天空</R3D_Settings_Sky>
   <R3D_Settings_SkyTip>地图后方显示有太阳和月亮的天空，随时间和天气变化。</R3D_Settings_SkyTip>
+  <R3D_Settings_SkyStyle>天空风格：{0}</R3D_Settings_SkyStyle>
+  <R3D_Settings_Sky_Painted>手绘</R3D_Settings_Sky_Painted>
+  <R3D_Settings_Sky_Classic>经典</R3D_Settings_Sky_Classic>
   <R3D_Settings_DistanceFog>远景雾</R3D_Settings_DistanceFog>
   <R3D_Settings_DistanceFogTip>远处的地图渐渐融入地平线，不会露出绘制的边界。</R3D_Settings_DistanceFogTip>
   <R3D_Settings_FogStart>雾的起点</R3D_Settings_FogStart>

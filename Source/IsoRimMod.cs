@@ -90,6 +90,7 @@ namespace IsoRim
         public float fpFov = 70f;        // first person: vertical field of view, degrees
         public float fpEyeHeight = 0.95f; // first person: eye height, cells (a full wall is wallHeight)
         public bool sky = true;          // perspective: a sky behind the map instead of black
+        public int skyStyle = 0;         // perspective sky: 0 painted, 1 classic (Sky.StyleNames)
         public bool distanceFog = true;  // perspective: the far map fades into the sky's horizon
         public float fogStrength = 1f;   // 1 = solid at the view distance (hides the edge)
         public float fogStart = 0.35f;   // where between the screen centre and the view distance the fog starts
@@ -215,6 +216,7 @@ namespace IsoRim
             Scribe_Values.Look(ref labelFade, "labelFade", 1.4f);
             Scribe_Values.Look(ref fpFov, "fpFov", 70f);
             Scribe_Values.Look(ref sky, "sky", true);
+            Scribe_Values.Look(ref skyStyle, "skyStyle", 0);
             Scribe_Values.Look(ref distanceFog, "distanceFog", true);
             Scribe_Values.Look(ref fogStrength, "fogStrength", 1f);
             Scribe_Values.Look(ref fogStart, "fogStart", 0.35f);
@@ -730,6 +732,20 @@ namespace IsoRim
                     st.viewDistance = Slider(l, "R3D_Settings_ViewDistance".Translate(), st.viewDistance, 40f, 400f, Cells(st.viewDistance, "0"),
                         "R3D_Settings_ViewDistanceTip".Translate());
                     Check(l, "R3D_Settings_Sky".Translate(), ref st.sky, "R3D_Settings_SkyTip".Translate());
+                    if (st.sky)
+                    {
+                        Rect sb = l.GetRect(28f);
+                        if (Widgets.ButtonText(sb, "R3D_Settings_SkyStyle".Translate(SkyStyleLabel(st.skyStyle))))
+                        {
+                            List<FloatMenuOption> options = new List<FloatMenuOption>();
+                            for (int i = 0; i < Sky.StyleNames.Length; i++)
+                            {
+                                int chosen = i;
+                                options.Add(new FloatMenuOption(SkyStyleLabel(i), delegate { st.skyStyle = chosen; }));
+                            }
+                            Find.WindowStack.Add(new FloatMenu(options));
+                        }
+                    }
                     Check(l, "R3D_Settings_DistanceFog".Translate(), ref st.distanceFog, "R3D_Settings_DistanceFogTip".Translate());
                     if (st.distanceFog)
                     {
@@ -1114,6 +1130,12 @@ namespace IsoRim
         }
 
         // A roof style's name in the game's language (R3D_Settings_Roof_<StyleName>).
+        private static string SkyStyleLabel(int style)
+        {
+            string name = Sky.StyleNames[Mathf.Clamp(style, 0, Sky.StyleNames.Length - 1)];
+            return ("R3D_Settings_Sky_" + name).Translate();
+        }
+
         private static string RoofStyleLabel(int style)
         {
             string name = SectionLayer_IsoRimRoofs.StyleNames[style];

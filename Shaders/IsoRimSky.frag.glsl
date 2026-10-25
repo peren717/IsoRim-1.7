@@ -34,6 +34,10 @@ layout(set = 2, binding = 0) uniform MaterialUniforms
     vec4 _SkyTrueSun;  // @default = vec4(0.0, 1.0, 0.0, 1.0)
     vec4 _SkySpace;    // @default = vec4(0.0, 0.0, 0.0, 0.0)
     vec4 _SkyDim;      // @default = vec4(1.0, 1.0, 1.0, 0.0)
+    vec4 _SkyMid;      // @default = vec4(0.5, 0.66, 0.88, 1.0)   painted style only (IsoRimSkyPaint.frag.glsl)
+    vec4 _SkyCloudLit; // @default = vec4(1.0, 0.98, 0.92, 1.0)   painted style only
+    vec4 _SkyCloudShade; // @default = vec4(0.68, 0.76, 0.92, 1.0) painted style only
+    vec4 _SkyCloud;    // @default = vec4(0.0, 0.0, 0.0, 0.0)   painted style only
 } u;
 
 // ------------------------------------------------------------------ noise

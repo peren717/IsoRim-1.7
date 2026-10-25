@@ -65,6 +65,9 @@
   <R3D_Settings_ViewDistanceTip>How far past the middle of the screen the map is drawn when the camera is low. Further costs frame time.</R3D_Settings_ViewDistanceTip>
   <R3D_Settings_Sky>Sky</R3D_Settings_Sky>
   <R3D_Settings_SkyTip>A sky with the sun and moon behind the map, following the time of day and the weather.</R3D_Settings_SkyTip>
+  <R3D_Settings_SkyStyle>Sky style: {0}</R3D_Settings_SkyStyle>
+  <R3D_Settings_Sky_Painted>Painted</R3D_Settings_Sky_Painted>
+  <R3D_Settings_Sky_Classic>Classic</R3D_Settings_Sky_Classic>
   <R3D_Settings_DistanceFog>Distance fog</R3D_Settings_DistanceFog>
   <R3D_Settings_DistanceFogTip>The far map fades into the horizon, so the edge of what is drawn never shows.</R3D_Settings_DistanceFogTip>
   <R3D_Settings_FogStart>Fog starts</R3D_Settings_FogStart>

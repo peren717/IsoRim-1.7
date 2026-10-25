@@ -377,6 +377,21 @@
     </shaderProgram>
   </ShaderDef>
 
+  <!-- The painted sky (IsoRimSettings.skyStyle 0, the default): the same quad and inputs as IsoRimSky. -->
+  <ShaderDef>
+    <defName>IsoRimSkyPaint</defName>
+    <shaderProgram>
+      <vertexShaderFileName>IsoRimSky.vert.glsl</vertexShaderFileName>
+      <fragmentShaderFileName>IsoRimSkyPaint.frag.glsl</fragmentShaderFileName>
+      <useTexture>false</useTexture>
+      <flipTextureST>false</flipTextureST>
+      <blendMode>Opaque</blendMode>
+      <depthWrite>false</depthWrite>
+      <cullMode>None</cullMode>
+      <renderQueue>3195</renderQueue>
+    </shaderProgram>
+  </ShaderDef>
+
   <!-- Space maps with the planet below (Sky.PlanetBelow): the same program darkens the game's planet
        backdrop below the horizon by the map's sky light, with the game's light-overlay blend (2 x src x dst). -->
   <ShaderDef>
