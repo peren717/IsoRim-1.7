@@ -232,7 +232,7 @@ namespace IsoRim
                         mat.SetVector(cloudShadeId, (Vector4)paint.cloudShade);
                         // Drift: game time, so the clouds stop when the game is paused (wrapped to keep the noise precise).
                         float drift = Mathf.Repeat(Find.TickManager.TicksAbs / 60000f * CloudDrift, 2048f);
-                        mat.SetVector(cloudId, new Vector4(space ? 0f : paint.cover, drift, drift * 0.35f, 0f));
+                        mat.SetVector(cloudId, new Vector4(space ? 0f : paint.cover, drift, drift * 0.35f, paint.overcast));
                     }
                     Graphics.DrawMesh(quad, Matrix4x4.identity, mat, 0, cam);
                     for (int i = 0; i < ExtraDraws; i++)
@@ -429,6 +429,7 @@ namespace IsoRim
             public Color cloudLit;
             public Color cloudShade;
             public float cover;
+            public float overcast;   // how much the weather has greyed the cloud colours
         }
 
         // Cloud layer units the clouds drift per game day.
@@ -500,11 +501,14 @@ namespace IsoRim
                 paint.cover = CoverOverride;
             }
             float overcast = Mathf.Clamp01(grey + storm * 0.6f);
+            paint.overcast = overcast;
             if (overcast > 0f)
             {
-                zenith = Greyed(zenith, grey);
-                horizon = Greyed(horizon, grey);
-                paint.mid = Greyed(paint.mid, grey);
+                // A storm greys the sky a little even without rain.
+                float skyGrey = Mathf.Max(grey, storm * 0.55f);
+                zenith = Greyed(zenith, skyGrey);
+                horizon = Greyed(horizon, skyGrey);
+                paint.mid = Greyed(paint.mid, skyGrey);
                 // Rain clouds: grey and darker, the lit tone dimmed most.
                 paint.cloudLit = Greyed(paint.cloudLit, overcast) * (1f - 0.3f * overcast);
                 paint.cloudShade = Greyed(paint.cloudShade, overcast) * (1f - 0.35f * overcast);

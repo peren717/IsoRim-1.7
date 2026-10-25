@@ -33,7 +33,7 @@ layout(set = 2, binding = 0) uniform MaterialUniforms
     vec4 _SkyMid;      // @default = vec4(0.5, 0.66, 0.88, 1.0)   painted: the band colour half way up
     vec4 _SkyCloudLit; // @default = vec4(1.0, 0.98, 0.92, 1.0)   painted: the clouds' lit tone
     vec4 _SkyCloudShade; // @default = vec4(0.68, 0.76, 0.92, 1.0) painted: the clouds' shaded tone
-    vec4 _SkyCloud;    // @default = vec4(0.0, 0.0, 0.0, 0.0)   painted: cover (0 none .. 1 overcast), drift x, drift z, -
+    vec4 _SkyCloud;    // @default = vec4(0.0, 0.0, 0.0, 0.0)   painted: cover (0 none .. 1 overcast), drift x, drift z, how much the weather greyed the clouds
 } u;
 
 // ------------------------------------------------------------------ noise
@@ -123,10 +123,17 @@ float cumulus(vec2 q, vec3 a, vec3 b, vec2 shape, float lift, float shrink)
     return d;
 }
 
-// The overcast layer of bad weather: three octaves of value noise on a shallow dome overhead.
+// The overcast layer of bad weather: value noise on a shallow dome overhead, mostly the two low
+// octaves (big soft shapes, no small fragments).
+vec3 greyed(vec3 c, float w)
+{
+    float l = dot(c, vec3(0.3, 0.55, 0.15));
+    return mix(c, vec3(l * 0.88, l * 0.9, l * 0.95), w);
+}
+
 float cloudD(vec2 p)
 {
-    return 0.58 * vnoise2(p) + 0.24 * vnoise2(p * 2.13 + vec2(5.2, 1.3)) + 0.18 * vnoise2(p * 5.9 + vec2(2.8, 7.1));
+    return 0.68 * vnoise2(p) + 0.26 * vnoise2(p * 2.13 + vec2(5.2, 1.3)) + 0.06 * vnoise2(p * 4.3 + vec2(2.8, 7.1));
 }
 
 // ------------------------------------------------------------------ stars
@@ -432,22 +439,31 @@ void main()
         float fade = smoothstep(0.003, 0.05, e);
         vec2 drift = u._SkyCloud.yz;
 
-        float oc = smoothstep(0.6, 0.88, cov);
+        // The overcast layer: patches that grow with the cover into one continuous sheet (always opaque
+        // where they are, never half see-through), in grey tones that deepen with the cover. The weather
+        // has already greyed the cloud colours by _SkyCloud.w; only what it has not is added here, so rain
+        // keeps its own grey.
+        float oc = smoothstep(0.62, 0.95, cov);
         if (oc > 0.0)
         {
-            c = mix(c, mix(shd, mid, 0.3), smoothstep(0.5, 1.0, oc) * fade);
+            float extra = clamp(smoothstep(0.55, 0.9, cov) - u._SkyCloud.w * 1.15, 0.0, 1.0);
+            c = greyed(c, 0.5 * clamp(smoothstep(0.65, 0.95, cov) - u._SkyCloud.w * 1.15, 0.0, 1.0));   // and the sky behind
+            vec3 pLit = greyed(litC, extra) * (1.0 - 0.3 * extra);
+            vec3 pShd = greyed(shd, extra) * (1.0 - 0.35 * extra);
+            vec3 pMid = mix(pShd, pLit, 0.85);
+            c = mix(c, mix(pShd, pMid, 0.3), smoothstep(0.5, 1.0, oc) * fade);
             vec2 dir = normalize(r.xz + vec2(1e-5, 0.0));
             vec2 pr = r.xz / (e + 0.3) * 1.1 + drift;
-            float th = mix(0.86, 0.3, oc);
+            float th = mix(0.98, 0.3, oc);
             float d0 = cloudD(pr);
-            float wv = fwidth(d0) * 1.2 + 0.006;
+            float wv = fwidth(d0) * 1.2 + 0.02;
             float s = smoothstep(th - wv, th + wv, d0);
             // Toward the horizon on the layer = down the screen.
-            float body = smoothstep(th + 0.01, th + 0.04, cloudD(pr + dir * 0.24));
-            float top = 1.0 - smoothstep(th - 0.005, th + 0.03, cloudD(pr - dir * 0.09));
-            vec3 sc = mix(shd * 0.9, mix(shd, litC, 0.65), body);
-            sc = mix(sc, mix(shd, litC, 0.85), top * body);
-            c = mix(c, sc, s * smoothstep(0.0, 0.3, oc) * fade);
+            float body = smoothstep(th + 0.01, th + 0.05, cloudD(pr + dir * 0.24));
+            float top = 1.0 - smoothstep(th - 0.005, th + 0.04, cloudD(pr - dir * 0.09));
+            vec3 sc = mix(pShd * 0.9, mix(pShd, pLit, 0.65), body);
+            sc = mix(sc, mix(pShd, pLit, 0.85), top * body);
+            c = mix(c, sc, s * fade);
         }
 
         vec2 p0 = r.xz / (1.0 + e);
