@@ -54,10 +54,11 @@ namespace IsoRim
         // ApparelModelDef.aliens and alienBodyModels, AlienModelDef.face (AlienFace) / hair (AlienHair) / faceFit / addon
         // hatLift, the "Keep as paper" setting, the dev-mode alien tuning window; Aliens.cs, AlienCards.cs, AlienTune.cs; 26: other mods'
         // angled wall pieces and gravship scene layers: AddWallCorners (CornerRule),
-        // HideFlatLayer, RefreshWallShapes, FlyLayer, NotGeometryLayer; Api26.cs).
+        // HideFlatLayer, RefreshWallShapes, FlyLayer, NotGeometryLayer; Api26.cs); 27: ModelDef.bobByState; 28: ModelDef.slots
+        // (one entry per sleeping slot, its surface height: a stacked bunk bed's levels; Poses.SleeperHeight).
         // The card overlay (IsCard, DrawOnCard,
         // CardLight; CardOverlay.cs) came in before version 8 without a number of its own: check >= 8 for it.
-        // 27: ModelDef.bobByState; 29: multi-cell supported doors (Building_SupportedDoor subclasses other than the game's
+        // 29: multi-cell supported doors (Building_SupportedDoor subclasses other than the game's
         // Building_MultiTileDoor) drawn from their models (model, doorTopModel, doorLeafModel), as one-cell ones; Doors in Dynamic.cs.
         // 30: glass parts per thing: ModelDef glassTint / glassOpacity / glassGlow, AddGlassColor / RemoveGlassColor; supported
         // doors draw their glass part (a window, a vac barrier's field across the doorway); Glass.cs.

@@ -42,6 +42,7 @@ namespace IsoRim
             { "cutaway", 20 },
             { "immatureModels", 24 }, { "immatureHide", 24 },
             { "bobByState", 27 },
+            { "slots", 28 },
             { "glassTint", 30 }, { "glassOpacity", 30 }, { "glassGlow", 30 },
             { "topThroughRoof", 31 }, { "roofModel", 31 },
             { "hoverHeight", 32 }, { "hoverBob", 32 },

@@ -176,7 +176,7 @@ namespace IsoRim
                         string job = p.CurJobDef != null ? p.CurJobDef.defName : "none";
                         Log.Message("[IsoRim probe] seatcheck " + p.LabelShort + " " + p.Position + " job " + job + " rot " + p.Rotation
                             + " drawPos " + p.DrawPos.ToString("F2") + ": " + Poses.Report(p) + (p.CurrentBed() != null ? ", bed " + p.CurrentBed().def.defName
-                            + " flat lying height " + Poses.FlatLyingHeight(p.CurrentBed()).ToString("0.00") : ""));
+                            + " flat lying height " + Poses.FlatLyingHeight(p.CurrentBed(), p).ToString("0.00") : ""));
                         if (!expect)
                         {
                             continue;

@@ -41,6 +41,7 @@ if (IsoRim.Api.Version >= 25) { /* humanlike aliens: AlienModelDef alien packs, 
                                    FigureFrame.Mode, FigureParts.Addons, ApparelModelDef.aliens / alienBodyModels (part 16) */ }
 if (IsoRim.Api.Version >= 26) { /* AddWallCorners, HideFlatLayer, RefreshWallShapes, FlyLayer, NotGeometryLayer (part 17) */ }
 if (IsoRim.Api.Version >= 27) { /* ModelDef.bobByState: state models for the bobbing part (part M) */ }
+if (IsoRim.Api.Version >= 28) { /* ModelDef.slots: one entry per sleeping slot, its surface height (a bunk bed's levels; part M) */ }
 if (IsoRim.Api.Version >= 29) { /* multi-cell supported doors drawn from their models (part 18) */ }
 if (IsoRim.Api.Version >= 30) { /* glass parts per thing: ModelDef glassTint / glassOpacity / glassGlow, AddGlassColor,
                                    RemoveGlassColor; supported doors draw their glassModel (part 19) */ }
@@ -49,7 +50,7 @@ if (IsoRim.Api.Version >= 32) { /* ModelDef.hoverHeight, hoverBob: hovering anim
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21 (23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21 (23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1233,6 +1234,7 @@ mods' things.
 | `scale`, `offset`, `rotation`, `rotationByFacing` (6), `ignoreRotation` | Placing in model space: `world = thing centre + R(yaw)·(local ∘ fit + offset)`, yaw = the thing's rotation + `rotation` + `rotationByFacing[facing]`. The model faces north (+z). |
 | `height`, `flat` | Without `model`: the height of IsoRim's automatic shape (a block for walls), or keep the flat sprite. |
 | `surfaceHeight`, `seatHeight`, `beddingTop` | Where things rest, sit and lie on it (-1: the model's top). |
+| `slots` (28) | One entry per sleeping slot, in the game's slot order (`RestUtility.CurrentBed`'s slot; a bunk bed mod numbers its levels so): `<li><height>1.25</height></li>` is that slot's surface height, in model units like `surfaceHeight`. The 3D figure lies there, a flat sprite as far above it as `beddingTop` is above `surfaceHeight`, the icons over the head go up with it. A missing list, a slot past its end or a height of -1 keeps `surfaceHeight`. Getting in and out snaps, as in the game. Later per-slot settings (offset, facing, pose) go into the same entries. |
 | `wallFit` | > 0: the model was built for walls this tall; its height follows the wall height drawn now. |
 | `linked` | The first model stands in the cell, the second is added toward each joined neighbour (with `wallFit` on a wall: a wall from a model). |
 | `wallMounted`, `mountHeight` | Fixed to the wall it faces, that far up. |

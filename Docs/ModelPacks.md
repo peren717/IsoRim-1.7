@@ -106,6 +106,7 @@ Common fields:
 | `rotationByFacing` | | Api 6: one more turn per facing (north, east, south, west), for things whose game sprite for one facing is another's |
 | `scale` | 1 | Uniform size |
 | `surfaceHeight` | -1 | Where a lying pawn or things placed on it rest (shelves; work tables and tables, i.e. defs with a `surfaceType`, carry items and bill ingredients here; 0 = no top, items stay on the ground, e.g. a campfire); -1 = top of the model. `seatHeight`, `beddingTop` for seats and beds |
+| `slots` | | Api 28: one entry per sleeping slot, in the game's slot order: `<li><height>1.25</height></li>` is that slot's surface height (like `surfaceHeight`; -1 keeps it). For stacked beds (a bunk bed mod's levels): each sleeper lies on their own level. Missing or too short: `surfaceHeight` |
 | `wallMounted`, `mountHeight` | false, -1 | Hung on the wall the thing faces. Build it in the cell in front of the wall, against the wall at z = +0.5 (north) |
 | `wallFit` | 0 | The model was built for walls this tall; its height follows the wall height setting |
 | `cutaway` | Auto | Api 20: whether the cut-away lowers this wall: `Auto` (built walls, low walls included), `Never` (e.g. a half wall that keeps its window), `Always` (also a block IsoRim would not count as a wall). Walls only; see `Docs/Api.md` |
@@ -205,7 +206,7 @@ half-set model), a new enough one gets the whole entry:
 `minVersion` by field: base fields and the plain binding 2; `hackedGlowOff`, `deadBellyUp`, `legFromHip`, `legLift`,
 `legYaw` 5; `rotationByFacing`, `byState`, `style`, `crownTop`, `doorLeafRise` 6; `wallTop` 11; `backHeight` 13; wing
 fields 14; `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20; `immatureModels`, `immatureHide` 24; alien packs
-(`IsoRim.AlienModelDef`, `ApparelModelDef.aliens`) 25; `bobByState` 27; any binding of a multi-cell supported door (not the
+(`IsoRim.AlienModelDef`, `ApparelModelDef.aliens`) 25; `bobByState` 27; `slots` 28; any binding of a multi-cell supported door (not the
 game's `Building_MultiTileDoor`) 29, which draws it from its models (Api part 18); `glassTint`, `glassOpacity`, `glassGlow`
 and a door's `glassModel` 30 (Api part 19); `topThroughRoof`, `roofModel` 31 (Api part 20); `hoverHeight`, `hoverBob` 32 (Api part 21). The highest one used counts.
 

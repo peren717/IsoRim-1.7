@@ -178,6 +178,94 @@ namespace IsoRim
             return Forms.HeightOf(b);
         }
 
+        // (Api 28) A pawn's own slot on a bed with ModelDef.slots (a stacked bunk bed: its levels): every place that puts a
+        // sleeper at a height asks here (the 3D figure, the flat sprite, the icons over the head). The slot is the game's
+        // own (RestUtility.CurrentBed: the slot whose occupant the pawn is; a bunk bed mod numbers its levels so). False
+        // without such a slot (no list, past its end, height -1): the bed's own surface then, as before.
+        private static bool OwnSlot(Pawn pawn, Building b, out ModelEntry entry, out float height)
+        {
+            entry = null;
+            height = 0f;
+            Building_Bed bed = b as Building_Bed;
+            if (pawn == null || bed == null || !View3D.Active)
+            {
+                return false;
+            }
+            ThingForm f = Forms.For(bed.def);
+            if (f.form != Form3D.Model)
+            {
+                return false;
+            }
+            entry = ModelLibrary.StyledEntry(bed) ?? f.model;
+            if (entry == null || !entry.HasModel || entry.def.slots == null)
+            {
+                return false;
+            }
+            int? slot;
+            if (RestUtility.CurrentBed(pawn, out slot) != bed || !slot.HasValue)
+            {
+                return false;
+            }
+            return entry.SlotHeight(slot.Value, out height);
+        }
+
+        // (Api 28) Where a 3D figure lies in this bed, cells over the floor: its slot's height (ModelDef.slots), else the
+        // bed's surface (Forms.HeightOf).
+        public static float SleeperHeight(Pawn pawn, Building_Bed bed)
+        {
+            ModelEntry e;
+            float h;
+            if (OwnSlot(pawn, bed, out e, out h))
+            {
+                return h * e.Fit(bed.def).y;
+            }
+            return Forms.HeightOf(bed);
+        }
+
+        // (Api 28) Where this pawn, drawn as a flat sprite, lies on the building: on its slot (ModelDef.slots) as high over
+        // the slot as the bedding is over the bed's surface (beddingTop - surfaceHeight), else FlatLyingHeight(b).
+        public static float FlatLyingHeight(Building b, Pawn pawn)
+        {
+            ModelEntry e;
+            float h;
+            if (On && OwnSlot(pawn, b, out e, out h))
+            {
+                return (h + e.BeddingTop - e.SurfaceHeight) * e.Fit(b.def).y;
+            }
+            return FlatLyingHeight(b);
+        }
+
+        // (Api 28) How much higher the pawn's slot is than the bed's own surface, cells (0 without a slot of its own): the
+        // icons over a sleeper's head go up by as much (Overhead).
+        public static float SlotRise(Pawn pawn, Building_Bed bed)
+        {
+            ModelEntry e;
+            float h;
+            if (OwnSlot(pawn, bed, out e, out h))
+            {
+                return h * e.Fit(bed.def).y - Forms.HeightOf(bed);
+            }
+            return 0f;
+        }
+
+        // For the harness (slotcheck): a sleeper's slot and the heights worked out for it.
+        public static string SlotReport(Pawn pawn)
+        {
+            int? slot = null;
+            Building_Bed bed = pawn != null ? RestUtility.CurrentBed(pawn, out slot) : null;
+            if (bed == null)
+            {
+                return "not in a bed";
+            }
+            ModelEntry e;
+            float h;
+            bool own = OwnSlot(pawn, bed, out e, out h);
+            return "bed " + bed.def.defName + " slot " + (slot.HasValue ? slot.Value.ToString() : "none") + (own ? " own height " + h.ToString("0.00") : " no slot height")
+                + ", surface " + Forms.HeightOf(bed).ToString("0.00") + ", figure " + SleeperHeight(pawn, bed).ToString("0.00")
+                + ", flat " + FlatLyingHeight(bed, pawn).ToString("0.00") + ", rise " + SlotRise(pawn, bed).ToString("0.00")
+                + ", icon " + Overhead.Height(pawn).ToString("0.00");
+        }
+
         // For the harness (seatcheck).
         public static string Report(Pawn pawn)
         {

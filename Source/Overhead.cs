@@ -33,7 +33,8 @@ namespace IsoRim
             PawnPosture posture = p.GetPosture();
             if (p.Dead || p.Downed || posture != PawnPosture.Standing)
             {
-                return (p.CurrentBed() != null ? BedTop : LyingTop) + Gap;
+                Building_Bed bed = p.CurrentBed();
+                return (bed != null ? BedTop + Poses.SlotRise(p, bed) : LyingTop) + Gap;   // up to their slot (Api 28: a bunk's level)
             }
             return Interaction.PickHeight(p) + Gap;
         }

@@ -46,6 +46,12 @@ namespace IsoRim
                                             // goes (Poses); -1 uses surfaceHeight
         public float beddingTop = -1f;      // a bed: top of the bedding (pillow, blanket), where a sleeper drawn as a flat
                                             // sprite lies (Poses); -1 uses surfaceHeight
+        // (Api 28) One entry per place a pawn lies (or, later, sits) on the thing, in the game's slot order: a bed's sleeping
+        // slots as the game numbers them (RestUtility.CurrentBed's slot; a mod's stacked bunk bed numbers its levels so).
+        // <li><height>1.25</height></li>: that slot's surface height, like surfaceHeight (model units, before the footprint
+        // fit); a missing list, a slot past its end or a height of -1 keeps surfaceHeight. More per-slot settings (offset,
+        // facing, pose) go into the same entries later (ModelSlot).
+        public List<ModelSlot> slots;
         public Vector3 contentOffset = Vector3.zero; // those contents moved this far (x, z; model space, facing north)
                                             // from where the game draws them, to where the model holds them
         public float height = -1f;          // height in cells of the automatic shape; -1 lets the mod decide
@@ -600,6 +606,13 @@ namespace IsoRim
         public string model;
     }
 
+    // (Api 28) One entry of ModelDef.slots: one place a pawn lies on the thing. Only height for now; later settings for the
+    // same place (offset, facing, pose) are added here as fields, so packs keep one list.
+    public class ModelSlot
+    {
+        public float height = -1f;   // the slot's surface height (model units, before the fit, as surfaceHeight); -1 surfaceHeight
+    }
+
     // One entry of ModelDef.byState (and of bobByState, Api 27).
     public class StateModel
     {
@@ -848,6 +861,20 @@ namespace IsoRim
         public float BeddingTop
         {
             get { return def.beddingTop >= 0f ? def.beddingTop : SurfaceHeight; }
+        }
+
+        // (Api 28) The surface height of a slot (ModelDef.slots), before the footprint fit; false when the slot has none of
+        // its own (no list, past its end, height -1): the thing's own surface then.
+        public bool SlotHeight(int slot, out float height)
+        {
+            height = 0f;
+            List<ModelSlot> slots = def.slots;
+            if (slots == null || slot < 0 || slot >= slots.Count || slots[slot] == null || slots[slot].height < 0f)
+            {
+                return false;
+            }
+            height = slots[slot].height;
+            return true;
         }
 
         // How tall a thing of this kind is drawn, in cells: the top of its tallest model (variants, per-stuff and
