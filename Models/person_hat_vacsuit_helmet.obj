@@ -303,7 +303,7 @@ v -0.0000 0.7925 -0.2740
 v 0.0375 0.7925 -0.2545
 v 0.0000 0.7250 -0.2350
 v 0.0000 0.8150 -0.2350
-usemtl vac_white
+usemtl stuff_vac_white
 f 1 18 2
 f 1 17 18
 f 145 130 146
@@ -375,7 +375,7 @@ f 161 145 146
 usemtl vac_dark
 f 33 162 34
 f 33 161 162
-usemtl vac_white
+usemtl stuff_vac_white
 f 18 35 19
 f 18 34 35
 f 162 147 163
@@ -383,7 +383,7 @@ f 162 146 147
 usemtl vac_dark
 f 34 163 35
 f 34 162 163
-usemtl vac_white
+usemtl stuff_vac_white
 f 19 36 20
 f 19 35 36
 f 163 148 164
@@ -404,7 +404,7 @@ f 23 40 24
 f 23 39 40
 f 167 152 168
 f 167 151 152
-usemtl vac_grey
+usemtl stuff_vac_grey
 f 24 41 25
 f 24 40 41
 f 168 153 169
@@ -413,7 +413,7 @@ f 25 42 26
 f 25 41 42
 f 169 154 170
 f 169 153 154
-usemtl vac_white
+usemtl stuff_vac_white
 f 26 43 27
 f 26 42 43
 f 170 155 171
@@ -441,7 +441,7 @@ f 175 159 160
 usemtl vac_dark
 f 47 176 48
 f 47 175 176
-usemtl vac_white
+usemtl stuff_vac_white
 f 32 33 17
 f 32 48 33
 f 176 145 161
@@ -449,7 +449,7 @@ f 176 160 145
 usemtl vac_dark
 f 48 161 33
 f 48 176 161
-usemtl vac_white
+usemtl stuff_vac_white
 f 35 52 36
 f 35 51 52
 f 179 164 180
@@ -457,7 +457,7 @@ f 179 163 164
 usemtl vac_dark
 f 35 179 51
 f 35 163 179
-usemtl vac_white
+usemtl stuff_vac_white
 f 36 53 37
 f 36 52 53
 f 180 165 181
@@ -474,7 +474,7 @@ f 39 56 40
 f 39 55 56
 f 183 168 184
 f 183 167 168
-usemtl vac_grey
+usemtl stuff_vac_grey
 f 40 57 41
 f 40 56 57
 f 184 169 185
@@ -483,7 +483,7 @@ f 41 58 42
 f 41 57 58
 f 185 170 186
 f 185 169 170
-usemtl vac_white
+usemtl stuff_vac_white
 f 42 59 43
 f 42 58 59
 f 186 171 187
@@ -507,7 +507,7 @@ f 190 174 175
 usemtl vac_dark
 f 63 175 47
 f 63 191 175
-usemtl vac_white
+usemtl stuff_vac_white
 f 51 68 52
 f 51 67 68
 f 195 180 196
@@ -515,7 +515,7 @@ f 195 179 180
 usemtl vac_dark
 f 51 195 67
 f 51 179 195
-usemtl vac_white
+usemtl stuff_vac_white
 f 52 69 53
 f 52 68 69
 f 196 181 197
@@ -532,7 +532,7 @@ f 55 72 56
 f 55 71 72
 f 199 184 200
 f 199 183 184
-usemtl vac_grey
+usemtl stuff_vac_grey
 f 56 73 57
 f 56 72 73
 f 200 185 201
@@ -541,7 +541,7 @@ f 57 74 58
 f 57 73 74
 f 201 186 202
 f 201 185 186
-usemtl vac_white
+usemtl stuff_vac_white
 f 58 75 59
 f 58 74 75
 f 202 187 203
@@ -565,7 +565,7 @@ f 206 190 191
 usemtl vac_dark
 f 79 191 63
 f 79 207 191
-usemtl vac_white
+usemtl stuff_vac_white
 f 67 84 68
 f 67 83 84
 f 211 196 212
@@ -573,7 +573,7 @@ f 211 195 196
 usemtl vac_dark
 f 67 211 83
 f 67 195 211
-usemtl vac_white
+usemtl stuff_vac_white
 f 68 85 69
 f 68 84 85
 f 212 197 213
@@ -621,7 +621,7 @@ f 222 206 207
 usemtl vac_dark
 f 95 207 79
 f 95 223 207
-usemtl vac_white
+usemtl stuff_vac_white
 f 81 98 82
 f 81 97 98
 f 225 210 226
@@ -629,7 +629,7 @@ f 225 209 210
 usemtl vac_dark
 f 82 209 81
 f 82 210 209
-usemtl vac_white
+usemtl stuff_vac_white
 f 82 99 83
 f 82 98 99
 f 226 211 227
@@ -637,7 +637,7 @@ f 226 210 211
 usemtl vac_dark
 f 83 210 82
 f 83 211 210
-usemtl vac_white
+usemtl stuff_vac_white
 f 83 100 84
 f 83 99 100
 f 227 212 228
@@ -693,7 +693,7 @@ f 239 223 224
 usemtl vac_dark
 f 96 223 95
 f 96 224 223
-usemtl vac_white
+usemtl stuff_vac_white
 f 96 97 81
 f 96 112 97
 f 240 209 225
@@ -701,7 +701,7 @@ f 240 224 209
 usemtl vac_dark
 f 81 224 96
 f 81 209 224
-usemtl vac_white
+usemtl stuff_vac_white
 f 97 114 98
 f 97 113 114
 f 241 226 242
@@ -830,7 +830,7 @@ f 257 15 16
 f 258 144 143
 f 257 16 1
 f 258 129 144
-usemtl vac_grey
+usemtl stuff_vac_grey
 f 259 260 266
 f 259 266 265
 f 260 261 267

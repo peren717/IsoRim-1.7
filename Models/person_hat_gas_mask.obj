@@ -185,7 +185,7 @@ v 0.0000 0.6284 -0.2834
 v -0.0693 0.6567 -0.3117
 v 0.0000 0.7050 -0.3200
 v 0.0000 0.6850 -0.3400
-usemtl gas_rubber
+usemtl stuff_gas_rubber
 f 1 2 11
 f 1 11 10
 f 64 65 56
@@ -363,7 +363,7 @@ f 121 123 124
 f 121 124 122
 f 123 109 110
 f 123 110 124
-usemtl gas_rubber
+usemtl stuff_gas_rubber
 f 34 43 127
 f 34 127 125
 f 97 88 126
@@ -413,7 +413,7 @@ f 137 139 140
 f 137 140 138
 f 139 125 126
 f 139 126 140
-usemtl gas_rubber
+usemtl stuff_gas_rubber
 f 1 56 2
 f 1 55 56
 f 2 57 3

@@ -19,6 +19,14 @@ newmtl vac_white
 Kd 0.930 0.930 0.940
 newmtl vac_grey
 Kd 0.620 0.630 0.650
+# dyefix (2026-10-25): the vacsuit helmet's shell and trim and the gas mask's rubber take the item's colour (the
+# hat colour is the item's DrawColor for these painted hats: white undyed, so they look as before until dyed)
+newmtl stuff_vac_white
+Kd 0.930 0.930 0.940
+newmtl stuff_vac_grey
+Kd 0.620 0.630 0.650
+newmtl stuff_gas_rubber
+Kd 0.300 0.305 0.310
 newmtl vac_dark
 Kd 0.220 0.230 0.250
 newmtl cult_black

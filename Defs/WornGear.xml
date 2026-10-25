@@ -57,73 +57,84 @@
     <apparel>Apparel_PackTox</apparel>
     <model>Models/person_pack_tox.obj</model>
     <mount>pack</mount>
-    <tintMaterials><li>utility_shell</li></tintMaterials>
+    <tintMaterials><li>utility_tox</li></tintMaterials>   <!-- dyefix: the model has no utility_shell faces -->
   </IsoRim.WornGearDef>
   <IsoRim.WornGearDef>
     <defName>R3DGear_Apparel_DeadlifePack</defName>
     <apparel>Apparel_DeadlifePack</apparel>
     <model>Models/person_pack_deadlife.obj</model>
     <mount>pack</mount>
+    <tintMaterials><li>utility_bio</li></tintMaterials>   <!-- dyefix: dyed, it takes the dye -->
   </IsoRim.WornGearDef>
   <IsoRim.WornGearDef>
     <defName>R3DGear_Apparel_DisruptorFlarePack</defName>
     <apparel>Apparel_DisruptorFlarePack</apparel>
     <model>Models/person_pack_disruptor.obj</model>
     <mount>pack</mount>
+    <tintMaterials><li>utility_capsule</li></tintMaterials>   <!-- dyefix: dyed, it takes the dye -->
   </IsoRim.WornGearDef>
   <IsoRim.WornGearDef>
     <defName>R3DGear_Apparel_PackTurret</defName>
     <apparel>Apparel_PackTurret</apparel>
     <model>Models/person_pack_turret.obj</model>
     <mount>pack</mount>
+    <tintMaterials><li>utility_steel</li></tintMaterials>   <!-- dyefix: dyed, it takes the dye -->
   </IsoRim.WornGearDef>
   <IsoRim.WornGearDef>
     <defName>R3DGear_Apparel_PackHunter</defName>
     <apparel>Apparel_PackHunter</apparel>
     <model>Models/person_pack_hunter.obj</model>
     <mount>pack</mount>
+    <tintMaterials><li>utility_steel</li></tintMaterials>   <!-- dyefix: dyed, it takes the dye -->
   </IsoRim.WornGearDef>
   <IsoRim.WornGearDef>
     <defName>R3DGear_Apparel_CerebrexNode</defName>
     <apparel>Apparel_CerebrexNode</apparel>
     <model>Models/person_pack_cerebrex.obj</model>
     <mount>pack</mount>
+    <tintMaterials><li>utility_ivory</li></tintMaterials>   <!-- dyefix: dyed, it takes the dye -->
   </IsoRim.WornGearDef>
   <IsoRim.WornGearDef>
     <defName>R3DGear_Apparel_PsychicShockLance</defName>
     <apparel>Apparel_PsychicShockLance</apparel>
     <model>Models/person_tool_shock.obj</model>
     <mount>hip</mount>
+    <tintMaterials><li>utility_olive</li></tintMaterials>   <!-- dyefix: dyed, it takes the dye -->
   </IsoRim.WornGearDef>
   <IsoRim.WornGearDef>
     <defName>R3DGear_Apparel_PsychicInsanityLance</defName>
     <apparel>Apparel_PsychicInsanityLance</apparel>
     <model>Models/person_tool_insanity.obj</model>
     <mount>hip</mount>
+    <tintMaterials><li>utility_olive</li></tintMaterials>   <!-- dyefix: dyed, it takes the dye -->
   </IsoRim.WornGearDef>
   <IsoRim.WornGearDef>
     <defName>R3DGear_OrbitalTargeterBombardment</defName>
     <apparel>OrbitalTargeterBombardment</apparel>
     <model>Models/person_tool_bombardment.obj</model>
     <mount>hip</mount>
+    <tintMaterials><li>utility_shell</li></tintMaterials>   <!-- dyefix: dyed, it takes the dye -->
   </IsoRim.WornGearDef>
   <IsoRim.WornGearDef>
     <defName>R3DGear_OrbitalTargeterPowerBeam</defName>
     <apparel>OrbitalTargeterPowerBeam</apparel>
     <model>Models/person_tool_powerbeam.obj</model>
     <mount>hip</mount>
+    <tintMaterials><li>utility_shell</li></tintMaterials>   <!-- dyefix: dyed, it takes the dye -->
   </IsoRim.WornGearDef>
   <IsoRim.WornGearDef>
     <defName>R3DGear_OrbitalTargeterMechCluster</defName>
     <apparel>OrbitalTargeterMechCluster</apparel>
     <model>Models/person_tool_mechcluster.obj</model>
     <mount>hip</mount>
+    <tintMaterials><li>utility_shell</li></tintMaterials>   <!-- dyefix: dyed, it takes the dye -->
   </IsoRim.WornGearDef>
   <IsoRim.WornGearDef>
     <defName>R3DGear_TornadoGenerator</defName>
     <apparel>TornadoGenerator</apparel>
     <model>Models/person_tool_tornado.obj</model>
     <mount>hip</mount>
+    <tintMaterials><li>utility_steel</li></tintMaterials>   <!-- dyefix: dyed, it takes the dye -->
   </IsoRim.WornGearDef>
   <!-- coverage batch 1 (2026-10-15): Anomaly lances, tools/make_coverage_b1.py -->
   <IsoRim.WornGearDef>
@@ -131,17 +142,20 @@
     <apparel>Apparel_ShardPsychicShockLance</apparel>
     <model>Models/person_tool_shard_shock.obj</model>
     <mount>hip</mount>
+    <tintMaterials><li>entity_shadow</li></tintMaterials>   <!-- dyefix: dyed, it takes the dye -->
   </IsoRim.WornGearDef>
   <IsoRim.WornGearDef>
     <defName>R3DGear_Apparel_ShardPsychicInsanityLance</defName>
     <apparel>Apparel_ShardPsychicInsanityLance</apparel>
     <model>Models/person_tool_shard_insanity.obj</model>
     <mount>hip</mount>
+    <tintMaterials><li>entity_shadow</li></tintMaterials>   <!-- dyefix: dyed, it takes the dye -->
   </IsoRim.WornGearDef>
   <IsoRim.WornGearDef>
     <defName>R3DGear_Apparel_BiomutationLance</defName>
     <apparel>Apparel_BiomutationLance</apparel>
     <model>Models/person_tool_biomutation.obj</model>
     <mount>hip</mount>
+    <tintMaterials><li>entity_skin</li></tintMaterials>   <!-- dyefix: dyed, it takes the dye -->
   </IsoRim.WornGearDef>
 </Defs>

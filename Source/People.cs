@@ -1976,9 +1976,11 @@ namespace IsoRim
 
         // Items whose own model paints its fixed-colour zones (the prestige gold) and leaves the rest to the item's colour:
         // they take DrawColor (white when undyed), like the CoatShapes, not the sprite's mean, which the gold would turn beige.
+        // (dyefix 2026-10-25: also the vacsuit helmet and the gas mask, which have no colour of their own until dyed.)
         internal static readonly HashSet<string> PaintedHats = new HashSet<string>
         {
             "Apparel_ArmorMarineHelmetPrestige", "Apparel_ArmorHelmetCataphractPrestige", "Apparel_ArmorHelmetReconPrestige",
+            "Apparel_VacsuitHelmet", "Apparel_GasMask",   // dyefix: their shell / rubber is stuff_* (masks.mtl), visor and bands fixed
         };
 
         internal static bool PaintedZones(string name)
