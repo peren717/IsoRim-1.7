@@ -183,11 +183,81 @@ namespace IsoRim
         // when it is indirect fire (Lobbed), else leaves it to the mod (Patches: every such override is hooked).
         public static bool OverrideDrawAt(Projectile p, Vector3 drawLoc)
         {
-            if (!View3D.Ready || p == null || p.def?.projectile == null || !Lobbed(p))
+            if (!View3D.Ready || p == null || p.def?.projectile == null)
             {
                 return true;
             }
-            return DrawAt(p, drawLoc);
+            bool lobbed = Lobbed(p);
+            if (lobbed)
+            {
+                DrawAt(p, drawLoc);   // IsoRim draws it on the arc; the mod's own DrawAt still runs for its effects, its own draws dropped
+            }
+            BeginOwnDraw(p, drawLoc, lobbed);
+            return true;
+        }
+
+        // ---- A projectile class's own DrawAt (another mod's), run inside a scope (Patches: prefix opens it, postfix closes):
+        // the flecks it spawns there (trails, glows: VGE's gauss slug) are moved from where the game would draw the projectile
+        // (flat, on its rows) to where it is drawn in 3D (its drawn flight: lead from the muzzle, height, the ground rows of
+        // its floor) and stood up at that height (Emitters.Raise). A lobbed one is drawn by IsoRim on the arc first; then its
+        // own draws in its DrawAt are dropped (DrawHook.skip) and the base Projectile.DrawAt it calls is skipped, so only its
+        // effects remain. Main thread (projectiles are drawn there, flecks created there).
+        [ThreadStatic] private static Projectile ownDraw;
+        [ThreadStatic] private static Vector3 ownShift;
+        [ThreadStatic] private static float ownHeight;
+        [ThreadStatic] private static bool ownLobbed;
+        [ThreadStatic] private static bool ownSkipWas;
+        public static int OwnFlecks;   // probes: flecks moved onto a drawn projectile
+
+        private static void BeginOwnDraw(Projectile p, Vector3 drawLoc, bool lobbed)
+        {
+            float flown;
+            Path path = PathOf(p, out flown);
+            if (path == null)
+            {
+                return;
+            }
+            flown = Flown(p, drawLoc);
+            Vector3 at = path.Point(flown);
+            ownDraw = p;
+            ownShift = new Vector3(at.x - drawLoc.x, 0f, at.z - drawLoc.z);
+            ownHeight = at.y;
+            ownLobbed = lobbed;
+            ownSkipWas = DrawHook.skip;
+            if (lobbed)
+            {
+                DrawHook.skip = true;
+            }
+        }
+
+        public static void EndOwnDraw(Projectile p)
+        {
+            if (ownDraw != null && ownDraw == p)
+            {
+                if (ownLobbed)
+                {
+                    DrawHook.skip = ownSkipWas;
+                }
+                ownDraw = null;
+            }
+        }
+
+        // The base Projectile.DrawAt called from inside a lobbed projectile's own DrawAt: already drawn on the arc.
+        public static bool OwnDrawSkipsBase(Projectile p)
+        {
+            return ownDraw != null && ownDraw == p && ownLobbed;
+        }
+
+        // FleckManager.CreateFleck: a fleck spawned inside a projectile's own DrawAt follows the drawn projectile.
+        public static void OwnFleck(ref FleckCreationData data)
+        {
+            if (ownDraw == null || data.def == null)
+            {
+                return;
+            }
+            data.spawnPosition += ownShift;
+            Emitters.Raise(data.spawnPosition, ownHeight, 0f, data.def);
+            OwnFlecks++;
         }
 
         // Mortar and artillery shells and other indirect fire (flyOverhead; shells have no arc of their own: vanilla flies them straight, which in 3D skimmed

@@ -550,9 +550,14 @@ namespace IsoRim
                 MethodInfo own = AccessTools.DeclaredMethod(sub, "DrawAt", new[] { typeof(Vector3), typeof(bool) });
                 if (own != null && !own.IsAbstract && own.DeclaringType == sub)
                 {
-                    Patch("indirect fire of other mods on the shell arc", own, prefix: nameof(ProjectileOverrideDrawAt_Prefix));
+                    Patch("indirect fire of other mods on the shell arc", own, prefix: nameof(ProjectileOverrideDrawAt_Prefix), finalizer: nameof(ProjectileOverrideDrawAt_Finalizer));
+                    // (its own Graphics.DrawMesh calls through DrawHook, so they are dropped while IsoRim draws it on the arc)
+                    TryRedirect(own, Hook(nameof(Redirect_Transpiler)));
                 }
             }
+            // Flecks other mods' projectiles spawn in their own DrawAt (trails) follow the projectile as drawn in 3D.
+            Patch("projectile trails in 3D", AccessTools.Method(typeof(FleckManager), nameof(FleckManager.CreateFleck), new[] { typeof(FleckCreationData) }),
+                prefix: nameof(ProjectileFleck_Prefix));
             // Drop pods, shuttles, meteorites and every other skyfaller come down from (or go up into) the sky with a real
             // height, not slid over the ground (Skyfallers).
             Patch("skyfallers from the sky", AccessTools.DeclaredMethod(typeof(Skyfaller), "DrawAt", new[] { typeof(Vector3), typeof(bool) }),
@@ -2628,7 +2633,8 @@ namespace IsoRim
             return FigureWeapons.CatchDraws_Transpiler(instructions);
         }
 
-        // A projectile class's own DrawAt: IsoRim draws it when it is indirect fire (Projectiles.OverrideDrawAt).
+        // A projectile class's own DrawAt: IsoRim draws it when it is indirect fire (Projectiles.OverrideDrawAt); either way
+        // the mod's DrawAt runs in a scope whose flecks follow the drawn projectile (closed by the finalizer).
         public static bool ProjectileOverrideDrawAt_Prefix(Projectile __instance, Vector3 __0)
         {
             try
@@ -2642,11 +2648,33 @@ namespace IsoRim
             }
         }
 
+        public static void ProjectileOverrideDrawAt_Finalizer(Projectile __instance)
+        {
+            Projectiles.EndOwnDraw(__instance);
+        }
+
+        // A fleck spawned inside a projectile's own DrawAt (Projectiles.OwnFleck).
+        public static void ProjectileFleck_Prefix(ref FleckCreationData fleckData)
+        {
+            try
+            {
+                Projectiles.OwnFleck(ref fleckData);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Moving a projectile's fleck onto its 3D flight failed: " + e, 93611530);
+            }
+        }
+
         // A projectile drawn at its height in 3D (Projectiles). __0 is where the game would draw it.
         public static bool ProjectileDrawAt_Prefix(Projectile __instance, Vector3 __0)
         {
             try
             {
+                if (Projectiles.OwnDrawSkipsBase(__instance))
+                {
+                    return false;   // a lobbed projectile's own DrawAt calling the game's: IsoRim drew it on the arc already
+                }
                 return Projectiles.DrawAt(__instance, __0);
             }
             catch (Exception e)
