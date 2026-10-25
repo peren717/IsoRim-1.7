@@ -95,22 +95,38 @@ float fbm3(vec3 p)
 
 // One cumulus cloud as a signed distance (negative inside), in the cloud's own frame (x along the
 // horizon, y up the screen, about 1 unit wide): three round puffs along the base and two on top,
-// sized and placed by the cloud's hashes a and b. lift moves every puff up and shrink scales them,
-// which gives the lit (scalloped) part of the cloud for the shading.
-float cumulus(vec2 q, vec3 a, vec3 b, float lift, float shrink)
+// sized and placed by the cloud's hashes a and b. shape.x (0..1) adds two more puffs on top (a tall,
+// heaped cloud), shape.y two more along the base ends (a long one). lift moves every puff up and
+// shrink scales them, which gives the lit (scalloped) part of the cloud for the shading.
+float cumulus(vec2 q, vec3 a, vec3 b, vec2 shape, float lift, float shrink)
 {
     vec2 c0 = vec2(-0.25 + 0.06 * a.x, 0.0);
     vec2 c1 = vec2(0.0, 0.04 + 0.04 * a.z);
     vec2 c2 = vec2(0.24 - 0.06 * b.y, -0.01);
     vec2 c3 = vec2(-0.10 + 0.07 * a.y, 0.15 + 0.05 * b.x);
     vec2 c4 = vec2(0.10 + 0.06 * b.z, 0.11 + 0.05 * a.x);
+    vec2 c5 = vec2(-0.03 + 0.07 * b.y, 0.27 + 0.05 * a.z);
+    vec2 c6 = vec2(0.16 + 0.04 * a.y, 0.22 + 0.04 * b.x);
+    vec2 c7 = vec2(-0.43 + 0.04 * b.z, -0.02);
+    vec2 c8 = vec2(0.42 - 0.04 * a.x, -0.03);
     q.y -= lift;
     float d = length(q - c0) - (0.15 + 0.04 * a.y) * shrink;
     d = min(d, length(q - c1) - (0.20 + 0.04 * b.x) * shrink);
     d = min(d, length(q - c2) - (0.14 + 0.04 * b.z) * shrink);
     d = min(d, length(q - c3) - (0.12 + 0.05 * a.z) * shrink);
     d = min(d, length(q - c4) - (0.10 + 0.04 * b.y) * shrink);
+    // Optional puffs: radius goes negative (no effect) when the shape does not want them.
+    d = min(d, length(q - c5) - ((0.14 + 0.03 * a.x) * shrink * shape.x - (1.0 - shape.x) * 0.5));
+    d = min(d, length(q - c6) - ((0.10 + 0.03 * b.z) * shrink * shape.x - (1.0 - shape.x) * 0.5));
+    d = min(d, length(q - c7) - ((0.10 + 0.03 * a.z) * shrink * shape.y - (1.0 - shape.y) * 0.5));
+    d = min(d, length(q - c8) - ((0.09 + 0.03 * b.y) * shrink * shape.y - (1.0 - shape.y) * 0.5));
     return d;
+}
+
+// The overcast layer of bad weather: three octaves of value noise on a shallow dome overhead.
+float cloudD(vec2 p)
+{
+    return 0.58 * vnoise2(p) + 0.24 * vnoise2(p * 2.13 + vec2(5.2, 1.3)) + 0.18 * vnoise2(p * 5.9 + vec2(2.8, 7.1));
 }
 
 // ------------------------------------------------------------------ stars
@@ -364,7 +380,7 @@ void main()
     vec3 sdir = normalize(u._SkySun.xyz);
     float sd = dot(r, sdir);
     float sang = sqrt(max(2.0 * (1.0 - sd), 0.0));
-    float SR = 0.03;
+    float SR = 0.03 * (1.0 + 0.6 * (1.0 - smoothstep(0.0, 0.25, sdir.y)));   // larger low down, as painted sunsets are
     float sdisc = 1.0 - smoothstep(SR - pix, SR + pix, sang);
     float halo = (1.0 - smoothstep(SR * 1.5, SR * 2.6, sang)) * 0.3 + (1.0 - smoothstep(SR * 2.6, SR * 4.5, sang)) * 0.12;
     float wash = pow(max(sd, 0.0), 10.0) * 0.22 * (1.0 - smoothstep(0.1, 0.5, sdir.y));
@@ -400,12 +416,13 @@ void main()
     vec3 moonC = mix(c + vec3(0.02, 0.025, 0.04), vec3(1.0, 0.95, 0.82), mLit);
     c = mix(c, moonC, mCover * mShow);
 
-    // Clouds: separate cumulus clouds (cumulus) scattered one per cell of a grid on the sky. The grid
-    // is the sky seen from below in stereographic projection, which keeps shapes undistorted, gently
-    // stretched toward the horizon so the clouds there come out smaller and flatter (never smeared).
-    // Each cloud stands upright on the screen (its up = toward the zenith), has a flat bottom and
-    // three tones: a shaded underside, the body, and a scalloped lit top. Heavy cover (rain, snow,
-    // fog) adds an overcast layer behind them.
+    // Clouds. Fair weather: separate cumulus (cumulus) scattered one per cell of a grid on the sky.
+    // The grid is the sky seen from below in stereographic projection, which keeps shapes undistorted,
+    // gently stretched toward the horizon so the clouds there come out smaller and flatter (never
+    // smeared). Each cloud stands upright on the screen (its up = toward the zenith), has a flat bottom
+    // and three tones: a shaded underside, the body and a scalloped lit top; its kind (heaped, long or
+    // plain) and size come from its cell's hashes. Bad weather: as the cover rises the cumulus give way
+    // to one continuous overcast layer (noise on a shallow dome, with a darker underside).
     float cov = u._SkyCloud.x;
     if (cov > 0.001 && e > 0.003 && u._SkySpace.x < 0.5)
     {
@@ -413,27 +430,45 @@ void main()
         vec3 shd = u._SkyCloudShade.rgb;
         vec3 mid = mix(shd, litC, 0.85);
         float fade = smoothstep(0.003, 0.05, e);
+        vec2 drift = u._SkyCloud.yz;
 
-        float oc = smoothstep(0.72, 0.95, cov);
+        float oc = smoothstep(0.6, 0.88, cov);
         if (oc > 0.0)
         {
-            c = mix(c, mix(shd, mid, 0.35), oc * fade);
+            c = mix(c, mix(shd, mid, 0.3), smoothstep(0.5, 1.0, oc) * fade);
+            vec2 dir = normalize(r.xz + vec2(1e-5, 0.0));
+            vec2 pr = r.xz / (e + 0.3) * 1.1 + drift;
+            float th = mix(0.86, 0.3, oc);
+            float d0 = cloudD(pr);
+            float wv = fwidth(d0) * 1.2 + 0.006;
+            float s = smoothstep(th - wv, th + wv, d0);
+            // Toward the horizon on the layer = down the screen.
+            float body = smoothstep(th + 0.01, th + 0.04, cloudD(pr + dir * 0.24));
+            float top = 1.0 - smoothstep(th - 0.005, th + 0.03, cloudD(pr - dir * 0.09));
+            vec3 sc = mix(shd * 0.9, mix(shd, litC, 0.65), body);
+            sc = mix(sc, mix(shd, litC, 0.85), top * body);
+            c = mix(c, sc, s * smoothstep(0.0, 0.3, oc) * fade);
         }
 
         vec2 p0 = r.xz / (1.0 + e);
-        vec2 drift = u._SkyCloud.yz;
-        vec2 ps = p0 * (1.0 + 0.6 * dot(p0, p0)) * 1.7 + drift;
+        vec2 ps = p0 * (1.0 + 0.6 * dot(p0, p0)) * 1.35 + drift;
         vec2 cell0 = floor(ps);
-        float prob = mix(0.3, 1.0, cov);
+        float prob = (0.45 + 0.5 * cov) * (1.0 - oc);
         float best = 1e3;
         vec2 bq = vec2(0.0);
         vec3 ba = vec3(0.0);
         vec3 bb = vec3(0.0);
+        vec2 bshape = vec2(0.0);
         for (int j = -1; j <= 1; j++)
         {
             for (int i = -1; i <= 1; i++)
             {
                 vec2 cell = cell0 + vec2(float(i), float(j));
+                // Too far for any cloud of that cell to reach (the biggest reach about 1.35 from the cell centre).
+                if (length(ps - cell - 0.5) > 1.4)
+                {
+                    continue;
+                }
                 vec3 h = hash33(vec3(cell, 41.0));
                 if (h.x > prob)
                 {
@@ -441,27 +476,31 @@ void main()
                 }
                 vec3 a = hash33(vec3(cell, 13.0));
                 vec3 b = hash33(vec3(cell, 77.0));
+                // Kind: long and flat, heaped and tall, or plain (sometimes with long base puffs).
+                vec2 shape = h.z < 0.3 ? vec2(0.0, 1.0) : (h.z < 0.6 ? vec2(1.0, step(0.5, a.y)) : vec2(0.0, step(0.6, b.x)));
+                vec2 stretch = h.z < 0.3 ? vec2(1.5, 0.72) : (h.z < 0.6 ? vec2(1.0, 1.15) : vec2(1.0, 1.0));
                 vec2 cen = cell + 0.3 + 0.4 * b.xy;
                 vec2 world = cen - drift;
                 vec2 upv = length(world) > 1e-3 ? -normalize(world) : vec2(0.0, 1.0);
                 vec2 side = vec2(upv.y, -upv.x);
-                float k = (0.5 + 0.5 * h.y) * mix(0.9, 1.3, cov);
+                float k = (0.4 + 0.75 * h.y) * mix(0.9, 1.15, cov);
                 vec2 rel = ps - cen;
-                vec2 q = vec2(dot(rel, side), dot(rel, upv)) / k;
-                float d = max(cumulus(q, a, b, 0.0, 1.0), -(q.y + 0.08)) * k;
+                vec2 q = vec2(dot(rel, side), dot(rel, upv)) / (k * stretch);
+                float d = max(cumulus(q, a, b, shape, 0.0, 1.0), -(q.y + 0.08)) * k * min(stretch.x, stretch.y);
                 if (d < best)
                 {
                     best = d;
                     bq = q;
                     ba = a;
                     bb = b;
+                    bshape = shape;
                 }
             }
         }
         // A slightly brushy edge.
         best += (vnoise2(ps * 9.0) - 0.5) * 0.02;
-        float dl = cumulus(bq, ba, bb, 0.1, 0.84);
-        float dh = cumulus(bq, ba, bb, 0.15, 0.6);
+        float dl = cumulus(bq, ba, bb, bshape, 0.1, 0.84);
+        float dh = cumulus(bq, ba, bb, bshape, 0.15, 0.6);
         float w = fwidth(best) * 0.8 + 1e-4;
         float wl = fwidth(dl) * 0.8 + 1e-4;
         float a = 1.0 - smoothstep(-w, w, best);
@@ -470,8 +509,8 @@ void main()
             float lit = 1.0 - smoothstep(-wl, wl, dl);
             float hi = 1.0 - smoothstep(-wl, wl, dh);
             vec3 cc = mix(shd, mid, lit);
-            vec3 crown = min(litC * vec3(1.02, 1.0, 0.92) + vec3(0.03, 0.02, 0.0) * (1.0 - oc), vec3(1.0));
-            cc = mix(cc, mix(crown, mid, oc * 0.6), hi);   // a warm crown (dull under overcast)
+            vec3 crown = min(litC * vec3(1.02, 1.0, 0.92) + vec3(0.03, 0.02, 0.0), vec3(1.0));
+            cc = mix(cc, crown, hi);   // a warm crown
             c = mix(c, cc, a * fade);
         }
     }

@@ -198,8 +198,18 @@ namespace IsoRim
                         sun = Lowered(sun, LowSky);
                         moon = Lowered(moon, LowSky);
                     }
-                    // The sun only shows while it is up.
-                    sunShow *= Mathf.Clamp01(sun.y * 6f + 0.3f);
+                    if (painted && !space)
+                    {
+                        // Painted: the drawn sun sinks with the light, so the dusk colours have the sun on the horizon
+                        // (and it is below it by night, risen again by day). Only the disc moves, not the light.
+                        sun = SunsetSun(sun, GenCelestial.CurCelestialSunGlow(map));
+                        sunShow = (1f - grey) * Mathf.Clamp01(sun.y * 25f + 1f);
+                    }
+                    else
+                    {
+                        // The sun only shows while it is up.
+                        sunShow *= Mathf.Clamp01(sun.y * 6f + 0.3f);
+                    }
                     Color sunColor = space ? SpaceSun : Color.Lerp(new Color(1f, 0.55f, 0.3f), new Color(1f, 0.95f, 0.82f), Mathf.Clamp01(sun.y * 2.5f));
 
                     mat.SetVector(fwdId, fwd);
@@ -301,6 +311,27 @@ namespace IsoRim
             float t = hour < 12f ? Mathf.InverseLerp(6.5f, 5.5f, hour) : Mathf.InverseLerp(17.5f, 18.5f, hour);
             return Vector3.Slerp(day, night, Smooth(t)).normalized;
         }
+
+        // The painted sky's drawn sun: as the light fades from day (glow 0.8) to dusk (0.45) it sinks from where
+        // it is to just on the horizon, and on to below it by night (0.1). The same at dawn, the other way.
+        private static Vector3 SunsetSun(Vector3 sun, float glow)
+        {
+            float el = Mathf.Asin(Mathf.Clamp(sun.y, -1f, 1f));
+            float target = glow >= 0.45f
+                ? Mathf.Lerp(0.035f, el, Smooth(Mathf.InverseLerp(0.45f, 0.8f, glow)))
+                : Mathf.Lerp(-0.1f, 0.035f, Smooth(Mathf.InverseLerp(0.1f, 0.45f, glow)));
+            el = Mathf.Min(el, target);
+            Vector2 flat = new Vector2(sun.x, sun.z);
+            if (flat.sqrMagnitude < 1e-6f)
+            {
+                flat = new Vector2(0f, 1f);
+            }
+            flat.Normalize();
+            return new Vector3(flat.x * Mathf.Cos(el), Mathf.Sin(el), flat.y * Mathf.Cos(el));
+        }
+
+        // Harness only (probe key skycover=x): the painted sky's cloud cover forced to x (-1: from the weather).
+        public static float CoverOverride = -1f;
 
         // How much lower the sun, moon and gas giant are drawn with "low in the sky" on.
         private const float LowSky = 0.35f;
@@ -464,6 +495,10 @@ namespace IsoRim
             float storm;
             grey = WeatherGrey(map, out storm);
             paint.cover = Mathf.Clamp01(0.45f + grey * 0.55f + storm * 0.3f);
+            if (CoverOverride >= 0f)
+            {
+                paint.cover = CoverOverride;
+            }
             float overcast = Mathf.Clamp01(grey + storm * 0.6f);
             if (overcast > 0f)
             {
