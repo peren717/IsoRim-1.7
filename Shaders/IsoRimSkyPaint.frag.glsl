@@ -93,10 +93,24 @@ float fbm3(vec3 p)
     return s / 0.875;
 }
 
-// Cloud density on the cloud dome: three octaves of value noise (the last one fine, for puffy edges).
-float cloudD(vec2 p)
+// One cumulus cloud as a signed distance (negative inside), in the cloud's own frame (x along the
+// horizon, y up the screen, about 1 unit wide): three round puffs along the base and two on top,
+// sized and placed by the cloud's hashes a and b. lift moves every puff up and shrink scales them,
+// which gives the lit (scalloped) part of the cloud for the shading.
+float cumulus(vec2 q, vec3 a, vec3 b, float lift, float shrink)
 {
-    return 0.58 * vnoise2(p) + 0.24 * vnoise2(p * 2.13 + vec2(5.2, 1.3)) + 0.18 * vnoise2(p * 5.9 + vec2(2.8, 7.1));
+    vec2 c0 = vec2(-0.25 + 0.06 * a.x, 0.0);
+    vec2 c1 = vec2(0.0, 0.04 + 0.04 * a.z);
+    vec2 c2 = vec2(0.24 - 0.06 * b.y, -0.01);
+    vec2 c3 = vec2(-0.10 + 0.07 * a.y, 0.15 + 0.05 * b.x);
+    vec2 c4 = vec2(0.10 + 0.06 * b.z, 0.11 + 0.05 * a.x);
+    q.y -= lift;
+    float d = length(q - c0) - (0.15 + 0.04 * a.y) * shrink;
+    d = min(d, length(q - c1) - (0.20 + 0.04 * b.x) * shrink);
+    d = min(d, length(q - c2) - (0.14 + 0.04 * b.z) * shrink);
+    d = min(d, length(q - c3) - (0.12 + 0.05 * a.z) * shrink);
+    d = min(d, length(q - c4) - (0.10 + 0.04 * b.y) * shrink);
+    return d;
 }
 
 // ------------------------------------------------------------------ stars
@@ -225,8 +239,8 @@ void main()
             float f = fbm3(vec3(l * 2.2, b * 16.0, 2.7)) * band * (0.6 + 0.6 * core);   // streaked along the band
             float dabs = smoothstep(0.30, 0.36, f) * 0.45 + smoothstep(0.48, 0.54, f) * 0.35 + smoothstep(0.66, 0.72, f) * 0.2;
             vec3 mw = mix(vec3(0.42, 0.42, 0.72), vec3(0.72, 0.62, 0.88), smoothstep(0.48, 0.54, f));
-            c += vec3(0.30, 0.30, 0.55) * smoothstep(0.25, 0.7, band) * 0.10 * u._SkyNight.y * above;
-            c = mix(c, c + mw * 0.24, dabs * u._SkyNight.y * above);
+            c += vec3(0.30, 0.30, 0.55) * smoothstep(0.25, 0.7, band) * 0.14 * u._SkyNight.y * above;
+            c = mix(c, c + mw * 0.34, dabs * u._SkyNight.y * above);
         }
     }
 
@@ -267,7 +281,11 @@ void main()
         vec2 gf = length(g.xz) > 1e-4 ? normalize(g.xz) : vec2(0.0, 1.0);
         float gel = asin(clamp(g.y, -1.0, 1.0)) * u._SkyCelP.w;
         g = vec3(gf.x * cos(gel), sin(gel), gf.y * cos(gel));
-        vec3 pole = normalize(u._SkyCelP.xyz * 0.85 + u._SkyCelA.xyz * 0.35 + u._SkyCelB.xyz * 0.2);
+        // The ring seen nearly edge on, as a thin slanted ellipse: its axis mostly "up" across the line
+        // of sight (gu), leaned sideways (gs) and a little toward us.
+        vec3 gu = normalize(vec3(0.0, 1.0, 0.0) - g * g.y);
+        vec3 gs = cross(g, gu);
+        vec3 pole = normalize(gu * 0.94 + gs * 0.34 + g * 0.26);
         vec3 L = normalize(u._SkyTrueSun.xyz);
         float R = 0.06 * u._SkyMisc.y;
 
@@ -350,9 +368,11 @@ void main()
     float sdisc = 1.0 - smoothstep(SR - pix, SR + pix, sang);
     float halo = (1.0 - smoothstep(SR * 1.5, SR * 2.6, sang)) * 0.3 + (1.0 - smoothstep(SR * 2.6, SR * 4.5, sang)) * 0.12;
     float wash = pow(max(sd, 0.0), 10.0) * 0.22 * (1.0 - smoothstep(0.1, 0.5, sdir.y));
-    vec3 sunDisc = mix(u._SkySunColor.rgb, vec3(1.0, 0.96, 0.72), 0.55);
+    vec3 sunDisc = mix(u._SkySunColor.rgb, vec3(1.0, 0.95, 0.62), 0.75);
+    vec3 haloC = mix(u._SkySunColor.rgb, vec3(1.0, 0.97, 0.85), 0.6);
     float sShow = u._SkySun.w;
-    c = mix(c, c + u._SkySunColor.rgb * (halo + wash), sShow);
+    c = mix(c, haloC, clamp(halo * 1.3, 0.0, 1.0) * sShow);
+    c += u._SkySunColor.rgb * wash * sShow;
     c = mix(c, sunDisc, sdisc * sShow);
 
     // Moon: a clean cream disc with its phase and a soft halo.
@@ -380,31 +400,79 @@ void main()
     vec3 moonC = mix(c + vec3(0.02, 0.025, 0.04), vec3(1.0, 0.95, 0.82), mLit);
     c = mix(c, moonC, mCover * mShow);
 
-    // Clouds: the noise on a shallow dome overhead (flatter and smaller toward the horizon, but not
-    // squashed to streaks as on a flat layer), cut into a lit top, a body and a shaded bottom.
+    // Clouds: separate cumulus clouds (cumulus) scattered one per cell of a grid on the sky. The grid
+    // is the sky seen from below in stereographic projection, which keeps shapes undistorted, gently
+    // stretched toward the horizon so the clouds there come out smaller and flatter (never smeared).
+    // Each cloud stands upright on the screen (its up = toward the zenith), has a flat bottom and
+    // three tones: a shaded underside, the body, and a scalloped lit top. Heavy cover (rain, snow,
+    // fog) adds an overcast layer behind them.
     float cov = u._SkyCloud.x;
-    if (cov > 0.001 && e > 0.02 && u._SkySpace.x < 0.5)
+    if (cov > 0.001 && e > 0.003 && u._SkySpace.x < 0.5)
     {
-        vec2 dir = normalize(r.xz + vec2(1e-5, 0.0));
-        vec2 p = r.xz / (e + 0.3) * 1.1 + u._SkyCloud.yz;
-        float th = mix(0.80, 0.30, cov);
-        float d0 = cloudD(p);
-        float wv = fwidth(d0) * 1.2 + 0.005;
-        float a = smoothstep(th - wv, th + wv, d0);
+        vec3 litC = u._SkyCloudLit.rgb;
+        vec3 shd = u._SkyCloudShade.rgb;
+        vec3 mid = mix(shd, litC, 0.85);
+        float fade = smoothstep(0.003, 0.05, e);
+
+        float oc = smoothstep(0.72, 0.95, cov);
+        if (oc > 0.0)
+        {
+            c = mix(c, mix(shd, mid, 0.35), oc * fade);
+        }
+
+        vec2 p0 = r.xz / (1.0 + e);
+        vec2 drift = u._SkyCloud.yz;
+        vec2 ps = p0 * (1.0 + 0.6 * dot(p0, p0)) * 1.7 + drift;
+        vec2 cell0 = floor(ps);
+        float prob = mix(0.3, 1.0, cov);
+        float best = 1e3;
+        vec2 bq = vec2(0.0);
+        vec3 ba = vec3(0.0);
+        vec3 bb = vec3(0.0);
+        for (int j = -1; j <= 1; j++)
+        {
+            for (int i = -1; i <= 1; i++)
+            {
+                vec2 cell = cell0 + vec2(float(i), float(j));
+                vec3 h = hash33(vec3(cell, 41.0));
+                if (h.x > prob)
+                {
+                    continue;
+                }
+                vec3 a = hash33(vec3(cell, 13.0));
+                vec3 b = hash33(vec3(cell, 77.0));
+                vec2 cen = cell + 0.3 + 0.4 * b.xy;
+                vec2 world = cen - drift;
+                vec2 upv = length(world) > 1e-3 ? -normalize(world) : vec2(0.0, 1.0);
+                vec2 side = vec2(upv.y, -upv.x);
+                float k = (0.5 + 0.5 * h.y) * mix(0.9, 1.3, cov);
+                vec2 rel = ps - cen;
+                vec2 q = vec2(dot(rel, side), dot(rel, upv)) / k;
+                float d = max(cumulus(q, a, b, 0.0, 1.0), -(q.y + 0.08)) * k;
+                if (d < best)
+                {
+                    best = d;
+                    bq = q;
+                    ba = a;
+                    bb = b;
+                }
+            }
+        }
+        // A slightly brushy edge.
+        best += (vnoise2(ps * 9.0) - 0.5) * 0.02;
+        float dl = cumulus(bq, ba, bb, 0.1, 0.84);
+        float dh = cumulus(bq, ba, bb, 0.15, 0.6);
+        float w = fwidth(best) * 0.8 + 1e-4;
+        float wl = fwidth(dl) * 0.8 + 1e-4;
+        float a = 1.0 - smoothstep(-w, w, best);
         if (a > 0.0)
         {
-            // Toward the horizon on the layer = down the screen.
-            float dLow = cloudD(p + dir * 0.24);
-            float dTop = cloudD(p - dir * 0.09);
-            float body = smoothstep(th + 0.01, th + 0.03, dLow);
-            float top = 1.0 - smoothstep(th - 0.005, th + 0.02, dTop);
-            vec3 lit = u._SkyCloudLit.rgb;
-            vec3 shd = u._SkyCloudShade.rgb;
-            vec3 mid = mix(shd, lit, 0.88);
-            vec3 cc = mix(shd, mid, body);
-            cc = mix(cc, lit, top * body);
-            a *= smoothstep(0.02, 0.10, e);
-            c = mix(c, cc, a);
+            float lit = 1.0 - smoothstep(-wl, wl, dl);
+            float hi = 1.0 - smoothstep(-wl, wl, dh);
+            vec3 cc = mix(shd, mid, lit);
+            vec3 crown = min(litC * vec3(1.02, 1.0, 0.92) + vec3(0.03, 0.02, 0.0) * (1.0 - oc), vec3(1.0));
+            cc = mix(cc, mix(crown, mid, oc * 0.6), hi);   // a warm crown (dull under overcast)
+            c = mix(c, cc, a * fade);
         }
     }
 

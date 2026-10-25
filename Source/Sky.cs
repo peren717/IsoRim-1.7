@@ -417,7 +417,7 @@ namespace IsoRim
         private static readonly Color[] PaintDay =
         {
             new Color(0.60f, 0.83f, 0.95f), new Color(0.30f, 0.60f, 0.92f), new Color(0.16f, 0.44f, 0.85f),
-            new Color(1.0f, 0.98f, 0.92f), new Color(0.62f, 0.70f, 0.90f),
+            new Color(1.0f, 1.0f, 0.98f), new Color(0.62f, 0.70f, 0.90f),
         };
         private static readonly Color PaintSpace = new Color(0.02f, 0.028f, 0.07f);
 
