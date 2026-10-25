@@ -236,8 +236,8 @@ namespace IsoRim
         public bool glassGlow = false;
         // (Api 33) Beam parts (Beams.cs): faces whose material name starts with "beam_" are drawn as light (unlit, additive, no
         // outline or shadow) in their MTL colour. beamFlicker (0 to 1) makes them flicker by up to that share, beamPulse (Hz)
-        // pulse slowly. beamMotes: line motes (ThingDef names, e.g. another mod's laser) drawn as beams in 3D too, as the
-        // game's own MoteBeam beams are (any ModelDef may list them).
+        // pulse slowly. beamMotes: line motes (ThingDef names, e.g. another mod's laser) drawn as beams in 3D (opt-in; other
+        // line motes, the game's own beams too, keep the game's drawing). Any ModelDef may list them.
         public float beamFlicker = 0f;
         public float beamPulse = 0f;
         public List<string> beamMotes;

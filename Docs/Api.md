@@ -1228,9 +1228,9 @@ them), with no outline, no shadow and no depth write, as bright at night as by d
   glowing parts (unpowered). Keep them thin; the colour is added to the scene, so a dark `Kd` shows little.
 - `beamFlicker` (0 to 1, default 0): the beam parts flicker, dimming by up to this share.
 - `beamPulse` (Hz, default 0): the beam parts pulse slowly between 60% and full brightness.
-- **Line motes**: a beam mote (MoteDualAttached) that IsoRim draws as a 3D strip is drawn as a glowing strip (white-ish
-  core, the beam's colour, soft edges) when its shader is the game's beam shader (`MoteBeam`: Biotech graser, Odyssey
-  beam repeater, VGE anticraft caster) or when a ModelDef lists it in `beamMotes`. Colour: the mote's colour times its
+- **Line motes** (opt-in): a line mote (MoteDualAttached) that IsoRim draws as a 3D strip and that a ModelDef lists
+  in `beamMotes` is drawn as a glowing strip (white-ish core, the beam's colour, soft edges). Every other line mote,
+  the game's own beams (`MoteBeam`: graser, beam repeater) included, keeps the game's drawing. Colour: the mote's colour times its
   texture's colour; width: the part of the drawn width its texture lights; it fades in and out with the mote.
 
 ```xml

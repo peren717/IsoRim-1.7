@@ -65,7 +65,7 @@ namespace IsoRim
         // 31: ModelDef.topThroughRoof (a turret's gun) and ModelDef.roofModel (a fixed part baked with the model) not clipped
         // by a roof over them (the fog and floor slabs still clip them).
         // 32: ModelDef.hoverHeight / hoverBob: animals and mechs that float over the ground while up and about (Hover.cs).
-        // 33: beam parts (Beams.cs): beam_* model materials and MoteBeam line motes drawn as light (IsoRimAdd: unlit, additive, no
+        // 33: beam parts (Beams.cs): beam_* model materials and line motes listed in beamMotes drawn as light (IsoRimAdd: unlit, additive, no
         // outline or shadow), ModelDef.beamFlicker / beamPulse / beamMotes; Api.Dev.BeamMoteDraws, BeamPartDraws, BeamPartBaked, BeamDrawn.
         public static int Version => 33;
 

@@ -12,9 +12,9 @@ namespace IsoRim
     // in unlit mode; blend SrcAlpha One, no depth write, no culling, queue 3151 like the game's glowing motes, so after the
     // night and indoor light overlay): they only brighten what is behind them, have no outline, cast no shadow and are not
     // sorted as glass.
-    //   - Line motes (MoteDualAttached) that FloorSprays draws as a 3D strip and that are beams: drawn with the game's beam
-    //     shader (MoteBeam: lasers, grasers) or listed in a ModelDef's beamMotes. One camera-facing strip in four lengthwise
-    //     bands: a white-ish core, the beam's colour, black (nothing, when added) at the edges; its colour is the mote's
+    //   - Line motes (MoteDualAttached) that FloorSprays draws as a 3D strip and that a ModelDef lists in beamMotes (opt-in;
+    //     the game's own beams, MoteBeam grasers and lasers, keep the game's drawing, user 2026-10-25). One camera-facing strip:
+    //     a white-ish core, the beam's colour, black (nothing, when added) at the edges; its colour is the mote's
     //     colour times the mean colour of its texture, its width the part of the drawn width the texture lights (both read
     //     once per def), faded in and out with the mote (and the game's beam flicker for MoteBeam).
     //   - Model parts: faces whose material name starts with "beam_" are taken out of the model when it is loaded
@@ -163,13 +163,13 @@ namespace IsoRim
                 l = new MoteLook();
                 ShaderTypeDef shader = def.graphicData?.shaderType;
                 l.gameFlicker = shader != null && shader.defName == "MoteBeam";
-                l.beam = l.gameFlicker || Listed.Contains(def.defName);
+                l.beam = Listed.Contains(def.defName);   // opt-in only: the game's own MoteBeam beams keep its drawing
                 looks[def] = l;
             }
             return l;
         }
 
-        // A line mote drawn as a beam in 3D: the game's beam shader (MoteBeam) or listed in a ModelDef's beamMotes.
+        // A line mote drawn as a beam in 3D: listed in a ModelDef's beamMotes.
         public static bool IsBeamMote(ThingDef def) => def != null && LookOf(def).beam;
 
         // The texture's colour (the mean of its coloured pixels, weighted by how much each adds: brightness times alpha times
