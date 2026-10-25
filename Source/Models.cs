@@ -234,6 +234,13 @@ namespace IsoRim
         public Color glassTint = new Color(0f, 0f, 0f, 0f);
         public float glassOpacity = -1f;
         public bool glassGlow = false;
+        // (Api 33) Beam parts (Beams.cs): faces whose material name starts with "beam_" are drawn as light (unlit, additive, no
+        // outline or shadow) in their MTL colour. beamFlicker (0 to 1) makes them flicker by up to that share, beamPulse (Hz)
+        // pulse slowly. beamMotes: line motes (ThingDef names, e.g. another mod's laser) drawn as beams in 3D too, as the
+        // game's own MoteBeam beams are (any ModelDef may list them).
+        public float beamFlicker = 0f;
+        public float beamPulse = 0f;
+        public List<string> beamMotes;
         public float contentTop = -1f;      // roof of the chamber under the glass: what stands inside (a forming
                                             // mech, a vat embryo or child) is fitted between surfaceHeight and this
         public bool heldPawnUpright = false; // the person held inside floats upright (growth vat) instead of lying
@@ -427,6 +434,8 @@ namespace IsoRim
         public Vector2[] footprint;      // outline of the model seen from above, and of the model
         public Vector2[] footprintLaid;  // tipped onto its side; worked out when first needed
         public bool footprintTried;
+        public Model beam;               // (Api 33) its beam_* faces, drawn as light (Beams.cs); null for none
+        public float beamFlicker, beamPulse;   // on a beam part: its def's beamFlicker / beamPulse (Beams.Tag)
     }
 
     // A simple stand-in for a model when it casts a shadow: the outline of its leaves seen from
@@ -597,6 +606,7 @@ namespace IsoRim
         public bool twig;        // only drawn while a tree is bare (fine branches the leaves would hide)
         public bool glow;        // gives off its own light (flames, embers, lamps): never shaded
         public bool fire;        // a flame or embers: left out while the thing's fire is out
+        public bool beam;        // (Api 33) a name starting with "beam_": its faces are the model's beam part (Model.beam)
     }
 
     // One entry of ModelDef.byAppearance: <li><appearance>Planks</appearance><model>Models/x.obj</model></li>
@@ -1332,6 +1342,7 @@ namespace IsoRim
                 entry.roofPart = LoadFile(Path.Combine(md.modContentPack.RootDir, md.roofModel));
             }
             Aged.Apply(entry, Aged.StrengthOf(md));   // ModelDef.aged: its body models old and rusty
+            Beams.Tag(entry);   // (Api 33) beamFlicker / beamPulse onto its beam parts
             return entry;
         }
 
@@ -1653,6 +1664,7 @@ namespace IsoRim
             m.normals = src.normals;
             m.uvs = src.uvs;
             m.hull = src.hull;
+            m.beam = src.beam;   // (Api 33) the beam part as it was
             m.noOutline = src.noOutline;
             m.maxY = src.maxY;
             m.halfDepth = src.halfDepth;
@@ -1716,6 +1728,7 @@ namespace IsoRim
             m.normals = src.normals;
             m.uvs = src.uvs;
             m.hull = src.hull;
+            m.beam = src.beam;   // (Api 33) the beam part as it was
             m.noOutline = src.noOutline;
             m.maxY = src.maxY;
             m.halfDepth = src.halfDepth;
@@ -1787,11 +1800,13 @@ namespace IsoRim
         // (ModelMaterial.fire) glowing, for the fuel to rule (ModelBaker.NoFire). An unlit lamp: shade 1, keepFire.
         public static Model GlowOff(Model src, float shade, bool keepFire)
         {
-            if (src == null || src.materials == null || src.material == null || !Array.Exists(src.materials, mm => mm.glow && !(keepFire && mm.fire)))
+            if (src == null || src.materials == null || src.material == null
+                || (!Array.Exists(src.materials, mm => mm.glow && !(keepFire && mm.fire)) && src.beam == null))
             {
                 return src;
             }
             Model m = Merge(new List<Model> { src });   // an own copy with its own id (meshes are cached by id)
+            m.beam = null;   // (Api 33) beam parts go out with the glowing parts
             for (int i = 0; i < m.colors.Length; i++)
             {
                 ModelMaterial mm = m.materials[m.material[i]];
@@ -1845,6 +1860,7 @@ namespace IsoRim
             m.normals = src.normals;
             m.uvs = src.uvs;
             m.hull = src.hull;
+            m.beam = src.beam;   // (Api 33) the beam part as it was
             m.noOutline = src.noOutline;
             m.maxY = src.maxY;
             m.halfDepth = src.halfDepth;
@@ -1946,6 +1962,7 @@ namespace IsoRim
             m.tinted = tint.ToArray();
             m.uvs = uv.ToArray();
             m.hull = hull.ToArray();
+            m.beam = Beams.Merged(models);   // (Api 33) their beam parts together
             m.material = mat.ToArray();
             m.materials = mats.ToArray();
             m.minX = float.MaxValue;
@@ -1986,6 +2003,7 @@ namespace IsoRim
             m.positions = new Vector3[n];
             m.normals = src.normals != null ? new Vector3[n] : null;
             m.hull = src.hull != null ? new Vector3[n] : null;
+            m.beam = Beams.Moved(src.beam, p => new Vector3(-p.x, p.y, p.z), q => new Vector3(-q.x, q.y, q.z));   // (Api 33)
             m.colors = src.colors != null ? new Color[n] : null;
             m.tinted = src.tinted != null ? new bool[n] : null;
             m.uvs = src.uvs != null ? new Vector2[n] : null;
@@ -2059,6 +2077,7 @@ namespace IsoRim
             m.positions = new Vector3[k];
             m.normals = src.normals != null ? new Vector3[k] : null;
             m.hull = src.hull != null ? new Vector3[k] : null;
+            m.beam = src.beam;   // (Api 33) the beam part as it was
             m.colors = src.colors != null ? new Color[k] : null;
             m.tinted = src.tinted != null ? new bool[k] : null;
             m.uvs = src.uvs != null ? new Vector2[k] : null;
@@ -2116,6 +2135,7 @@ namespace IsoRim
             m.normals = src.normals;
             m.uvs = src.uvs;
             m.hull = src.hull;
+            m.beam = src.beam;   // (Api 33) the beam part as it was
             m.noOutline = src.noOutline;
             m.tinted = src.tinted;
             m.material = src.material;
@@ -2216,6 +2236,7 @@ namespace IsoRim
             m.material = src.material;
             m.materials = src.materials;
             m.hull = src.hull;
+            m.beam = src.beam;   // (Api 33) the beam part as it was
             m.noOutline = none;
             m.maxY = src.maxY;
             m.halfDepth = src.halfDepth;
@@ -2367,8 +2388,11 @@ namespace IsoRim
             }
 
             TurnRoundIfInsideOut(outPos, outNormal, outColor, outTint, outUV, outMaterial);
+            // (Api 33) beam_* faces out of the model into its beam part: no hull, outline, shadow or glass for them
+            Model beamPart = Beams.Split(outPos, outNormal, outColor, outTint, outUV, outMaterial, materials);
 
             Model m = new Model();
+            m.beam = beamPart;
             m.positions = outPos.ToArray();
             m.normals = outNormal.ToArray();
             m.colors = outColor.ToArray();
@@ -2540,6 +2564,7 @@ namespace IsoRim
                 m.maxZ = Mathf.Max(m.maxZ, p.z);
             }
             m.hull = BuildHull(m.positions, m.normals, OutlineWidth);
+            m.beam = Beams.Moved(src.beam, point, normal);   // (Api 33)
             m.id = nextId++;
             return m;
         }
@@ -2573,6 +2598,7 @@ namespace IsoRim
             m.uvs = new Vector2[n];
             m.material = new int[n];
             m.hull = new Vector3[n];
+            m.beam = src.beam;   // (Api 33) the beam part as it was
             m.noOutline = src.noOutline != null ? new bool[n] : null;
             m.materials = src.materials;
             int k = 0;

@@ -329,9 +329,25 @@ namespace IsoRim
                 return;
             }
             tilting = null;
+            if (Strip(r, out Matrix4x4 strip, out _, out _))
+            {
+                m = strip;
+                Tilts++;
+                LastTilt = m;
+            }
+        }
+
+        // The strip's matrix for a raised mote: the game's plane (x across, z along) placed along the line between its two
+        // ends, as wide as the game draws it, turned to face the camera (pre-squash drawn space). endA / endB: its two ends
+        // (true space; endA the first link's end). False if the ends meet.
+        private static bool Strip(Raise r, out Matrix4x4 m, out Vector3 endA, out Vector3 endB)
+        {
+            m = Matrix4x4.identity;
             float s = View3D.Squash;
             Vector3 a = new Vector3(r.a.x, r.a.y * s + r.ha, r.a.z);   // true space (y = height in cells)
             Vector3 b = new Vector3(r.b.x, r.b.y * s + r.hb, r.b.z);
+            endA = a;
+            endB = b;
             if (r.flip)
             {
                 Vector3 t = a;
@@ -341,7 +357,7 @@ namespace IsoRim
             Vector3 seg = (b - a) * r.stretch;
             if (seg.sqrMagnitude < 0.0001f)
             {
-                return;
+                return false;
             }
             Vector3 view = Quaternion.Euler(View3D.Pitch, View3D.Yaw, 0f) * Vector3.forward;
             Vector3 w = Vector3.Cross(seg, view);
@@ -360,16 +376,26 @@ namespace IsoRim
             m.SetColumn(1, new Vector4(0f, 1f, 0f, 0f));
             m.SetColumn(2, new Vector4(seg.x, seg.y / s, seg.z, 0f));
             m.SetColumn(3, new Vector4(mid.x, mid.y / s, mid.z, 1f));
-            Tilts++;
-            LastTilt = m;
+            return true;
         }
 
-        public static void DrawMote_Prefix(Mote __instance)
+        // A raised line mote: drawn by the game, its matrix replaced (Tilt); a beam (Beams.IsBeamMote, Api 33) is drawn as
+        // light along the same strip instead, and the game's own draw of it is skipped.
+        public static bool DrawMote_Prefix(Mote __instance)
         {
             if (__instance is MoteDualAttached && View3D.Ready && raised.TryGetValue(__instance, out Raise r))
             {
+                if (Beams.IsBeamMote(__instance.def))
+                {
+                    if (!__instance.paused && !Find.UIRoot.HideMotes && Strip(r, out Matrix4x4 m, out Vector3 a, out Vector3 b))
+                    {
+                        Beams.DrawMote(__instance, m, a, b);
+                    }
+                    return false;
+                }
                 tilting = r;
             }
+            return true;
         }
 
         // ---- IncineratorProjectileMotion: a stream piece from its source to its target as drawn

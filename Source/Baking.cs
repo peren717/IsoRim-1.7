@@ -2937,6 +2937,10 @@ namespace IsoRim
                     }
                 }
             }
+            if (m.beam != null)
+            {
+                Beams.Bake(layer, m.beam, center, turn, lay, layLift, scale, offset, baseY, Floor, squash);   // (Api 33) its beam part, as light
+            }
             return true;
         }
 

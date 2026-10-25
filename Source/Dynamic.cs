@@ -50,6 +50,7 @@ namespace IsoRim
             public Mesh mesh;
             public Material material;
             public bool outline;
+            public bool beam;      // (Api 33) a model's beam part: drawn at once, as light (Beams)
         }
 
         private class Lists
@@ -261,12 +262,48 @@ namespace IsoRim
                 AddPart(parts, solid, litMat, false);
                 AddPart(parts, glowing, solidMat, false);
                 AddPart(parts, outline, R3DMaterials.OutlineMoving, true);
+                AddBeams(parts, models, locals, mono.HasValue);
             }
             catch (Exception e)
             {
                 Log.ErrorOnce("[IsoRim] Putting a figure together failed: " + e, 93611031);
             }
             return parts;
+        }
+
+        // (Api 33) The models' beam parts (placed by locals, or as they are) as one part drawn as light (Beams): their MTL colours,
+        // no outline. None for a carved statue (mono).
+        private static void AddBeams(List<Part> parts, List<Model> models, List<Matrix4x4> locals, bool mono)
+        {
+            if (mono)
+            {
+                return;
+            }
+            Lists beams = null;
+            Model first = null;
+            for (int k = 0; k < models.Count; k++)
+            {
+                Model b = models[k]?.beam;
+                if (b == null)
+                {
+                    continue;
+                }
+                beams ??= new Lists();
+                first ??= b;
+                for (int i = 0; i < b.positions.Length; i++)
+                {
+                    Vector3 p = locals != null ? locals[k].MultiplyPoint3x4(b.positions[i]) : b.positions[i];
+                    beams.Add(p, b.colors[i], Vector2.zero);
+                }
+            }
+            if (beams != null)
+            {
+                AddPart(parts, beams, Beams.PartMaterial(first), false);
+                if (parts.Count > 0 && parts[parts.Count - 1].material == Beams.PartMaterial(first))
+                {
+                    parts[parts.Count - 1].beam = true;
+                }
+            }
         }
 
         private static void AddPart(List<Part> parts, Lists lists, Material material, bool isOutline)
@@ -364,6 +401,12 @@ namespace IsoRim
                     }
                     if (!Cull.MeshVisible(p.mesh, matrix))
                     {
+                        continue;
+                    }
+                    if (p.beam)
+                    {
+                        IsoGlow.DrawLit(p.mesh, matrix, p.material, 0, RoofClip.FloorBlock(floor));   // (Api 33) light: not batched (it has no light pass)
+                        Beams.PartDraws++;
                         continue;
                     }
                     if (!PartBatches.Add(p.mesh, matrix, p.material, floor))
@@ -488,6 +531,7 @@ namespace IsoRim
             AddPart(parts, solid, litMat, false);
             AddPart(parts, glowing, solidMat, false);
             AddPart(parts, outline, R3DMaterials.OutlineMoving, true);
+            AddBeams(parts, new List<Model> { m }, null, false);
             if (texturedLists != null)
             {
                 for (int i = 0; i < texturedLists.Length; i++)

@@ -174,6 +174,23 @@
     </shaderProgram>
   </ShaderDef>
 
+  <!-- (Api 33) Beams (Beams.cs): light, not things. Unlit (_LightMode 0), added to what is behind (SrcAlpha One: only
+       brightens), no depth write, no culling. Queue 3151, as the game's own glowing motes: after the night and indoor
+       light overlay (3100), so a beam is as bright at night; before the fog-of-war lid (3175). Beam parts of models
+       (beam_* materials) and line motes drawn as beams (MoteBeam). The same vertex stage as the solids (roof clipping). -->
+  <ShaderDef>
+    <defName>IsoRimAdd</defName>
+    <shaderProgram>
+      <vertexShaderFileName>IsoRim.vert.glsl</vertexShaderFileName>
+      <fragmentShaderFileName>IsoRimSolid.frag.glsl</fragmentShaderFileName>
+      <useTexture>false</useTexture>
+      <blendMode>Additive</blendMode>
+      <depthWrite>false</depthWrite>
+      <cullMode>None</cullMode>
+      <renderQueue>3151</renderQueue>
+    </shaderProgram>
+  </ShaderDef>
+
   <!-- See-through marks drawn over everything (drag box, brackets): no depth test or write. -->
   <ShaderDef>
     <defName>IsoRimOverlay</defName>

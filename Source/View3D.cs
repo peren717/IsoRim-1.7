@@ -412,6 +412,7 @@ namespace IsoRim
                 Pulses.DrawAll();
                 ActivityGlow.DrawAll();
                 Glass.DrawAll();
+                Beams.Update();   // (Api 33) flickering and pulsing beam parts
                 WorkPanels.DrawAll();
                 Silhouettes3D.DrawAll();
                 CollapseDebris.Frame();

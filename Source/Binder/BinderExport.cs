@@ -46,6 +46,7 @@ namespace IsoRim
             { "glassTint", 30 }, { "glassOpacity", 30 }, { "glassGlow", 30 },
             { "topThroughRoof", 31 }, { "roofModel", 31 },
             { "hoverHeight", 32 }, { "hoverBob", 32 },
+            { "beamFlicker", 33 }, { "beamPulse", 33 }, { "beamMotes", 33 },
         };
         private const int BaseVersion = 2;
 

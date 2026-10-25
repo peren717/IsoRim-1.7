@@ -1217,6 +1217,37 @@ An older IsoRim does not know the fields (an XML error in Defs): add them throug
 (minVersion 32). Tests: `Api.Dev.HoverLift(pawn)` (cells, as last drawn) and `Api.Dev.HoverState(pawn)` (0 on the
 ground .. 1 afloat, -1 none).
 
+## Part 22: beam parts (version 33)
+
+Beams are light, not things. In the 3D view IsoRim draws them unlit and additive (they only brighten what is behind
+them), with no outline, no shadow and no depth write, as bright at night as by day (ShaderDef `IsoRimAdd`).
+
+- **Model parts**: faces whose material name starts with `beam_` are taken out of the model when it loads and drawn as
+  light in their MTL colour (`Kd`): a laser line, an energy core, a field between two posts. They get no hull or
+  outline, cast no shadow, are not glass and do not count as a turret's barrel end. They go out with the model's
+  glowing parts (unpowered). Keep them thin; the colour is added to the scene, so a dark `Kd` shows little.
+- `beamFlicker` (0 to 1, default 0): the beam parts flicker, dimming by up to this share.
+- `beamPulse` (Hz, default 0): the beam parts pulse slowly between 60% and full brightness.
+- **Line motes**: a beam mote (MoteDualAttached) that IsoRim draws as a 3D strip is drawn as a glowing strip (white-ish
+  core, the beam's colour, soft edges) when its shader is the game's beam shader (`MoteBeam`: Biotech graser, Odyssey
+  beam repeater, VGE anticraft caster) or when a ModelDef lists it in `beamMotes`. Colour: the mote's colour times its
+  texture's colour; width: the part of the drawn width its texture lights; it fades in and out with the mote.
+
+```xml
+<IsoRim.ModelDef>
+  <defName>MyPack_LaserFence</defName>
+  <thingDef>MyMod_LaserFence</thingDef>
+  <model>Models/laser_fence.obj</model>   <!-- usemtl beam_red for the laser faces -->
+  <beamFlicker>0.3</beamFlicker>
+  <beamPulse>1.5</beamPulse>
+  <beamMotes><li>MyMod_Mote_LaserBeam</li></beamMotes>
+</IsoRim.ModelDef>
+```
+
+An older IsoRim draws `beam_` faces as ordinary faces and does not know the fields (an XML error in Defs): add them
+through `PatchOperation_IfIsoRimApi` (minVersion 33). 3D view off: nothing changes. Tests: `Api.Dev.BeamMoteDraws`,
+`BeamPartDraws`, `BeamPartBaked`, `BeamPartShader`, `BeamDrawn(mote, out material, out from, out to)`.
+
 ## Part M: model packs (IsoRim.ModelDef)
 
 A model pack is an XML-only mod (or a mod with a small DLL) that adds `IsoRim.ModelDef`s binding OBJ models to other
