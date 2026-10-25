@@ -6626,6 +6626,7 @@
     <defName>R3D_Mech_Scyther</defName>
     <thingDef>Mech_Scyther</thingDef>
     <model>Models/scyther.obj</model>
+    <scale>0.75</scale>   <!-- about a colonist: head top 1.69 -> 1.27 (a person 1.25), blade tips 1.88 -> 1.41 -->
     <mech>true</mech>
     <factionMaterials>
       <li>worker_lens</li>
