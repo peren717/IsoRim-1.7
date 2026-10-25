@@ -464,6 +464,11 @@ namespace IsoRim
             {
                 return tip;
             }
+            // A 3D mech fires from its gun part's barrel end: as last drawn, else posed for it (hidden floor, off screen).
+            if (FromMuzzle && owner is Pawn mech && View3D.Ready && (MechTipOf(owner, gun, out tip) || Mechs.MeasureGun(mech, gun, dir, out tip)))
+            {
+                return tip;
+            }
             if (FromMuzzle && owner is Pawn person && View3D.Ready && People.MeasureWeapon(person) && CardTip(owner, gun, thrown, out tip))
             {
                 return tip;
@@ -565,6 +570,59 @@ namespace IsoRim
         }
 
         private static readonly ConditionalWeakTable<Thing, Tip> tips = new ConditionalWeakTable<Thing, Tip>();
+
+        // Mechs (Mechs.Draw): each gun part's barrel end as last drawn, by gun (a mech can carry a weapon and a turret
+        // comp). A point in 3D, the same from every camera.
+        private static readonly ConditionalWeakTable<Thing, Dictionary<ThingDef, Tip>> mechTips = new ConditionalWeakTable<Thing, Dictionary<ThingDef, Tip>>();
+
+        public static void MechTip(Thing mech, ThingDef gun, Vector3 at)
+        {
+            if (mech == null || gun == null)
+            {
+                return;
+            }
+            Dictionary<ThingDef, Tip> byGun = mechTips.GetValue(mech, k => new Dictionary<ThingDef, Tip>());
+            Tip t;
+            if (!byGun.TryGetValue(gun, out t))
+            {
+                byGun[gun] = t = new Tip();
+            }
+            t.at = at;
+            t.centre = at;
+            t.gun = gun;
+            t.frame = Time.frameCount;
+        }
+
+        private static bool MechTipOf(Thing owner, ThingDef gun, out Vector3 at)
+        {
+            at = Vector3.zero;
+            Dictionary<ThingDef, Tip> byGun;
+            Tip t = null;
+            if (owner == null || !mechTips.TryGetValue(owner, out byGun))
+            {
+                return false;
+            }
+            if (gun != null)
+            {
+                byGun.TryGetValue(gun, out t);
+            }
+            else
+            {
+                foreach (Tip x in byGun.Values)
+                {
+                    if (t == null || x.frame > t.frame)
+                    {
+                        t = x;
+                    }
+                }
+            }
+            if (t == null || Time.frameCount - t.frame > TipFrames)
+            {
+                return false;
+            }
+            at = t.at;
+            return true;
+        }
         private static readonly Dictionary<int, Vector2> barrelEnds = new Dictionary<int, Vector2>();
 
         private const int TipFrames = 30;     // how long a drawn tip is good for (a pawn on screen is drawn every frame)

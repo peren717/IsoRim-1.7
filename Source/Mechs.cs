@@ -34,6 +34,7 @@ namespace IsoRim
             public Model[] worn;      // weathered copies (Ancient), by variant; made when first needed
             public Model[] wornMarked;
             public int show;          // 0 always, 1 only while shut, 2 only while open (entities that open)
+            public Vector3 tip;       // weapon and turret parts: the barrel's end in the body's space (Tip)
         }
 
         private class Rig
@@ -376,6 +377,15 @@ namespace IsoRim
                 {
                     continue;
                 }
+                if (p.motion == Motion.Weapon || p.motion == Motion.Turret)
+                {
+                    // Where this gun's barrel ends as drawn: its shots and flash start there (Projectiles.MechTip).
+                    ThingDef shooting = p.motion == Motion.Weapon ? pawn.equipment.Primary.def : turret?.gun?.def;
+                    if (shooting != null)
+                    {
+                        Projectiles.MechTip(pawn, shooting, WorldPoint(at, yaw, whole * places[i], p.tip));
+                    }
+                }
                 DynamicModels.DrawLocal(Corpses.Body(pawn, Pick(rig, def, p, worn, marked)), at, yaw, whole * places[i], mark, null);
             }
             if (showGun && !gunDrawn)
@@ -431,6 +441,74 @@ namespace IsoRim
         }
 
         // A point of the model (its own space, facing north) on the map: x and z in cells, y the height above the ground.
+        // A gun part's barrel end (body space): the middle of its front-most face. Gun parts are built pointing north (+z)
+        // and turn about their pivot, so the barrel ends where the part reaches furthest forward.
+        private static Vector3 Tip(Model m)
+        {
+            if (m == null || m.positions == null || m.positions.Length == 0)
+            {
+                return Vector3.zero;
+            }
+            float front = float.MinValue;
+            for (int i = 0; i < m.positions.Length; i++)
+            {
+                front = Mathf.Max(front, m.positions[i].z);
+            }
+            Vector3 sum = Vector3.zero;
+            int n = 0;
+            for (int i = 0; i < m.positions.Length; i++)
+            {
+                if (m.positions[i].z >= front - 0.02f)
+                {
+                    sum += m.positions[i];
+                    n++;
+                }
+            }
+            return sum / Mathf.Max(1, n);
+        }
+
+        // Where the mech's gun (gun: the weapon's or its turret comp's def) would end now, for a mech not drawn just now
+        // (a hidden floor, off screen): as Draw would pose it, from its last drawn facing, its hover and the aim (dir, flat).
+        // False if it has no gun part for that gun. Same space as Projectiles' tips (x, z rows, y cells over its floor).
+        public static bool MeasureGun(Pawn pawn, ThingDef gun, Vector3 dir, out Vector3 at)
+        {
+            at = Vector3.zero;
+            ModelEntry entry;
+            if (pawn == null || gun == null || pawn.def == null || !ModelLibrary.TryGet(pawn.def, out entry) || !entry.def.mech || !entry.HasModel
+                || pawn.GetPosture() != PawnPosture.Standing)
+            {
+                return false;
+            }
+            Rig rig = RigFor(entry, -1);
+            if (rig == null)
+            {
+                return false;
+            }
+            CompTurretGun turret = pawn.TryGetComp<CompTurretGun>();
+            for (int i = 0; i < rig.pieces.Count; i++)
+            {
+                Piece p = rig.pieces[i];
+                bool weapon = p.motion == Motion.Weapon && pawn.equipment?.Primary != null && pawn.equipment.Primary.def == gun;
+                bool tur = p.motion == Motion.Turret && turret?.gun != null && turret.gun.def == gun;
+                if (!weapon && !tur)
+                {
+                    continue;
+                }
+                int age;
+                float? drawn = Animals.DrawnYaw(pawn, out age);
+                float yaw = drawn ?? pawn.Rotation.AsAngle;
+                float aim = dir.sqrMagnitude > 0.0001f ? dir.AngleFlat() : yaw;
+                float size = entry.def.scale * (entry.def.lookBy == "lifeStage" ? 1f : Animals.SizeOf(pawn));
+                Matrix4x4 local = Matrix4x4.Translate(p.def.pivot) * Matrix4x4.Rotate(Quaternion.AngleAxis(Mathf.DeltaAngle(yaw, aim), Vector3.up)) * Matrix4x4.Translate(-p.def.pivot);
+                Matrix4x4 whole = Matrix4x4.Translate(new Vector3(0f, Hover.Current(pawn), 0f)) * Matrix4x4.Scale(new Vector3(size, size, size));
+                Vector3 loc = pawn.DrawPos;
+                float lift = Carried.LiftOf(pawn, ref loc);
+                at = WorldPoint(new Vector3(loc.x, lift, loc.z), yaw, whole * local, p.tip);
+                return true;
+            }
+            return false;
+        }
+
         private static Vector3 WorldPoint(Vector3 at, float yaw, Matrix4x4 local, Vector3 p)
         {
             Vector3 v = Quaternion.AngleAxis(yaw, Vector3.up) * local.MultiplyPoint3x4(p);
@@ -590,6 +668,10 @@ namespace IsoRim
                         continue;
                     }
                     Piece p = new Piece { def = part, motion = motion, model = m, show = show };
+                    if (motion == Motion.Weapon || motion == Motion.Turret)
+                    {
+                        p.tip = Tip(m);
+                    }
                     rig.opens |= motion == Motion.Open || show != 0;
                     byName[part.name.NullOrEmpty() ? Path.GetFileNameWithoutExtension(part.model) : part.name] = rig.pieces.Count;
                     rig.pieces.Add(p);
