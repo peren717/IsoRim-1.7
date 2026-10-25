@@ -1021,7 +1021,7 @@ namespace IsoRim
 
         // A turret's muzzle: its 3D gun posed as Patches.DrawTurret_Prefix draws it now (the model, loaded or not; its turn, or
         // a spraying gun's sweep; a mortar's kick, as Building_TurretGun.DrawAt), else turned toward dir. False without a gun model.
-        private static bool TurretMuzzle(Building_Turret turret, Vector3 dir, out Vector3 at)
+        internal static bool TurretMuzzle(Building_Turret turret, Vector3 dir, out Vector3 at)
         {
             at = Vector3.zero;
             ModelEntry entry;

@@ -23,6 +23,8 @@ namespace IsoRim
     // (Tilt): between floors any such line, on one floor (and without floors) the lines the game draws overhead (beams,
     // incinerator streams, aim lines), which would otherwise stand up as a card whose slant on screen is not their way on
     // the map. Lines on the ground (psychic and command links, charging cables) already lie the right way and stay flat.
+    // An end on a turret with a 3D gun (the turret itself, or a cell it stands on: Vanilla Gravship Expanded's beam guns
+    // fire their beam mote from a cell on the turret) is its gun's barrel end (Projectiles.TurretMuzzle), at its height.
     internal static class FloorSprays
     {
         public static int Sprays, Duals, Streams, Tilts, Lines;   // probes: how often each ran (Lines: one-floor lines in 3D)
@@ -181,6 +183,7 @@ namespace IsoRim
             public float width;    // the mote's drawn width (cells)
             public float stretch;  // the mote's drawn length over the flat distance between its ends (1 for a beam end to end)
             public bool flip;      // the mesh's length axis runs from b to a
+            public float ha = EndHeight, hb = EndHeight;   // each end's height over its floor (a turret's barrel end: its own)
         }
 
         private static readonly ConditionalWeakTable<MoteDualAttached, Ends> streamEnds = new ConditionalWeakTable<MoteDualAttached, Ends>();
@@ -235,6 +238,18 @@ namespace IsoRim
                 pb = PlacedFlat(l2.LastDrawPos);
             }
             float flat = (pb - pa).MagnitudeHorizontal();
+            float ha = EndHeight, hb = EndHeight;
+            Vector3 ma, mb;
+            if (TurretEnd(__instance.link1, __instance.Map, out ma))
+            {
+                pa = PlacedFlat(new Vector3(ma.x, 0f, ma.z));
+                ha = ma.y;
+            }
+            if (TurretEnd(link2(__instance), __instance.Map, out mb))
+            {
+                pb = PlacedFlat(new Vector3(mb.x, 0f, mb.z));
+                hb = mb.y;
+            }
             if (cross)
             {
                 // between floors the game's place, turn and length come from rows a band apart: from the ends as drawn
@@ -263,8 +278,28 @@ namespace IsoRim
                 b = pb,
                 width = width,
                 stretch = flat > 0.0001f ? length / flat : 1f,
-                flip = Vector3.Dot(along, pb - pa) < 0f
+                flip = Vector3.Dot(along, pb - pa) < 0f,
+                ha = ha,
+                hb = hb
             });
+        }
+
+        // The barrel end (x, z rows; y over its floor) of the turret with a 3D gun an end of a line mote is on: the turret
+        // linked, or the one standing on the cell linked. False otherwise.
+        private static bool TurretEnd(MoteAttachLink link, Map map, out Vector3 at)
+        {
+            at = Vector3.zero;
+            if (!link.Linked)
+            {
+                return false;
+            }
+            TargetInfo t = link.Target;
+            Building_Turret turret = t.Thing as Building_Turret;
+            if (turret == null && !t.HasThing && map != null && t.Cell.IsValid && t.Cell.InBounds(map))
+            {
+                turret = t.Cell.GetEdifice(map) as Building_Turret;
+            }
+            return turret != null && turret.Spawned && Projectiles.TurretMuzzle(turret, Vector3.zero, out at);
         }
 
         // The mote being drawn in 3D (set in DrawMote_Prefix, used once by its mesh draw: Tilt).
@@ -295,8 +330,8 @@ namespace IsoRim
             }
             tilting = null;
             float s = View3D.Squash;
-            Vector3 a = new Vector3(r.a.x, r.a.y * s + EndHeight, r.a.z);   // true space (y = height in cells)
-            Vector3 b = new Vector3(r.b.x, r.b.y * s + EndHeight, r.b.z);
+            Vector3 a = new Vector3(r.a.x, r.a.y * s + r.ha, r.a.z);   // true space (y = height in cells)
+            Vector3 b = new Vector3(r.b.x, r.b.y * s + r.hb, r.b.z);
             if (r.flip)
             {
                 Vector3 t = a;
