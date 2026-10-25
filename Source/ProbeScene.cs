@@ -42,6 +42,8 @@ namespace IsoRim
     //   gradegpu=N                   the grade pass drawn N more times a frame (to time it on the GPU)
     //   skygpu=N                     the sky drawn N more times a frame (to time the sky styles on the GPU)
     //   skycover=x                   the painted sky's cloud cover forced to x (0..1; -1: from the weather)
+    //   sunlog=0|1                   every frame the sky's drawn sun (hour, glow, elevation, azimuth) goes to IsoRimSunLog.tsv
+    //   named=1                      player faction and settlements count as named (no naming dialog pausing long runs)
     //   tiltgpu=N                    the two tilt-shift passes drawn N more times a frame (to time them)
     //   tiltdebug=0|1                tilt-shift tints the view red by blur amount (band checks)
     //   gradebench=N                 builds a grade table N times (alternating looks) and logs the times
@@ -544,6 +546,21 @@ namespace IsoRim
                     break;
                 case "skycover":
                     Sky.CoverOverride = F(a[0]);
+                    break;
+                case "sunlog":
+                    Sky.SunLog = a[0] == "1";
+                    break;
+                case "named":
+                    // named=1: the player faction and its settlements count as named, so the naming dialog (day 4.3)
+                    // does not pause long runs.
+                    Faction.OfPlayer.Name = "Probe";
+                    foreach (RimWorld.Planet.Settlement ns in Find.WorldObjects.Settlements)
+                    {
+                        if (ns.Faction == Faction.OfPlayer)
+                        {
+                            ns.namedByPlayer = true;
+                        }
+                    }
                     break;
                 case "tiltgpu":
                     TiltShift.ExtraDraws = I(a[0]);

@@ -191,14 +191,18 @@ namespace IsoRim
                 if (st.sky && mat != null)
                 {
                     float hour = GenLocalDate.HourFloat(map);
-                    Vector3 sun = R3DMaterials.SunDirAt(Mathf.Clamp(hour, 4.5f, 19.5f));
+                    bool sinks = painted && !space;
+                    // Painted: the drawn sun keeps going along its own arc past 6 and 18 o'clock (IsoRim's light
+                    // turns over to the moon there, the disc must not follow it).
+                    Vector3 sun = sinks ? SunPath(hour) : R3DMaterials.SunDirAt(Mathf.Clamp(hour, 4.5f, 19.5f));
+                    Vector3 rawSun = sun;
                     Vector3 moon = R3DMaterials.MoonDir(map);
                     if (st.lowSky)
                     {
                         sun = Lowered(sun, LowSky);
                         moon = Lowered(moon, LowSky);
                     }
-                    if (painted && !space)
+                    if (sinks)
                     {
                         // Painted: the drawn sun sinks with the light, so the dusk colours have the sun on the horizon
                         // (and it is below it by night, risen again by day). Only the disc moves, not the light.
@@ -209,6 +213,10 @@ namespace IsoRim
                     {
                         // The sun only shows while it is up.
                         sunShow *= Mathf.Clamp01(sun.y * 6f + 0.3f);
+                    }
+                    if (SunLog)
+                    {
+                        LogSun(map, hour, rawSun, sun, sunShow, painted);
                     }
                     Color sunColor = space ? SpaceSun : Color.Lerp(new Color(1f, 0.55f, 0.3f), new Color(1f, 0.95f, 0.82f), Mathf.Clamp01(sun.y * 2.5f));
 
@@ -312,15 +320,25 @@ namespace IsoRim
             return Vector3.Slerp(day, night, Smooth(t)).normalized;
         }
 
-        // The painted sky's drawn sun: as the light fades from day (glow 0.8) to dusk (0.45) it sinks from where
-        // it is to just on the horizon, and on to below it by night (0.1). The same at dawn, the other way.
+        // The painted sky's drawn sun path, one smooth turn a day: IsoRim's day arc (azimuth 95 to 265 degrees,
+        // 22 degrees up at 6 and 18 o'clock, 62 at noon, as R3DMaterials.SunDirAt) carried on round the clock, so
+        // it keeps setting past 18 o'clock (-18 degrees at midnight) instead of turning over to the moon.
+        private static Vector3 SunPath(float hour)
+        {
+            float az = (180f + 15f * (hour - 12f) - 5f * Mathf.Sin((hour - 12f) * Mathf.PI / 12f)) * Mathf.Deg2Rad;
+            float el = (22f + 40f * Mathf.Sin((hour - 6f) * Mathf.PI / 12f)) * Mathf.Deg2Rad;
+            return new Vector3(Mathf.Sin(az) * Mathf.Cos(el), Mathf.Sin(el), Mathf.Cos(az) * Mathf.Cos(el));
+        }
+
+        // The painted sky's drawn sun: as the light fades from day (glow 0.8) to dusk (0.45) it sinks from its path
+        // to just on the horizon, and on to below it by night (0.1). The same at dawn, the other way. Only the
+        // elevation changes (the azimuth stays on the path), along one smooth curve: the dusk height falls evenly
+        // with the light and the path blends into it, so the disc never stops or turns.
         private static Vector3 SunsetSun(Vector3 sun, float glow)
         {
-            float el = Mathf.Asin(Mathf.Clamp(sun.y, -1f, 1f));
-            float target = glow >= 0.45f
-                ? Mathf.Lerp(0.035f, el, Smooth(Mathf.InverseLerp(0.45f, 0.8f, glow)))
-                : Mathf.Lerp(-0.1f, 0.035f, Smooth(Mathf.InverseLerp(0.1f, 0.45f, glow)));
-            el = Mathf.Min(el, target);
+            float dusk = Mathf.LerpUnclamped(-0.1f, 0.035f, (glow - 0.1f) / 0.35f);
+            float el = Mathf.Max(Mathf.Asin(Mathf.Clamp(sun.y, -1f, 1f)), dusk);
+            el = Mathf.Lerp(dusk, el, Smooth(Mathf.InverseLerp(0.45f, 0.8f, glow)));
             Vector2 flat = new Vector2(sun.x, sun.z);
             if (flat.sqrMagnitude < 1e-6f)
             {
@@ -328,6 +346,32 @@ namespace IsoRim
             }
             flat.Normalize();
             return new Vector3(flat.x * Mathf.Cos(el), Mathf.Sin(el), flat.y * Mathf.Cos(el));
+        }
+
+        // Harness only (probe key sunlog=1): every frame the drawn sun goes to IsoRimSunLog.tsv in the save data folder.
+        public static bool SunLog;
+
+        private static void LogSun(Map map, float hour, Vector3 raw, Vector3 sun, float show, bool painted)
+        {
+            string path = System.IO.Path.Combine(GenFilePaths.SaveDataFolderPath, "IsoRimSunLog.tsv");
+            if (!System.IO.File.Exists(path))
+            {
+                System.IO.File.WriteAllText(path, "frame\tticks\thour\tglow\tweather\tpainted\traw_el\traw_az\tsun_el\tsun_az\tshow\n");
+            }
+            System.IO.File.AppendAllText(path, Time.frameCount + "\t" + Find.TickManager.TicksAbs + "\t" + hour.ToString("0.0000") + "\t"
+                + GenCelestial.CurCelestialSunGlow(map).ToString("0.0000") + "\t" + map.weatherManager.curWeather.defName + "\t" + (painted ? 1 : 0) + "\t"
+                + Elev(raw).ToString("0.00") + "\t" + Azim(raw).ToString("0.00") + "\t" + Elev(sun).ToString("0.00") + "\t" + Azim(sun).ToString("0.00") + "\t"
+                + show.ToString("0.000") + "\n");
+        }
+
+        private static float Elev(Vector3 d)
+        {
+            return Mathf.Asin(Mathf.Clamp(d.normalized.y, -1f, 1f)) * Mathf.Rad2Deg;
+        }
+
+        private static float Azim(Vector3 d)
+        {
+            return Mathf.Repeat(Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg, 360f);
         }
 
         // Harness only (probe key skycover=x): the painted sky's cloud cover forced to x (-1: from the weather).
