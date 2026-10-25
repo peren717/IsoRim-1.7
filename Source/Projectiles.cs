@@ -394,11 +394,12 @@ namespace IsoRim
                 f.start = MuzzleHeight(owner);
                 // From the muzzle (as the flash, ShotFlash) when the shot really left from the shooter (not a shell
                 // dropped from elsewhere with a launcher named).
-                if (FromMuzzle && owner != null && owner.Spawned && owner.Map == p.Map && new Vector2(owner.DrawPos.x - o.x, owner.DrawPos.z - o.z).magnitude < 1.5f)
+                if (FromMuzzle && owner != null && owner.Spawned && owner.Map == p.Map && LeftFrom(owner, o))
                 {
                     // (aimed along the game's flight: its launch point is on the destination's rows even when the
-                    // shot really left from a floor hidden now)
-                    Vector3 muzzle = Muzzle(owner, p.EquipmentDef, o, FlatDirection(originRef(p), destinationRef(p)));
+                    // shot really left from a floor hidden now; a turret's muzzle is found from the turret itself, whatever
+                    // point on it the game or a mod launched from)
+                    Vector3 muzzle = Muzzle(owner, p.EquipmentDef, owner is Building_Turret ? owner.DrawPos : o, FlatDirection(originRef(p), destinationRef(p)));
                     f.start = muzzle.y;
                     f.lead = new Vector3(muzzle.x - o.x, 0f, muzzle.z - o.z);
                     f.rear = FlatDirection(originRef(p), destinationRef(p)) * Rear(p);
@@ -422,6 +423,18 @@ namespace IsoRim
                 Log.ErrorOnce("[IsoRim] Working out a projectile's height failed: " + e, 93611501);
             }
             return f;
+        }
+
+        // Whether a shot launched from o left from the shooter: from its middle (within a cell and a half), or for a turret
+        // from anywhere on it or just off it (mods launch a turret's shot from their own barrel point: Vanilla Gravship
+        // Expanded's ship guns a cell and a half in front of the middle).
+        private static bool LeftFrom(Thing owner, Vector3 o)
+        {
+            if (owner is Building_Turret)
+            {
+                return owner.OccupiedRect().ExpandedBy(2).Contains(o.ToIntVec3());
+            }
+            return new Vector2(owner.DrawPos.x - o.x, owner.DrawPos.z - o.z).magnitude < 1.5f;
         }
 
         // How high the shooter fires from, in cells above its feet.
@@ -485,7 +498,15 @@ namespace IsoRim
                     Vector3 at = Muzzle(owner, verb.EquipmentSource != null ? verb.EquipmentSource.def : null, caster.DrawPos, Aim(verb));
                     FleckCreationData data = FleckMaker.GetDataStatic(new Vector3(at.x, 0f, at.z), map, fleck, scale);
                     Emitters.Raise(data.spawnPosition, at.y, 0f, fleck);
-                    map.flecks.CreateFleck(data);
+                    flashing = true;
+                    try
+                    {
+                        map.flecks.CreateFleck(data);
+                    }
+                    finally
+                    {
+                        flashing = false;
+                    }
                     return;
                 }
                 catch (Exception e)
@@ -494,6 +515,34 @@ namespace IsoRim
                 }
             }
             FleckMaker.Static(cell, map, fleck, scale);
+        }
+
+        [ThreadStatic] private static bool flashing;
+
+        // A shot flash a mod throws by hand flat in the middle of a 3D-gunned turret's cell (FleckMaker.Static(turret.Position,
+        // ..., ShotFlash, ...): Vanilla Gravship Expanded's point defence) goes to the gun's barrel end too, standing up, as
+        // the game's own turret flashes (ShotFlash). FleckManager.CreateFleck prefix (Patches.TurretFlash_Prefix).
+        public static void TurretFlash(Map map, ref FleckCreationData data)
+        {
+            if (flashing || !FromMuzzle || !View3D.Ready || map == null || data.def != FleckDefOf.ShotFlash)
+            {
+                return;
+            }
+            IntVec3 c = data.spawnPosition.ToIntVec3();
+            if (!c.InBounds(map) || Mathf.Abs(data.spawnPosition.x - (c.x + 0.5f)) > 0.01f || Mathf.Abs(data.spawnPosition.z - (c.z + 0.5f)) > 0.01f)
+            {
+                return;
+            }
+            Building_Turret turret = c.GetEdifice(map) as Building_Turret;
+            Vector3 at;
+            if (turret == null || turret.Position != c || !TurretMuzzle(turret, Vector3.zero, out at))
+            {
+                return;
+            }
+            data.spawnPosition = new Vector3(at.x, data.spawnPosition.y, at.z);
+            Emitters.Raise(data.spawnPosition, at.y, 0f, data.def);
+            Flashes++;
+            LastFlasher = turret;
         }
 
         // Which way the shot leaves the gun (flat, unit length; zero if it cannot tell): as the gun is drawn, toward
@@ -540,6 +589,11 @@ namespace IsoRim
                 return tip;
             }
             if (FromMuzzle && owner is Pawn person && View3D.Ready && People.MeasureWeapon(person) && CardTip(owner, gun, thrown, out tip))
+            {
+                return tip;
+            }
+            // A turret with a 3D gun fires from the gun's barrel end, posed as it is drawn now (TurretMuzzle).
+            if (FromMuzzle && owner is Building_Turret turret && View3D.Ready && TurretMuzzle(turret, dir, out tip))
             {
                 return tip;
             }
@@ -949,11 +1003,98 @@ namespace IsoRim
             return launcher;
         }
 
-        private static readonly Dictionary<Model, float> tipHeights = new Dictionary<Model, float>();
+        // ---- Turrets with a 3D gun (Patches.DrawTurret_Prefix): the gun's barrel end, a point in 3D (x, z rows, y cells above
+        // the turret's ground), the same for every turret, vanilla or modded, whatever pedestal raises its pivot (topHeight),
+        // its size (Fit, scale), its kick (a mortar's recoil) and aim. Worked out from the turret's state when asked, with
+        // the very pose DrawTurret_Prefix draws (TurretGunEnd): a turret turns between frames and several ticks can pass in
+        // one frame, so a barrel end remembered from the last drawing would lag behind the gun that fires.
+
+        // Where a turret's 3D gun (gun: its model as drawn, loaded or not) ends when drawn turned to aim (degrees, the game's
+        // turret angle) at pivot (x, z: the turret's DrawPos plus its recoil kick), as DynamicModels.Draw places it.
+        public static Vector3 TurretGunEnd(Building_Turret turret, ModelEntry entry, Model gun, Vector3 pivot, float aim)
+        {
+            Vector3 fit = entry.Fit(turret.def) * entry.def.scale;
+            Vector3 end = Vector3.Scale(GunEnd(gun), fit);
+            Vector3 v = Quaternion.AngleAxis(aim - 90f, Vector3.up) * end;
+            return new Vector3(pivot.x + v.x, entry.def.topHeight * fit.y + v.y, pivot.z + v.z);
+        }
+
+        // A turret's muzzle: its 3D gun posed as Patches.DrawTurret_Prefix draws it now (the model, loaded or not; its turn, or
+        // a spraying gun's sweep; a mortar's kick, as Building_TurretGun.DrawAt), else turned toward dir. False without a gun model.
+        private static bool TurretMuzzle(Building_Turret turret, Vector3 dir, out Vector3 at)
+        {
+            at = Vector3.zero;
+            ModelEntry entry;
+            if (!IsoRimMod.Settings.models3D || !ModelLibrary.TryGet(turret.def, out entry) || entry.top == null)
+            {
+                return false;
+            }
+            Model gun = entry.top;
+            if (entry.topLoaded != null && turret.def.building != null && turret.TurretTopMaterial != turret.def.building.turretTopMat)
+            {
+                gun = entry.topLoaded;
+            }
+            Verb verb = turret.CurrentEffectiveVerb;
+            float? aim = verb != null ? verb.AimAngleOverride : null;
+            Building_TurretGun g = turret as Building_TurretGun;
+            if (!aim.HasValue && g != null && g.Top != null)
+            {
+                aim = g.Top.CurRotation;
+            }
+            if (!aim.HasValue)
+            {
+                aim = dir.sqrMagnitude > 0.0001f ? dir.AngleFlat() : 0f;
+            }
+            Vector3 pivot = turret.DrawPos;
+            if (g != null && g.Top != null && turret.def.building != null && turret.def.building.IsMortar && g.AttackVerb is Verb_LaunchProjectile shoot)
+            {
+                Vector3 kick;
+                float turn;
+                EquipmentUtility.Recoil(turret.def.building.turretGunDef, shoot, out kick, out turn, g.Top.CurRotation);
+                pivot += kick;
+            }
+            at = TurretGunEnd(turret, entry, gun, pivot, aim.Value);
+            return true;
+        }
+
+        private static readonly Dictionary<Model, Vector3> gunEnds = new Dictionary<Model, Vector3>();
+
+        // A turret gun model's barrel end (its own space): the middle of its front-most face. Turret guns are built pointing
+        // along +x from their pivot, so the barrel ends where the model reaches furthest along x (as Mechs.Tip along +z).
+        public static Vector3 GunEnd(Model gun)
+        {
+            Vector3 end;
+            if (gun == null || gun.positions == null || gun.positions.Length == 0)
+            {
+                return Vector3.zero;
+            }
+            if (gunEnds.TryGetValue(gun, out end))
+            {
+                return end;
+            }
+            float front = float.MinValue;
+            for (int i = 0; i < gun.positions.Length; i++)
+            {
+                front = Mathf.Max(front, gun.positions[i].x);
+            }
+            Vector3 sum = Vector3.zero;
+            int n = 0;
+            for (int i = 0; i < gun.positions.Length; i++)
+            {
+                if (gun.positions[i].x >= front - 0.02f)
+                {
+                    sum += gun.positions[i];
+                    n++;
+                }
+            }
+            end = sum / Mathf.Max(1, n);
+            gunEnds[gun] = end;
+            return end;
+        }
 
         // The end of a turret's 3D gun as Patches.DrawTurret_Prefix draws it: x how far in front of the pivot (along the
         // way it aims), y how high above the ground (a mortar's barrel points up: its mouth is well above the pivot).
-        // The gun model points along +x; the mouth is the middle height of its vertices at the far end. False without one.
+        // The gun model points along +x; the mouth is the middle of its front-most face (GunEnd). False without one.
         private static bool GunTip(Building_Turret turret, out Vector2 tip)
         {
             tip = Vector2.zero;
@@ -962,25 +1103,9 @@ namespace IsoRim
             {
                 return false;
             }
-            Model gun = entry.top;
-            float y;
-            if (!tipHeights.TryGetValue(gun, out y))
-            {
-                float near = gun.maxX - 0.05f * Mathf.Max(0.01f, gun.maxX - gun.minX);
-                float lo = float.MaxValue, hi = float.MinValue;
-                for (int i = 0; i < gun.positions.Length; i++)
-                {
-                    if (gun.positions[i].x >= near)
-                    {
-                        lo = Mathf.Min(lo, gun.positions[i].y);
-                        hi = Mathf.Max(hi, gun.positions[i].y);
-                    }
-                }
-                y = lo <= hi ? (lo + hi) * 0.5f : 0f;
-                tipHeights[gun] = y;
-            }
+            Vector3 end = GunEnd(entry.top);
             Vector3 fit = entry.Fit(turret.def) * entry.def.scale;
-            tip = new Vector2(gun.maxX * fit.x, (entry.def.topHeight + y) * fit.y);
+            tip = new Vector2(end.x * fit.x, (entry.def.topHeight + end.y) * fit.y);
             return true;
         }
 

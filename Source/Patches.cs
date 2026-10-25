@@ -529,6 +529,8 @@ namespace IsoRim
             Patch("smoke from 3D nozzles", AccessTools.Method(typeof(FleckStatic), "Draw", new[] { typeof(float), typeof(DrawBatch) }), prefix: nameof(FleckDraw_Prefix), finalizer: nameof(FleckDraw_Finalizer));
             // Icons thrown from a pawn's cell (downed "!", sleep Zs, hearts ...) over the 3D figure's head (Overhead).
             Patch("icons over 3D figures' heads", AccessTools.Method(typeof(FleckManager), nameof(FleckManager.CreateFleck), new[] { typeof(FleckCreationData) }), prefix: nameof(OverheadFleck_Prefix));
+            // A turret's flash a mod throws by hand at the turret's cell: at its 3D gun's barrel end (Projectiles.TurretFlash).
+            Patch("muzzle flashes at the muzzle", AccessTools.Method(typeof(FleckManager), nameof(FleckManager.CreateFleck), new[] { typeof(FleckCreationData) }), prefix: nameof(TurretFlash_Prefix));
 
             // Turret guns: a 3D gun turning on its 3D base.
             Type turretTop = AccessTools.TypeByName("RimWorld.TurretTop");
@@ -827,7 +829,8 @@ namespace IsoRim
         // gun is aiming, on top of the 3D base, and the game's flat gun is not drawn. As the game's
         // own: a spraying gun (foam turret) sweeps along its spray (AimAngleOverride), the gun kicks
         // back by the recoil offset, and a gun whose sprite shows it loaded (rocketswarm launcher,
-        // full) shows its loaded model.
+        // full) shows its loaded model. Its shots, flashes and beams start at the barrel end of this pose
+        // (Projectiles.TurretMuzzle, TurretGunEnd: keep the two the same).
         public static bool DrawTurret_Prefix(object __instance, Vector3 __1)
         {
             if (!View3D.Ready || !IsoRimMod.Settings.models3D || __instance == null)
@@ -4417,6 +4420,18 @@ namespace IsoRim
         public static bool CreateFleck_Prefix(FleckCreationData fleckData)
         {
             return ShieldHits.CreateFleck(fleckData);
+        }
+
+        public static void TurretFlash_Prefix(FleckManager __instance, ref FleckCreationData fleckData)
+        {
+            try
+            {
+                Projectiles.TurretFlash(__instance.parent, ref fleckData);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Putting a turret's flash at its muzzle failed: " + e, 93611595);
+            }
         }
 
         public static void OverheadFleck_Prefix(FleckManager __instance, FleckCreationData fleckData)
