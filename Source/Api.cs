@@ -67,7 +67,9 @@ namespace IsoRim
         // 32: ModelDef.hoverHeight / hoverBob: animals and mechs that float over the ground while up and about (Hover.cs).
         // 33: beam parts (Beams.cs): beam_* model materials and line motes listed in beamMotes drawn as light (IsoRimAdd: unlit, additive, no
         // outline or shadow), ModelDef.beamFlicker / beamPulse / beamMotes; Api.Dev.BeamMoteDraws, BeamPartDraws, BeamPartBaked, BeamDrawn.
-        public static int Version => 33;
+        // 34: wall shapes (Api34.cs): AddWallShapes (WallShapeRule, WallShape): another mod's convex wall pieces per cell, drawn as
+        // IsoRim's 3D walls (optionally instead of the cell's block), roofs over them clipped to the shapes (WallShapeRoofs).
+        public static int Version => 34;
 
         // ---- glass parts (Version 30)
 

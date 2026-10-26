@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -74,7 +75,7 @@ namespace IsoRim
 
         // The slabs over the built-roof cells of one block. kindAt: the lid kinds (SectionLayer_IsoRimRoofs); opened: a
         // cell opened by the old cut-away (lid kind 0 although roofed). mark/apply: the per-cell cut-away tags.
-        public static void Build(SectionLayer layer, CellRect rect, Func<int, int, int> kindAt, Func<int, int, bool> opened)
+        public static void Build(SectionLayer layer, Map map, CellRect rect, Func<int, int, int> kindAt, Func<int, int, bool> opened)
         {
             Material mat = Mat;
             LayerSubMesh sm = mat != null ? MeshWriter.Sub(layer, mat) : null;
@@ -103,7 +104,8 @@ namespace IsoRim
             {
                 CutTags.Apply(layer, cellMark, markCell, ShaderCut.Roof);   // the cell before: hidden while its roof is open
                 cellMark = -1;
-                if (kindAt(c.x, c.z) != 1)
+                List<ShapeRoofs.Piece> cover = ShapeRoofs.CoverOf(map, c);   // (Api 34) null: no wall shapes here
+                if (ShapeRoofs.KindOf(cover, kindAt(c.x, c.z)) != 1)
                 {
                     continue;
                 }
@@ -113,6 +115,15 @@ namespace IsoRim
                 }
                 cellMark = CutTags.Mark(layer);
                 markCell = c;
+                if (cover != null)
+                {
+                    if (kindAt(c.x, c.z) == 0 && cover.Count > 0)
+                    {
+                        markCell = cover[0].tag;   // a cell outside the roof: goes with the wall's
+                    }
+                    ShapedCell(layer, sm, map, c, cover, bottom, top, rim, lift, topCol, rimTop, rimInner, sideCol, line, squash);
+                    continue;
+                }
                 for (int f = 0; f < 4; f++)
                 {
                     int nx = c.x + Side[f].x, nz = c.z + Side[f].z;
@@ -194,6 +205,37 @@ namespace IsoRim
                 return Side[g].ToVector3() * -Overhang;
             }
             return Vector3.zero;
+        }
+
+        private static readonly List<ShapeRoofs.Edge> shapeEdges = new List<ShapeRoofs.Edge>();
+
+        // (Api 34) A roof cell with wall shapes: the slab's top over the cell clipped to the roof's pieces there (ShapeRoofs),
+        // and the outer face, parapet and lines along the outline of those pieces instead of the cell's sides.
+        private static void ShapedCell(SectionLayer layer, LayerSubMesh sm, Map map, IntVec3 c, List<ShapeRoofs.Piece> cover, float bottom, float top,
+            float rim, float lift, Color32 topCol, Color32 rimTop, Color32 rimInner, Color32 sideCol, Color32 line, float squash)
+        {
+            int[] mark = ShapeRoofs.MarkTris(layer);
+            MeshWriter.Quad(sm, new Vector3(c.x, top, c.z), new Vector3(c.x, top, c.z + 1), new Vector3(c.x + 1, top, c.z + 1), new Vector3(c.x + 1, top, c.z), topCol);
+            ShapeRoofs.ClipSince(layer, mark, cover, 1);
+            ShapeRoofs.Outline(map, c, 1, shapeEdges);
+            foreach (ShapeRoofs.Edge e in shapeEdges)
+            {
+                Vector2 ao2 = e.a + e.offA * Overhang, bo2 = e.b + e.offB * Overhang;
+                Vector2 ai2 = e.a + e.offA * (Overhang - ParapetWidth), bi2 = e.b + e.offB * (Overhang - ParapetWidth);
+                Vector2 al2 = e.a + e.offA * (Overhang - LineWidth), bl2 = e.b + e.offB * (Overhang - LineWidth);
+                Vector3 ao = new Vector3(ao2.x, 0f, ao2.y), bo = new Vector3(bo2.x, 0f, bo2.y);
+                Vector3 ai = new Vector3(ai2.x, 0f, ai2.y), bi = new Vector3(bi2.x, 0f, bi2.y);
+                // the top out to the overhang, under the parapet
+                MeshWriter.Quad(sm, new Vector3(e.a.x, top, e.a.y), ao + Vector3.up * top, bo + Vector3.up * top, new Vector3(e.b.x, top, e.b.y), topCol);
+                Wall(sm, ao, bo, bottom, rim, sideCol);
+                MeshWriter.Quad(sm, new Vector3(ao.x, rim, ao.z), new Vector3(ai.x, rim, ai.z), new Vector3(bi.x, rim, bi.z), new Vector3(bo.x, rim, bo.z), rimTop);
+                Wall(sm, ai, bi, top, rim, rimInner);
+                MeshWriter.Quad(sm, new Vector3(ao.x, rim + lift, ao.z), new Vector3(al2.x, rim + lift, al2.y),
+                    new Vector3(bl2.x, rim + lift, bl2.y), new Vector3(bo.x, rim + lift, bo.z), line);
+                Vector3 off = new Vector3(e.o.x, 0f, e.o.y) * Lift;
+                float foot = bottom + LineWidth / squash;
+                Wall(sm, ao + off, bo + off, bottom, foot, line);
+            }
         }
 
         // An upright face from a to b (cells, y ignored), from y0 to y1 (drawn heights).

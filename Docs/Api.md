@@ -3,7 +3,7 @@
 Model packs (XML and .obj files, no code), the dev-mode model binder and the coverage report: see [ModelPacks.md](ModelPacks.md).
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`, `WallShapeRule`, `WallShape`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
 in any update, even when it is public: do not patch or reflect into it, ask for an Api member instead. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -47,10 +47,12 @@ if (IsoRim.Api.Version >= 30) { /* glass parts per thing: ModelDef glassTint / g
                                    RemoveGlassColor; supported doors draw their glassModel (part 19) */ }
 if (IsoRim.Api.Version >= 31) { /* ModelDef.topThroughRoof, roofModel: a turret's gun and a fixed part rise through roofs (part 20) */ }
 if (IsoRim.Api.Version >= 32) { /* ModelDef.hoverHeight, hoverBob: hovering animals and mechs (part 21) */ }
+if (IsoRim.Api.Version >= 33) { /* beam parts: beam_* materials, ModelDef.beamFlicker / beamPulse / beamMotes (part 22) */ }
+if (IsoRim.Api.Version >= 34) { /* wall shapes: AddWallShapes (WallShapeRule, WallShape), roofs clipped to them (part 23) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21 (23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23 (Api 23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1247,6 +1249,46 @@ them), with no outline, no shadow and no depth write, as bright at night as by d
 An older IsoRim draws `beam_` faces as ordinary faces and does not know the fields (an XML error in Defs): add them
 through `PatchOperation_IfIsoRimApi` (minVersion 33). 3D view off: nothing changes. Tests: `Api.Dev.BeamMoteDraws`,
 `BeamPartDraws`, `BeamPartBaked`, `BeamPartShader`, `BeamDrawn(mote, out material, out from, out to)`.
+
+## Part 23: wall shapes (version 34)
+
+A mod that gives walls a shape of their own in some cells (diagonal joins, trimmed wall cells) tells IsoRim the shape
+cell by cell, and IsoRim stands it up as its own 3D walls: the owner wall's height (the wall height setting; a wall
+upstairs reaches down to the wall below), its stuff texture and colour (paint included), cap, outlines and corner
+lines, sun lighting, the cut-away (each piece goes down with its owner's cell), the gravship take-off and landing
+scene and culling. Built roofs (pitched, flat and ship decks) over such cells follow the shapes: their edge runs along
+the shape's outer side, and near shapes a pitched roof rises from that edge (a hipped roof over an octagon).
+
+```csharp
+// IsoRim.Api.Version >= 34, once at startup
+IsoRim.Api.AddWallShapes((Map map, IntVec3 cell, IsoRim.WallShape into) =>
+{
+    if (!MyShapes.Has(map, cell)) return false;
+    into.ReplacesBlock = true;                                  // a trimmed wall cell: its square block is left out
+    into.Add(new[] { new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 1f) }, cell.GetEdifice(map));
+    return true;
+});
+IsoRim.Api.HideFlatLayer(typeof(MySectionLayer));               // the mod's own flat drawing, while IsoRim draws it in 3D
+```
+
+- `WallShapeRule(Map, IntVec3 cell, WallShape into)`: fill `into` with convex polygons, cell-local (0..1, x east, z
+  north, either winding), each with the wall `Building` whose look it takes (it must be a wall IsoRim draws as a block:
+  others are left out). Return false for cells the rule doesn't touch. `into.ReplacesBlock`: leave out the cell's own
+  block (only the polygons stand).
+- Which sides show is worked out by IsoRim: a side shows where nothing else (another shape, a block) stands just
+  outside it at least as tall. Let pieces meet along whole sides or along the cell's sides.
+- Asked on the main thread while a block of the map is redrawn (walls and roofs), several times per cell: keep it cheap
+  and deterministic. Only while walls are IsoRim blocks (3D view, textured 3D walls); 3D view off: nothing changes.
+- `changeFlags` (the game's `MapMeshFlag` bits) are added to what redraws IsoRim's walls layer; buildings and things
+  already do. `Api.RefreshWallShapes(map, cell)` (version 26) redraws the walls round a cell when nothing else reports
+  the change. A rule that throws is logged once and left out.
+- Roofs: in a cell with shapes the roof covers the shapes whose owner carries that roof and the rest of the cell as
+  that cell's roof; in a cell whose block the shapes replace, each free part takes the roof of the open cell beside it.
+- Stacked floors (Floors): a shape upstairs over the same shape below reaches down to it, as walls do. Damage marks on
+  a replaced cell stay on its shape's cap.
+
+First user: Vanilla Diagonal Walls (its diagonal bands and trimmed wall cells, through a small assembly it loads only
+with IsoRim).
 
 ## Part M: model packs (IsoRim.ModelDef)
 

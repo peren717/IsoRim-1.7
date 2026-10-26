@@ -744,7 +744,7 @@ namespace IsoRim
         // Read once per def. Anything with stuff, a def colour or a natural rock look keeps its colour.
         private static readonly Dictionary<ThingDef, Color[]> tones = new Dictionary<ThingDef, Color[]>();
 
-        private static void BlockTones(Thing t, ref Color side, ref Color cap)
+        internal static void BlockTones(Thing t, ref Color side, ref Color cap)
         {
             ThingDef def = t.def;
             if (t.Stuff != null || side.r < 0.98f || side.g < 0.98f || side.b < 0.98f || def.IsSmoothed

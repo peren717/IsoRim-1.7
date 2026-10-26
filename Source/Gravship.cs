@@ -197,7 +197,7 @@ namespace IsoRim
         // The walls layer redraws on the game's hull-layer changes too (buildings, terrain, things, roofs).
         public static void AddChangeFlags(SectionLayer layer, Section section)
         {
-            layer.relevantChangeTypes |= WallPieces.extraFlags;   // (Api 26: what registered corner rules need)
+            layer.relevantChangeTypes |= WallPieces.extraFlags | WallShapes.extraFlags;   // (Api 26/34: what registered corner and shape rules need)
             if (!ModsConfig.OdysseyActive)
             {
                 return;
@@ -344,7 +344,7 @@ namespace IsoRim
         }
 
         // Soft shading on the ground along the open faces, as GroundShadows.AroundBlock does for blocks.
-        private static void GroundBand(SectionLayer layer, Vector2[] poly, WallBoxes.PrismEdge[] edges)
+        internal static void GroundBand(SectionLayer layer, Vector2[] poly, WallBoxes.PrismEdge[] edges)
         {
             Material mat = R3DMaterials.GroundShadow;
             if (!GroundShadows.On || mat == null)
@@ -469,6 +469,9 @@ namespace IsoRim
             public Vector2 joinStart, joinEnd;
             public bool lineStart, lineEnd;
             public bool foreignStart, foreignEnd;
+            // (shader cut-away, Api 34) a closed side against a block that may be cut lower: baked with this ShaderCut.Cond
+            // tag, shown only while that block is lower (as a block's side against a neighbour that may drop). 0: left out.
+            public int cond;
         }
 
         // A wall-like prism standing on any convex footprint (corners counter-clockwise seen from above, in
@@ -482,10 +485,14 @@ namespace IsoRim
         public static IntVec3 prismOwner;
         public static int prismFlags;
 
-        public static bool PrintPrism(SectionLayer layer, IList<Vector2> poly, PrismEdge[] edges, float baseHeight, float height, WallKind kind, Color tint)
+        // (Api 34) capTint: the cap's colour when it differs from the sides' (a stuffless block's atlas tones, BlockTones);
+        // drop, vBase, zShift: a wall upstairs reaching down to the wall below (Floors.WallColumn), as PrintBlock does: the
+        // sides go down by drop with no line along their foot, the side texture starts at vBase and follows the ground rows.
+        public static bool PrintPrism(SectionLayer layer, IList<Vector2> poly, PrismEdge[] edges, float baseHeight, float height, WallKind kind, Color tint,
+            Color? capTint = null, float drop = 0f, float vBase = 0f, int zShift = 0)
         {
             int n = poly.Count;
-            Material topMat = MaterialFor(kind, true, 0, false, tint);
+            Material topMat = MaterialFor(kind, true, 0, false, capTint ?? tint);
             LayerSubMesh top = topMat != null ? MeshWriter.Sub(layer, topMat) : null;
             if (n < 3 || top == null || top.verts.Count + n > MeshWriter.MaxVerts)
             {
@@ -495,7 +502,7 @@ namespace IsoRim
             LayerSubMesh solid = solidMat != null ? MeshWriter.Sub(layer, solidMat) : null;
             bool room = solid != null && solid.verts.Count + 40 * n <= MeshWriter.MaxVerts;
             float squash = View3D.Squash;
-            float y0 = baseHeight / squash;
+            float y0 = (baseHeight - drop) / squash;
             float topY = (baseHeight + height) / squash;
             float rimY = topY + 0.002f / squash;
             Color32 lineColor = R3DMaterials.Shaded(tint, LineShade);
@@ -526,16 +533,36 @@ namespace IsoRim
             for (int i = 0; i < n; i++)
             {
                 PrismEdge e = edges[i];
-                if (!e.open)
+                bool condSide = !e.open && e.cond != 0 && CutTags.Enabled;
+                if (!e.open && !condSide)
                 {
                     continue;
                 }
+                int condMark = condSide ? CutTags.Mark(layer) : -1;   // (Api 34) a side shown only while the block against it is lower
+                PrismSide(layer, poly, edges, i, kind, tint, y0, topY, rimY, height, drop, vBase, zShift, squash, lineColor, room ? solid : null,
+                    condSide ? e.cond : 0);
+                if (condSide)
+                {
+                    CutTags.Apply(layer, condMark, prismOwner, prismFlags | e.cond);
+                }
+            }
+            return true;
+        }
+
+        // One side of PrintPrism (cond != 0: a closed side baked for the shader cut-away, Api 34: no corner lines).
+        private static void PrismSide(SectionLayer layer, IList<Vector2> poly, PrismEdge[] edges, int i, WallKind kind, Color tint, float y0, float topY,
+            float rimY, float height, float drop, float vBase, int zShift, float squash, Color32 lineColor, LayerSubMesh solid, int cond)
+        {
+            int n = poly.Count;
+            bool room = solid != null;
+            PrismEdge e = edges[i];
+            {
                 Vector2 a = poly[i];
                 Vector2 b = poly[(i + 1) % n];
                 float len = (b - a).magnitude;
                 if (len < 1e-4f)
                 {
-                    continue;
+                    return;
                 }
                 Vector2 dir = (b - a) / len;          // along the side, left to right seen from outside
                 Vector2 o = new Vector2(dir.y, -dir.x); // outward
@@ -556,18 +583,19 @@ namespace IsoRim
                 bool textured = side != null && side.verts.Count + 4 <= MeshWriter.MaxVerts;
                 if (textured)
                 {
-                    float along = a.x * dir.x + a.y * dir.y;
+                    float along = a.x * dir.x + (a.y - zShift) * dir.y;   // (upstairs: as the ground row, so the texture runs on)
                     float u0 = along * 0.5f;
                     float u1 = (along + len) * 0.5f;
-                    float v1 = height / SideCellsHigh;
-                    int sideMark = prismFlags != 0 ? CutTags.Mark(layer) : -1;
+                    float v0 = vBase;
+                    float v1 = vBase + (height + drop) / SideCellsHigh;
+                    int sideMark = (prismFlags | cond) != 0 ? CutTags.Mark(layer) : -1;
                     MeshWriter.TexturedQuad(side, p0, Raised(p0, topY), Raised(p1, topY), p1,
-                        new Vector2(u0, 0f), new Vector2(u0, v1), new Vector2(u1, v1), new Vector2(u1, 0f), White);
-                    CutTags.Apply(layer, sideMark, prismOwner, prismFlags | ShaderCut.TexSide);
+                        new Vector2(u0, v0), new Vector2(u0, v1), new Vector2(u1, v1), new Vector2(u1, v0), White);
+                    CutTags.Apply(layer, sideMark, prismOwner, prismFlags | cond | ShaderCut.TexSide);
                 }
                 if (!room)
                 {
-                    continue;
+                    return;
                 }
                 Vector3 b0 = textured ? p0 - out3 * Gap : p0;
                 Vector3 b1 = textured ? p1 - out3 * Gap : p1;
@@ -578,11 +606,18 @@ namespace IsoRim
                 Vector2 ib = InnerCorner(b, o, joinB);
                 MeshWriter.Quad(solid, new Vector3(a.x, rimY, a.y), new Vector3(ia.x, rimY, ia.y), new Vector3(ib.x, rimY, ib.y), new Vector3(b.x, rimY, b.y), lineColor);
 
-                // The line along the ground.
+                // The line along the ground (not for a wall reaching down to the one below).
                 Vector3 q0 = p0 + out3 * Gap;
                 Vector3 q1 = p1 + out3 * Gap;
                 float lineTop = y0 + OutlineWidth * 0.7f / squash;
-                MeshWriter.Quad(solid, q0, Raised(q0, lineTop), Raised(q1, lineTop), q1, lineColor);
+                if (drop <= 0f)
+                {
+                    MeshWriter.Quad(solid, q0, Raised(q0, lineTop), Raised(q1, lineTop), q1, lineColor);
+                }
+                if (cond != 0)
+                {
+                    return;
+                }
 
                 // Corner lines.
                 if (lineA && joinA != Vector2.zero)
@@ -605,7 +640,6 @@ namespace IsoRim
                     }
                 }
             }
-            return true;
         }
 
         // A small square of rim on a cap at an inside corner p (inward = toward the cap from p, diagonal).
@@ -857,6 +891,10 @@ namespace IsoRim
         // The outline sides of the piece in cell (x, z), counter-clockwise (roof on the left), from-to in cells.
         private static void Edges(Map map, Func<int, int, int> kindAt, int x, int z, List<Vector2> from, List<Vector2> to)
         {
+            if (ShapeRoofs.CoverOf(map, new IntVec3(x, 0, z)) != null)
+            {
+                return;   // (Api 34) a cell with wall shapes runs its own outline (ShapedCell)
+            }
             CornerType type;
             int p = Piece(map, kindAt, x, z, out type);
             if (p == 0)
@@ -940,6 +978,15 @@ namespace IsoRim
                     break;
                 }
                 CornerType type;
+                List<ShapeRoofs.Piece> cover = ShapeRoofs.CoverOf(map, c);   // (Api 34) null: no wall shapes here
+                if (cover != null)
+                {
+                    if (ShapeRoofs.KindOf(cover, kindAt(c.x, c.z)) == Kind)
+                    {
+                        ShapedCell(layer, sm, map, c, cover, baseY, kindAt(c.x, c.z) == 0 && cover.Count > 0 ? cover[0].tag : c);
+                    }
+                    continue;
+                }
                 int p = Piece(map, kindAt, c.x, c.z, out type);
                 if (p == 0)
                 {
@@ -1004,6 +1051,41 @@ namespace IsoRim
                 }
                 CutTags.Apply(layer, cellMark, owner, ShaderCut.Roof);
             }
+        }
+
+        private static readonly List<ShapeRoofs.Edge> shapeEdges = new List<ShapeRoofs.Edge>();
+
+        // (Api 34) A ship roof cell with wall shapes: the deck plate clipped to the roof's pieces there (ShapeRoofs), rims
+        // along the outline of those pieces (stretched to each side's length) and a filler block at each outside corner.
+        private static void ShapedCell(SectionLayer layer, LayerSubMesh sm, Map map, IntVec3 c, List<ShapeRoofs.Piece> cover, float baseY, IntVec3 tag)
+        {
+            int cellMark = CutTags.Mark(layer);
+            int[] mark = ShapeRoofs.MarkTris(layer);
+            Put(sm, square, new Vector2(c.x + 0.5f, c.z + 0.5f), 1f, 0f, 0f, 1f, baseY);
+            ShapeRoofs.ClipSince(layer, mark, cover, Kind);
+            ShapeRoofs.Outline(map, c, Kind, shapeEdges);
+            foreach (ShapeRoofs.Edge e in shapeEdges)
+            {
+                Vector2 d = e.b - e.a;
+                float len = d.magnitude;
+                if (len < 0.01f)
+                {
+                    continue;
+                }
+                d /= len;
+                Vector2 mid = (e.a + e.b) * 0.5f;
+                Put(sm, rim, mid, d.x * len, -d.y, d.y * len, d.x, baseY);   // rim runs along x: x -> d, stretched to the side
+                // an outside corner at its end: the gap between the two rims' square ends filled
+                Vector2 n1 = e.o, n2 = e.joinB;
+                if (n1.x * n2.y - n1.y * n2.x > 1e-3f)
+                {
+                    Vector2 m = e.b + (n1 + n2) * (RimHalf / (1f + Vector2.Dot(n1, n2)));
+                    Vector2[] poly = { e.b, e.b + n1 * RimHalf, m, e.b + n2 * RimHalf };
+                    Block(sm, poly, baseY, baseY + RimLow, ribColor);
+                    Block(sm, poly, baseY + RimLow, baseY + RimTop, plateColor);
+                }
+            }
+            CutTags.Apply(layer, cellMark, tag, ShaderCut.Roof);
         }
 
         // The corner where a side ending at p (direction d1) meets the next side of the outline.

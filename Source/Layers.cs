@@ -527,6 +527,7 @@ namespace IsoRim
             bool shaderCut = ShaderCut.On;
             WallBoxes.FullHeights = shaderCut;   // (shader cut-away) baked whole; the vertex stage cuts
             CutTags.Enabled = shaderCut;
+            WallShapes.Begin(Map);   // (Api 34) other mods' wall shapes, kept per cell while this block is drawn
             try
             {
                 Map map = Map;
@@ -543,11 +544,16 @@ namespace IsoRim
                         WallBoxes.PrintGround(this, b);   // (Api 11) rubble: a low shape on the ground, not a wall
                         continue;
                     }
+                    if (WallShapes.Replaces(map, c))
+                    {
+                        continue;   // (Api 34) a registered wall shape stands here instead of the block
+                    }
                     float height = WallBoxes.HeightFor(b, form.height);
                     GroundShadows.AroundBlock(this, b);
                     WallBoxes.PrintBlock(this, b, height);
                 }
                 HullCorners.Print(this, map, section.CellRect);   // gravship hull corner pieces (Gravship.cs; + Api 26 corners)
+                WallShapes.Print(this, map, section.CellRect);    // (Api 34) other mods' wall shapes
                 CutTags.Finish(this);
             }
             catch (Exception e)
@@ -556,6 +562,7 @@ namespace IsoRim
             }
             finally
             {
+                WallShapes.End();
                 WallBoxes.FullHeights = false;
                 CutTags.Enabled = false;
             }
@@ -1099,6 +1106,108 @@ namespace IsoRim
             return Mathf.Min(l, MaxLevel);
         }
 
+        // (Api 34) Near wall shapes the roof's outline is not on the cells' sides (a diagonal wall's slant): there a corner's
+        // height step is its distance to the outline (outline sides of the shaped cells and the cells' sides where a built
+        // roof ends), negative outside it, so a slanted edge gets a plane sloping straight up from it (a hipped roof over an
+        // octagon) instead of terraces from the cells' steps. Everywhere else CornerLevel, as before.
+        private readonly List<Vector4> outlineSegs = new List<Vector4>();
+        private readonly List<Vector2> outlineNormals = new List<Vector2>();
+        private readonly HashSet<int> nearShapes = new HashSet<int>();
+
+        private float CornerHeight(int cx, int cz)
+        {
+            if (outlineSegs.Count == 0 || !nearShapes.Contains(CornerKey(cx, cz)))
+            {
+                return CornerLevel(cx, cz);
+            }
+            return PointLevel(new Vector2(cx, cz));
+        }
+
+        // The signed distance (cells) from q to the roof's outline near wall shapes, at most MaxLevel; negative outside.
+        private float PointLevel(Vector2 p)
+        {
+            float best = float.MaxValue;
+            float sign = 1f;
+            for (int i = 0; i < outlineSegs.Count; i++)
+            {
+                Vector4 s = outlineSegs[i];
+                Vector2 a = new Vector2(s.x, s.y), b = new Vector2(s.z, s.w);
+                Vector2 d = b - a;
+                float t = Mathf.Clamp01(Vector2.Dot(p - a, d) / Mathf.Max(1e-8f, d.sqrMagnitude));
+                Vector2 q = a + d * t;
+                float dist = (p - q).magnitude;
+                if (dist < best - 1e-5f)
+                {
+                    best = dist;
+                    sign = Vector2.Dot(p - q, outlineNormals[i]) > 1e-5f ? -1f : 1f;
+                }
+            }
+            return Mathf.Min(best, MaxLevel) * sign;
+        }
+
+        private static int CornerKey(int cx, int cz) => cx * 65536 + cz;
+
+        // The cell's corners take their height from the outline near wall shapes (CornerHeight).
+        private bool NearShapes(IntVec3 c) => outlineSegs.Count > 0 && nearShapes.Contains(CornerKey(c.x, c.z));
+
+        // The outline round this block (its area) where wall shapes are about, kept for CornerHeight.
+        private void PrepareShapeLevels(Map map)
+        {
+            outlineSegs.Clear();
+            outlineNormals.Clear();
+            nearShapes.Clear();
+            if (!ShapeRoofs.Active)
+            {
+                return;
+            }
+            List<IntVec3> shaped = new List<IntVec3>();
+            foreach (IntVec3 c in area)
+            {
+                if (c.InBounds(map) && ShapeRoofs.CoverOf(map, c) != null)
+                {
+                    shaped.Add(c);
+                }
+            }
+            if (shaped.Count == 0)
+            {
+                return;
+            }
+            foreach (IntVec3 c in shaped)
+            {
+                ShapeRoofs.Outline(map, c, 1, shapeEdges);
+                foreach (ShapeRoofs.Edge e in shapeEdges)
+                {
+                    outlineSegs.Add(new Vector4(e.a.x, e.a.y, e.b.x, e.b.y));
+                    outlineNormals.Add(e.o);
+                }
+                for (int dz = -MaxLevel - 1; dz <= MaxLevel + 2; dz++)
+                {
+                    for (int dx = -MaxLevel - 1; dx <= MaxLevel + 2; dx++)
+                    {
+                        nearShapes.Add(CornerKey(c.x + dx, c.z + dz));
+                    }
+                }
+            }
+            // the cells' own sides where a built roof ends (not beside a shaped cell: its outline is above)
+            foreach (IntVec3 c in area)
+            {
+                if (KindAt(c.x, c.z) != 1 || !c.InBounds(map) || ShapeRoofs.CoverOf(map, c) != null)
+                {
+                    continue;
+                }
+                for (int f = 0; f < 4; f++)
+                {
+                    IntVec3 n = c + Side[f];
+                    if (KindAt(n.x, n.z) == 1 || (n.InBounds(map) && ShapeRoofs.CoverOf(map, n) != null))
+                    {
+                        continue;
+                    }
+                    outlineSegs.Add(new Vector4(c.x + AX[f], c.z + AZ[f], c.x + BX[f], c.z + BZ[f]));
+                    outlineNormals.Add(new Vector2(Side[f].x, Side[f].z));
+                }
+            }
+        }
+
         private void Build()
         {
             Map map = Map;
@@ -1154,6 +1263,21 @@ namespace IsoRim
 
             WriteRoofTexture(map);
 
+            ShapeRoofs.Begin(map, KindAt);   // (Api 34) cells with wall shapes: the roof clipped to the shapes
+            outlineSegs.Clear();
+            try
+            {
+                PrepareShapeLevels(map);
+                BuildCells(map, sm, squash, wall, flat, roofCol);
+            }
+            finally
+            {
+                ShapeRoofs.End();
+            }
+        }
+
+        private void BuildCells(Map map, LayerSubMesh sm, float squash, float wall, bool flat, Color roofCol)
+        {
             Vector3[] p = new Vector3[4];
             int cellMark = -1;
             IntVec3 markCell = IntVec3.Invalid;
@@ -1162,6 +1286,11 @@ namespace IsoRim
                 CutTags.Apply(this, cellMark, markCell, ShaderCut.Roof);   // (shader cut-away) the cell before: hidden while its roof is open
                 cellMark = -1;
                 int kind = KindAt(c.x, c.z);
+                List<ShapeRoofs.Piece> cover = ShapeRoofs.CoverOf(map, c);   // (Api 34) null: no wall shapes here
+                if (cover != null)
+                {
+                    kind = ShapeRoofs.KindOf(cover, kind);
+                }
                 if (kind == 0 || kind == ShipRoofs.Kind || kind == FloorLid || (kind == 1 && flat))
                 {
                     continue;   // ship roofs: ShipRoofs.Build below; concrete flat roofs: FlatRoofs.Build; under a floor: that floor's slab
@@ -1172,6 +1301,12 @@ namespace IsoRim
                 }
                 cellMark = CutTags.Mark(this);
                 markCell = c;
+                if (cover != null && kind == 1)
+                {
+                    markCell = KindAt(c.x, c.z) == 0 && cover.Count > 0 ? cover[0].tag : c;   // a cell outside the roof: with the wall's
+                    ShapedCell(map, sm, c, cover, wall, squash, roofCol);
+                    continue;
+                }
                 for (int f = 0; f < 4; f++)
                 {
                     open[f] = KindAt(c.x + Side[f].x, c.z + Side[f].z) != kind;
@@ -1193,20 +1328,20 @@ namespace IsoRim
                 {
                     int cx = c.x + AX[k == 0 ? 0 : (k == 1 ? 3 : (k == 2 ? 2 : 1))];
                     int cz = c.z + AZ[k == 0 ? 0 : (k == 1 ? 3 : (k == 2 ? 2 : 1))];
-                    float h = wall + Rise + Pitch * CornerLevel(cx, cz);
+                    float h = wall + Rise + Pitch * CornerHeight(cx, cz);
                     p[k] = new Vector3(cx, h, cz);   // in cells; corners SW, NW, NE, SE
                 }
                 bool alongSwNe = Mathf.Abs(p[0].y - p[2].y) >= Mathf.Abs(p[1].y - p[3].y);
                 int style = Style;
                 if (alongSwNe)
                 {
-                    Facet(this, sm, p[0], p[1], p[2], roofCol, c, style);
-                    Facet(this, sm, p[0], p[2], p[3], roofCol, c, style);
+                    Facet(this, sm, p[0], p[1], p[2], roofCol, c, style, NearShapes(c));
+                    Facet(this, sm, p[0], p[2], p[3], roofCol, c, style, NearShapes(c));
                 }
                 else
                 {
-                    Facet(this, sm, p[0], p[1], p[3], roofCol, c, style);
-                    Facet(this, sm, p[1], p[2], p[3], roofCol, c, style);
+                    Facet(this, sm, p[0], p[1], p[3], roofCol, c, style, NearShapes(c));
+                    Facet(this, sm, p[1], p[2], p[3], roofCol, c, style, NearShapes(c));
                 }
 
                 // Round the open edges: the eaves run out a little and down, with a fascia board
@@ -1248,10 +1383,74 @@ namespace IsoRim
             CutTags.Apply(this, cellMark, markCell, ShaderCut.Roof);
             if (flat)
             {
-                FlatRoofs.Build(this, section.CellRect, KindAt, (x, z) => !CutTags.Enabled && Cutaway.RoofOpen(map, new IntVec3(x, 0, z)));
+                FlatRoofs.Build(this, map, section.CellRect, KindAt, (x, z) => !CutTags.Enabled && Cutaway.RoofOpen(map, new IntVec3(x, 0, z)));
             }
             ShipRoofs.Build(this, map, section.CellRect, KindAt);   // flat decks over gravships (Gravship.cs)
         }
+
+        private readonly List<ShapeRoofs.Edge> shapeEdges = new List<ShapeRoofs.Edge>();
+        // (Api 34) A built-roof cell with wall shapes: the roof over the pieces of it that lie under the roof (ShapeRoofs),
+        // its height at every corner taken from the distance to the outline (PointLevel: exactly at the eaves' height along
+        // the slant, a plane rising from it), and the eaves along the outline of those pieces instead of the cell's sides.
+        private void ShapedCell(Map map, LayerSubMesh sm, IntVec3 c, List<ShapeRoofs.Piece> cover, float wall, float squash, Color roofCol)
+        {
+            int style = Style;
+            Vector2 s0 = new Vector2(c.x, c.z), s1 = new Vector2(c.x + 1, c.z), s2 = new Vector2(c.x + 1, c.z + 1), s3 = new Vector2(c.x, c.z + 1);
+            Vector2 mid = new Vector2(c.x + 0.5f, c.z + 0.5f);
+            quarters[0] = new[] { s0, s1, mid };
+            quarters[1] = new[] { s1, s2, mid };
+            quarters[2] = new[] { s2, s3, mid };
+            quarters[3] = new[] { s3, s0, mid };
+            foreach (ShapeRoofs.Piece piece in cover)
+            {
+                if (piece.kind != 1)
+                {
+                    continue;
+                }
+                for (int q = 0; q < 4; q++)
+                {
+                    List<Vector2> poly = ShapeRoofs.ClipPolygon(piece.poly, quarters[q]);
+                    if (poly == null)
+                    {
+                        continue;
+                    }
+                    // fanned clockwise seen from above, as the cells' facets
+                    Vector3 p0 = RoofPoint(poly[0], wall);
+                    for (int k = poly.Count - 1; k >= 2; k--)
+                    {
+                        Facet(this, sm, p0, RoofPoint(poly[k], wall), RoofPoint(poly[k - 1], wall), roofCol, c, style, true);
+                    }
+                }
+            }
+
+            ShapeRoofs.Outline(map, c, 1, shapeEdges);
+            Color32 under = R3DMaterials.Shaded(roofCol, 0.72f);
+            Color32 face = R3DMaterials.Shaded(roofCol, 0.46f);
+            Color32 line = R3DMaterials.Shaded(roofCol, 0.28f);
+            float lift = 0.002f / squash;
+            foreach (ShapeRoofs.Edge e in shapeEdges)
+            {
+                float ha = RoofPoint(e.a, wall).y, hb = RoofPoint(e.b, wall).y;
+                Vector2 ao = e.a + e.offA * Overhang, bo = e.b + e.offB * Overhang;
+                float edgeA = ha / squash, edgeB = hb / squash;
+                float eaveA = (ha - Overhang * Pitch) / squash, eaveB = (hb - Overhang * Pitch) / squash;
+                float botA = eaveA - Fascia / squash, botB = eaveB - Fascia / squash;
+                MeshWriter.Quad(sm, new Vector3(e.a.x, edgeA, e.a.y), new Vector3(ao.x, eaveA, ao.y), new Vector3(bo.x, eaveB, bo.y), new Vector3(e.b.x, edgeB, e.b.y), under);
+                MeshWriter.Quad(sm, new Vector3(ao.x, botA, ao.y), new Vector3(ao.x, eaveA, ao.y), new Vector3(bo.x, eaveB, bo.y), new Vector3(bo.x, botB, bo.y), face);
+                Vector2 ai = e.a + e.offA * (Overhang - 0.04f), bi = e.b + e.offB * (Overhang - 0.04f);
+                MeshWriter.Quad(sm, new Vector3(ao.x, eaveA + lift, ao.y), new Vector3(ai.x, eaveA + lift, ai.y),
+                    new Vector3(bi.x, eaveB + lift, bi.y), new Vector3(bo.x, eaveB + lift, bo.y), line);
+            }
+        }
+
+        private readonly Vector2[][] quarters = new Vector2[4][];
+
+        // A point of the roof (cells, y its height) over q near wall shapes.
+        private Vector3 RoofPoint(Vector2 q, float wall)
+        {
+            return new Vector3(q.x, wall + Rise + Pitch * Mathf.Max(0f, PointLevel(q)), q.y);
+        }
+
 
         // (RoofClip) The roof over each cell of this block, as drawn here, into the map's roof texture: things under
         // it are clipped at its underside. Open cells (old cut-away) are lid kind 0 here and clip nothing; with the
@@ -1295,7 +1494,9 @@ namespace IsoRim
         // One sloping facet of a built roof, given in cells, lit by the sun: a plain copy that hides
         // what is under the roof, and over it the roof's texture, laid so its courses run along
         // the slope's contour (across the way the rain runs off).
-        private static void Facet(SectionLayer layer, LayerSubMesh sm, Vector3 a, Vector3 b, Vector3 c, Color col, IntVec3 cell, int style)
+        // eightWay (Api 34, near wall shapes): the courses may also run along the diagonals (a roof sloping off a slanted
+        // wall), not only along the map's axes.
+        private static void Facet(SectionLayer layer, LayerSubMesh sm, Vector3 a, Vector3 b, Vector3 c, Color col, IntVec3 cell, int style, bool eightWay = false)
         {
             float squash = View3D.Squash;
             Vector3 normal = Vector3.Cross(b - a, c - a).normalized;
@@ -1320,6 +1521,10 @@ namespace IsoRim
             if (down.sqrMagnitude < 0.0025f)
             {
                 down = new Vector3(0f, 0f, -1f);
+            }
+            else if (eightWay && Mathf.Abs(Mathf.Abs(down.x) - Mathf.Abs(down.z)) < 0.25f * down.magnitude)
+            {
+                down = new Vector3(Mathf.Sign(down.x), 0f, Mathf.Sign(down.z)).normalized;   // along a diagonal
             }
             else if (Mathf.Abs(down.x) > Mathf.Abs(down.z))
             {
@@ -1512,12 +1717,17 @@ namespace IsoRim
                     IntVec3 c = b.Position;
                     float h = WallBoxes.HeightFor(b, form.height);
                     int blockMark = CutTags.Mark(this);   // (shader cut-away) the marks go down with the block
+                    WallShapes.Cell shaped = WallShapes.Replaces(map, c) ? WallShapes.At(map, c) : null;   // (Api 34) a trimmed wall cell
                     for (int k = 0; k < marks; k++)
                     {
                         int face = Hashing.Index(id, k, 61, 5);   // 0 the cap, 1 to 4 the sides
                         float u = 0.2f + 0.6f * Hashing.Unit(id, k, 67);
                         float v = 0.2f + 0.6f * Hashing.Unit(id, k, 71);
                         float size = 0.13f + 0.08f * Hashing.Unit(id, k, 73);
+                        if (shaped != null && (face != 0 || shaped.Holding(new Vector2(c.x + u, c.z + v), size * 0.5f) < 0))
+                        {
+                            continue;   // only on its cap, inside its shape (its square block is not drawn)
+                        }
                         if (face == 0)
                         {
                             Mark(this, new Vector3(c.x + u, h + 0.006f, c.z + v), Vector3.up, size, id * 31 + k);
