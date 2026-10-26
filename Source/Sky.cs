@@ -302,12 +302,27 @@ namespace IsoRim
             float phase = st.moonPhases ? Mathf.Repeat(days / 15f + 0.5f, 1f) : 0.5f;
             Vector3 sun = TrueSun(hour);
 
-            mat.SetVector(celAId, a);
-            mat.SetVector(celBId, b);
+            // w: where the gas giant stands (azimuth, height; GiantDir).
+            Vector2 giantAt = GiantDir(days, st.lowSky);
+            mat.SetVector(celAId, new Vector4(a.x, a.y, a.z, giantAt.x));
+            mat.SetVector(celBId, new Vector4(b.x, b.y, b.z, giantAt.y));
             mat.SetVector(celPId, new Vector4(pole.x, pole.y, pole.z, st.lowSky ? LowSky : 1f));
             mat.SetVector(nightId, new Vector4(stars, milky, planets, giant));
             mat.SetVector(miscId, new Vector4(days, st.gasGiantSize, Time.realtimeSinceStartup % 600f, daylight));
             mat.SetVector(trueSunId, new Vector4(sun.x, sun.y, sun.z, phase));
+        }
+
+        // The gas giant's place in the sky: azimuth and height, radians. The drawn sun only ever stands between azimuths
+        // 95 and 265 degrees (R3DMaterials.SunDirAt: east through south to west, the night end bending toward 200), at
+        // any hour, latitude or season, so the giant is kept in the north-east, 20 to 40 degrees (drifting slowly over
+        // a year of 60 days), at 40 degrees up (times LowSky with "low in the sky"). It never comes within 55 degrees of
+        // the sun, and the default camera (turned 45 degrees, facing north-east) sees it. It no longer turns with the
+        // stars, so it never jumps.
+        public static Vector2 GiantDir(float days, bool lowSky)
+        {
+            float az = 30f + 10f * Mathf.Sin(days / 60f * 2f * Mathf.PI);
+            float el = 40f * (lowSky ? LowSky : 1f);
+            return new Vector2(az * Mathf.Deg2Rad, el * Mathf.Deg2Rad);
         }
 
         // The sun where it really is, below the horizon at night (IsoRim's own sun path only covers

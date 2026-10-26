@@ -224,17 +224,15 @@ void main()
         }
     }
 
-    // Gas giant with rings: high in the sky (it circles the pole), lit by the real sun, so it
-    // shows phases; faint by day, solid at night, hiding the stars behind it.
+    // Gas giant with rings, lit by the real sun, so it shows phases; faint by day, solid at night, hiding
+    // the stars behind it. It stands at a fixed place in the sky (_SkyCelA.w azimuth, _SkyCelB.w height,
+    // radians, set by Sky.GiantDir) on the far side from the sun's whole path, so the two never meet; it is
+    // laid on after the sun all the same (it is nearer and would hide it), before the moon.
+    vec3 gCol = vec3(0.0);
+    float gCover = 0.0;
     if (u._SkyNight.w > 0.001)
     {
-        float ra = 1.2 + days * 0.004;
-        vec3 gc = vec3(cos(0.96) * cos(ra), cos(0.96) * sin(ra), sin(0.96));
-        vec3 g = normalize(gc.x * u._SkyCelA.xyz + gc.y * u._SkyCelB.xyz + gc.z * u._SkyCelP.xyz);
-        // Drawn lower (height above the horizon times _SkyCelP.w), so the map camera sees it.
-        vec2 gf = length(g.xz) > 1e-4 ? normalize(g.xz) : vec2(0.0, 1.0);
-        float gel = asin(clamp(g.y, -1.0, 1.0)) * u._SkyCelP.w;
-        g = vec3(gf.x * cos(gel), sin(gel), gf.y * cos(gel));
+        vec3 g = vec3(sin(u._SkyCelA.w) * cos(u._SkyCelB.w), sin(u._SkyCelB.w), cos(u._SkyCelA.w) * cos(u._SkyCelB.w));
         vec3 pole = normalize(u._SkyCelP.xyz * 0.85 + u._SkyCelA.xyz * 0.35 + u._SkyCelB.xyz * 0.2);
         vec3 L = normalize(u._SkyTrueSun.xyz);
         float R = 0.06 * u._SkyMisc.y;
@@ -306,17 +304,24 @@ void main()
             col = cover > 0.0 ? (pCol * pCover * (1.0 - rCover) + rCol * rCover) / max(pCover * (1.0 - rCover) + rCover, 1e-4) : vec3(0.0);
         }
 
-        cover *= u._SkyNight.w * above;
-        vec3 night = mix(c, col, cover);
-        vec3 daylit = c + col * cover * 0.55;
-        c = mix(night, daylit, day);
+        gCol = col;
+        gCover = cover * u._SkyNight.w * above;
     }
 
     // Sun: a soft glow round it, warm at the horizon, and the disc.
+    vec3 cNoSun = c;
     float sd = dot(r, normalize(u._SkySun.xyz));
     float glow = pow(max(sd, 0.0), 24.0) * 0.35 + pow(max(sd, 0.0), 300.0) * 0.6;
     float sdisc = smoothstep(0.99965, 0.99985, sd);
     c += u._SkySunColor.rgb * (glow + sdisc * 1.5) * u._SkySun.w;
+
+    if (gCover > 0.0)
+    {
+        c = mix(c, cNoSun, gCover);
+        vec3 night = mix(c, gCol, gCover);
+        vec3 daylit = c + gCol * gCover * 0.55;
+        c = mix(night, daylit, day);
+    }
 
     // Moon: a pale disc with its phase (_SkyTrueSun.w), grey seas and a faint halo.
     vec3 m = normalize(u._SkyMoon.xyz);

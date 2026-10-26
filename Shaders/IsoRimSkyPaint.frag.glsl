@@ -295,15 +295,15 @@ void main()
         }
     }
 
-    // Gas giant: flat bands, two-tone light, a dark outline, a flat ring.
+    // Gas giant: flat bands, two-tone light, a dark outline, a flat ring. Worked out here, laid on after
+    // the sun (as a safety net: it is far nearer, so it would hide the sun and its halo) and before the moon.
+    vec3 gCol = vec3(0.0);
+    float gCover = 0.0;
     if (u._SkyNight.w > 0.001)
     {
-        float ra = 1.2 + days * 0.004;
-        vec3 gc = vec3(cos(0.96) * cos(ra), cos(0.96) * sin(ra), sin(0.96));
-        vec3 g = normalize(gc.x * u._SkyCelA.xyz + gc.y * u._SkyCelB.xyz + gc.z * u._SkyCelP.xyz);
-        vec2 gf = length(g.xz) > 1e-4 ? normalize(g.xz) : vec2(0.0, 1.0);
-        float gel = asin(clamp(g.y, -1.0, 1.0)) * u._SkyCelP.w;
-        g = vec3(gf.x * cos(gel), sin(gel), gf.y * cos(gel));
+        // Where it stands: a fixed place in the sky (_SkyCelA.w azimuth, _SkyCelB.w height, both in radians,
+        // set by Sky.GiantDir), on the far side from the sun's whole path, so the two never meet.
+        vec3 g = vec3(sin(u._SkyCelA.w) * cos(u._SkyCelB.w), sin(u._SkyCelB.w), cos(u._SkyCelA.w) * cos(u._SkyCelB.w));
         // The ring seen nearly edge on, as a thin slanted ellipse: its axis mostly "up" across the line
         // of sight (gu), leaned sideways (gs) and a little toward us.
         vec3 gu = normalize(vec3(0.0, 1.0, 0.0) - g * g.y);
@@ -377,13 +377,12 @@ void main()
             col = cover > 0.0 ? (pCol * pCover * (1.0 - rCover) + rCol * rCover) / max(pCover * (1.0 - rCover) + rCover, 1e-4) : vec3(0.0);
         }
 
-        cover *= u._SkyNight.w * above;
-        vec3 night = mix(c, col, cover);
-        vec3 daylit = mix(c, mix(c, col, 0.55), cover);
-        c = mix(night, daylit, day);
+        gCol = col;
+        gCover = cover * u._SkyNight.w * above;
     }
 
     // Sun: a clean disc and a soft halo in two steps, plus a wide warm wash low in the sky.
+    vec3 cNoSun = c;
     vec3 sdir = normalize(u._SkySun.xyz);
     float sd = dot(r, sdir);
     float sang = sqrt(max(2.0 * (1.0 - sd), 0.0));
@@ -397,6 +396,15 @@ void main()
     c = mix(c, haloC, clamp(halo * 1.3, 0.0, 1.0) * sShow);
     c += u._SkySunColor.rgb * wash * sShow;
     c = mix(c, sunDisc, sdisc * sShow);
+
+    // The gas giant over the sun (the sun and its halo hidden behind it), then the planet itself, faint by day.
+    if (gCover > 0.0)
+    {
+        c = mix(c, cNoSun, gCover);
+        vec3 night = mix(c, gCol, gCover);
+        vec3 daylit = mix(c, mix(c, gCol, 0.55), gCover);
+        c = mix(night, daylit, day);
+    }
 
     // Moon: a clean cream disc with its phase and a soft halo.
     vec3 m = normalize(u._SkyMoon.xyz);
