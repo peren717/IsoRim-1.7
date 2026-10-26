@@ -388,7 +388,8 @@ namespace IsoRim
                 return 1f;
             }
             float far = Mathf.Max(cd.config.sizeRange.max, 2f);
-            float near = Mathf.Clamp(Mathf.Min(cd.config.sizeRange.min, IsoRimMod.Settings.minZoom), 1f, far * 0.9f);
+            // The closest the 3D view lets the camera come (Patches: the zoom limit, minZoom but at least 2).
+            float near = Mathf.Clamp(Mathf.Max(2f, IsoRimMod.Settings.minZoom), 1f, far * 0.9f);
             float t = Mathf.InverseLerp(Mathf.Log(far), Mathf.Log(near), Mathf.Log(Mathf.Max(cd.RootSize, 0.5f)));
             return Mathf.Lerp(1f, CloudZoomMax, Smooth(t));
         }

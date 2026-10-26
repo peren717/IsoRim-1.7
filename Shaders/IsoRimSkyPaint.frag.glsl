@@ -438,8 +438,11 @@ void main()
         vec3 mid = mix(shd, litC, 0.85);
         float fade = smoothstep(0.003, 0.05, e);
         vec2 drift = u._SkyCloud.yz;
-        // The clouds grow a little as the camera zooms in (_SkyMid.w, 1 = zoomed all the way out).
-        float zoomK = 1.0 / max(u._SkyMid.w, 0.5);
+        // The cumulus grow a little about their own centres as the camera zooms in (_SkyMid.w, 1 = zoomed
+        // all the way out); they stay where they are. The overcast layer is left as it is (scaling it would
+        // slide it toward the horizon).
+        float zoomS = clamp(u._SkyMid.w, 1.0, 2.0);
+        int reach = zoomS > 1.02 ? 2 : 1;
 
         // The overcast layer: patches that grow with the cover into one continuous sheet (always opaque
         // where they are, never half see-through), in grey tones that deepen with the cover. The weather
@@ -455,7 +458,7 @@ void main()
             vec3 pMid = mix(pShd, pLit, 0.85);
             c = mix(c, mix(pShd, pMid, 0.3), smoothstep(0.5, 1.0, oc) * fade);
             vec2 dir = normalize(r.xz + vec2(1e-5, 0.0));
-            vec2 pr = r.xz / (e + 0.3) * 1.1 * zoomK + drift;
+            vec2 pr = r.xz / (e + 0.3) * 1.1 + drift;
             float th = mix(0.98, 0.3, oc);
             float d0 = cloudD(pr);
             float wv = fwidth(d0) * 1.2 + 0.02;
@@ -469,7 +472,7 @@ void main()
         }
 
         vec2 p0 = r.xz / (1.0 + e);
-        vec2 ps = p0 * (1.0 + 0.6 * dot(p0, p0)) * 1.35 * zoomK + drift;
+        vec2 ps = p0 * (1.0 + 0.6 * dot(p0, p0)) * 1.35 + drift;
         vec2 cell0 = floor(ps);
         float prob = (0.45 + 0.5 * cov) * (1.0 - oc);
         float best = 1e3;
@@ -477,13 +480,14 @@ void main()
         vec3 ba = vec3(0.0);
         vec3 bb = vec3(0.0);
         vec2 bshape = vec2(0.0);
-        for (int j = -1; j <= 1; j++)
+        for (int j = -reach; j <= reach; j++)
         {
-            for (int i = -1; i <= 1; i++)
+            for (int i = -reach; i <= reach; i++)
             {
                 vec2 cell = cell0 + vec2(float(i), float(j));
-                // Too far for any cloud of that cell to reach (the biggest reach about 1.35 from the cell centre).
-                if (length(ps - cell - 0.5) > 1.4)
+                // Too far for any cloud of that cell to reach (the biggest reach about 1.35 from the cell centre,
+                // times the zoom size; reach widens the search to two cells round when they are enlarged).
+                if (length(ps - cell - 0.5) > 1.4 * zoomS)
                 {
                     continue;
                 }
@@ -501,7 +505,7 @@ void main()
                 vec2 world = cen - drift;
                 vec2 upv = length(world) > 1e-3 ? -normalize(world) : vec2(0.0, 1.0);
                 vec2 side = vec2(upv.y, -upv.x);
-                float k = (0.4 + 0.75 * h.y) * mix(0.9, 1.15, cov);
+                float k = (0.4 + 0.75 * h.y) * mix(0.9, 1.15, cov) * zoomS;
                 vec2 rel = ps - cen;
                 vec2 q = vec2(dot(rel, side), dot(rel, upv)) / (k * stretch);
                 float d = max(cumulus(q, a, b, shape, 0.0, 1.0), -(q.y + 0.08)) * k * min(stretch.x, stretch.y);
