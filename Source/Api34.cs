@@ -95,8 +95,12 @@ namespace IsoRim
             public readonly List<Vector2[]> polys = new List<Vector2[]>();
             public readonly List<Building> owners = new List<Building>();
             public readonly List<float> heights = new List<float>();
-            public readonly List<bool> models = new List<bool>();   // the owner is a wall drawn from a model (ShapeModels draws it)
+            public readonly List<bool> models = new List<bool>();   // the owner is drawn from a linked model (ShapeModels draws it)
             public bool replaces;
+            public bool walls;   // some piece is a wall (not only fences): roofs and upper floors follow the shapes
+
+            // The cell as roofs and upper floors see it: null when only fences stand in its shapes.
+            public static Cell Walled(Cell c) => c != null && c.walls ? c : null;
 
             public IntVec3 OwnerCell(int k) => owners[k].Position;
 
@@ -233,7 +237,9 @@ namespace IsoRim
                     }
                     cell.polys.Add(q);
                     cell.owners.Add(owner);
-                    cell.heights.Add(WallBoxes.HeightFor(owner, WallBoxes.WallHeightOf(form)));
+                    float tall = WallBoxes.WallHeightOf(form);
+                    cell.walls |= tall > 0f;
+                    cell.heights.Add(tall > 0f ? WallBoxes.HeightFor(owner, tall) : form.height);   // (a fence: its model's height)
                     cell.models.Add(model);
                 }
                 if (cell.polys.Count == 0)

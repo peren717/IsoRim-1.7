@@ -26,7 +26,7 @@ namespace IsoRim
             {
                 return null;
             }
-            WallShapes.Cell s = WallShapes.At(map, c);
+            WallShapes.Cell s = WallShapes.Cell.Walled(WallShapes.At(map, c));   // (fences alone: floors as before)
             if (s == null || !s.replaces)
             {
                 return null;
@@ -53,7 +53,7 @@ namespace IsoRim
 
         private static bool Wallish(Map map, IntVec3 n)
         {
-            WallShapes.Cell s = WallShapes.At(map, n);
+            WallShapes.Cell s = WallShapes.Cell.Walled(WallShapes.At(map, n));
             if (s != null)
             {
                 return s.replaces;

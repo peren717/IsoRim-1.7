@@ -2440,10 +2440,11 @@ namespace IsoRim
             {
                 fit.y *= WallBoxes.CutFraction;
             }
-            // (Api 34) a wall drawn from a model standing in wall shapes (a trimmed wall cell): its straight run along the
-            // slant, cut to the shapes (ShapeModels), drawn in place of post and arms.
+            // (Api 34) a wall or fence drawn from a linked model standing in wall shapes (a trimmed cell): its straight run
+            // along the slant, cut to the shapes (ShapeModels), drawn in place of post and arms.
             Model shaped = null;
-            if (wall && thing.Map != null)
+            Building linkedBuilding = thing as Building;
+            if (def.linked && Ghost.a <= 0f && thing.Map != null && (wall || ShapeModels.Takes(linkedBuilding)))
             {
                 int links = 0;
                 for (int d = 0; d < 4; d++)
@@ -2453,7 +2454,7 @@ namespace IsoRim
                         links |= 1 << d;
                     }
                 }
-                shaped = ShapeModels.For(thing, m, arm, yaw, links, shapePieces);
+                shaped = ShapeModels.For(thing, m, arm, yaw, links, shapePieces, !wall);
             }
             bool tagsWere = CutTags.Enabled;
             int cutMark = -1;
@@ -2517,7 +2518,7 @@ namespace IsoRim
                 {
                     try
                     {
-                        GroundShadows.UnderModel(layer, m, center, turn, fit, offset, def.layFlat, isTree, bare);
+                        GroundShadows.UnderModel(layer, shaped ?? m, center, shaped != null ? Quaternion.identity : turn, fit, offset, def.layFlat, isTree, bare);
                     }
                     catch (Exception e)
                     {

@@ -100,7 +100,7 @@ namespace IsoRim
             {
                 return cover;
             }
-            WallShapes.Cell s = WallShapes.At(map, c);
+            WallShapes.Cell s = WallShapes.Cell.Walled(WallShapes.At(map, c));   // (fences alone: roofs as before)
             cover = s != null ? Compute(map, c, s) : null;
             cache[key] = cover;
             return cover;
@@ -316,7 +316,7 @@ namespace IsoRim
             {
                 return 0;
             }
-            WallShapes.Cell s = WallShapes.At(map, n);
+            WallShapes.Cell s = WallShapes.Cell.Walled(WallShapes.At(map, n));
             if (s != null)
             {
                 return s.replaces ? 0 : k;

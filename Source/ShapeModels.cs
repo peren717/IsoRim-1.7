@@ -21,16 +21,16 @@ namespace IsoRim
     // clipping, damage marks and culling stay as they are. Generic: no mod names here.
     internal static class ShapeModels
     {
-        // Whether a building is a wall drawn from a model that can stand in wall shapes.
+        // Whether a building drawn from a linked model (a wall from a model pack, a fence: a post in the cell and an arm toward
+        // each neighbour) can stand in wall shapes.
         public static bool Takes(Building b)
         {
-            if (b == null || b.def == null || b.def.drawerType == DrawerType.RealtimeOnly)
+            if (b == null || b.def == null || b.def.drawerType == DrawerType.RealtimeOnly || b.def.size.x != 1 || b.def.size.z != 1)
             {
                 return false;
             }
             ThingForm f = Forms.For(b.def);
-            return f.form == Form3D.Model && f.wallTop > 0f && f.model != null && f.model.def.linked && f.model.variants != null
-                && f.model.variants.Length >= 1;
+            return f.form == Form3D.Model && f.model != null && f.model.def.linked && f.model.variants != null && f.model.variants.Length >= 1;
         }
 
         // One shape piece the wall owns: corners in map cells (counter-clockwise) and, per side, whether open air lies outside
@@ -59,7 +59,7 @@ namespace IsoRim
         // The wall's model cut to its shapes, or null when the wall stands in no shape (drawn as before). post and arm are the
         // parts ModelBaker would draw (crowns already cut), yaw the post's turn, links the sides (bits 1 << d,
         // GenAdj.CardinalDirections order) its arms go to. pieces: the shape pieces it owns (map cells), for its ground band.
-        public static Model For(Thing thing, Model post, Model arm, float yaw, int links, List<Piece> pieces)
+        public static Model For(Thing thing, Model post, Model arm, float yaw, int links, List<Piece> pieces, bool outlineArms)
         {
             pieces.Clear();
             Map map = thing.Map;
@@ -70,6 +70,7 @@ namespace IsoRim
             IntVec3 c = thing.Position;
             Vector2 mid = new Vector2(c.x + 0.5f, c.z + 0.5f);
             int diag = 0;
+            int diagDirs = 0;   // the diagonals it joins (bit i: Diagonals[i])
             int arms = 0;
             float[] phase = new float[2];
             WallShapes.Begin(map);
@@ -109,7 +110,10 @@ namespace IsoRim
                     IntVec3 d = Diagonals[i];
                     IntVec3 a = new IntVec3(c.x + d.x, 0, c.z);
                     IntVec3 b = new IntVec3(c.x, 0, c.z + d.z);
-                    if (WallBoxes.BlockHeightAt(map, c + d) <= 0f || WallBoxes.BuiltHeightAt(map, a) > 0f || WallBoxes.BuiltHeightAt(map, b) > 0f)
+                    IntVec3 nd = c + d;
+                    Building partner = nd.InBounds(map) ? nd.GetEdifice(map) : null;
+                    if (partner == null || (WallBoxes.BlockHeightAt(map, nd) <= 0f && !Takes(partner))
+                        || WallBoxes.BuiltHeightAt(map, a) > 0f || WallBoxes.BuiltHeightAt(map, b) > 0f)
                     {
                         continue;
                     }
@@ -117,6 +121,7 @@ namespace IsoRim
                     if (HeldAt(map, corner + new Vector2(d.x * 0.08f, -d.z * 0.08f)) || HeldAt(map, corner + new Vector2(-d.x * 0.08f, d.z * 0.08f)))
                     {
                         diag |= 1 << (d.x * d.z > 0 ? 0 : 1);   // axis 0: south-west to north-east; 1: north-west to south-east
+                        diagDirs |= 1 << i;
                     }
                 }
                 // The straight arms: linked sides where a piece reaches the side's middle.
@@ -159,7 +164,7 @@ namespace IsoRim
             key.Length = 0;
             key.Append(post.id).Append('/').Append(arm != null ? arm.id : 0).Append('/').Append(Mathf.RoundToInt(yaw)).Append('/')
                 .Append(diag).Append('/').Append(Mathf.RoundToInt(phase[0] * Phases)).Append('/').Append(Mathf.RoundToInt(phase[1] * Phases))
-                .Append('/').Append(arms);
+                .Append('/').Append(arms).Append(outlineArms ? 'L' : 'l').Append(diagDirs);
             foreach (Piece pc in pieces)
             {
                 key.Append('|');
@@ -180,7 +185,7 @@ namespace IsoRim
             {
                 cache.Clear();
             }
-            made = Build(post, arm, yaw, diag, phase, arms, pieces, mid);
+            made = Build(post, arm, yaw, diag, diagDirs, phase, arms, pieces, mid, outlineArms);
             cache[k2] = made;
             return made;
         }
@@ -269,15 +274,16 @@ namespace IsoRim
             public readonly List<bool> none = new List<bool>();
             public readonly List<ModelMaterial> mats = new List<ModelMaterial>();
             public float half;   // furthest it reaches either side of its line
+            public float postHalf;   // furthest the post alone reaches from its middle
             public int capMat;   // the material whose colour closes the cuts (the largest tinted surface)
             public Color capColor;
             public bool capTint;
             public string capFrom;
         }
 
-        private static Seg SegFor(Model post, Model arm, float yaw)
+        private static Seg SegFor(Model post, Model arm, float yaw, bool outlineArms)
         {
-            long k = ((long)post.id << 32) ^ ((long)(arm != null ? arm.id : 0) << 12) ^ (long)Mathf.RoundToInt(yaw);
+            long k = ((long)post.id << 32) ^ ((long)(arm != null ? arm.id : 0) << 12) ^ ((long)Mathf.RoundToInt(yaw) << 1) ^ (outlineArms ? 1L : 0L);
             Seg s;
             if (segs.TryGetValue(k, out s))
             {
@@ -287,8 +293,14 @@ namespace IsoRim
             AddPart(s, post, Quaternion.AngleAxis(yaw, Vector3.up), false, true);
             if (arm != null)
             {
-                AddPart(s, arm, Quaternion.AngleAxis(90f, Vector3.up), true, true);
-                AddPart(s, arm, Quaternion.AngleAxis(270f, Vector3.up), true, true);
+                AddPart(s, arm, Quaternion.AngleAxis(90f, Vector3.up), !outlineArms, true);
+                AddPart(s, arm, Quaternion.AngleAxis(270f, Vector3.up), !outlineArms, true);
+            }
+            Quaternion py = Quaternion.AngleAxis(yaw, Vector3.up);
+            for (int i = 0; i < post.positions.Length; i++)
+            {
+                Vector3 p = py * post.positions[i];
+                s.postHalf = Mathf.Max(s.postHalf, Mathf.Max(Mathf.Abs(p.x), Mathf.Abs(p.z)));
             }
             // the cap colour: the material with the largest upright surface (what the wall shows on its sides)
             Dictionary<int, float> area = new Dictionary<int, float>();
@@ -393,12 +405,15 @@ namespace IsoRim
             public V a, b, c;
             public int mat;
             public bool tint, none;
+            public bool post;   // a corner post: cut at the unmoved sides, leaves no caps
+            public int group;   // which run it belongs to: slant axis 0/1, the straight run (post and arms) 10; -1 none
             public float minX, maxX, minZ, maxZ;
         }
 
         private struct Plane
         {
             public float nx, nz, d;   // inside: nx * x + nz * z + d >= 0
+            public float d0;          // d before an open side is moved out
             public bool open, cap;
             public float Dist(Vector3 p) => nx * p.x + nz * p.z + d;
         }
@@ -410,9 +425,18 @@ namespace IsoRim
         private static readonly List<Vector2> oUv = new List<Vector2>();
         private static readonly List<int> oMat = new List<int>();
 
-        private static Model Build(Model post, Model arm, float yaw, int diag, float[] phase, int arms, List<Piece> pieces, Vector2 mid)
+        // A cut side's plane (as Plane) with the stretch of it the source was cut along (t across it: across = (-nz, nx)).
+        private sealed class Cut
         {
-            Seg seg = SegFor(post, arm, yaw);
+            public float nx, nz, d0;   // the unmoved side
+            public float t0, t1;
+            public bool posted;
+        }
+
+        private static Model Build(Model post, Model arm, float yaw, int diag, int diagDirs, float[] phase, int arms, List<Piece> pieces,
+            Vector2 mid, bool outlineArms)
+        {
+            Seg seg = SegFor(post, arm, yaw, outlineArms);
             float margin = 0.04f + Mathf.Max(0f, seg.half - 0.5f);
 
             // The source: the segment repeated along each slant, and the arm toward each straight neighbour.
@@ -434,8 +458,13 @@ namespace IsoRim
                         continue;
                     }
                     Vector3 shift = new Vector3(u.x * s, 0f, u.y * s);
-                    AddSource(src, seg, turn, shift);
+                    AddSource(src, seg, turn, shift, ax);
                 }
+            }
+            if (arms != 0)
+            {
+                // the straight run: the post (as the cell of a straight run draws it) and its arms, one group
+                AddModel(src, post, Quaternion.AngleAxis(yaw, Vector3.up), Vector3.zero, 0, false, false, 10);
             }
             if (arm != null && arms != 0)
             {
@@ -443,95 +472,43 @@ namespace IsoRim
                 {
                     if ((arms & (1 << d)) != 0)
                     {
-                        AddArm(src, arm, Quaternion.AngleAxis(90f * d, Vector3.up), post);
+                        AddModel(src, arm, Quaternion.AngleAxis(90f * d, Vector3.up), Vector3.zero, post.materials != null ? post.materials.Length : 0,
+                            !outlineArms, false, 10);
                     }
                 }
             }
 
-            oPos.Clear(); oNor.Clear(); oCol.Clear(); oTint.Clear(); oNone.Clear(); oUv.Clear(); oMat.Clear();
-            List<Plane> planes = new List<Plane>();
-            List<V> poly = new List<V>(16), next = new List<V>(16);
-            Dictionary<int, List<KeyValuePair<Vector3, Vector3>>> segsOn = new Dictionary<int, List<KeyValuePair<Vector3, Vector3>>>();
-            foreach (Piece pc in pieces)
+            // Where runs meet (a slant and an arm, two slants): each run only on its side of the bisectors round the cell's middle
+            // (a mitre), so they do not overlap.
+            src = Sectors(src, diagDirs, arms);
+
+            // Pass 1: where the source is cut along open sides (ends, bevels, chamfers at bends).
+            List<Cut> cuts = new List<Cut>();
+            ClipAll(src, pieces, mid, margin, seg, null, cuts);
+            // A post of the wall's own (its linked model's first part) at each end of every such cut, its face on the side and
+            // its corner at the end: the corners are framed as the wall frames its own; the side itself is then cut exactly
+            // (no cap: the posts cover it).
+            int before = src.Count;
+            foreach (Cut ct in cuts)
             {
-                planes.Clear();
-                int n = pc.poly.Length;
-                float minX = float.MaxValue, maxX = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue;
-                for (int i = 0; i < n; i++)
+                if (ct.t1 - ct.t0 < 0.05f)
                 {
-                    Vector2 a = pc.poly[i] - mid, b = pc.poly[(i + 1) % n] - mid;
-                    Vector2 d = b - a;
-                    float len = d.magnitude;
-                    minX = Mathf.Min(minX, a.x); maxX = Mathf.Max(maxX, a.x); minZ = Mathf.Min(minZ, a.y); maxZ = Mathf.Max(maxZ, a.y);
-                    if (len < 1e-4f)
-                    {
-                        continue;
-                    }
-                    Vector2 inn = new Vector2(-d.y, d.x) / len;   // left of a -> b: inside (counter-clockwise)
-                    Plane pl = new Plane { nx = inn.x, nz = inn.y, d = -(inn.x * a.x + inn.y * a.y), open = pc.open[i], cap = !pc.mine[i] };
-                    if (pc.open[i])
-                    {
-                        pl.d += margin;
-                    }
-                    planes.Add(pl);
+                    continue;
                 }
-                minX -= margin; maxX += margin; minZ -= margin; maxZ += margin;
-                segsOn.Clear();
-                foreach (Tri t in src)
-                {
-                    if (t.maxX < minX || t.minX > maxX || t.maxZ < minZ || t.minZ > maxZ)
-                    {
-                        continue;
-                    }
-                    poly.Clear();
-                    poly.Add(t.a); poly.Add(t.b); poly.Add(t.c);
-                    for (int j = 0; j < planes.Count && poly.Count >= 3; j++)
-                    {
-                        ClipBy(poly, next, planes[j]);
-                        List<V> sw = poly; poly = next; next = sw;
-                    }
-                    if (poly.Count < 3)
-                    {
-                        continue;
-                    }
-                    Vector3 fn = Vector3.Cross(t.b.p - t.a.p, t.c.p - t.a.p);
-                    for (int k = 1; k + 1 < poly.Count; k++)
-                    {
-                        Emit(poly[0], poly[k], poly[k + 1], t.mat, t.tint, t.none);
-                    }
-                    // edges of the clipped face lying on a cut side: where a cap will close the cut
-                    for (int j = 0; j < planes.Count; j++)
-                    {
-                        Plane pl = planes[j];
-                        float fl = fn.magnitude;
-                        if (fl > 1e-9f && Mathf.Abs((fn.x * pl.nx + fn.z * pl.nz) / fl) > 0.995f)
-                        {
-                            continue;   // a face lying in the side itself
-                        }
-                        for (int k = 0; k < poly.Count; k++)
-                        {
-                            Vector3 p0 = poly[k].p, p1 = poly[(k + 1) % poly.Count].p;
-                            if (Mathf.Abs(pl.Dist(p0)) < 1e-4f && Mathf.Abs(pl.Dist(p1)) < 1e-4f && (p1 - p0).sqrMagnitude > 1e-10f)
-                            {
-                                List<KeyValuePair<Vector3, Vector3>> l;
-                                if (!segsOn.TryGetValue(j, out l))
-                                {
-                                    l = new List<KeyValuePair<Vector3, Vector3>>();
-                                    segsOn[j] = l;
-                                }
-                                l.Add(new KeyValuePair<Vector3, Vector3>(p0, p1));
-                            }
-                        }
-                    }
-                }
-                foreach (KeyValuePair<int, List<KeyValuePair<Vector3, Vector3>>> kv in segsOn)
-                {
-                    if (planes[kv.Key].cap)
-                    {
-                        Cap(planes[kv.Key], kv.Value, seg);
-                    }
-                }
+                ct.posted = true;
+                Vector3 outward = new Vector3(-ct.nx, 0f, -ct.nz);
+                Vector3 across = new Vector3(-ct.nz, 0f, ct.nx);
+                Vector3 basePt = new Vector3(-ct.nx * ct.d0, 0f, -ct.nz * ct.d0);
+                Quaternion turn = Quaternion.LookRotation(outward, Vector3.up) * Quaternion.AngleAxis(yaw, Vector3.up);
+                float half = Mathf.Max(0.5f, seg.postHalf);
+                const float reach = 0.5f;   // (a short cut: the two posts overlap, each corner framed)
+                AddModel(src, post, turn, basePt + across * (ct.t0 + reach) - outward * half, 0, true, true);   // (no outline of its own: its edges inside the wall would line the top)
+                AddModel(src, post, turn, basePt + across * (ct.t1 - reach) - outward * half, 0, true, true);   // (no outline of its own: its edges inside the wall would line the top)
             }
+
+            // Pass 2: the model.
+            oPos.Clear(); oNor.Clear(); oCol.Clear(); oTint.Clear(); oNone.Clear(); oUv.Clear(); oMat.Clear();
+            ClipAll(src, pieces, mid, margin, seg, cuts, null);
             if (oPos.Count == 0)
             {
                 return null;
@@ -562,7 +539,348 @@ namespace IsoRim
             return m;
         }
 
-        private static void AddSource(List<Tri> src, Seg seg, Quaternion turn, Vector3 shift)
+        private static bool SamePlane(Cut c, float nx, float nz, float d0)
+        {
+            return Mathf.Abs(c.nx - nx) < 1e-3f && Mathf.Abs(c.nz - nz) < 1e-3f && Mathf.Abs(c.d0 - d0) < 1e-3f;
+        }
+
+        private static Cut Posted(List<Cut> cuts, float nx, float nz, float d0)
+        {
+            if (cuts == null)
+            {
+                return null;
+            }
+            foreach (Cut c in cuts)
+            {
+                if (c.posted && SamePlane(c, nx, nz, d0))
+                {
+                    return c;
+                }
+            }
+            return null;
+        }
+
+        // Clips the source to every piece. Pass 1 (record != null): only notes the cuts along open sides. Pass 2 (posted:
+        // pass 1's cuts): writes the faces and the caps; a posted side is cut exactly with no cap; posts are cut at the
+        // unmoved sides and leave no caps.
+        private static void ClipAll(List<Tri> src, List<Piece> pieces, Vector2 mid, float margin, Seg seg, List<Cut> posted, List<Cut> record)
+        {
+            List<Plane> planes = new List<Plane>();
+            List<Plane> exact = new List<Plane>();
+            List<V> poly = new List<V>(16), next = new List<V>(16);
+            Dictionary<int, List<KeyValuePair<Vector3, Vector3>>> segsOn = new Dictionary<int, List<KeyValuePair<Vector3, Vector3>>>();
+            for (int pi = 0; pi < pieces.Count; pi++)
+            {
+                Piece pc = pieces[pi];
+                planes.Clear();
+                exact.Clear();
+                int n = pc.poly.Length;
+                float minX = float.MaxValue, maxX = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue;
+                for (int i = 0; i < n; i++)
+                {
+                    Vector2 a = pc.poly[i] - mid;
+                    minX = Mathf.Min(minX, a.x); maxX = Mathf.Max(maxX, a.x); minZ = Mathf.Min(minZ, a.y); maxZ = Mathf.Max(maxZ, a.y);
+                    Plane pl;
+                    if (!EdgePlane(pc, i, mid, out pl))
+                    {
+                        continue;
+                    }
+                    Plane ex = pl;
+                    ex.open = false;
+                    ex.cap = false;
+                    if (pc.open[i] && Posted(posted, pl.nx, pl.nz, pl.d) == null)
+                    {
+                        pl.d += margin;
+                    }
+                    else if (pc.open[i])
+                    {
+                        pl.cap = false;   // posted: the posts close it
+                    }
+                    planes.Add(pl);
+                    exact.Add(ex);
+                }
+                // Where another piece's open side meets this piece in a hollow corner, its moved-out side cuts this piece too
+                // (else the moved-out strip of this piece shows past that side).
+                for (int pj = 0; pj < pieces.Count; pj++)
+                {
+                    if (pj == pi)
+                    {
+                        continue;
+                    }
+                    Piece other = pieces[pj];
+                    for (int i = 0; i < other.poly.Length; i++)
+                    {
+                        Plane pl;
+                        if (!other.open[i] || !EdgePlane(other, i, mid, out pl) || !Touches(pc, other, i) || !AllInside(pc, mid, pl))
+                        {
+                            continue;
+                        }
+                        Plane ex = pl;
+                        ex.open = false;
+                        ex.cap = false;
+                        if (Posted(posted, pl.nx, pl.nz, pl.d) == null)
+                        {
+                            pl.d += margin;
+                        }
+                        pl.open = false;
+                        pl.cap = false;
+                        planes.Add(pl);
+                        exact.Add(ex);
+                    }
+                }
+                minX -= margin; maxX += margin; minZ -= margin; maxZ += margin;
+                segsOn.Clear();
+                foreach (Tri t in src)
+                {
+                    if (t.maxX < minX || t.minX > maxX || t.maxZ < minZ || t.minZ > maxZ)
+                    {
+                        continue;
+                    }
+                    if (record != null && t.post)
+                    {
+                        continue;
+                    }
+                    List<Plane> use = t.post ? exact : planes;
+                    poly.Clear();
+                    poly.Add(t.a); poly.Add(t.b); poly.Add(t.c);
+                    for (int j = 0; j < use.Count && poly.Count >= 3; j++)
+                    {
+                        ClipBy(poly, next, use[j]);
+                        List<V> sw = poly; poly = next; next = sw;
+                    }
+                    if (poly.Count < 3)
+                    {
+                        continue;
+                    }
+                    if (record == null)
+                    {
+                        // An upright face deep inside the shape (where two parts of the source overlap: the slant and an arm)
+                        // never shows; its outline would rise over the top as a stray line.
+                        bool none = t.none;
+                        for (int k = 1; k + 1 < poly.Count; k++)
+                        {
+                            Emit(poly[0], poly[k], poly[k + 1], t.mat, t.tint, none);
+                        }
+                    }
+                    if (t.post)
+                    {
+                        continue;
+                    }
+                    // edges of the clipped face lying on a cut side: where a cap will close the cut
+                    Vector3 fn = Vector3.Cross(t.b.p - t.a.p, t.c.p - t.a.p);
+                    float fl = fn.magnitude;
+                    for (int j = 0; j < planes.Count; j++)
+                    {
+                        Plane pl = planes[j];
+                        if (record != null ? !pl.open : !pl.cap)
+                        {
+                            continue;
+                        }
+                        if (fl > 1e-9f && Mathf.Abs((fn.x * pl.nx + fn.z * pl.nz) / fl) > 0.995f)
+                        {
+                            continue;   // a face lying in the side itself
+                        }
+                        for (int k = 0; k < poly.Count; k++)
+                        {
+                            Vector3 p0 = poly[k].p, p1 = poly[(k + 1) % poly.Count].p;
+                            if (Mathf.Abs(pl.Dist(p0)) < 1e-4f && Mathf.Abs(pl.Dist(p1)) < 1e-4f && (p1 - p0).sqrMagnitude > 1e-10f)
+                            {
+                                List<KeyValuePair<Vector3, Vector3>> l;
+                                if (!segsOn.TryGetValue(j, out l))
+                                {
+                                    l = new List<KeyValuePair<Vector3, Vector3>>();
+                                    segsOn[j] = l;
+                                }
+                                l.Add(new KeyValuePair<Vector3, Vector3>(p0, p1));
+                            }
+                        }
+                    }
+                }
+                foreach (KeyValuePair<int, List<KeyValuePair<Vector3, Vector3>>> kv in segsOn)
+                {
+                    Plane pl = planes[kv.Key];
+                    if (record != null)
+                    {
+                        Note(record, pl.nx, pl.nz, pl.d - margin, kv.Value);
+                    }
+                    else
+                    {
+                        Cap(pl, kv.Value, seg);
+                    }
+                }
+            }
+        }
+
+        private static bool Inner(Tri t, List<V> poly, List<Plane> planes)
+        {
+            Vector3 fn = Vector3.Cross(t.b.p - t.a.p, t.c.p - t.a.p);
+            if (fn.sqrMagnitude < 1e-12f || Mathf.Abs(fn.normalized.y) > 0.5f)
+            {
+                return false;
+            }
+            foreach (Plane pl in planes)
+            {
+                if (!pl.open)
+                {
+                    continue;
+                }
+                foreach (V v in poly)
+                {
+                    if (pl.nx * v.p.x + pl.nz * v.p.z + pl.d0 < 0.06f)
+                    {
+                        return false;   // near an open side: an outer face
+                    }
+                }
+            }
+            return true;
+        }
+
+        // Each run's triangles cut to the part of the cell nearer (by angle round the middle) its own directions than any
+        // other run's: a slant axis runs toward the joined diagonals on it, the straight run toward its linked sides. As both
+        // are a cell thick, the bisectors are mitres: the faces meet exactly.
+        private static List<Tri> Sectors(List<Tri> src, int diagDirs, int arms)
+        {
+            List<Vector2> dirs = new List<Vector2>();
+            List<int> groups = new List<int>();
+            for (int i = 0; i < 4; i++)
+            {
+                if ((diagDirs & (1 << i)) != 0)
+                {
+                    IntVec3 d = Diagonals[i];
+                    dirs.Add(new Vector2(d.x, d.z).normalized);
+                    groups.Add(d.x * d.z > 0 ? 0 : 1);
+                }
+            }
+            for (int d = 0; d < 4; d++)
+            {
+                if ((arms & (1 << d)) != 0)
+                {
+                    IntVec3 dir = GenAdj.CardinalDirections[d];
+                    dirs.Add(new Vector2(dir.x, dir.z));
+                    groups.Add(10);
+                }
+            }
+            List<Tri> outList = new List<Tri>(src.Count);
+            List<V> poly = new List<V>(16), next = new List<V>(16);
+            List<Plane> planes = new List<Plane>();
+            foreach (Tri t in src)
+            {
+                bool alone = true;
+                for (int j = 0; j < groups.Count; j++)
+                {
+                    alone &= groups[j] == t.group;
+                }
+                if (t.group < 0 || alone)
+                {
+                    outList.Add(t);
+                    continue;
+                }
+                for (int i = 0; i < dirs.Count; i++)
+                {
+                    if (groups[i] != t.group)
+                    {
+                        continue;
+                    }
+                    planes.Clear();
+                    for (int j = 0; j < dirs.Count; j++)
+                    {
+                        if (groups[j] == t.group)
+                        {
+                            continue;
+                        }
+                        Vector2 n = (dirs[i] - dirs[j]).normalized;   // the bisector: nearer dirs[i] on its positive side
+                        planes.Add(new Plane { nx = n.x, nz = n.y, d = 0f });
+                    }
+                    poly.Clear();
+                    poly.Add(t.a); poly.Add(t.b); poly.Add(t.c);
+                    for (int j = 0; j < planes.Count && poly.Count >= 3; j++)
+                    {
+                        ClipBy(poly, next, planes[j]);
+                        List<V> sw = poly; poly = next; next = sw;
+                    }
+                    for (int k = 1; k + 1 < poly.Count; k++)
+                    {
+                        Tri nt = t;
+                        nt.a = poly[0];
+                        nt.b = poly[k];
+                        nt.c = poly[k + 1];
+                        Bounds(ref nt);
+                        outList.Add(nt);
+                    }
+                }
+            }
+            return outList;
+        }
+
+        // The plane of side i of a piece (relative to the cell's middle, inside: >= 0), unmoved.
+        private static bool EdgePlane(Piece pc, int i, Vector2 mid, out Plane pl)
+        {
+            int n = pc.poly.Length;
+            Vector2 a = pc.poly[i] - mid, b = pc.poly[(i + 1) % n] - mid;
+            Vector2 d = b - a;
+            float len = d.magnitude;
+            pl = default(Plane);
+            if (len < 1e-4f)
+            {
+                return false;
+            }
+            Vector2 inn = new Vector2(-d.y, d.x) / len;   // left of a -> b: inside (counter-clockwise)
+            pl = new Plane { nx = inn.x, nz = inn.y, d = -(inn.x * a.x + inn.y * a.y), open = pc.open[i], cap = !pc.mine[i] };
+            pl.d0 = pl.d;
+            return true;
+        }
+
+        // Whether side i of other ends on a corner of pc.
+        private static bool Touches(Piece pc, Piece other, int i)
+        {
+            Vector2 a = other.poly[i], b = other.poly[(i + 1) % other.poly.Length];
+            foreach (Vector2 p in pc.poly)
+            {
+                if ((p - a).sqrMagnitude < 1e-6f || (p - b).sqrMagnitude < 1e-6f)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool AllInside(Piece pc, Vector2 mid, Plane pl)
+        {
+            foreach (Vector2 p in pc.poly)
+            {
+                Vector2 q = p - mid;
+                if (pl.nx * q.x + pl.nz * q.y + pl.d < -1e-4f)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Pass 1: adds the stretch the edges cover to the cut of that (unmoved) plane.
+        private static void Note(List<Cut> cuts, float nx, float nz, float d0, List<KeyValuePair<Vector3, Vector3>> edges)
+        {
+            Vector2 across = new Vector2(-nz, nx);
+            float t0 = float.MaxValue, t1 = float.MinValue;
+            foreach (KeyValuePair<Vector3, Vector3> e in edges)
+            {
+                float ta = T(e.Key, across), tb = T(e.Value, across);
+                t0 = Mathf.Min(t0, Mathf.Min(ta, tb));
+                t1 = Mathf.Max(t1, Mathf.Max(ta, tb));
+            }
+            foreach (Cut c in cuts)
+            {
+                if (SamePlane(c, nx, nz, d0))
+                {
+                    c.t0 = Mathf.Min(c.t0, t0);
+                    c.t1 = Mathf.Max(c.t1, t1);
+                    return;
+                }
+            }
+            cuts.Add(new Cut { nx = nx, nz = nz, d0 = d0, t0 = t0, t1 = t1 });
+        }
+
+        private static void AddSource(List<Tri> src, Seg seg, Quaternion turn, Vector3 shift, int group)
         {
             for (int t = 0; t < seg.mat.Count; t++)
             {
@@ -573,40 +891,42 @@ namespace IsoRim
                     c = Moved(seg.v[t * 3 + 2], turn, shift),
                     mat = seg.mat[t],
                     tint = seg.tint[t],
-                    none = seg.none[t]
+                    none = seg.none[t],
+                    group = group
                 };
                 Bounds(ref tri);
                 src.Add(tri);
             }
         }
 
-        // The arm toward a straight neighbour, as ModelBaker draws it (no outline of its own); its materials are the
-        // segment's arm materials (they follow the post's in the segment).
-        private static void AddArm(List<Tri> src, Model arm, Quaternion turn, Model post)
+        // A part of the wall's model (an arm, a corner post) turned and moved into the cell; its materials sit matOffset into
+        // the segment's.
+        private static void AddModel(List<Tri> src, Model m, Quaternion turn, Vector3 shift, int matOffset, bool none, bool post, int group = -1)
         {
-            int offset = post.materials != null ? post.materials.Length : 0;
-            int n = arm.positions.Length;
+            int n = m.positions.Length;
             for (int i = 0; i + 2 < n; i += 3)
             {
                 Tri tri = new Tri
                 {
-                    a = Raw(arm, i, turn),
-                    b = Raw(arm, i + 1, turn),
-                    c = Raw(arm, i + 2, turn),
-                    mat = (arm.material != null ? arm.material[i] : 0) + offset,
-                    tint = arm.tinted != null && arm.tinted[i],
-                    none = true
+                    a = Raw(m, i, turn, shift),
+                    b = Raw(m, i + 1, turn, shift),
+                    c = Raw(m, i + 2, turn, shift),
+                    mat = (m.material != null ? m.material[i] : 0) + matOffset,
+                    tint = m.tinted != null && m.tinted[i],
+                    none = none || (m.noOutline != null && m.noOutline[i]),
+                    post = post,
+                    group = group
                 };
                 Bounds(ref tri);
                 src.Add(tri);
             }
         }
 
-        private static V Raw(Model m, int k, Quaternion turn)
+        private static V Raw(Model m, int k, Quaternion turn, Vector3 shift)
         {
             return new V
             {
-                p = turn * m.positions[k],
+                p = turn * m.positions[k] + shift,
                 n = turn * m.normals[k],
                 col = m.colors != null ? m.colors[k] : Color.white,
                 uv = m.uvs != null ? m.uvs[k] : Vector2.zero
