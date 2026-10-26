@@ -1261,6 +1261,8 @@ the shape's outer side, and near shapes a pitched roof rises from that edge (a h
 An owner that is a wall drawn from a model (a model pack's linked wall with wallFit) stands in its shapes too: its own
 straight run is turned along the slant, repeated one cell apart (not stretched) and cut to the shapes, with the cuts
 closed in the wall's side colour.
+A block wall with a shaped top (part 11's wallTop: merlons, a ridge, stubs) keeps its top in such cells: the straight
+run's top is laid along the slant the same way and cut to the shapes.
 
 ```csharp
 // IsoRim.Api.Version >= 34, once at startup
