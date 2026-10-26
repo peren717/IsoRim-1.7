@@ -915,6 +915,7 @@ namespace IsoRim
                 slab.dirty = true;
             }
             WallBoxes.ClipTerrain(__instance, s);   // PROTOTYPE (CliffLook.cs): the floor's edge over rock follows its chamfer
+            ShapeFloors.ClipTerrain(__instance, s); // (Api 34) no floor past a slanted wall shape upstairs
         }
 
         private static void DrawSlab(SectionLayer layer)
@@ -1014,6 +1015,12 @@ namespace IsoRim
                 float sideBottom = blockBelow ? Mathf.Min(top, Mathf.Max(bottom, (belowH + wallBelow - floorH) / s)) : bottom;
                 Color32 col = map.terrainGrid.TerrainAt(c).DrawColor;
                 col.a = 255;
+                List<Vector2[]> keep = ShapeFloors.Keep(map, c);   // (Api 34) a trimmed wall cell upstairs: the room's part only
+                if (keep != null)
+                {
+                    ShapedSlab(map, c, keep, top, sideBottom, col, verts, cols, tris);
+                    continue;
+                }
                 float x0 = c.x, x1 = c.x + 1, z0 = c.z, z1 = c.z + 1;
                 Quad(verts, cols, tris, col, new Vector3(x0, top, z0), new Vector3(x0, top, z1), new Vector3(x1, top, z1), new Vector3(x1, top, z0));
                 float bottomHere = bottom;
@@ -1059,6 +1066,46 @@ namespace IsoRim
         }
 
         // A quad drawn from both sides (the shader turns each face toward the camera).
+        // (Api 34) The slab of an upper-floor cell with replacing wall shapes: its top over the kept pieces (ShapeFloors) and a
+        // side wherever a kept piece ends at no floor.
+        private static void ShapedSlab(Map map, IntVec3 c, List<Vector2[]> keep, float top, float bottom, Color32 col,
+            List<Vector3> verts, List<Color32> cols, List<int> tris)
+        {
+            float h;
+            int z;
+            int k = ColumnFloor(map, c, out h, out z);
+            foreach (Vector2[] p in keep)
+            {
+                int start = verts.Count;
+                for (int i = p.Length - 1; i >= 0; i--)   // clockwise seen from above, as the cells' quads
+                {
+                    verts.Add(new Vector3(p[i].x, top, p[i].y));
+                    cols.Add(col);
+                }
+                for (int i = 1; i + 1 < p.Length; i++)
+                {
+                    tris.Add(start);
+                    tris.Add(start + i);
+                    tris.Add(start + i + 1);
+                }
+                for (int i = 0; i < p.Length; i++)
+                {
+                    Vector2 a = p[i], b = p[(i + 1) % p.Length];
+                    Vector2 d = b - a;
+                    if (d.sqrMagnitude < 1e-8f)
+                    {
+                        continue;
+                    }
+                    Vector2 o = new Vector2(d.y, -d.x).normalized;
+                    if (ShapeFloors.FloorAt(map, (a + b) * 0.5f + o * 0.004f, k))
+                    {
+                        continue;
+                    }
+                    Quad(verts, cols, tris, col, new Vector3(a.x, bottom, a.y), new Vector3(a.x, top, a.y), new Vector3(b.x, top, b.y), new Vector3(b.x, bottom, b.y));
+                }
+            }
+        }
+
         private static void Quad(List<Vector3> verts, List<Color32> cols, List<int> tris, Color32 col, Vector3 a, Vector3 b, Vector3 c, Vector3 d)
         {
             int i = verts.Count;

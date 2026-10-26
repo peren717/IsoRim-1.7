@@ -137,48 +137,7 @@ namespace IsoRim
                     cover.Add(new Piece { poly = s.polys[k], kind = kind, tag = oc });
                 }
             }
-            // the free parts of the cell
-            List<List<Vector2>> parts = new List<List<Vector2>>
-            {
-                new List<Vector2> { new Vector2(c.x, c.z), new Vector2(c.x + 1, c.z), new Vector2(c.x + 1, c.z + 1), new Vector2(c.x, c.z + 1) }
-            };
-            for (int k = 0; k < s.polys.Count; k++)
-            {
-                Vector2[] p = s.polys[k];
-                for (int j = 0; j < p.Length; j++)
-                {
-                    Vector2 a = p[j], b = p[(j + 1) % p.Length];
-                    if ((b - a).sqrMagnitude < 1e-8f)
-                    {
-                        continue;
-                    }
-                    List<List<Vector2>> next = new List<List<Vector2>>(parts.Count + 2);
-                    foreach (List<Vector2> part in parts)
-                    {
-                        List<Vector2> left, right;
-                        SplitLine(part, a, b, out left, out right);
-                        if (left.Count >= 3 && Area(left) > 1e-6f && right.Count >= 3 && Area(right) > 1e-6f)
-                        {
-                            next.Add(left);
-                            next.Add(right);
-                        }
-                        else
-                        {
-                            next.Add(part);
-                        }
-                    }
-                    parts = next;
-                }
-            }
-            List<List<Vector2>> free = new List<List<Vector2>>();
-            foreach (List<Vector2> part in parts)
-            {
-                Vector2 m = Centroid(part);
-                if (s.Holding(m, 0f) < 0 && Area(part) > 1e-5f)
-                {
-                    free.Add(part);
-                }
-            }
+            List<List<Vector2>> free = FreeParts(c, s);
             if (free.Count == 0)
             {
                 return cover;
@@ -246,6 +205,102 @@ namespace IsoRim
                 }
             }
             return cover;
+        }
+
+        // The parts of a cell outside its shapes, cut along the shapes' sides (convex, counter-clockwise, map cells).
+        internal static List<List<Vector2>> FreeParts(IntVec3 c, WallShapes.Cell s)
+        {
+            List<List<Vector2>> parts = new List<List<Vector2>>
+            {
+                new List<Vector2> { new Vector2(c.x, c.z), new Vector2(c.x + 1, c.z), new Vector2(c.x + 1, c.z + 1), new Vector2(c.x, c.z + 1) }
+            };
+            for (int k = 0; k < s.polys.Count; k++)
+            {
+                Vector2[] p = s.polys[k];
+                for (int j = 0; j < p.Length; j++)
+                {
+                    Vector2 a = p[j], b = p[(j + 1) % p.Length];
+                    if ((b - a).sqrMagnitude < 1e-8f)
+                    {
+                        continue;
+                    }
+                    List<List<Vector2>> next = new List<List<Vector2>>(parts.Count + 2);
+                    foreach (List<Vector2> part in parts)
+                    {
+                        List<Vector2> left, right;
+                        SplitLine(part, a, b, out left, out right);
+                        if (left.Count >= 3 && Area(left) > 1e-6f && right.Count >= 3 && Area(right) > 1e-6f)
+                        {
+                            next.Add(left);
+                            next.Add(right);
+                        }
+                        else
+                        {
+                            next.Add(part);
+                        }
+                    }
+                    parts = next;
+                }
+            }
+            List<List<Vector2>> free = new List<List<Vector2>>();
+            foreach (List<Vector2> part in parts)
+            {
+                if (s.Holding(Centroid(part), 0f) < 0 && Area(part) > 1e-5f)
+                {
+                    free.Add(part);
+                }
+            }
+            return free;
+        }
+
+        // Which free parts of a cell whose block its shapes replace belong to the open cell beside them: decided by the cell
+        // across the part's side on the cell's edge (side(n): that cell counts), then passed on to the parts inside.
+        internal static bool[] FreeSide(IntVec3 c, List<List<Vector2>> free, Func<IntVec3, bool> side)
+        {
+            int[] decided = new int[free.Count];
+            for (int i = 0; i < free.Count; i++)
+            {
+                decided[i] = -1;
+                List<Vector2> part = free[i];
+                for (int j = 0; j < part.Count; j++)
+                {
+                    IntVec3 across;
+                    if (OnCellSide(c, part[j], part[(j + 1) % part.Count], out across) && decided[i] <= 0)
+                    {
+                        decided[i] = side(across) ? 1 : 0;
+                    }
+                }
+            }
+            for (int pass = 0; pass < free.Count; pass++)
+            {
+                bool changed = false;
+                for (int i = 0; i < free.Count; i++)
+                {
+                    if (decided[i] >= 0)
+                    {
+                        continue;
+                    }
+                    for (int j = 0; j < free.Count; j++)
+                    {
+                        if (decided[j] >= 0 && Adjacent(free[i], free[j]))
+                        {
+                            decided[i] = decided[j];
+                            changed = true;
+                            break;
+                        }
+                    }
+                }
+                if (!changed)
+                {
+                    break;
+                }
+            }
+            bool[] r = new bool[free.Count];
+            for (int i = 0; i < free.Count; i++)
+            {
+                r[i] = decided[i] > 0;
+            }
+            return r;
         }
 
         // The roof over an open cell beside a trimmed wall: its lid kind if it is no wall (a room's floor, a door, a cell
