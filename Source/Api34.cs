@@ -8,7 +8,8 @@ namespace IsoRim
 {
     // Api 34: wall shapes. Another mod tells IsoRim, cell by cell, that walls stand there in a shape of their own (convex
     // polygons, each drawn as a wall building it names), optionally instead of the cell's own block (a trimmed wall cell).
-    // IsoRim stands them up as its 3D walls: the owner's height (wall height setting, upper floors reaching down to the wall
+    // A wall drawn from a model (a pack's linked wall model) stands in its shapes too: its straight run turned along the
+    // slant, cut to the shapes (ShapeModels.cs). IsoRim stands them up as its 3D walls: the owner's height (wall height setting, upper floors reaching down to the wall
     // below), its stuff texture and colour (paint included), the cap, outlines and corner lines, sun lighting, the cut-away
     // (each piece goes down with its owner's cell), roofs over them clipped to the shapes (WallShapeRoofs), the gravship scene
     // and culling with the walls layer they are printed in. Which sides show is worked out here: a side shows where the space
@@ -94,6 +95,7 @@ namespace IsoRim
             public readonly List<Vector2[]> polys = new List<Vector2[]>();
             public readonly List<Building> owners = new List<Building>();
             public readonly List<float> heights = new List<float>();
+            public readonly List<bool> models = new List<bool>();   // the owner is a wall drawn from a model (ShapeModels draws it)
             public bool replaces;
 
             public IntVec3 OwnerCell(int k) => owners[k].Position;
@@ -202,8 +204,13 @@ namespace IsoRim
                 for (int k = 0; k < scratch.Count; k++)
                 {
                     Building owner = scratch.owners[k];
-                    if (owner == null || !owner.Spawned || owner.Map != map || !SectionLayer_IsoRimWalls.Handles(owner)
-                        || Forms.For(owner.def).form != Form3D.Block)
+                    if (owner == null || !owner.Spawned || owner.Map != map)
+                    {
+                        continue;
+                    }
+                    ThingForm form = Forms.For(owner.def);
+                    bool model = ShapeModels.Takes(owner);   // a wall drawn from a model: its model is cut to the shapes
+                    if (!model && (!SectionLayer_IsoRimWalls.Handles(owner) || form.form != Form3D.Block))
                     {
                         continue;
                     }
@@ -226,7 +233,8 @@ namespace IsoRim
                     }
                     cell.polys.Add(q);
                     cell.owners.Add(owner);
-                    cell.heights.Add(WallBoxes.HeightFor(owner, Forms.For(owner.def).height));
+                    cell.heights.Add(WallBoxes.HeightFor(owner, WallBoxes.WallHeightOf(form)));
+                    cell.models.Add(model);
                 }
                 if (cell.polys.Count == 0)
                 {
@@ -321,7 +329,10 @@ namespace IsoRim
                 }
                 for (int k = 0; k < s.polys.Count; k++)
                 {
-                    PrintOne(layer, map, c, s, k);
+                    if (!s.models[k])
+                    {
+                        PrintOne(layer, map, c, s, k);   // (a wall drawn from a model: its model cut to the shapes, ShapeModels)
+                    }
                 }
             }
         }

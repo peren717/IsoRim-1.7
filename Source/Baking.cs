@@ -2362,6 +2362,9 @@ namespace IsoRim
         // The lowest height a baked model's corners are written at: the ground, except below a sunk hole (Bake).
         private static float Floor;
 
+        // (Api 34) the shape pieces a wall drawn from a model stands in (ShapeModels.For), reused.
+        private static readonly List<ShapeModels.Piece> shapePieces = new List<ShapeModels.Piece>();
+
         private static bool BakeModel(SectionLayer layer, Thing thing, ModelEntry entry, float baseHeight)
         {
             ModelDef def = entry.def;
@@ -2437,6 +2440,21 @@ namespace IsoRim
             {
                 fit.y *= WallBoxes.CutFraction;
             }
+            // (Api 34) a wall drawn from a model standing in wall shapes (a trimmed wall cell): its straight run along the
+            // slant, cut to the shapes (ShapeModels), drawn in place of post and arms.
+            Model shaped = null;
+            if (wall && thing.Map != null)
+            {
+                int links = 0;
+                for (int d = 0; d < 4; d++)
+                {
+                    if (Links(thing, thing.Position + GenAdj.CardinalDirections[d]))
+                    {
+                        links |= 1 << d;
+                    }
+                }
+                shaped = ShapeModels.For(thing, m, arm, yaw, links, shapePieces);
+            }
             bool tagsWere = CutTags.Enabled;
             int cutMark = -1;
             if (wallTags)
@@ -2449,7 +2467,14 @@ namespace IsoRim
                 // (a wall drawn from a model is outlined as one wall: no line along the joints with the next one, and its
                 // arms, which carry it on into the post's neighbours, add no outline of their own)
                 int joined = wall ? JoinedSides(thing) : 0;
-                if (!Write(layer, thing, m, center, turn, lay, layLift, fit, offset, baseHeight, tint, bare, def.outline, joined))
+                if (shaped != null)
+                {
+                    if (!Write(layer, thing, shaped, center, Quaternion.identity, lay, layLift, fit, offset, baseHeight, tint, bare, def.outline))
+                    {
+                        return false;
+                    }
+                }
+                else if (!Write(layer, thing, m, center, turn, lay, layLift, fit, offset, baseHeight, tint, bare, def.outline, joined))
                 {
                     return false;
                 }
@@ -2501,7 +2526,7 @@ namespace IsoRim
                 }
 
                 // Fences and the like: one more part toward each neighbour the thing joins up with.
-                if (arm != null && thing.Map != null)
+                if (arm != null && thing.Map != null && shaped == null)
                 {
                     for (int d = 0; d < 4; d++)
                     {
@@ -2524,7 +2549,14 @@ namespace IsoRim
             if (wall && DamageMarks <= 0 && thing.Map != null)
             {
                 IsoCellMap.Dirty(thing.Map, CellRect.SingleCell(thing.Position));   // the fog lid and the cut-away's full height lie on its wall top
-                GroundShadows.AroundBlock(layer, thing);   // the band along a wall's foot, as a block's (not the soft shade under a model)
+                if (shaped != null)
+                {
+                    ShapeModels.GroundBands(layer, shapePieces);   // (Api 34) along the open sides of its shape pieces
+                }
+                else
+                {
+                    GroundShadows.AroundBlock(layer, thing);   // the band along a wall's foot, as a block's (not the soft shade under a model)
+                }
             }
             return true;
         }

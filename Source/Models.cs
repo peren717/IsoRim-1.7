@@ -1594,6 +1594,12 @@ namespace IsoRim
             return nextId++;
         }
 
+        // (Api 34) The outline offsets of a model made in code (ShapeModels): as a loaded model's.
+        internal static Vector3[] HullOf(Vector3[] positions, Vector3[] normals)
+        {
+            return BuildHull(positions, normals, OutlineWidth);
+        }
+
         // A copy of a model whose faces of one material give off light (unlit, see ModelMaterial.glow),
         // each separate piece of them (faces joined by shared corners) in the next of colors in turn:
         // the lightball's lenses during a party. Null if the model has no such material.

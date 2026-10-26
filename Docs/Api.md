@@ -1258,6 +1258,9 @@ upstairs reaches down to the wall below), its stuff texture and colour (paint in
 lines, sun lighting, the cut-away (each piece goes down with its owner's cell), the gravship take-off and landing
 scene and culling. Built roofs (pitched, flat and ship decks) over such cells follow the shapes: their edge runs along
 the shape's outer side, and near shapes a pitched roof rises from that edge (a hipped roof over an octagon).
+An owner that is a wall drawn from a model (a model pack's linked wall with wallFit) stands in its shapes too: its own
+straight run is turned along the slant, repeated one cell apart (not stretched) and cut to the shapes, with the cuts
+closed in the wall's side colour.
 
 ```csharp
 // IsoRim.Api.Version >= 34, once at startup
