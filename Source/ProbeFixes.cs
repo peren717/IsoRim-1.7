@@ -25,7 +25,9 @@ namespace IsoRim
     //                                points (the pointer path as the player's), blueprints logged, shots
     //   faceorder=x,z,tx,tz[,u]      the colonist in (x,z) gets a move order to (tx,tz) by the right-click menu's "Go here"
     //                                as a player gives it (u: undrafted instead, no order: its own work)
-    //   faceshoot=x,z,tx,tz          the colonist in (x,z) fires at the thing in (tx,tz) (Verb.OrderForceTarget, as the
+    //   facejob=x,z,tx,tz            the drafted colonist in (x,z) is ordered a Wait_Combat job aimed at the cell (tx,tz) (its
+    //                                driver leaves facing to the game's UpdateRotation: it faces that cell, 3D off then south)
+    //   faceshoot=x,z,tx,tz         the colonist in (x,z) fires at the thing in (tx,tz) (Verb.OrderForceTarget, as the
     //                                targeting gizmo) until it is gone
     //   face=tag,ticks,keep|south    the orders since the last face= are given and the game runs (Superfast, real ticks)
     //                                until each is done, then that many ticks more; the facing is watched every frame:
@@ -48,6 +50,10 @@ namespace IsoRim
             public string firstChange;
             public int keptAtStart;
             public string note = "";
+            public bool vehicle;   // (vfaceorder, ProbeVehicleFacing)
+            public string vrot;
+            public bool jobface;   // (facejob)
+            public int orderTick;
         }
 
         private static readonly List<FaceOrder> pendingFace = new List<FaceOrder>();
@@ -55,9 +61,13 @@ namespace IsoRim
         private static readonly Dictionary<int, int> draftFacingKept = new Dictionary<int, int>();
         private static int checksPassed, checksFailed;
 
-        // Patches.DraftFacingUpdate_Postfix kept this drafted pawn's facing (test bookkeeping).
+        // Patches.DraftedSouth skipped the game's south turn of this drafted pawn (test bookkeeping).
         public static void NoteDraftFacing(Pawn p)
         {
+            if (p == null)
+            {
+                return;
+            }
             int n;
             draftFacingKept.TryGetValue(p.thingIDNumber, out n);
             draftFacingKept[p.thingIDNumber] = n + 1;
@@ -277,6 +287,9 @@ namespace IsoRim
                     HookMouse();
                     ixJobs.Add(new IxJob { kind = "bdrag", mode = a[0], tag = a[5], a = new Vector3(F(a[1]), 0f, F(a[2])), b = new Vector3(F(a[3]), 0f, F(a[4])) });
                     return true;
+                case "facejob":
+                    pendingFace.Add(new FaceOrder { from = new IntVec3(I(a[0]), 0, I(a[1])), to = new IntVec3(I(a[2]), 0, I(a[3])), jobface = true });
+                    return true;
                 case "faceorder":
                 case "faceshoot":
                     pendingFace.Add(new FaceOrder
@@ -295,7 +308,7 @@ namespace IsoRim
                     return true;
                 }
             }
-            return false;
+            return VehicleKey(key, a, map);
         }
 
         // ---- queue steps
@@ -410,6 +423,20 @@ namespace IsoRim
                         continue;
                     }
                     o.keptAtStart = KeptCount(o.pawn);
+                    if (o.vehicle)
+                    {
+                        VehicleOrder(sel, o);
+                        continue;
+                    }
+                    if (o.jobface)
+                    {
+                        // An ordered job whose driver leaves facing to UpdateRotation (rotateToFace = its target A):
+                        // Wait_Combat aimed at a cell, as JobGiver_Orders' stand-by but on another cell.
+                        o.pawn.jobs.TryTakeOrderedJob(JobMaker.MakeJob(JobDefOf.Wait_Combat, o.to), JobTag.Misc);
+                        o.orderTick = Find.TickManager.TicksGame;
+                        o.note = "job " + o.pawn.CurJobDef?.defName + " facing " + o.to;
+                        continue;
+                    }
                     if (o.undraft)
                     {
                         o.pawn.drafter.Drafted = false;
@@ -467,6 +494,8 @@ namespace IsoRim
                 {
                     bool finished = o.shoot
                         ? (o.target.Destroyed && p.CurJobDef != JobDefOf.AttackStatic && !(p.stances.curStance is Stance_Busy))
+                        : o.vehicle ? (!VehicleMoving(p) && p.CurJobDef != JobDefOf.Goto)
+                        : o.jobface ? (p.CurJob != null && p.CurJob.targetA.Cell == o.to && Find.TickManager.TicksGame > o.orderTick + 2)
                         : (!p.pather.Moving && p.CurJobDef != JobDefOf.Goto);
                     if (finished)
                     {
@@ -510,7 +539,15 @@ namespace IsoRim
                 if (o.undraft)
                 {
                     int kept = KeptCount(p) - o.keptAtStart;
-                    Check("face " + j.tag + " " + who + " undrafted: the facing patch leaves it alone", kept == 0, "patch kept its facing " + kept + " times; " + detail);
+                    Check("face " + j.tag + " " + who + " undrafted: the facing patch leaves it alone", kept == 0, "patch skipped a south turn " + kept + " times; " + detail);
+                    continue;
+                }
+                if (o.vehicle)
+                {
+                    // VF turns its vehicles itself (the game's UpdateRotation skipped): parked the ordered way, then kept.
+                    Rot4 want = VehicleWant(o);
+                    Check("face " + j.tag + " vehicle " + who + " (3D " + (View3D.Active ? "on" : "off") + ") parks facing " + want.ToStringHuman() + " (order " + o.vrot + ")",
+                        o.changes == 0 && o.rot0 == want && p.Rotation == want, detail + ", drafted " + p.Drafted + ", IsoRim drafted-facing skips " + (KeptCount(p) - o.keptAtStart));
                     continue;
                 }
                 if (j.mode == "south")

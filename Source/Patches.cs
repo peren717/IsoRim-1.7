@@ -168,9 +168,9 @@ namespace IsoRim
                 Patch("skipping sprite work for 3D pawns", preRender, prefix: nameof(PreRender_Prefix));
             }
 
-            // A drafted pawn standing idle keeps the way it last faced instead of the game turning it south (DraftFacing).
+            // In 3D the game's turn of a drafted pawn south is skipped: it keeps the way it walked, aimed or its job faces (DraftedSouth).
             Patch("drafted pawns keep their facing", AccessTools.Method(typeof(Pawn_RotationTracker), nameof(Pawn_RotationTracker.UpdateRotation)),
-                prefix: nameof(DraftFacingUpdate_Prefix), postfix: nameof(DraftFacingUpdate_Postfix));
+                transpiler: nameof(DraftedSouth_Transpiler));
 
             // The facing a standing pawn's sprite is drawn with, turned with the camera (View3D.SeenFacing): every
             // layer of the sprite (body, head, apparel, hair, carried weapon, overlays) takes it from here.
@@ -3456,54 +3456,48 @@ namespace IsoRim
 
         // ---------------------------------------------------------------- drafted pawns keep their facing
 
-        // The game turns a drafted pawn that stands idle (not moving, not aiming, no job facing) south, toward the
-        // player of the top-down view. With the camera free to turn that south means nothing, so in 3D such a pawn keeps
-        // the way it last faced (where it walked or last aimed). Moving, aiming and jobs that face something are as before.
-        public static void DraftFacingUpdate_Prefix(Pawn_RotationTracker __instance, Pawn ___pawn, out Rot4 __state)
+        // The game's UpdateRotation ends by turning a drafted pawn south (if (pawn.Drafted) pawn.Rotation = Rot4.South),
+        // toward the player of the top-down view. With the camera free to turn that south means nothing, so in 3D that one
+        // step is skipped: a drafted pawn keeps the way it walked, aimed or its job faces. Everything else in the method
+        // (moving, aiming, job facing, fixed rotation) is the game's. A mod that skips UpdateRotation (turning its pawns
+        // itself) never reaches the step. 3D off: the game's south turn as before.
+        public static IEnumerable<CodeInstruction> DraftedSouth_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            __state = ___pawn != null ? ___pawn.Rotation : Rot4.Invalid;
+            List<CodeInstruction> code = instructions.ToList();
+            MethodInfo drafted = AccessTools.PropertyGetter(typeof(Pawn), nameof(Pawn.Drafted));
+            FieldInfo south = AccessTools.Field(typeof(Rot4), nameof(Rot4.South));   // (a static readonly field: ldsfld)
+            MethodInfo setRot = AccessTools.PropertySetter(typeof(Thing), nameof(Thing.Rotation));
+            List<int> found = new List<int>();
+            for (int i = 4; i + 1 < code.Count; i++)
+            {
+                if (code[i].opcode == OpCodes.Ldsfld && code[i].operand as FieldInfo == south && code[i + 1].operand as MethodInfo == setRot
+                    && code.Skip(i - 4).Take(4).Any(c => c.operand as MethodInfo == drafted))
+                {
+                    found.Add(i + 1);
+                }
+            }
+            if (found.Count != 1 || drafted == null || south == null || setRot == null)
+            {
+                ModLog.Warn("[IsoRim] Drafted pawns keep their facing: the game's drafted-south step was found " + found.Count + " times (expected 1); left as it is.");
+                return code;
+            }
+            code[found[0]].opcode = OpCodes.Call;
+            code[found[0]].operand = AccessTools.Method(typeof(Patches), nameof(DraftedSouth));
+            return code;
         }
 
-        public static void DraftFacingUpdate_Postfix(Pawn ___pawn, Rot4 __state)
+        // The game's drafted-south step (pawn.Rotation = Rot4.South), skipped in the 3D view.
+        public static void DraftedSouth(Thing pawn, Rot4 rot)
         {
-            Pawn p = ___pawn;
-            if (!View3D.Active || !__state.IsValid || p == null || p.Destroyed || !p.Drafted || p.Rotation == __state || p.Rotation != Rot4.South)
+            if (View3D.Active)
             {
+                if (Probe.On)
+                {
+                    Probe.NoteDraftFacing(pawn as Pawn);
+                }
                 return;
             }
-            if (p.kindDef.useFixedRotation || p.jobs == null || p.jobs.HandlingFacing || p.pather == null || p.pather.Moving)
-            {
-                return;
-            }
-            if (p.stances != null && p.stances.curStance is Stance_Busy busy && busy.focusTarg.IsValid)
-            {
-                return;
-            }
-            if (p.jobs.curJob != null && p.jobs.curDriver != null && FacesSomething(p, p.CurJob.GetTarget(p.jobs.curDriver.rotateToFace)))
-            {
-                return;
-            }
-            p.Rotation = __state;
-            if (Probe.On)
-            {
-                Probe.NoteDraftFacing(p);
-            }
-        }
-
-        // Whether a job's face target turns the pawn: not when it is the pawn's own cell (or the pawn itself), as the
-        // game's FaceCell skips its own cell. A drafted pawn standing by (Wait_Combat from JobGiver_Orders) has its own
-        // position as the target.
-        private static bool FacesSomething(Pawn p, LocalTargetInfo target)
-        {
-            if (!target.IsValid)
-            {
-                return false;
-            }
-            if (target.HasThing)
-            {
-                return target.Thing != p;
-            }
-            return target.Cell != p.Position;
+            pawn.Rotation = rot;
         }
 
         // ---------------------------------------------------------------- raised things
