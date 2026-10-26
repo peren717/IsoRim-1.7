@@ -22,6 +22,22 @@ namespace IsoRim
         private static readonly HashSet<string> reported = new HashSet<string>();
         private static bool failed;
 
+        // Meshes with more vertices than this get 32-bit indices (16-bit ones stop at 65,535).
+        public const int WideAbove = 65000;
+
+        // Sets the index size a mesh of this many vertices needs; called by every builder before the triangles are set.
+        // Small meshes keep the default 16-bit indices (a pooled mesh that was large is put back to them). Waylith's
+        // Mesh also switches to 32-bit on its own when SetVertices/SetTriangles see more than 65,535; setting it here
+        // keeps the format from depending on that.
+        public static void FitIndices(Mesh mesh, int vertexCount)
+        {
+            UnityEngine.Rendering.IndexFormat want = vertexCount > WideAbove ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16;
+            if (mesh != null && mesh.indexFormat != want)
+            {
+                mesh.indexFormat = want;
+            }
+        }
+
         // True if the mesh is safe to draw; otherwise it is cleared and false is returned.
         public static bool Check(Mesh mesh, string what)
         {

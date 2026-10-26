@@ -72,6 +72,7 @@ namespace IsoRim
             public Mesh ToMesh()
             {
                 Mesh mesh = new Mesh();
+                MeshGuard.FitIndices(mesh, verts.Count);
                 mesh.SetVertices(verts);
                 mesh.SetColors(colors);
                 mesh.SetUVs(0, uvs);

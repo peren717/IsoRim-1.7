@@ -500,10 +500,7 @@ namespace IsoRim
                 }
             }
             mesh = new Mesh();
-            if (v.Count > 65000)
-            {
-                mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-            }
+            MeshGuard.FitIndices(mesh, v.Count);
             mesh.SetVertices(v);
             mesh.SetColors(c);
             mesh.SetTriangles(t, 0);

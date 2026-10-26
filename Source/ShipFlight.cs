@@ -794,7 +794,7 @@ namespace IsoRim
     // reads the map's cell textures at the old cells.
     public sealed class ShipSnapshot
     {
-        private const int MaxVerts = 65000;   // 16-bit indices (UInt32 index support in Waylith unknown)
+        private const int MaxVerts = MeshWriter.MaxVerts;   // one mesh's share (larger ones get 32-bit indices: MeshGuard.FitIndices)
 
         private readonly List<Mesh> meshes = new List<Mesh>();
         private readonly List<Material> mats = new List<Material>();      // drawn with
@@ -1053,6 +1053,7 @@ namespace IsoRim
                     }
                     Mesh m = new Mesh();
                     m.name = "IsoRimShipSnapshot";
+                    MeshGuard.FitIndices(m, ch.verts.Count);
                     m.SetVertices(ch.verts);
                     m.SetTriangles(ch.tris, 0);
                     m.SetColors(ch.colors);
@@ -1062,6 +1063,7 @@ namespace IsoRim
                         m.SetNormals(ch.normals);
                     }
                     m.RecalculateBounds();
+                    MeshGuard.Check(m, "ship snapshot");
                     s.meshes.Add(m);
                     s.mats.Add(Flying(grp.mat));
                     s.sources.Add(grp.mat);
@@ -1443,7 +1445,7 @@ namespace IsoRim
                 t.Add(n0 + 2);
                 side(on[0], on[1]);
             }
-            if (v.Count == 0 || v.Count > 65000)
+            if (v.Count == 0)
             {
                 return;
             }
@@ -1454,10 +1456,12 @@ namespace IsoRim
             }
             slab = new Mesh();
             slab.name = "IsoRimShipSlab";
+            MeshGuard.FitIndices(slab, v.Count);
             slab.SetVertices(v);
             slab.SetTriangles(t, 0);
             slab.SetColors(col);
             slab.RecalculateBounds();
+            MeshGuard.Check(slab, "ship slab");
         }
 
         // ---- the shadow: a soft silhouette of the ship's cells (4 texels a cell, corner cells as their wedge half),

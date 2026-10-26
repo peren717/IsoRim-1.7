@@ -122,6 +122,7 @@ namespace IsoRim
                 tris[i] = i;
             }
             mesh = new Mesh();
+            MeshGuard.FitIndices(mesh, n);
             mesh.vertices = verts;
             mesh.colors32 = colors;
             mesh.triangles = tris;
@@ -243,6 +244,7 @@ namespace IsoRim
                 tris[i] = i;
             }
             mesh = new Mesh();
+            MeshGuard.FitIndices(mesh, n);
             mesh.vertices = verts;
             mesh.colors32 = colors;
             mesh.triangles = tris;

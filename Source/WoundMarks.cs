@@ -758,10 +758,7 @@ namespace IsoRim
                         continue;
                     }
                     Mesh mesh = new Mesh();
-                    if (p.verts.Count > 65000)
-                    {
-                        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-                    }
+                    MeshGuard.FitIndices(mesh, p.verts.Count);
                     mesh.SetVertices(p.verts);
                     mesh.SetUVs(0, p.uvs);
                     List<Color32> colours = new List<Color32>(p.verts.Count);

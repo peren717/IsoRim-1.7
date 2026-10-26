@@ -532,6 +532,7 @@ namespace IsoRim
                     }
                     // A new mesh from the kept CPU lists (as LayerSubMesh.FinalizeMesh makes it).
                     Mesh m = new Mesh();
+                    MeshGuard.FitIndices(m, v.Count);
                     m.SetVertices(v);
                     m.SetTriangles(keep, 0);
                     if (sm.colors.Count == v.Count)
@@ -551,6 +552,7 @@ namespace IsoRim
                         m.SetNormals(sm.normals);
                     }
                     m.RecalculateBounds();
+                    MeshGuard.Check(m, "frozen ground");
                     sm.mesh = m;
                     sm.tris.Clear();
                     sm.tris.AddRange(keep);

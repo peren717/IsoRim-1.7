@@ -969,6 +969,7 @@ namespace IsoRim
             {
                 slab.mesh.Clear();
             }
+            MeshGuard.FitIndices(slab.mesh, verts.Count);
             slab.mesh.SetVertices(verts);
             slab.mesh.SetColors(cols);
             slab.mesh.SetTriangles(tris, 0);

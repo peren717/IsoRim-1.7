@@ -1065,12 +1065,13 @@ namespace IsoRim
                     }
                 }
             }
-            if (mv.Count == 0 || mv.Count > 65000 || usedGroups.Count > 8)
+            if (mv.Count == 0 || usedGroups.Count > 8)
             {
                 return;
             }
             Mesh mesh = meshPool.Count > 0 ? meshPool.Pop() : new Mesh { name = "IsoRimDebris" };
             mesh.Clear();
+            MeshGuard.FitIndices(mesh, mv.Count);
             mesh.SetVertices(mv);
             mesh.SetColors(mc);
             mesh.SetUVs(0, mu);
@@ -1084,6 +1085,7 @@ namespace IsoRim
                 tri += mt[i].Count / 3;
             }
             mesh.RecalculateBounds();
+            MeshGuard.Check(mesh, "collapse debris");
             ch.pos = pivot;
             Vector3 away = new Vector3(pivot.x - centre.x, 0f, pivot.z - centre.z);
             away = away.sqrMagnitude > 1e-4f ? away.normalized : Vector3.zero;

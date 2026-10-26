@@ -394,6 +394,7 @@ namespace IsoRim
                 return null;
             }
             Mesh m = new Mesh();
+            MeshGuard.FitIndices(m, verts.Count);
             m.SetVertices(verts);
             m.SetColors(colors);
             m.SetUVs(0, uvs);
@@ -405,6 +406,7 @@ namespace IsoRim
             m.SetUVs(1, tags);
             m.SetTriangles(tris, 0);
             m.RecalculateBounds();
+            MeshGuard.Check(m, "face decal");
             return m;
         }
     }

@@ -408,6 +408,7 @@ namespace IsoRim
                 return null;
             }
             Mesh mesh = new Mesh();
+            MeshGuard.FitIndices(mesh, verts.Count);
             mesh.SetVertices(verts);
             mesh.SetUVs(0, uvs);
             List<Color32> colours = new List<Color32>(verts.Count);
