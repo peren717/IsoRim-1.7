@@ -1717,6 +1717,16 @@ namespace IsoRim
                 case "spaceplanet":
                     Sky.PlanetBelow = a[0] == "1";
                     break;
+                case "orbitplanet":
+                    // orbitplanet=0|1: the game's flat planet backdrop, or its globe seen from close above (OrbitPlanet).
+                    OrbitPlanet.Enabled = a[0] == "1";
+                    break;
+                case "orbitdip":
+                    OrbitPlanet.Dip = F(a[0]);
+                    break;
+                case "orbitturn":
+                    OrbitPlanet.Turn = F(a[0]);
+                    break;
                 case "spaceedges":
                     // spaceedges=0|1: platform sides in 3D (SpaceEdges, default 1) or the game's flat strips (before/after).
                     SpaceEdges.Enabled = a[0] == "1";

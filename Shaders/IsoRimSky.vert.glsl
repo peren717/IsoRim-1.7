@@ -35,7 +35,10 @@ layout(set = 2, binding = 0) uniform MaterialUniforms
 
 void main()
 {
-    gl_Position = vec4(inPosition.xy, 0.0, 1.0);
+    // On space maps the sky is drawn a hair nearer than the far end, past the drawn sections laid just short of it
+    // (IsoRimDepthFar), so it reaches their void cells; the dim pass (_SkyDim.w) stays at the far end and does not.
+    float z = (u._SkySpace.x > 0.5 && u._SkyDim.w < 0.5) ? 4e-6 : 0.0;
+    gl_Position = vec4(inPosition.xy, z, 1.0);
     // Clip y runs down the screen in this engine (its projections flip y).
     vRay = u._SkyFwd.xyz + u._SkyRight.xyz * inPosition.x - u._SkyUp.xyz * inPosition.y;
 }

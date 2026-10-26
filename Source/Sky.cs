@@ -86,6 +86,16 @@ namespace IsoRim
         // The last frame the sky darkened the planet backdrop itself (the game's dark ring is hidden then).
         private static int dimFrame = -10;
 
+        // The last frame the sky laid a space map's drawn sections just short of the far end (SpaceDepth).
+        private static int spaceDepthFrame = -10;
+        private static Material voidMat;
+
+        // Whether the ground's depth on this space map comes cell by cell (SectionLayer_IsoRimSpaceDepth) this frame.
+        public static bool SpaceDepthNow
+        {
+            get { return Time.frameCount - spaceDepthFrame <= 1; }
+        }
+
         static Sky()
         {
             if (!ModsConfig.OdysseyActive)
@@ -174,7 +184,14 @@ namespace IsoRim
 
                 // The game's terrain writes no depth: give the ground its depth first, or the fog and the
                 // sky would cover it as if it were empty.
-                if (planeMat != null)
+                if (space && voidMat != null)
+                {
+                    // Space: the drawn sections just short of the far end, the terrain cells at their real depth
+                    // (SectionLayer_IsoRimSpaceDepth), the void left open to the sky.
+                    Graphics.DrawMesh(SpacePlane(map), Matrix4x4.identity, voidMat, 0, cam);
+                    spaceDepthFrame = Time.frameCount;
+                }
+                else if (planeMat != null)
                 {
                     Graphics.DrawMesh(space ? SpacePlane(map) : PlaneFor(map), Matrix4x4.identity, planeMat, 0, cam);
                 }
@@ -229,9 +246,16 @@ namespace IsoRim
                     mat.SetVector(sunColorId, (Vector4)sunColor);
                     mat.SetVector(moonId, new Vector4(moon.x, moon.y, moon.z, moonShow));
                     NightSky(mat, map, hour, grey, space);
-                    // x: space, y: the planet backdrop below the horizon, z: its thin blue rim of air (lit by day).
+                    // x: space, y: the planet below, z: the glow of its air along the limb (lit by day), w: the sine of
+                    // the limb's angle below the horizontal (OrbitPlanet: the game's globe seen from close above; 0: the
+                    // game's flat backdrop, straight at the horizon).
                     float rim = space && PlanetBelow ? Mathf.Lerp(0.15f, 1f, Mathf.InverseLerp(0.1f, 0.6f, GenCelestial.CurCelestialSunGlow(map))) : 0f;
-                    mat.SetVector(spaceId, new Vector4(space ? 1f : 0f, space && PlanetBelow ? 1f : 0f, rim, 0f));
+                    bool globe = space && OrbitPlanet.For(map);
+                    if (globe)
+                    {
+                        OrbitPlanet.Frame(map, fwd, up, View3D.FieldOfView, zenith);
+                    }
+                    mat.SetVector(spaceId, new Vector4(space ? 1f : 0f, space && PlanetBelow ? 1f : 0f, rim, globe ? OrbitPlanet.LimbSin : 0f));
                     mat.SetVector(dimId, new Vector4(1f, 1f, 1f, 0f));
                     if (painted)
                     {
@@ -656,6 +680,12 @@ namespace IsoRim
             {
                 planeMat = new Material(depth);
                 planeMat.name = "IsoRim_DepthPlane";
+            }
+            Shader depthFar = R3DMaterials.ShaderOf("IsoRimDepthFar");
+            if (depthFar != null)
+            {
+                voidMat = new Material(depthFar);
+                voidMat.name = "IsoRim_DepthFar";
             }
             Shader sky = R3DMaterials.ShaderOf("IsoRimSky");
             Shader fog = R3DMaterials.ShaderOf("IsoRimDistFog");

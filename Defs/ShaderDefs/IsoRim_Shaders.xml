@@ -345,6 +345,23 @@
     </shaderProgram>
   </ShaderDef>
 
+  <!-- Space maps (Sky.cs, SpaceDepth.cs): the drawn sections, depth only, just short of the far end, so the sky
+       still reaches the void cells but its dim pass does not. Queue 3179: before the terrain cells' real depth. -->
+  <ShaderDef>
+    <defName>IsoRimDepthFar</defName>
+    <shaderProgram>
+      <vertexShaderFileName>IsoRimDepthPlane.vert.glsl</vertexShaderFileName>
+      <fragmentShaderFileName>IsoRimDepthFar.frag.glsl</fragmentShaderFileName>
+      <useTexture>false</useTexture>
+      <flipTextureST>false</flipTextureST>
+      <blendMode>Opaque</blendMode>
+      <colorWrite>false</colorWrite>
+      <depthWrite>true</depthWrite>
+      <cullMode>None</cullMode>
+      <renderQueue>3179</renderQueue>
+    </shaderProgram>
+  </ShaderDef>
+
   <!-- Distance fog for the perspective camera (Sky.cs): layers of full-screen quads at set distances,
        depth-tested, blended. Queue 3190: after the lighting overlay and the fog-of-war lid. -->
   <ShaderDef>

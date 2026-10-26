@@ -131,11 +131,15 @@ void main()
     float e = r.y;
     if (u._SkyDim.w > 0.5)
     {
-        if (e >= 0.0)
+        // The planet below (inside its limb, _SkySpace.w below the horizontal): as dark as the map's sky light, and
+        // a little lighter and bluer along the limb, where its air is seen edge on (lit by day, _SkySpace.z).
+        float s = -(e + u._SkySpace.w);
+        if (s <= 0.0)
         {
             discard;
         }
-        outColor = vec4(u._SkyDim.rgb * 0.5, 1.0);
+        vec3 haze = 1.0 + vec3(0.12, 0.35, 0.7) * exp(-s * 40.0) * u._SkySpace.z * step(0.0001, u._SkySpace.w);
+        outColor = vec4(min(u._SkyDim.rgb * 0.5 * haze, vec3(1.0)), 1.0);
         return;
     }
     vec3 c = u._SkyHorizon.rgb;
@@ -150,13 +154,17 @@ void main()
     {
         if (u._SkySpace.y > 0.5)
         {
-            if (e < 0.0)
+            // The planet below: its limb stands _SkySpace.w (a sine) below the horizontal all round (OrbitPlanet).
+            // Below it the world camera's globe shows; the sky reaches a pixel past it, so no gap opens along the edge.
+            float t = e + u._SkySpace.w;
+            if (t < -pix)
             {
                 discard;
             }
+            t = max(t, 0.0);
             above = 1.0;
-            // The planet's air seen edge on: a thin blue band along the horizon.
-            c += vec3(0.25, 0.5, 1.0) * (exp(-e * 90.0) * 0.55 + exp(-e * 18.0) * 0.12) * u._SkySpace.z;
+            // The planet's air seen edge on: a glow hugging the limb, fading outward.
+            c += vec3(0.25, 0.5, 1.0) * (exp(-t * 90.0) * 0.55 + exp(-t * 18.0) * 0.12) * u._SkySpace.z;
         }
         else
         {

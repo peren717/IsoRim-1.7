@@ -223,15 +223,22 @@ void main()
     {
         if (u._SkySpace.y > 0.5)
         {
-            if (e < 0.0)
+            // The planet below: its limb stands _SkySpace.w (a sine) below the horizontal all round (OrbitPlanet).
+            // Below it the world camera's globe shows; the sky reaches a pixel past it, so no gap opens along the edge.
+            float t = e + u._SkySpace.w;
+            if (t < -pix)
             {
                 discard;
             }
+            t = max(t, 0.0);
             above = 1.0;
             c = u._SkyZenith.rgb;
-            // The planet's air seen edge on: a thin blue band along the horizon, in two flat steps.
-            float rim = smoothstep(0.03, 0.022, e) * 0.5 + smoothstep(0.11, 0.09, e) * 0.14;
-            c += vec3(0.25, 0.5, 1.0) * rim * u._SkySpace.z;
+            // The planet's air seen edge on: a soft glow hugging the limb and fading outward, in three soft tones.
+            float g1 = 1.0 - smoothstep(0.0, 0.02, t);
+            float g2 = 1.0 - smoothstep(0.006, 0.055, t);
+            float g3 = 1.0 - smoothstep(0.025, 0.14, t);
+            vec3 glow = vec3(0.62, 0.84, 1.0) * g1 * 0.42 + vec3(0.30, 0.56, 1.0) * g2 * 0.30 + vec3(0.16, 0.28, 0.72) * g3 * 0.20;
+            c += glow * u._SkySpace.z;
         }
         else
         {
