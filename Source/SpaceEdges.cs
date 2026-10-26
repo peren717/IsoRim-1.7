@@ -301,8 +301,7 @@ namespace IsoRim
                 TerrainGrid grid = map.terrainGrid;
                 CellRect r = section.CellRect;
                 // Stacked floors (Floors): only the ground rows; rows above count as outside the map.
-                int ground = Floors.GroundRowsOf(map);
-                int h = ground > 0 ? ground : map.Size.z;
+                int h = Floors.DrawnRows(map);
                 r.maxZ = Mathf.Min(r.maxZ, h - 1);
                 float squash = View3D.Squash;
                 float top = -0.002f / squash;

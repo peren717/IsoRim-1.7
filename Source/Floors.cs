@@ -1517,6 +1517,19 @@ namespace IsoRim
             }
         }
 
+        // The rows of the map that are real ground, where the world is drawn: the ground rows with floors, else every row.
+        // The rows above them only hold the floors' cells (drawn moved over the ground), so past the ground is the void,
+        // as past any other edge of the map.
+        public static int DrawnRows(Map map)
+        {
+            if (map == null)
+            {
+                return 0;
+            }
+            int rows = GroundRowsOf(map);
+            return rows > 0 ? Mathf.Min(rows, map.Size.z) : map.Size.z;
+        }
+
         // All floors of a map as the layout gives them (not this frame's state; works with the 3D view off): the ground's
         // rows (0 without floors) and the number of floors above it; heights[k] (true cells) and shifts[k] (rows) of
         // floor k, index 0 the ground (0, 0). Without floors: 0 and the ground only.

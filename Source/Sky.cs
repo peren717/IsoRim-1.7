@@ -561,10 +561,12 @@ namespace IsoRim
             }
         }
 
-        // The map's ground, one quad at height 0 (rebuilt when the map size changes).
+        // The map's ground, one quad at height 0 (rebuilt when the map size changes). Only the drawn rows (Floors.DrawnRows):
+        // with stacked floors the rows above the ground are not ground, and depth there kept the sky off the void past the
+        // ground's far edge (the camera's clear colour showed instead).
         private static Mesh PlaneFor(Map map)
         {
-            IntVec3 size = map.Size;
+            IntVec3 size = new IntVec3(map.Size.x, 0, Floors.DrawnRows(map));
             if (plane != null && size == planeSize)
             {
                 return plane;
@@ -592,7 +594,7 @@ namespace IsoRim
             int x0 = view.minX / s * s;
             int z0 = view.minZ / s * s;
             int x1 = Mathf.Min(map.Size.x, (view.maxX / s + 1) * s);
-            int z1 = Mathf.Min(map.Size.z, (view.maxZ / s + 1) * s);
+            int z1 = Mathf.Min(Floors.DrawnRows(map), (view.maxZ / s + 1) * s);
             CellRect r = new CellRect(x0, z0, Mathf.Max(0, x1 - x0), Mathf.Max(0, z1 - z0));
             if (spacePlane != null && r == spacePlaneRect)
             {

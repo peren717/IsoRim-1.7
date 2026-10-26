@@ -391,7 +391,7 @@ namespace IsoRim
             float len = (rain ? 0.55f : 0.07f) * size;
             Vector3 slant = rain ? new Vector3(-0.12f, 1f, 0f) : Vector3.up;
             RoofGrid roofs = map.roofGrid;
-            IntVec3 sizeMap = map.Size;
+            IntVec3 sizeMap = new IntVec3(map.Size.x, 0, Floors.DrawnRows(map));   // stacked floors: the ground rows only
 
             for (int i = 0; i < MaxDrops; i++)
             {
