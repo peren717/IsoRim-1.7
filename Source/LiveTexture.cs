@@ -6,7 +6,7 @@ using GpuTextureAllocation = Waylith.Rendering.GpuTextureAllocation;
 using GpuTextureService = Waylith.Rendering.GpuTextureService;
 using LoadedTextureFormat = Waylith.Rendering.LoadedTextureFormat;
 using TextureLevelUpload = Waylith.Rendering.TextureLevelUpload;
-using TexturePixelData = Waylith.Rendering.TexturePixelData;
+using TexturePixelData = Waylith.Graphics.Textures.TexturePixelData;
 
 namespace IsoRim
 {

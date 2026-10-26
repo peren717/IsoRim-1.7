@@ -263,7 +263,7 @@ namespace IsoRim
         // decodes one-channel BC4 differently and leaves out the mapping.
         private static Color32[] ReadLevel(Texture2D t, Waylith.Rendering.Texture2D core, int mip)
         {
-            Waylith.Rendering.TexturePixelData data = core.EnsureCpuData();
+            Waylith.Graphics.Textures.TexturePixelData data = core.EnsureCpuData();
             if (data == null || !data.HasData)
             {
                 return null;
@@ -282,7 +282,7 @@ namespace IsoRim
             }
             int w = Math.Max(1, data.Width >> mip);
             int h = Math.Max(1, data.Height >> mip);
-            Waylith.Rendering.TexturePixelData one = new Waylith.Rendering.TexturePixelData(w, h, f, data.Linear, 1, false);
+            Waylith.Graphics.Textures.TexturePixelData one = new Waylith.Graphics.Textures.TexturePixelData(w, h, f, data.Linear, 1, false);
             one.Replace(w, h, f, new byte[][] { data.Levels[mip] }, 1, data.Linear);
             one.Swizzle = data.Swizzle;
             Span<Color32> top = System.Runtime.InteropServices.MemoryMarshal.Cast<Waylith.Math.Color32, Color32>(one.GetPixels32().AsSpan());   // rows top first, as the engine stores them
