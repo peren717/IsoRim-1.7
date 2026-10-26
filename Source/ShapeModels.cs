@@ -711,30 +711,6 @@ namespace IsoRim
             }
         }
 
-        private static bool Inner(Tri t, List<V> poly, List<Plane> planes)
-        {
-            Vector3 fn = Vector3.Cross(t.b.p - t.a.p, t.c.p - t.a.p);
-            if (fn.sqrMagnitude < 1e-12f || Mathf.Abs(fn.normalized.y) > 0.5f)
-            {
-                return false;
-            }
-            foreach (Plane pl in planes)
-            {
-                if (!pl.open)
-                {
-                    continue;
-                }
-                foreach (V v in poly)
-                {
-                    if (pl.nx * v.p.x + pl.nz * v.p.z + pl.d0 < 0.06f)
-                    {
-                        return false;   // near an open side: an outer face
-                    }
-                }
-            }
-            return true;
-        }
-
         // Each run's triangles cut to the part of the cell nearer (by angle round the middle) its own directions than any
         // other run's: a slant axis runs toward the joined diagonals on it, the straight run toward its linked sides. As both
         // are a cell thick, the bisectors are mitres: the faces meet exactly.
