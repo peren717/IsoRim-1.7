@@ -113,7 +113,7 @@ namespace IsoRim
             return R3DMaterials.LitTexture(tex, "IsoRim_WallTop_" + id, c, 1);
         }
 
-        private static Texture2D SideTexture(WallTopSpec spec)
+        internal static Texture2D SideTexture(WallTopSpec spec)
         {
             Texture2D tex;
             if (sides.TryGetValue(spec, out tex))

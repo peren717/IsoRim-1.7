@@ -491,7 +491,7 @@ namespace IsoRim
             int before = src.Count;
             foreach (Cut ct in cuts)
             {
-                if (ct.t1 - ct.t0 < 0.05f)
+                if (ct.t1 - ct.t0 < 0.05f || post.positions.Length == 0)   // (no post: a wall top's crown, ShapeTops; capped)
                 {
                     continue;
                 }

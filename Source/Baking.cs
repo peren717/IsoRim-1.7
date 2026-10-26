@@ -2905,7 +2905,8 @@ namespace IsoRim
                             c *= sheetTint;
                         }
                         string path = mm.texture.Replace("{stuff}", swatch);
-                        Material tmat = glow ? R3DTextures.MaterialFor(path, c) : R3DMaterials.LitTexture(path, c);
+                        Material tmat = mm.runtimeTexture != null ? R3DMaterials.LitTexture(mm.runtimeTexture, mm.runtimeName, c, 1)
+                            : glow ? R3DTextures.MaterialFor(path, c) : R3DMaterials.LitTexture(path, c);
                         texturedMeshes[slot] = tmat != null ? MeshWriter.Sub(layer, tmat) : null;
                     }
                     tm = texturedMeshes[slot];

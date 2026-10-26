@@ -554,6 +554,7 @@ namespace IsoRim
                 }
                 HullCorners.Print(this, map, section.CellRect);   // gravship hull corner pieces (Gravship.cs; + Api 26 corners)
                 WallShapes.Print(this, map, section.CellRect);    // (Api 34) other mods' wall shapes
+                WallBoxes.PrintShapeCrowns(this, map, section.CellRect);   // (Api 34) shaped tops (Api 11) of walls standing in them
                 CutTags.Finish(this);
             }
             catch (Exception e)

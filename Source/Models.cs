@@ -607,6 +607,9 @@ namespace IsoRim
         public bool glow;        // gives off its own light (flames, embers, lamps): never shaded
         public bool fire;        // a flame or embers: left out while the thing's fire is out
         public bool beam;        // (Api 33) a name starting with "beam_": its faces are the model's beam part (Model.beam)
+        public Texture2D runtimeTexture;   // (Api 34) a texture made at run time (a wall top's side, ShapeTops) instead of texture's
+                                           // path, named runtimeName; texture is then only a placeholder
+        public string runtimeName;
     }
 
     // One entry of ModelDef.byAppearance: <li><appearance>Planks</appearance><model>Models/x.obj</model></li>
