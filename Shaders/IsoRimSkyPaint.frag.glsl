@@ -30,7 +30,7 @@ layout(set = 2, binding = 0) uniform MaterialUniforms
     vec4 _SkyTrueSun;  // @default = vec4(0.0, 1.0, 0.0, 1.0)
     vec4 _SkySpace;    // @default = vec4(0.0, 0.0, 0.0, 0.0)
     vec4 _SkyDim;      // @default = vec4(1.0, 1.0, 1.0, 0.0)
-    vec4 _SkyMid;      // @default = vec4(0.5, 0.66, 0.88, 1.0)   painted: the band colour half way up
+    vec4 _SkyMid;      // @default = vec4(0.5, 0.66, 0.88, 1.0)   painted: the band colour half way up, w = cloud size from the zoom
     vec4 _SkyCloudLit; // @default = vec4(1.0, 0.98, 0.92, 1.0)   painted: the clouds' lit tone
     vec4 _SkyCloudShade; // @default = vec4(0.68, 0.76, 0.92, 1.0) painted: the clouds' shaded tone
     vec4 _SkyCloud;    // @default = vec4(0.0, 0.0, 0.0, 0.0)   painted: cover (0 none .. 1 overcast), drift x, drift z, how much the weather greyed the clouds
@@ -438,6 +438,8 @@ void main()
         vec3 mid = mix(shd, litC, 0.85);
         float fade = smoothstep(0.003, 0.05, e);
         vec2 drift = u._SkyCloud.yz;
+        // The clouds grow a little as the camera zooms in (_SkyMid.w, 1 = zoomed all the way out).
+        float zoomK = 1.0 / max(u._SkyMid.w, 0.5);
 
         // The overcast layer: patches that grow with the cover into one continuous sheet (always opaque
         // where they are, never half see-through), in grey tones that deepen with the cover. The weather
@@ -453,7 +455,7 @@ void main()
             vec3 pMid = mix(pShd, pLit, 0.85);
             c = mix(c, mix(pShd, pMid, 0.3), smoothstep(0.5, 1.0, oc) * fade);
             vec2 dir = normalize(r.xz + vec2(1e-5, 0.0));
-            vec2 pr = r.xz / (e + 0.3) * 1.1 + drift;
+            vec2 pr = r.xz / (e + 0.3) * 1.1 * zoomK + drift;
             float th = mix(0.98, 0.3, oc);
             float d0 = cloudD(pr);
             float wv = fwidth(d0) * 1.2 + 0.02;
@@ -467,7 +469,7 @@ void main()
         }
 
         vec2 p0 = r.xz / (1.0 + e);
-        vec2 ps = p0 * (1.0 + 0.6 * dot(p0, p0)) * 1.35 + drift;
+        vec2 ps = p0 * (1.0 + 0.6 * dot(p0, p0)) * 1.35 * zoomK + drift;
         vec2 cell0 = floor(ps);
         float prob = (0.45 + 0.5 * cov) * (1.0 - oc);
         float best = 1e3;

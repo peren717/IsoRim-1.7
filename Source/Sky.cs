@@ -235,7 +235,8 @@ namespace IsoRim
                     mat.SetVector(dimId, new Vector4(1f, 1f, 1f, 0f));
                     if (painted)
                     {
-                        mat.SetVector(midId, (Vector4)paint.mid);
+                        // w: how big the clouds are drawn, from the zoom (see CloudZoom).
+                        mat.SetVector(midId, new Vector4(paint.mid.r, paint.mid.g, paint.mid.b, CloudZoom()));
                         mat.SetVector(cloudLitId, (Vector4)paint.cloudLit);
                         mat.SetVector(cloudShadeId, (Vector4)paint.cloudShade);
                         // Drift: game time, so the clouds stop when the game is paused (wrapped to keep the noise precise).
@@ -372,6 +373,24 @@ namespace IsoRim
         private static float Azim(Vector3 d)
         {
             return Mathf.Repeat(Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg, 360f);
+        }
+
+        // How much bigger the painted clouds are drawn than at the farthest zoom: up to CloudZoomMax when zoomed all the
+        // way in, smoothly along the zoom on a log scale, so zooming the camera changes their size a little (a hint of
+        // depth) instead of leaving them fixed on the screen. Sun, moon and the night sky are not scaled.
+        private const float CloudZoomMax = 1.35f;
+
+        private static float CloudZoom()
+        {
+            CameraDriver cd = Find.CameraDriver;
+            if (cd == null)
+            {
+                return 1f;
+            }
+            float far = Mathf.Max(cd.config.sizeRange.max, 2f);
+            float near = Mathf.Clamp(Mathf.Min(cd.config.sizeRange.min, IsoRimMod.Settings.minZoom), 1f, far * 0.9f);
+            float t = Mathf.InverseLerp(Mathf.Log(far), Mathf.Log(near), Mathf.Log(Mathf.Max(cd.RootSize, 0.5f)));
+            return Mathf.Lerp(1f, CloudZoomMax, Smooth(t));
         }
 
         // Harness only (probe key skycover=x): the painted sky's cloud cover forced to x (-1: from the weather).
