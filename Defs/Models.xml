@@ -1857,7 +1857,12 @@
     <thingDef>ToolCabinet</thingDef>
     <model>Models/tool_cabinet.obj</model>
     <surfaceHeight>0.00</surfaceHeight>
-    <builtFor>(1, 2)</builtFor>
+    <!-- The model is 0.92 wide, 1.29 deep (drawers to back panel). Fitted to the 2x1 footprint: its width along the
+         long side (x1.29), its depth to one cell (x0.77), height kept; turned so the drawers face the cabinet's facing
+         and the back panel stands on the back edge (offset.z centres the squeezed depth on the cell). -->
+    <builtFor>(0.773, 2.586)</builtFor>
+    <rotation>90</rotation>
+    <offset>(0, 0, 0.188)</offset>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
