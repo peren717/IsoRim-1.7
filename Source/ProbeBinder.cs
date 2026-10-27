@@ -22,6 +22,10 @@ namespace IsoRim
     //   binderset=<field>,<value>     a panel field: offset.x, builtFor.y, rotation, rotationByFacing.1, scale, overArt ...
     //   bindercopy=<ThingDef>         "Copy from existing" with that thing's model
     //   binderturn=1 / binderrevert=1 / binderclose=1
+    //   godmode=0|1                   DebugSettings.godMode (the dev gizmos need dev mode + god mode)
+    //   bindergizmo=<label>,x,z[,Def][,x2,z2]   select the thing on that cell (of that def; any kind, pawns too; with x2,z2 also
+    //                                 the one there), ask it for its gizmos as the gizmo grid does, log whether "DEV: Model binder" is
+    //                                 among them and, if so, click it (ProcessInput) and log whether the panel opened on that thing
     //   binderexport=<pack>           export into <save data>/IsoRimBinder/<pack>/ (logs the files and the Defs/Patches text)
     //   bindercheck=<label>,<ThingDef>[,x,z]   logs how the def is drawn: bound how, form, the model's placement (corners of
     //                                 its box on the map for the thing on x,z) - lines to compare between runs
@@ -205,6 +209,12 @@ namespace IsoRim
                     Log.Message("[IsoRim probe] coverage " + a[0] + " written to " + file);
                     return true;
                 }
+                case "godmode":
+                    DebugSettings.godMode = a[0] == "1";
+                    return true;
+                case "bindergizmo":
+                    BinderGizmo(map, a);
+                    return true;
                 case "coverageclose":
                     Find.WindowStack.TryRemove(typeof(CoverageWindow), false);
                     return true;
@@ -226,6 +236,60 @@ namespace IsoRim
                     return true;
             }
             return false;
+        }
+
+        private static Thing AnyThingAt(Map map, int x, int z, string def)
+        {
+            List<Thing> things = new IntVec3(x, 0, z).GetThingList(map);
+            return things.FirstOrDefault(t => def == null ? t is Pawn || t.def.selectable : t.def.defName == def);
+        }
+
+        private static void BinderGizmo(Map map, string[] a)
+        {
+            string label = a[0];
+            string def = a.Length > 3 && a[3] != "-" ? a[3] : null;
+            Thing t = AnyThingAt(map, I(a[1]), I(a[2]), def);
+            Thing t2 = a.Length > 5 ? AnyThingAt(map, I(a[4]), I(a[5]), null) : null;
+            BinderOpen?.Close(false);
+            Find.Selector.ClearSelection();
+            if (t == null)
+            {
+                Log.Error("[IsoRim probe] bindergizmo " + label + ": nothing at " + a[1] + "," + a[2]);
+                return;
+            }
+            Find.Selector.Select(t, false, false);
+            if (t2 != null)
+            {
+                Find.Selector.Select(t2, false, false);
+            }
+            string want = "R3D_Binder_Gizmo".Translate();
+            Command found = null;
+            int count = 0;
+            foreach (object o in Find.Selector.SelectedObjects)
+            {
+                if (o is ISelectable s)
+                {
+                    foreach (Gizmo g in s.GetGizmos())
+                    {
+                        if (g is Command c && c.Label == want)
+                        {
+                            found = found ?? c;
+                            count++;
+                        }
+                    }
+                }
+            }
+            string line = "[IsoRim probe] bindergizmo " + label + " " + t.def.defName + (t2 != null ? " + " + t2.def.defName : "")
+                + " (dev " + Prefs.DevMode + ", god " + DebugSettings.godMode + ", 3D " + View3D.Active + "): gizmo " + (found != null ? "shown x" + count : "not shown");
+            if (found != null)
+            {
+                found.ProcessInput(new Event());
+                BinderWindow w = BinderOpen;
+                line += ", click: panel " + (w != null && w.Thing == t ? "open on it" : "NOT open");
+                w?.Close(false);
+            }
+            Log.Message(line);
+            Find.Selector.ClearSelection();
         }
 
         private static void BinderCheck(Map map, string[] a)

@@ -2,6 +2,7 @@
 <LanguageData>
   <!-- Dev-mode model binder and model coverage report (Source/Binder/) -->
   <R3D_Binder_Title>Model binder</R3D_Binder_Title>
+  <R3D_Binder_Gizmo>DEV: Model binder</R3D_Binder_Gizmo>
   <R3D_Binder_PickThing>Click a building or item</R3D_Binder_PickThing>
   <R3D_Binder_OnlyThings>Only buildings and items.</R3D_Binder_OnlyThings>
   <R3D_Binder_NeedView>Turn the 3D view on first.</R3D_Binder_NeedView>

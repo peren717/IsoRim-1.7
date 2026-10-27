@@ -2,6 +2,7 @@
 <LanguageData>
   <!-- 开发模式：模型绑定器与模型覆盖报告（Source/Binder/） -->
   <R3D_Binder_Title>模型绑定</R3D_Binder_Title>
+  <R3D_Binder_Gizmo>DEV: 模型绑定器</R3D_Binder_Gizmo>
   <R3D_Binder_PickThing>点击一个建筑或物品</R3D_Binder_PickThing>
   <R3D_Binder_OnlyThings>只支持建筑和物品。</R3D_Binder_OnlyThings>
   <R3D_Binder_NeedView>请先开启 3D 视图。</R3D_Binder_NeedView>

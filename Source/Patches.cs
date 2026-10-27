@@ -411,6 +411,10 @@ namespace IsoRim
             Patch("3D supported doors", AccessTools.DeclaredMethod(typeof(CompHackable), "PostDraw"),
                 prefix: nameof(HackablePostDraw_Prefix));
 
+            // Dev gizmo "DEV: Model binder" on a single selected thing the binder can take (dev + god mode, 3D view on).
+            Patch("model binder dev gizmo", AccessTools.DeclaredMethod(typeof(Thing), nameof(Thing.GetGizmos)),
+                postfix: nameof(ThingGetGizmos_Postfix));
+
             // Buildings the game draws every frame (campfire, torches, caskets): their model is baked
             // into the map mesh (SectionLayer_IsoRimBodies); only the body sprite is held back, and
             // the flat sprites that would double what the model shows (an open casket's lid, the
@@ -3004,6 +3008,40 @@ namespace IsoRim
                 Log.ErrorOnce("[IsoRim] Checking a door's hacking terminal failed: " + e, 93611282);
                 return true;
             }
+        }
+
+        public static void ThingGetGizmos_Postfix(Thing __instance, ref IEnumerable<Gizmo> __result)
+        {
+            if (!DebugSettings.ShowDevGizmos || !View3D.Active)
+            {
+                return;
+            }
+            try
+            {
+                if (Find.Selector.SingleSelectedThing != __instance || ModelBinder.Refusal(__instance) != null)
+                {
+                    return;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Checking the model binder gizmo failed: " + e, 93611290);
+                return;
+            }
+            __result = WithBinderGizmo(__result, __instance);
+        }
+
+        private static IEnumerable<Gizmo> WithBinderGizmo(IEnumerable<Gizmo> gizmos, Thing t)
+        {
+            foreach (Gizmo g in gizmos)
+            {
+                yield return g;
+            }
+            yield return new Command_Action
+            {
+                defaultLabel = "R3D_Binder_Gizmo".Translate(),
+                action = () => ModelBinder.Open(t)
+            };
         }
 
         public static bool ThingDrawAt_Prefix(Thing __instance)
