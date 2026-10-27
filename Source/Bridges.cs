@@ -59,6 +59,23 @@ namespace IsoRim
             return rows > 0 && c.z >= rows ? null : f;
         }
 
+        // A cell a bridge deck can lie in (ground rows only: ProjectZ's floors have no bridges).
+        public static bool CanDeck(Map map, IntVec3 c)
+        {
+            if (map == null || !c.InBounds(map))
+            {
+                return false;
+            }
+            int rows = Floors.GroundRowsOf(map);
+            return rows <= 0 || c.z < rows;
+        }
+
+        // The deck's thickness (cells).
+        public static float SlabOf(TerrainDef bridge)
+        {
+            return IsHeavy(bridge) ? SlabHeavy : SlabWood;
+        }
+
         // What the bridge stands in: the water (or ground) the game keeps under it.
         public static TerrainDef UnderAt(Map map, IntVec3 c)
         {

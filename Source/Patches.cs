@@ -1588,7 +1588,18 @@ namespace IsoRim
                     {
                         return __0 is Frame;
                     }
+                    Ghosts.BeginFlatOverWater(__instance, __0);   // the game's flat blueprint: over the 3D water (finalizer)
                     return true;
+                }
+                // Bridge blueprints: a ghost of the deck. Other terrain blueprints (and bridges without a ghost): the game's
+                // flat blueprint, over the 3D water.
+                if (__0 is Blueprint && __0.def.entityDefToBuild is TerrainDef)
+                {
+                    if (Ghosts.PrintBridge(__instance, __0))
+                    {
+                        return false;
+                    }
+                    Ghosts.BeginFlatOverWater(__instance, __0);
                 }
 
                 if (__0 is Plant)
@@ -1705,6 +1716,14 @@ namespace IsoRim
             if (__state)
             {
                 Bridges.EndPrint();
+            }
+            try
+            {
+                Ghosts.EndFlatOverWater();
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Moving a blueprint over the water failed: " + e, 93611563);
             }
             // A wall that drew no top sprite still gets plain sides.
             if (PrintContext.mode == PrintMode.Block && !PrintContext.done && PrintContext.thing != null)

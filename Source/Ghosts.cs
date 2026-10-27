@@ -138,6 +138,195 @@ namespace IsoRim
             return false;
         }
 
+        // ---- bridges still to be built (2026-10-26, bridgeblueprint)
+        // A blueprint of a bridge terrain (any TerrainDef.bridge, the ones Bridges draws in 3D) is a see-through ghost of the
+        // deck it will become: the deck's top at Bridges.Deck and its slab along the open sides, joined to the next deck or
+        // bridge blueprint. The game's flat blueprint lay at the ground, hidden under the 3D water (drawn after it). Frames keep
+        // the game's sprite (drawn every frame, over the water). Ground rows only, as Bridges.
+
+        // The bridge a blueprint will lay, or null.
+        public static TerrainDef BridgeTarget(Thing t)
+        {
+            TerrainDef td = t is Blueprint ? t.def.entityDefToBuild as TerrainDef : null;
+            return td != null && td.bridge ? td : null;
+        }
+
+        // Writes the deck ghost of a bridge blueprint. False: not a bridge blueprint, or no ghost (ghosts off, an upper floor).
+        public static bool PrintBridge(SectionLayer layer, Thing t)
+        {
+            TerrainDef bridge = BridgeTarget(t);
+            if (bridge == null || !IsoRimMod.Settings.ghosts3D || !Bridges.CanDeck(t.Map, t.Position))
+            {
+                return false;
+            }
+            Material mat = R3DMaterials.Ghost;
+            LayerSubMesh sm = mat != null ? MeshWriter.Sub(layer, mat) : null;
+            if (sm == null || sm.verts.Count + 20 > MeshWriter.MaxVerts)
+            {
+                return false;
+            }
+            Map map = t.Map;
+            IntVec3 c = t.Position;
+            bool south = DeckOrPlanned(map, c + IntVec3.South);
+            bool north = DeckOrPlanned(map, c + IntVec3.North);
+            bool west = DeckOrPlanned(map, c + IntVec3.West);
+            bool east = DeckOrPlanned(map, c + IntVec3.East);
+            float y = Bridges.Deck / View3D.Squash;
+            float y0 = (Bridges.Deck - Bridges.SlabOf(bridge)) / View3D.Squash;
+            float x0 = c.x + (west ? 0f : 0.02f);
+            float z0 = c.z + (south ? 0f : 0.02f);
+            float x1 = c.x + (east ? 1f : 0.98f);
+            float z1 = c.z + (north ? 1f : 0.98f);
+            Color col = BlueprintColor;
+            Color32 top = col;
+            Color32 side = new Color(col.r * 0.78f, col.g * 0.78f, col.b * 0.78f, col.a);
+            MeshWriter.Quad(sm, new Vector3(x0, y, z0), new Vector3(x0, y, z1), new Vector3(x1, y, z1), new Vector3(x1, y, z0), top);
+            if (!south)
+            {
+                MeshWriter.Quad(sm, new Vector3(x0, y0, z0), new Vector3(x0, y, z0), new Vector3(x1, y, z0), new Vector3(x1, y0, z0), side);
+            }
+            if (!north)
+            {
+                MeshWriter.Quad(sm, new Vector3(x1, y0, z1), new Vector3(x1, y, z1), new Vector3(x0, y, z1), new Vector3(x0, y0, z1), side);
+            }
+            if (!west)
+            {
+                MeshWriter.Quad(sm, new Vector3(x0, y0, z1), new Vector3(x0, y, z1), new Vector3(x0, y, z0), new Vector3(x0, y0, z0), side);
+            }
+            if (!east)
+            {
+                MeshWriter.Quad(sm, new Vector3(x1, y0, z0), new Vector3(x1, y, z0), new Vector3(x1, y, z1), new Vector3(x1, y0, z1), side);
+            }
+            return true;
+        }
+
+        // A finished deck or a bridge blueprint in the cell (a deck ghost runs on into it).
+        private static bool DeckOrPlanned(Map map, IntVec3 c)
+        {
+            if (map == null || !c.InBounds(map) || !Bridges.CanDeck(map, c))
+            {
+                return false;
+            }
+            if (Bridges.DeckAt(map, c) != null)
+            {
+                return true;
+            }
+            List<Thing> things = map.thingGrid.ThingsListAtFast(c);
+            for (int i = 0; i < things.Count; i++)
+            {
+                if (BridgeTarget(things[i]) != null)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // ---- flat blueprints over the 3D water
+        // A blueprint drawn with the game's flat sprite (no 3D ghost: terrain other than bridges, things without a 3D shape,
+        // ghosts off) lies at the ground, and the 3D water (SectionLayer_IsoRimWater, queue 3050 and up) is drawn after the
+        // game's blueprint materials (2950): it hid them. In water cells what such a blueprint printed is moved to a copy of
+        // its material drawn after the water. Begin in TakePrintFrom's prefix, End in its finalizer.
+
+        public const int OverWaterQueue = 3060;   // after the water, its ripples and flow (3050-3054) and the bridges' shade (3052)
+
+        private static SectionLayer flatLayer;
+        private static int[] flatVerts;
+        private static int[] flatTris;
+        private static readonly Dictionary<Material, Material> overWater = new Dictionary<Material, Material>();
+
+        public static void BeginFlatOverWater(SectionLayer layer, Thing t)
+        {
+            flatLayer = null;
+            if (!(t is Blueprint) || t.Map == null || !IsoRimMod.Settings.waterStyle || !SectionLayer_IsoRimWater.IsWater(t.Map, t.Position))
+            {
+                return;
+            }
+            List<LayerSubMesh> subs = layer.subMeshes;
+            flatVerts = new int[subs.Count];
+            flatTris = new int[subs.Count];
+            for (int i = 0; i < subs.Count; i++)
+            {
+                flatVerts[i] = subs[i].verts.Count;
+                flatTris[i] = subs[i].tris.Count;
+            }
+            flatLayer = layer;
+        }
+
+        public static void EndFlatOverWater()
+        {
+            SectionLayer layer = flatLayer;
+            flatLayer = null;
+            if (layer == null)
+            {
+                return;
+            }
+            List<LayerSubMesh> subs = layer.subMeshes;
+            int n = subs.Count;   // (pieces the move adds come after these)
+            for (int i = 0; i < n; i++)
+            {
+                LayerSubMesh from = subs[i];
+                int v0 = i < flatVerts.Length ? flatVerts[i] : 0;
+                int t0 = i < flatTris.Length ? flatTris[i] : 0;
+                if (from.verts.Count <= v0 || from.material == null || from.material.renderQueue >= OverWaterQueue)
+                {
+                    continue;
+                }
+                LayerSubMesh to = layer.GetSubMesh(OverWater(from.material));
+                if (to == null || to == from)
+                {
+                    continue;
+                }
+                Move(from, to, v0, t0);
+            }
+        }
+
+        private static Material OverWater(Material m)
+        {
+            Material copy;
+            if (!overWater.TryGetValue(m, out copy) || copy == null)
+            {
+                copy = new Material(m);
+                copy.name = m.name + "_OverWater";
+                copy.renderQueue = OverWaterQueue;
+                overWater[m] = copy;
+            }
+            return copy;
+        }
+
+        // Moves the corners from v0 on (and the triangles from t0 on, which use only them) from one piece to another.
+        private static void Move(LayerSubMesh from, LayerSubMesh to, int v0, int t0)
+        {
+            int count = from.verts.Count - v0;
+            int start = to.verts.Count;
+            int shift = start - v0;
+            MoveRange(from.colors, to.colors, v0, count, start);
+            MoveRange(from.uvs, to.uvs, v0, count, start);
+            MoveRange(from.uvsChannelTwo, to.uvsChannelTwo, v0, count, start);
+            MoveRange(from.normals, to.normals, v0, count, start);
+            MoveRange(from.pollution, to.pollution, v0, count, start);
+            MoveRange(from.verts, to.verts, v0, count, start);
+            for (int k = t0; k < from.tris.Count; k++)
+            {
+                to.tris.Add(from.tris[k] + shift);
+            }
+            from.tris.RemoveRange(t0, from.tris.Count - t0);
+        }
+
+        // A list running alongside the corners: its entries for the moved corners go along (where it is filled for them).
+        private static void MoveRange<T>(List<T> from, List<T> to, int v0, int count, int start)
+        {
+            if (from.Count < v0 + count)
+            {
+                return;
+            }
+            if (to.Count == start)
+            {
+                to.AddRange(from.GetRange(v0, count));
+            }
+            from.RemoveRange(v0, from.Count - v0);
+        }
+
         // ---- the preview under the pointer, drawn every frame
 
         private static readonly Dictionary<int, Mesh> meshes = new Dictionary<int, Mesh>();
