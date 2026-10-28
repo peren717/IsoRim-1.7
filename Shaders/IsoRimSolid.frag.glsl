@@ -21,6 +21,10 @@
 // pass (ghosts, drawn after the overlay).
 
 #define QUANTIZE 1   // 1: snap normals to IsoRim's 26 direction groups (original look); 0: exact face normals
+//
+// Smooth shading on people (Source\SmoothFigures.cs): faces of a person's figure may carry a smooth normal per corner, from
+// IsoRim.vert.glsl in vUv (x + 1024, y) and vColor.a (z), true space. Such a fragment is lit by that normal, interpolated
+// and not snapped, turned to the side of the face it is on; its alpha is the material's.
 
 layout(location = 0) in vec4 vColor;
 layout(location = 1) in vec2 vUv;
@@ -335,6 +339,11 @@ void main()
         discard;
 
     vec4 color = vColor * uMaterial._Color;
+#ifndef USE_TEXTURE
+    bool smooth = vUv.x > 512.0;
+    if (smooth)
+        color.a = uMaterial._Color.a;
+#endif
 #ifdef USE_TEXTURE
     color *= texture(_MainTex, vUv * uMaterial._MainTex_ST.zw + uMaterial._MainTex_ST.xy);
     if (color.a < 0.5)
@@ -384,9 +393,20 @@ void main()
     float shade = 1.0;
     if (mode > 0.5 && squash > 0.0)
     {
-#if QUANTIZE
-        n = BinNormal(n);
+#ifndef USE_TEXTURE
+        if (smooth)
+        {
+            n = normalize(vec3(vUv.x - 1024.0, vUv.y, vColor.a));
+            if (dot(n, faceNormal) < 0.0)
+                n = -n;
+        }
+        else
 #endif
+        {
+#if QUANTIZE
+            n = BinNormal(n);
+#endif
+        }
         vec3 L = uMaterial._IsoSun.xyz;
         if (mode < 1.5)
             shade = ModelShade(n, L);

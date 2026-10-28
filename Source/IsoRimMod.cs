@@ -116,6 +116,8 @@ namespace IsoRim
         public bool pawns3D = true;
         public bool hairUnderHats = false;   // hair shown, tucked in, under headgear that covers only the upper head (People.HairUnderHat)
         public bool geneParts3D = true;      // (Api 35) gene parts (ModelDef.geneDef: pig ears, horns, tails, fur) on 3D people (GeneParts)
+        public bool smoothPeople = true;     // smooth shading on 3D people and outfit stands' clothes (SmoothFigures)
+        public float smoothCrease = 70f;     // degrees: faces meeting at more than this keep a hard edge (SmoothFigures)
         public List<string> keepPaper = new List<string>();   // races (ThingDef defNames) kept as cards although an alien pack makes them 3D (Api 25, AlienFigures)
         public bool effects3D = true;
         public bool collapseDebris = true;
@@ -247,6 +249,8 @@ namespace IsoRim
             Scribe_Values.Look(ref pawns3D, "pawns3D", true);
             Scribe_Values.Look(ref hairUnderHats, "hairUnderHats", false);
             Scribe_Values.Look(ref geneParts3D, "geneParts3D", true);
+            Scribe_Values.Look(ref smoothPeople, "smoothPeople", true);
+            Scribe_Values.Look(ref smoothCrease, "smoothCrease", 70f);
             Scribe_Collections.Look(ref keepPaper, "keepPaper", LookMode.Value);
             if (keepPaper == null)
             {
@@ -1095,6 +1099,12 @@ namespace IsoRim
                     if (ModsConfig.BiotechActive)
                     {
                         Check(r, "R3D_Settings_GeneParts3D".Translate(), ref st.geneParts3D, "R3D_Settings_GeneParts3DTip".Translate());
+                    }
+                    Check(r, "R3D_Settings_SmoothPeople".Translate(), ref st.smoothPeople, "R3D_Settings_SmoothPeopleTip".Translate());
+                    if (st.smoothPeople)
+                    {
+                        st.smoothCrease = Mathf.Round(Slider(r, "R3D_Settings_SmoothCrease".Translate(), st.smoothCrease, 0f, 180f, st.smoothCrease.ToString("0") + "°",
+                            "R3D_Settings_SmoothCreaseTip".Translate()) / 5f) * 5f;
                     }
                     AliensUI.KeepAsPaper(r, st);   // (Api 25: only with other humanlike races loaded)
                 }

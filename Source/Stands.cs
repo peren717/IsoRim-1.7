@@ -58,6 +58,8 @@ namespace IsoRim
         private static readonly List<Matrix4x4> partLocals = new List<Matrix4x4>();
         private static readonly List<Color> partTints = new List<Color>();
 
+        private static int smoothStampSeen;   // SmoothFigures.Stamp the made meshes are for (0: off, as at start)
+
         private static FieldInfo skipHeadField;
         private static MethodInfo bodyTypeGetter;
         private static MethodInfo weaponFactorGetter;
@@ -76,6 +78,12 @@ namespace IsoRim
             {
                 return false;
             }
+            if (smoothStampSeen != SmoothFigures.Stamp)
+            {
+                // Smooth shading on people switched or its crease changed: the dressed parts are made again, as a colonist's.
+                smoothStampSeen = SmoothFigures.Stamp;
+                ForgetMeshes();
+            }
             ModelDef def = entry.def;
             BodyTypeDef body = bodyTypeGetter.Invoke(stand, null) as BodyTypeDef;
             bool skipHead = (bool)skipHeadField.GetValue(stand);
@@ -92,7 +100,15 @@ namespace IsoRim
             if (!skipHead && entry.head != null)
             {
                 // The stand's own head, the size of a colonist's head and where it sits (person_head).
-                DynamicModels.DrawLocal(ObjLoader.SheetTinted(entry.head, R3DTextures.SheetTint(stand)), ground, yaw, figure * HeadFit(entry.head), R3DTextures.ModelTint(stand), R3DTextures.ModelSwatch(stand));
+                DynamicModels.FigurePart = true;   // lit as a colonist's head (SmoothFigures)
+                try
+                {
+                    DynamicModels.DrawLocal(ObjLoader.SheetTinted(entry.head, R3DTextures.SheetTint(stand)), ground, yaw, figure * HeadFit(entry.head), R3DTextures.ModelTint(stand), R3DTextures.ModelSwatch(stand));
+                }
+                finally
+                {
+                    DynamicModels.FigurePart = false;
+                }
             }
 
             Outfit outfit = OutfitOf(stand, body, skipHead);
@@ -329,19 +345,27 @@ namespace IsoRim
             {
                 if (meshes.Count > 300)
                 {
-                    foreach (List<DynamicModels.Part> old in meshes.Values)
-                    {
-                        DynamicModels.Destroy(old);
-                    }
-                    meshes.Clear();
-                    foreach (Outfit o in outfits.Values)
-                    {
-                        o.made = false;   // worked out again, and its meshes made again, when next drawn
-                    }
+                    ForgetMeshes();
                 }
-                meshes[key] = DynamicModels.BuildMerged(new List<Model>(partModels), new List<Matrix4x4>(partLocals), new List<Color>(partTints), 0);
+                // the clothes lit as on a colonist (smooth shading on people, SmoothFigures)
+                meshes[key] = DynamicModels.BuildMerged(new List<Model>(partModels), new List<Matrix4x4>(partLocals), new List<Color>(partTints), 0, null,
+                    float.NegativeInfinity, SmoothFigures.On);
             }
             return key;
+        }
+
+        // Every made mesh thrown away; each outfit is worked out again, and its meshes made again, when next drawn.
+        private static void ForgetMeshes()
+        {
+            foreach (List<DynamicModels.Part> old in meshes.Values)
+            {
+                DynamicModels.Destroy(old);
+            }
+            meshes.Clear();
+            foreach (Outfit o in outfits.Values)
+            {
+                o.made = false;
+            }
         }
 
         private static List<DynamicModels.Part> MeshesFor(string key)

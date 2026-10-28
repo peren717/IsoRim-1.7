@@ -344,11 +344,18 @@ namespace IsoRim
             }
             AlienFigures.AddParts(look, headPart, hide, mergeModels, mergeLocals, mergeTints,   // a race's addon models, eyes on its own head (Api 25)
                 noLegs && headPart ? AlienFigures.ChinClip(look) : float.NegativeInfinity);
+            long buildStart = System.Diagnostics.Stopwatch.GetTimestamp();
             parts = DynamicModels.BuildMerged(mergeModels, mergeLocals, mergeTints, turned, mono,
-                noLegs ? (headPart ? AlienFigures.ChinClip(look) : Attachments.Hips * look.bodyScale.y) : float.NegativeInfinity);
+                noLegs ? (headPart ? AlienFigures.ChinClip(look) : Attachments.Hips * look.bodyScale.y) : float.NegativeInfinity, SmoothFigures.On);
+            MergeTicks += System.Diagnostics.Stopwatch.GetTimestamp() - buildStart;
+            Merges++;
             look.meshes[key] = parts;
             return parts;
         }
+
+        // Harness (ProbeSmooth): time spent putting figures together (Stopwatch ticks) and how many sets were made.
+        internal static long MergeTicks;
+        internal static int Merges;
 
         // A gene part's colour (Api 35): the skin (as drawn: dead ones greyed), the hair, or none.
         private static Color GeneColour(Look look, GeneTint tint, Color skin)
@@ -923,6 +930,18 @@ namespace IsoRim
                     l.frame = int.MinValue / 2;
                 }
             }
+            if (smoothStampSeen != SmoothFigures.Stamp)
+            {
+                // Smooth shading on people was switched or its crease angle changed: every figure's meshes made again
+                // (the look itself is the same, so the made meshes are thrown away here), and the attachments' too.
+                smoothStampSeen = SmoothFigures.Stamp;
+                foreach (Look l in looks.Values)
+                {
+                    l.Forget();
+                    l.frame = int.MinValue / 2;
+                }
+                DynamicModels.Forget();
+            }
             if (geneStampSeen != GeneParts.Stamp)
             {
                 // The gene parts setting or another mod's yields changed (Api 35): every look worked out again at once.
@@ -1271,6 +1290,7 @@ namespace IsoRim
 
         private static bool hairUnderHatsSeen;
         private static int geneStampSeen = int.MinValue;
+        private static int smoothStampSeen;   // SmoothFigures.Stamp (0: off, as at start)
 
         // Option hairUnderHats: hair is shown (and tucked in, HairTuck) although the game hides it, when every worn item
         // that hides it does so only by the game's default for headgear on the upper head. Items with their own skip

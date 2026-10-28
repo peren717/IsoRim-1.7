@@ -239,7 +239,15 @@ namespace IsoRim
         {
             if (live && model != null)
             {
-                DynamicModels.DrawMatrix(model.model, headRaw * local, colour, swatch);
+                DynamicModels.FigurePart = true;   // (smooth shading on people: SmoothFigures)
+                try
+                {
+                    DynamicModels.DrawMatrix(model.model, headRaw * local, colour, swatch);
+                }
+                finally
+                {
+                    DynamicModels.FigurePart = false;
+                }
             }
         }
 
@@ -248,7 +256,15 @@ namespace IsoRim
         {
             if (live && model != null)
             {
-                DynamicModels.DrawMatrix(model.model, bodyRaw * local, colour, swatch);
+                DynamicModels.FigurePart = true;
+                try
+                {
+                    DynamicModels.DrawMatrix(model.model, bodyRaw * local, colour, swatch);
+                }
+                finally
+                {
+                    DynamicModels.FigurePart = false;
+                }
             }
         }
 

@@ -14,6 +14,9 @@
 //    _OutlinePush (true cells), which hides the rims where one part's shell tucks into another
 //    (hat crown, hair line, waist) without moving anything on screen. Trade-off: a part close in
 //    front of a wall loses its outline where the wall is less than that far behind it.
+// 3. Smooth shading on people (Source\SmoothFigures.cs, texture coordinate 1 z flag 131072 = bit 17): the mesh normal is a
+//    smooth normal. It is turned into true (unsquashed) space here and handed to IsoRimSolid.frag.glsl in vUv and vColor.a
+//    (these meshes are untextured and opaque): vUv = (1024 + x, y), vColor.a = z.
 
 layout(location = 0) in vec3 inPosition; // @vertex Position required
 layout(location = 1) in vec3 inNormal;   // @vertex Normal optional @default = vec4(0.0, 1.0, 0.0, 0.0)
@@ -278,4 +281,19 @@ void main()
     bool see = (int(inUv1.z + 0.5) & 32768) != 0;
     float clipCode = (int(inUv1.z + 0.5) & 65536) != 0 ? 5.0 : 4.0;
     vNormal = roofClip ? vec3(see ? clipCode + 10.0 : clipCode, roofOwner) : (see ? vec3(10.0, 0.0, 0.0) : inNormal);
+
+    if ((int(inUv1.z + 0.5) & 131072) != 0 && squash > 0.0)
+    {
+        // Normals go by the inverse transpose of the placing in true space (the cofactors: its scale and side do not
+        // matter, the fragment stage normalizes it and turns it to the side of the face it is on).
+        mat3 t = mat3(model);
+        t[0].y *= squash;
+        t[1].y *= squash;
+        t[2].y *= squash;
+        vec3 nt = mat3(cross(t[1], t[2]), cross(t[2], t[0]), cross(t[0], t[1])) * inNormal;
+        float len = length(nt);
+        nt = len > 1e-12 ? nt / len : vec3(0.0, 1.0, 0.0);
+        vUv = vec2(1024.0 + nt.x, nt.y);
+        vColor.a = nt.z;
+    }
 }

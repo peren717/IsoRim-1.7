@@ -60,6 +60,7 @@ namespace IsoRim
             public List<Vector2> uvs = new List<Vector2>();
             public List<int> tris = new List<int>();
             public Material material;
+            public List<Vector3> normals;   // smooth normals (SmoothFigures), one per corner; null: none (lit by the face)
 
             public void Add(Vector3 v, Color32 c, Vector2 uv)
             {
@@ -67,6 +68,12 @@ namespace IsoRim
                 verts.Add(v);
                 colors.Add(c);
                 uvs.Add(uv);
+            }
+
+            public void Add(Vector3 v, Color32 c, Vector2 uv, Vector3 normal)
+            {
+                Add(v, c, uv);
+                normals.Add(normal);
             }
 
             public Mesh ToMesh()
@@ -77,10 +84,20 @@ namespace IsoRim
                 mesh.SetColors(colors);
                 mesh.SetUVs(0, uvs);
                 List<Vector3> tags = new List<Vector3>(verts.Count);
+                bool smooth = normals != null && normals.Count == verts.Count;
+                if (smooth)
+                {
+                    mesh.SetNormals(normals);   // lit by these (SmoothFigures.Bit, IsoRim.vert.glsl)
+                }
                 for (int i = 0; i < verts.Count; i++)
                 {
-                    tags.Add(ThroughRoof ? (SeeParts ? RoofClip.MovingSeeThroughRoofTag : RoofClip.MovingThroughRoofTag)
-                        : SeeParts ? RoofClip.MovingSeeTag : RoofClip.MovingTag);   // clipped under the roof over where it is drawn (RoofClip)
+                    Vector3 tag = ThroughRoof ? (SeeParts ? RoofClip.MovingSeeThroughRoofTag : RoofClip.MovingThroughRoofTag)
+                        : SeeParts ? RoofClip.MovingSeeTag : RoofClip.MovingTag;   // clipped under the roof over where it is drawn (RoofClip)
+                    if (smooth)
+                    {
+                        tag.z += SmoothFigures.Bit;
+                    }
+                    tags.Add(tag);
                 }
                 mesh.SetUVs(1, tags);
                 mesh.SetTriangles(tris, 0);
@@ -213,6 +230,12 @@ namespace IsoRim
         // clipBelow: faces whose middle is lower than this (after their placing) are left out (a figure without legs).
         public static List<Part> BuildMerged(List<Model> models, List<Matrix4x4> locals, List<Color> tints, int turned, Color? mono, float clipBelow)
         {
+            return BuildMerged(models, locals, tints, turned, mono, clipBelow, false);
+        }
+
+        // smooth: the solid faces lit by smooth normals (SmoothFigures: a person's figure with the setting on).
+        public static List<Part> BuildMerged(List<Model> models, List<Matrix4x4> locals, List<Color> tints, int turned, Color? mono, float clipBelow, bool smooth)
+        {
             List<Part> parts = new List<Part>();
             Material solidMat = R3DMaterials.Solid;
             Material litMat = R3DMaterials.LitModel;
@@ -223,6 +246,10 @@ namespace IsoRim
             Lists solid = new Lists();
             Lists glowing = new Lists();
             Lists outline = new Lists();
+            if (smooth)
+            {
+                solid.normals = new List<Vector3>();
+            }
             try
             {
                 for (int k = 0; k < models.Count; k++)
@@ -231,6 +258,8 @@ namespace IsoRim
                     Matrix4x4 local = locals[k];
                     Color tint = tints[k];
                     int n = m.positions.Length;
+                    Vector3[] sn = smooth ? SmoothFigures.NormalsOf(m) : null;
+                    Matrix4x4 normalPlace = smooth ? NormalMatrix(local) : Matrix4x4.identity;
                     for (int i = 0; i + 2 < n; i += 3)
                     {
                         if (clipBelow > float.NegativeInfinity
@@ -252,7 +281,14 @@ namespace IsoRim
                             {
                                 c = Statues.Carved(c, mono.Value);
                             }
-                            into.Add(local.MultiplyPoint3x4(m.positions[v]), R3DMaterials.Shaded(c, 1f), Vector2.zero);
+                            if (into.normals != null)
+                            {
+                                into.Add(local.MultiplyPoint3x4(m.positions[v]), R3DMaterials.Shaded(c, 1f), Vector2.zero, PlaceNormal(normalPlace, sn, v));
+                            }
+                            else
+                            {
+                                into.Add(local.MultiplyPoint3x4(m.positions[v]), R3DMaterials.Shaded(c, 1f), Vector2.zero);
+                            }
                             if (m.hull != null && (m.noOutline == null || !m.noOutline[v]))
                             {
                                 outline.Add(local.MultiplyPoint3x4(m.positions[v] + m.hull[v]), R3DMaterials.Shaded(c, ModelBaker.OutlineShade), Vector2.zero);
@@ -270,6 +306,21 @@ namespace IsoRim
                 Log.ErrorOnce("[IsoRim] Putting a figure together failed: " + e, 93611031);
             }
             return parts;
+        }
+
+        // The matrix that takes a model's normals where local takes its corners (the inverse transpose; local itself if it
+        // cannot be inverted). For smooth normals (SmoothFigures).
+        private static Matrix4x4 NormalMatrix(Matrix4x4 local)
+        {
+            Vector3 x = local.MultiplyVector(Vector3.right), y = local.MultiplyVector(Vector3.up), z = local.MultiplyVector(Vector3.forward);
+            return Mathf.Abs(Vector3.Dot(Vector3.Cross(x, y), z)) > 1e-12f ? local.inverse.transpose : local;
+        }
+
+        private static Vector3 PlaceNormal(Matrix4x4 normalPlace, Vector3[] smooth, int v)
+        {
+            Vector3 n = smooth != null && v < smooth.Length ? normalPlace.MultiplyVector(smooth[v]) : Vector3.up;
+            float len = n.magnitude;
+            return len > 1e-9f ? n / len : Vector3.up;
         }
 
         // (Api 33) The models' beam parts (placed by locals, or as they are) as one part drawn as light (Beams): their MTL colours,
@@ -319,6 +370,10 @@ namespace IsoRim
             p.outline = isOutline;
             parts.Add(p);
         }
+
+        // While set, the models drawn are parts of a person's figure (attachments, the shield): lit by smooth normals while
+        // the setting is on (SmoothFigures). Their ready-made meshes are kept apart.
+        internal static bool FigurePart;
 
         // While set, DrawLocal draws each model as a see-through placement ghost in GhostColour instead (Doors.Ghost).
         internal static bool Ghosting;
@@ -440,7 +495,8 @@ namespace IsoRim
             {
                 Forget();
             }
-            long key = ((long)m.id << 34) | ((long)(ThroughRoof ? 1 : 0) << 28) | ((long)(textured ? 1 : 0) << 27) | ((long)R3DTextures.SwatchIndex(swatch) << 24)
+            bool smooth = FigurePart && SmoothFigures.On;
+            long key = ((long)m.id << 34) | ((long)(smooth ? 1 : 0) << 29) | ((long)(ThroughRoof ? 1 : 0) << 28) | ((long)(textured ? 1 : 0) << 27) | ((long)R3DTextures.SwatchIndex(swatch) << 24)
                 | (uint)((t.r << 16) | (t.g << 8) | t.b);
 
             List<Part> parts;
@@ -452,7 +508,7 @@ namespace IsoRim
             cache[key] = parts;
             try
             {
-                Build(m, tint, swatch, textured, parts);
+                Build(m, tint, swatch, textured, parts, smooth);
             }
             catch (Exception e)
             {
@@ -465,7 +521,7 @@ namespace IsoRim
         // The same three layers ModelBaker writes: a plain solid copy (lit; glowing faces unlit),
         // an enlarged inside-out copy for the outline, and the textured faces (lit like ModelBaker's,
         // texture colour * TextureLift; glowing ones unlit).
-        private static void Build(Model m, Color tint, string swatch, bool textured, List<Part> parts)
+        private static void Build(Model m, Color tint, string swatch, bool textured, List<Part> parts, bool smooth)
         {
             Material solidMat = R3DMaterials.Solid;
             Material litMat = R3DMaterials.LitModel;
@@ -480,6 +536,11 @@ namespace IsoRim
             int slots = textured ? m.materials.Length * (m.ownColor != null ? 2 : 1) : 0;
             Lists[] texturedLists = textured ? new Lists[slots] : null;
             bool[] looked = textured ? new bool[slots] : null;
+            Vector3[] sn = smooth ? SmoothFigures.NormalsOf(m) : null;
+            if (sn != null)
+            {
+                solid.normals = new List<Vector3>();   // (textured faces stay lit by the face)
+            }
 
             int n = m.positions.Length;
             for (int i = 0; i + 2 < n; i += 3)
@@ -526,7 +587,15 @@ namespace IsoRim
                     {
                         c *= tint;
                     }
-                    into.Add(tl != null ? m.positions[k] - hull * ModelBaker.Inset : m.positions[k], R3DMaterials.Shaded(c, 1f), Vector2.zero);
+                    Vector3 at = tl != null ? m.positions[k] - hull * ModelBaker.Inset : m.positions[k];
+                    if (into.normals != null)
+                    {
+                        into.Add(at, R3DMaterials.Shaded(c, 1f), Vector2.zero, PlaceNormal(Matrix4x4.identity, sn, k));
+                    }
+                    else
+                    {
+                        into.Add(at, R3DMaterials.Shaded(c, 1f), Vector2.zero);
+                    }
                     if (m.hull != null && (m.noOutline == null || !m.noOutline[k]))
                     {
                         outline.Add(m.positions[k] + hull, R3DMaterials.Shaded(c, ModelBaker.OutlineShade), Vector2.zero);

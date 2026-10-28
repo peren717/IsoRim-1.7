@@ -655,7 +655,15 @@ namespace IsoRim
             side = Mathf.Max(side, Side(look.overCoat) * look.bodyScale.x);
             Matrix4x4 mount = Matrix4x4.Translate(new Vector3(-(side + GripOut), GripY, GripForward))
                 * Matrix4x4.Rotate(Quaternion.AngleAxis(-FaceOut, Vector3.up) * Quaternion.AngleAxis(-Lean, Vector3.right));
-            DynamicModels.DrawLocal(look.shield, at, yaw, hands * mount, look.shieldColor, null);
+            DynamicModels.FigurePart = true;   // (smooth shading on people: SmoothFigures)
+            try
+            {
+                DynamicModels.DrawLocal(look.shield, at, yaw, hands * mount, look.shieldColor, null);
+            }
+            finally
+            {
+                DynamicModels.FigurePart = false;
+            }
         }
 
         private static float Side(Model m)

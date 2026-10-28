@@ -277,6 +277,10 @@
   <R3D_Settings_HairUnderHatsTip>头发会显示在帽子和便帽下面，并收进帽子里。</R3D_Settings_HairUnderHatsTip>
   <R3D_Settings_GeneParts3D>  3D 基因部件</R3D_Settings_GeneParts3D>
   <R3D_Settings_GeneParts3DTip>基因带来的耳朵、角、尾巴和毛皮。</R3D_Settings_GeneParts3DTip>
+  <R3D_Settings_SmoothPeople>  人物平滑光照</R3D_Settings_SmoothPeople>
+  <R3D_Settings_SmoothPeopleTip>3D 人物和服装架的光照更圆润。</R3D_Settings_SmoothPeopleTip>
+  <R3D_Settings_SmoothCrease>  硬边角度</R3D_Settings_SmoothCrease>
+  <R3D_Settings_SmoothCreaseTip>夹角大于此值的面保留硬边。</R3D_Settings_SmoothCreaseTip>
   <R3D_Settings_KeepAsPaper>保持纸片人</R3D_Settings_KeepAsPaper>
   <R3D_Settings_KeepAsPaperTip>这些异种族保持平面。</R3D_Settings_KeepAsPaperTip>
   <R3D_AlienTune_Title>异种族调整</R3D_AlienTune_Title>
