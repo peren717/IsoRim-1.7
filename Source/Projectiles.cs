@@ -123,7 +123,15 @@ namespace IsoRim
                     float period = 60f / p.def.projectile.spinRate;
                     rotation = Quaternion.AngleAxis(Find.TickManager.TicksGame % period / period * 360f, Vector3.up);
                 }
-                if (p.def.projectile.useGraphicClass)
+                ModelEntry thrown;
+                if (Thrown(p.EquipmentDef) && WeaponModels.Uses(p.EquipmentDef, out thrown))
+                {
+                    // A thrown weapon with its own model (WeaponModels): the model flies, at its size on the ground.
+                    Color tint = p.EquipmentDef.graphicData != null ? p.EquipmentDef.graphicData.color : Color.white;
+                    DynamicModels.Draw(thrown.Pick(null), new Vector3(drawLoc.x, h, drawLoc.z + row.z), rotation.eulerAngles.y + thrown.def.rotation,
+                        Vector3.one * thrown.def.scale, tint, null);
+                }
+                else if (p.def.projectile.useGraphicClass)
                 {
                     p.Graphic.Draw(at, p.Rotation, p, rotation.eulerAngles.y);
                 }

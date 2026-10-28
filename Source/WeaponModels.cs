@@ -165,6 +165,46 @@ namespace IsoRim
             return b;
         }
 
+        private static readonly Dictionary<Hold, Hold> groundSized = new Dictionary<Hold, Hold>();
+
+        // A thrown weapon (a grenade: its sprite a heap of a few): the hold scaled about the model's middle so it comes out at its
+        // size on the ground (ModelDef scale) instead of the sprite's length. picture: the figure's picture-to-figure factor.
+        public static Hold AtGroundSize(Hold h, Model m, ThingDef def, float picture)
+        {
+            Hold g;
+            if (groundSized.TryGetValue(h, out g))
+            {
+                return g;
+            }
+            ModelEntry entry;
+            g = h;
+            if (ModelLibrary.TryGet(def, out entry) && h.spriteLength > 1e-4f && picture > 0f)
+            {
+                float k = h.modelLength * entry.def.scale / (h.spriteLength * picture);
+                Vector3 lo = m.positions[0], hi = m.positions[0];
+                for (int i = 1; i < m.positions.Length; i++)
+                {
+                    lo = Vector3.Min(lo, m.positions[i]);
+                    hi = Vector3.Max(hi, m.positions[i]);
+                }
+                Vector3 c = h.slab.MultiplyPoint3x4((lo + hi) * 0.5f);
+                Matrix4x4 about = Matrix4x4.Translate(c) * Matrix4x4.Scale(new Vector3(k, k, k)) * Matrix4x4.Translate(-c);
+                g = new Hold
+                {
+                    slab = about * h.slab,
+                    tip = about.MultiplyPoint3x4(h.tip),
+                    butt = about.MultiplyPoint3x4(h.butt),
+                    iou = h.iou,
+                    spriteLength = h.spriteLength * k,
+                    modelLength = h.modelLength,
+                    axis = h.axis,
+                    turn = h.turn + " ground size x" + k.ToString("0.00")
+                };
+            }
+            groundSized[h] = g;
+            return g;
+        }
+
         // Draws the model placed by slab (SpriteSolids' slab matrix, drawn space before the floor shift) through its hold frame.
         public static void Draw(Thing weapon, Model m, Hold h, Matrix4x4 slab)
         {

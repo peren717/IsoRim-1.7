@@ -333,7 +333,8 @@ namespace IsoRim
         {
             Model model = WeaponModels.ModelOf(c.weapon);
             Graphic g = model != null ? c.weapon.Graphic : null;
-            return g != null ? WeaponModels.HoldOf(model, c.material, g.drawSize, c.weapon.def.equippedAngleOffset) : null;
+            WeaponModels.Hold hold = g != null ? WeaponModels.HoldOf(model, c.material, g.drawSize, c.weapon.def.equippedAngleOffset) : null;
+            return hold != null && Projectiles.Thrown(c.weapon.def) ? WeaponModels.AtGroundSize(hold, model, c.weapon.def, Picture) : hold;
         }
 
         // A weapon aimed from the right shoulder: every ranged weapon (bows too) but what is thrown (a grenade, a pilum: from
