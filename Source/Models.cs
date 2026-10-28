@@ -241,6 +241,22 @@ namespace IsoRim
         public float beamFlicker = 0f;
         public float beamPulse = 0f;
         public List<string> beamMotes;
+        // (Api 35) Gene parts (GeneParts.cs): with geneDef (a GeneDef defName; no thingDef) the model is drawn on 3D people
+        // carrying that gene (active), built in figure space like Models/person_head.obj (one unit = one cell, +Y up, -Z the
+        // face's side, a figure of size 1). geneAnchor: what it is part of: Head (the head mesh, widened with the head type),
+        // UpperBody / LowerBody (the body, scaled by body type like clothes, left out where clothing covers that part, as the
+        // game's fur), LowerBack (the body, own size, moved back with the build's back: tails). geneTint: Skin, Hair or None
+        // (stuff_* faces multiplied by it). geneBuilds: another model per build (Male, Female, Thin, Fat, Hulk; children use
+        // Thin): <li><build>Fat</build><model>Models/x.obj</model></li>; others use model. geneTuck: hidden where the game hides
+        // hair, tucked inside headgear like hair (HairTuck). geneHidesHair: the person's hair is not drawn (head fur).
+        // geneTintsHead: the head itself takes this part's tint (furskin: the face in the fur colour).
+        public string geneDef;
+        public GeneAnchor geneAnchor = GeneAnchor.Head;
+        public GeneTint geneTint = GeneTint.Skin;
+        public List<GeneBuildModel> geneBuilds;
+        public bool geneTuck = false;
+        public bool geneHidesHair = false;
+        public bool geneTintsHead = false;
         public float contentTop = -1f;      // roof of the chamber under the glass: what stands inside (a forming
                                             // mech, a vat embryo or child) is fitted between surfaceHeight and this
         public bool heldPawnUpright = false; // the person held inside floats upright (growth vat) instead of lying

@@ -98,7 +98,8 @@ namespace IsoRim
     //   pocketmap=x,z[,size[,keepfog]]  the portal in the cell opens its pocket map, made current (fog cleared unless keepfog), camera held over its exit
     //   dressed=x,z,rot,age[:Body[:M|F]],Def[:Stuff];...  a new drafted colonist (adults male body, or that BodyTypeDef)
     //                                wearing/holding exactly those ("-" for nothing), facing rot; items hair:<HairDef>
-    //                                and beard:<BeardDef> set those styles instead; Def:Stuff:RRGGBB also dyes it that colour
+    //                                and beard:<BeardDef> set those styles instead; Def:Stuff:RRGGBB also dyes it that colour;
+    //                                xeno:<XenotypeDef> makes them that xenotype (Api 35 tests, ProbeGenes)
     //   bedrest=px,pz,bx,bz[,nomed]  the colonist in cell px,pz undrafted, made tired and ordered to lie down in the bed at
     //                                bx,bz (LayDown); nomed first turns the bed's medical toggle off (hospital beds start medical)
     //   downpawn=x,z                 the colonist in the cell hurt until downed (no bleeding wounds)
@@ -1117,10 +1118,12 @@ namespace IsoRim
                     float dage = F(dageBody[0]);
                     bool dchild = dage < 13f;
                     // One holding a gun can fire it (attack=, tickuntil=flash).
+                    string dxeno = a[4].Split(';').Where(x => x.StartsWith("xeno:")).Select(x => x.Substring(5)).FirstOrDefault();   // (Api 35 tests)
                     Rand.PushState(Gen.HashCombineInt(I(a[0]), I(a[1]) * 7919 + 17));   // fixed seed per cell: the same person every run
                     Pawn dp = PawnGenerator.GeneratePawn(new PawnGenerationRequest(PawnKindDefOf.Colonist, Faction.OfPlayer, PawnGenerationContext.NonPlayer,
                         fixedGender: dageBody.Length > 2 ? (dageBody[2] == "F" ? Gender.Female : Gender.Male) : (Gender?)null,
-                        mustBeCapableOfViolence: a[4].Contains("Gun_") || a[4].Contains("MeleeWeapon_") || a[4].Contains("Bow_") || a[4].Contains("Weapon_Grenade") || a[4].Contains("Pila"), fixedBiologicalAge: dage, fixedChronologicalAge: dage, developmentalStages: dchild ? DevelopmentalStage.Child : DevelopmentalStage.Adult));
+                        mustBeCapableOfViolence: a[4].Contains("Gun_") || a[4].Contains("MeleeWeapon_") || a[4].Contains("Bow_") || a[4].Contains("Weapon_Grenade") || a[4].Contains("Pila"), fixedBiologicalAge: dage, fixedChronologicalAge: dage, developmentalStages: dchild ? DevelopmentalStage.Child : DevelopmentalStage.Adult,
+                        forcedXenotype: dxeno != null ? DefDatabase<XenotypeDef>.GetNamed(dxeno) : null));
                     Rand.PopState();
                     dp.apparel.DestroyAll();
                     dp.equipment.DestroyAllEquipment();
@@ -1135,6 +1138,10 @@ namespace IsoRim
                             continue;   // nothing worn
                         }
                         string[] ds = item.Split(':');
+                        if (ds[0] == "xeno")
+                        {
+                            continue;   // made that xenotype above
+                        }
                         if (ds[0] == "hair")
                         {
                             dp.story.hairDef = DefDatabase<HairDef>.GetNamed(ds[1]);
@@ -1812,7 +1819,7 @@ namespace IsoRim
                     break;
                 }
                 default:
-                    if (CutKey(key, a) || MechKey(key, a, map) || EntityKey(key, a, map) || FixKey(key, a, map) || SeatKey(key, a, map) || GshipKey(key, a, map) || SkyKey(key, a, map) || StrikeKey(key, a, map) || SilKey(key, a, map) || WeaponKey(key, a, map) || CrawlKey(key, a, map) || CardApiKey(key, a) || Api8Key(key, a, map) || Api9Key(key, a, map) || Api12Key(key, a, map) || Api17Key(key, a, map) || FogKey(key, a, map) || BuildSeeKey(key, a, map) || MineMarkKey(key, a, map) || HairTuckKey(key, a, map) || GroundKey(key, a, map) || BinderKey(key, a, map) || BenchKey(key, a, map) || Young24Key(key, a, map) || BarKey(key, a, map) || GhostKey(key, a, map) || AlienKey(key, a, map) || Ghost3Key(key, a, map) || WoundKey(key, a, map) || BooksKey(key, a, map) || GeoKey(key, a, map) || YayoKey(key, a, map) || OverheadKey(key, a, map))
+                    if (CutKey(key, a) || MechKey(key, a, map) || EntityKey(key, a, map) || FixKey(key, a, map) || SeatKey(key, a, map) || GshipKey(key, a, map) || SkyKey(key, a, map) || StrikeKey(key, a, map) || SilKey(key, a, map) || WeaponKey(key, a, map) || CrawlKey(key, a, map) || CardApiKey(key, a) || Api8Key(key, a, map) || Api9Key(key, a, map) || Api12Key(key, a, map) || Api17Key(key, a, map) || FogKey(key, a, map) || BuildSeeKey(key, a, map) || MineMarkKey(key, a, map) || HairTuckKey(key, a, map) || GroundKey(key, a, map) || BinderKey(key, a, map) || BenchKey(key, a, map) || Young24Key(key, a, map) || BarKey(key, a, map) || GhostKey(key, a, map) || AlienKey(key, a, map) || Ghost3Key(key, a, map) || WoundKey(key, a, map) || BooksKey(key, a, map) || GeoKey(key, a, map) || YayoKey(key, a, map) || OverheadKey(key, a, map) || GeneKey(key, a, map))
                     {
                         break;
                     }

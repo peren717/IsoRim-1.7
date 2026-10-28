@@ -49,10 +49,12 @@ if (IsoRim.Api.Version >= 31) { /* ModelDef.topThroughRoof, roofModel: a turret'
 if (IsoRim.Api.Version >= 32) { /* ModelDef.hoverHeight, hoverBob: hovering animals and mechs (part 21) */ }
 if (IsoRim.Api.Version >= 33) { /* beam parts: beam_* materials, ModelDef.beamFlicker / beamPulse / beamMotes (part 22) */ }
 if (IsoRim.Api.Version >= 34) { /* wall shapes: AddWallShapes (WallShapeRule, WallShape), roofs clipped to them (part 23) */ }
+if (IsoRim.Api.Version >= 35) { /* gene parts: ModelDef.geneDef and gene fields, YieldGeneParts / YieldAllGeneParts /
+                                   YieldAllGenePartsExcept / StopYieldingGeneParts, GenePartsYieldDef (part 24) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23 (Api 23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24 (Api 23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1295,6 +1297,73 @@ IsoRim.Api.HideFlatLayer(typeof(MySectionLayer));               // the mod's own
 First user: Vanilla Diagonal Walls (its diagonal bands and trimmed wall cells, through a small assembly it loads only
 with IsoRim).
 
+## Part 24: gene parts (version 35)
+
+IsoRim draws 3D parts for Biotech genes on its 3D people from `IsoRim.ModelDef`s with a `geneDef` (no `thingDef`): the
+model is merged into the person's head or body like hair and clothes, so it follows every facing, lying in bed, sitting,
+crawling and the body animations. Only active genes count. The setting "3D gene parts" (default on) turns them all off:
+then figures look exactly as before. Gene parts are left out on a dried corpse (as the game), on other races drawn as 3D
+figures (part 16), and head parts on heads that are not IsoRim's own (a ghoul's head, a skull, under a burka).
+IsoRim's own entries: pig ears and pig nose (Pigskin), mini-horns (Impid), furry tail and furskin (Yttakin).
+
+```xml
+<IsoRim.ModelDef>
+  <defName>MyPack_Gene_CatEars</defName>
+  <geneDef>Ears_Cat</geneDef>
+  <model>Models/cat_ears.obj</model>
+  <geneAnchor>Head</geneAnchor>       <!-- Head, UpperBody, LowerBody, LowerBack -->
+  <geneTint>Hair</geneTint>           <!-- Skin, Hair, None -->
+</IsoRim.ModelDef>
+```
+
+- The model is built in figure space, like `Models/person_head.obj` and `person_<build>_upper/_lower.obj`: one unit = one
+  cell, +y up, the face's side at -z (as loaded), a figure of size 1 (adult); it sits where it belongs as built. Children
+  and other sizes scale with the figure.
+- `geneAnchor`: `Head` (the head mesh, widened with narrow and wide head types); `UpperBody` / `LowerBody` (the body,
+  scaled by body type like clothes, and left out where clothing covers that part, as the game draws clothes over its fur);
+  `LowerBack` (the body at the part's own size, moved back with the build's back: a fat body's back is further out than
+  the male body it is built on; shown over clothes: tails).
+- `geneTint`: `stuff*` faces are multiplied by the skin colour (greyed when dead, rotten when rotting), the hair colour, or
+  nothing; other materials keep their colour.
+- `geneBuilds`: another model per build, `<li><build>Fat</build><model>Models/x_fat.obj</model></li>` (Male, Female, Thin,
+  Fat, Hulk; children use Thin, babies Fat); other builds use `model`.
+- `geneTuck` (head): shown only where the game shows hair, and tucked inside headgear like hair (head fur).
+- `geneHidesHair`: the person's hair is left out (head fur replacing it); beards stay.
+- `geneTintsHead`: the head itself takes this part's tint (furskin: the face in the fur colour).
+- Several ModelDefs may name the same gene (furskin: head fur, upper and lower coat).
+
+### Yielding genes to another mod
+
+A mod that draws some genes' parts on IsoRim's figures itself (through figure hooks, part 1) tells IsoRim to leave those
+genes out; other genes are still drawn.
+
+```csharp
+// IsoRim.Api.Version >= 35
+IsoRim.Api.YieldGeneParts("my.mod", new[] { myEarsGene, myTailGene });   // only these genes
+IsoRim.Api.YieldAllGeneParts("my.mod");                                 // or every gene
+IsoRim.Api.YieldAllGenePartsExcept("my.mod", new[] { furskinGene });    // or every gene but these
+IsoRim.Api.StopYieldingGeneParts("my.mod");                             // takes it back
+bool mine = IsoRim.Api.GenePartsYielded(gene);                          // code or XML yield
+```
+
+A later call by the same owner replaces its earlier yield. Any thread; figures are worked out again at once.
+
+Without code, an `IsoRim.GenePartsYieldDef` (any mod may add one, IsoRim ships some) yields genes while a mod is active,
+matched once at startup by packageId or Workshop PublishedFileId (either is enough):
+
+```xml
+<IsoRim.GenePartsYieldDef>
+  <defName>MyPack_Yield_SomeMod</defName>
+  <packageIds><li>author.somemod</li></packageIds>
+  <publishedFileIds><li>1234567890</li></publishedFileIds>
+  <genes><li>Ears_Pig</li></genes>                 <!-- these genes; leave out for all genes ... -->
+  <exceptGenes><li>Furskin</li></exceptGenes>      <!-- ... but these (only without genes) -->
+</IsoRim.GenePartsYieldDef>
+```
+
+IsoRim's own entry: "IsoRim - Biotech Pawn Parts" (marumirai.IsoRimBiotechPawnParts, Workshop 3823611866) draws every
+gene part but furskin, so IsoRim yields all genes except `Furskin` to it.
+
 ## Part M: model packs (IsoRim.ModelDef)
 
 A model pack is an XML-only mod (or a mod with a small DLL) that adds `IsoRim.ModelDef`s binding OBJ models to other
@@ -1320,6 +1389,7 @@ mods' things.
 | `bobByState` (27) | With `bobModel` (the bobbing part, e.g. a grav engine's orb): another bob part for things in an addon's state (`Api.AddModelState`), the same `<li><state>..</state><model>..</model></li>` list as `byState`; other states use `bobModel`. Asked each frame the part is drawn. |
 | `immatureModels`, `immatureHide` (24) | A plant's young stage, drawn while it is not yet harvestable (as the game's `immatureGraphic`: growth up to `harvestMinGrowth`): its own models (one per variant of `models`, same order), or the mature models without the `immatureHide` materials (the produce). `growthScale` still shrinks it. |
 | `spriteTint`, `paintedHull`, `outline`, `outlineMinSize`, `groundShadow`, `aged` (15) | Colour and look. |
+| `geneDef`, `geneAnchor`, `geneTint`, `geneBuilds`, `geneTuck`, `geneHidesHair`, `geneTintsHead` (35) | A gene part on 3D people instead of a thing (no `thingDef`): see part 24. |
 | `wallTop` (11), `cutaway` (20), `backHeight` (13), wing fields (14), `doorLeafModel`, `doorLeafGather` (18), `crownTop`, `doorLeafRise` (6) | See their parts. |
 
 The numbers in brackets are the Api version a field needs; fields without one are there from version 2.

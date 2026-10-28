@@ -111,6 +111,10 @@ namespace IsoRim
             public Apparel coatFrom, overCoatFrom, midFrom, shirtWearFrom;
             public List<ApparelDecals.Placed> decals;
             public AlienLook alien;     // a race drawn as a 3D figure (Api 25, AlienFigures): its placing, own models, addon cards; null for people
+            // Gene parts (Api 35, GeneParts): the models of the person's active genes (null: none), and the head's own tint
+            // when a part asks for it (furskin: the face in the fur colour).
+            public List<GeneParts.Placed> genes;
+            public GeneTint? geneHeadTint;
 
             public bool SameGear(Look o)
             {
@@ -158,6 +162,7 @@ namespace IsoRim
                     && mid == o.mid && shirtWear == o.shirtWear && midColor == o.midColor && shirtWearColor == o.shirtWearColor
                     && overCoat == o.overCoat && overCoatColor == o.overCoatColor
                     && shield == o.shield && shieldColor == o.shieldColor && shieldBinding == o.shieldBinding && bindHides == o.bindHides && flames == o.flames
+                    && GeneParts.Same(genes, o.genes) && geneHeadTint == o.geneHeadTint
                     && (alien == null ? o.alien == null : alien.SameAs(o.alien));
             }
 
@@ -217,6 +222,7 @@ namespace IsoRim
             {
                 Matrix4x4 headPlace = Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f));
                 Color skin = dead ? Color.Lerp(look.skin, new Color(0.55f, 0.58f, 0.52f), 0.35f) : look.skin;
+                Color headSkin = look.geneHeadTint == GeneTint.Hair ? (dead ? Color.Lerp(look.hairColor, new Color(0.55f, 0.58f, 0.52f), 0.35f) : look.hairColor) : skin;
                 Model hat = (hide & (int)FigureParts.Headgear) == 0 ? look.hat : null;   // (parts hidden: Api 21)
                 Model eyeWear = (hide & (int)FigureParts.EyeWear) == 0 ? look.eyeWear : null;
                 Model mouthWear = (hide & (int)FigureParts.MouthWear) == 0 ? look.mouthWear : null;
@@ -234,7 +240,7 @@ namespace IsoRim
                 }
                 else
                 {
-                    AddPart(head, headPlace, skin);
+                    AddPart(head, headPlace, headSkin);
                     if (!look.faceHidden && !look.faceDecal && (hide & (int)FigureParts.Face) == 0)
                     {
                         AddPart(look.ownFace ?? (look.femaleEyes && faceFemale != null ? faceFemale : face), headPlace, look.ownFace != null ? look.faceTint : Color.white);
@@ -265,6 +271,16 @@ namespace IsoRim
                 if ((hide & (int)FigureParts.Beard) == 0)
                 {
                     AddPart(look.headHidden ? look.beard : HairTuck.Under(look.beard, hat, mouthWear, eyeWear), headPlace, look.hairColor);
+                }
+                for (int i = 0; look.genes != null && i < look.genes.Count; i++)
+                {
+                    // Gene parts on the head (Api 35): with the head; a tucked one (head fur) as the hair, inside headgear.
+                    GeneParts.Placed g = look.genes[i];
+                    if (g.anchor != GeneAnchor.Head || (hide & (int)FigureParts.Head) != 0 || (g.tuck && (hide & (int)FigureParts.Hair) != 0))
+                    {
+                        continue;
+                    }
+                    AddPart(g.tuck ? HairTuck.Under(g.model, hat, mouthWear, eyeWear) : g.model, headPlace, GeneColour(look, g.tint, skin));
                 }
                 AddPart(eyeWear, headPlace, look.eyeColor);
                 AddPart(mouthWear, headPlace, look.mouthColor);
@@ -307,6 +323,20 @@ namespace IsoRim
                 {
                     AddPart(look.gear[i], look.GearOnBody(i), look.gearTint[i]);
                 }
+                for (int i = 0; body && look.genes != null && i < look.genes.Count; i++)
+                {
+                    // Gene parts on the body (Api 35): fur (where no clothing covers it), tails (over clothes, moved back with the build).
+                    GeneParts.Placed g = look.genes[i];
+                    Color gc = GeneColour(look, g.tint, dead ? Color.Lerp(look.skin, new Color(0.55f, 0.58f, 0.52f), 0.35f) : look.skin);
+                    if (g.anchor == GeneAnchor.UpperBody || g.anchor == GeneAnchor.LowerBody)
+                    {
+                        AddPart(g.model, bodyPlace, gc);   // (left out under clothing in Genes)
+                    }
+                    else if (g.anchor == GeneAnchor.LowerBack)
+                    {
+                        AddPart(g.model, Matrix4x4.Translate(new Vector3(0f, 0f, GeneParts.BackShift(look.lower, look.bodyScale))), gc);
+                    }
+                }
                 if (look.pads && clothes)
                 {
                     AddPart(pads, bodyPlace * Matrix4x4.Scale(new Vector3(look.shoulders, 1f, 1.05f)), look.coat != null ? look.coatColor : look.upperColor);
@@ -318,6 +348,12 @@ namespace IsoRim
                 noLegs ? (headPart ? AlienFigures.ChinClip(look) : Attachments.Hips * look.bodyScale.y) : float.NegativeInfinity);
             look.meshes[key] = parts;
             return parts;
+        }
+
+        // A gene part's colour (Api 35): the skin (as drawn: dead ones greyed), the hair, or none.
+        private static Color GeneColour(Look look, GeneTint tint, Color skin)
+        {
+            return tint == GeneTint.Skin ? skin : (tint == GeneTint.Hair ? look.hairColor : Color.white);
         }
 
         private static void AddPart(Model m, Matrix4x4 local, Color tint)
@@ -887,6 +923,15 @@ namespace IsoRim
                     l.frame = int.MinValue / 2;
                 }
             }
+            if (geneStampSeen != GeneParts.Stamp)
+            {
+                // The gene parts setting or another mod's yields changed (Api 35): every look worked out again at once.
+                geneStampSeen = GeneParts.Stamp;
+                foreach (Look l in looks.Values)
+                {
+                    l.frame = int.MinValue / 2;
+                }
+            }
             // Worked out again at once on getting into or out of a bed that hides headgear.
             if (looks.TryGetValue(pawn.thingIDNumber, out look) && frame - look.frame < RefreshFrames && look.bedHidesHat == BedHidesHeadgear(pawn))
             {
@@ -1033,6 +1078,10 @@ namespace IsoRim
                 }
             }
             Anomaly(pawn, look, build, headName);
+            if (alien == null)
+            {
+                Genes(pawn, look, build);   // gene parts (Api 35)
+            }
             look.faceDecal = !look.faceHidden && look.ownFace == null && look.ownHead == null && FaceDecal.Wanted(pawn);
             if (Corpses.Bones(pawn))
             {
@@ -1047,6 +1096,45 @@ namespace IsoRim
                 AlienFigures.Finish(pawn, look, alien);   // its own models, eyes, addon models and cards (Api 25)
             }
             return look;
+        }
+
+        // Gene parts (Api 35, GeneParts): the person's active genes' models. Head parts only on IsoRim's own head (not under a
+        // burka, on a ghoul's own head or a skull); tucked ones (head fur) only where the game shows hair. A part that replaces
+        // the hair (head fur) leaves it out; the beard stays.
+        private static void Genes(Pawn pawn, Look look, string build)
+        {
+            GeneTint? headTint;
+            bool hidesHair;
+            List<GeneParts.Placed> found = GeneParts.Collect(pawn, build, out headTint, out hidesHair);
+            if (found == null)
+            {
+                return;
+            }
+            bool ownHead = !look.headHidden && look.ownHead == null && look.skull == null;
+            List<GeneParts.Placed> keep = null;
+            foreach (GeneParts.Placed g in found)
+            {
+                if (g.anchor == GeneAnchor.Head && (!ownHead || (g.tuck && !look.hairShown)))
+                {
+                    continue;
+                }
+                if ((g.anchor == GeneAnchor.UpperBody && (look.upperWorn || look.coat != null)) || (g.anchor == GeneAnchor.LowerBody && look.lowerWorn))
+                {
+                    continue;   // fur under clothing: left out, as the game draws clothes over its fur
+                }
+                if (keep == null)
+                {
+                    keep = new List<GeneParts.Placed>();
+                }
+                keep.Add(g);
+            }
+            look.genes = keep;
+            look.geneHeadTint = ownHead ? headTint : null;
+            if (hidesHair && !look.ownHair)
+            {
+                look.hair = null;
+                look.hairTop = null;
+            }
         }
 
         // Dried to bones, as the game draws it (PawnRenderNode_Body: the body type's bodyDessicatedGraphicPath,
@@ -1076,6 +1164,8 @@ namespace IsoRim
                 look.lowerBones = true;
             }
             look.skull = skull;
+            look.genes = null;   // (Api 35: the game draws no gene parts on a dessicated body)
+            look.geneHeadTint = null;
             look.ownHead = null;
             look.ownFace = null;
             look.eyeLeft = null;
@@ -1180,6 +1270,7 @@ namespace IsoRim
         }
 
         private static bool hairUnderHatsSeen;
+        private static int geneStampSeen = int.MinValue;
 
         // Option hairUnderHats: hair is shown (and tucked in, HairTuck) although the game hides it, when every worn item
         // that hides it does so only by the game's default for headgear on the upper head. Items with their own skip

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Gene parts on 3D people (Api 35, GeneParts.cs). Models in figure space (Models/person_head.obj). Genes from Biotech;
+       skipped quietly without it. -->
+
+  <!-- Pigskin -->
+  <IsoRim.ModelDef>
+    <defName>R3D_Gene_PigEars</defName>
+    <geneDef>Ears_Pig</geneDef>
+    <model>Models/gene_pig_ears.obj</model>
+    <geneAnchor>Head</geneAnchor>
+    <geneTint>Skin</geneTint>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gene_PigNose</defName>
+    <geneDef>Nose_Pig</geneDef>
+    <model>Models/gene_pig_nose.obj</model>
+    <geneAnchor>Head</geneAnchor>
+    <geneTint>Skin</geneTint>
+  </IsoRim.ModelDef>
+
+  <!-- Impid -->
+  <IsoRim.ModelDef>
+    <defName>R3D_Gene_MiniHorns</defName>
+    <geneDef>Headbone_MiniHorns</geneDef>
+    <model>Models/gene_mini_horns.obj</model>
+    <geneAnchor>Head</geneAnchor>
+    <geneTint>None</geneTint>
+  </IsoRim.ModelDef>
+
+  <!-- Yttakin -->
+  <IsoRim.ModelDef>
+    <defName>R3D_Gene_FurryTail</defName>
+    <geneDef>Tail_Furry</geneDef>
+    <model>Models/gene_furry_tail.obj</model>
+    <geneAnchor>LowerBack</geneAnchor>
+    <geneTint>Hair</geneTint>
+  </IsoRim.ModelDef>
+
+  <!-- Furskin: head fur (replaces the hair, tucked under headgear like hair; the face in the fur colour) and the coat per build -->
+  <IsoRim.ModelDef>
+    <defName>R3D_Gene_FurskinHead</defName>
+    <geneDef>Furskin</geneDef>
+    <model>Models/gene_furskin_head.obj</model>
+    <geneAnchor>Head</geneAnchor>
+    <geneTint>Hair</geneTint>
+    <geneTuck>true</geneTuck>
+    <geneHidesHair>true</geneHidesHair>
+    <geneTintsHead>true</geneTintsHead>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gene_FurskinUpper</defName>
+    <geneDef>Furskin</geneDef>
+    <model>Models/gene_furskin_male_upper.obj</model>
+    <geneAnchor>UpperBody</geneAnchor>
+    <geneTint>Hair</geneTint>
+    <geneBuilds>
+      <li><build>Female</build><model>Models/gene_furskin_female_upper.obj</model></li>
+      <li><build>Thin</build><model>Models/gene_furskin_thin_upper.obj</model></li>
+      <li><build>Fat</build><model>Models/gene_furskin_fat_upper.obj</model></li>
+      <li><build>Hulk</build><model>Models/gene_furskin_hulk_upper.obj</model></li>
+    </geneBuilds>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gene_FurskinLower</defName>
+    <geneDef>Furskin</geneDef>
+    <model>Models/gene_furskin_male_lower.obj</model>
+    <geneAnchor>LowerBody</geneAnchor>
+    <geneTint>Hair</geneTint>
+    <geneBuilds>
+      <li><build>Female</build><model>Models/gene_furskin_female_lower.obj</model></li>
+      <li><build>Thin</build><model>Models/gene_furskin_thin_lower.obj</model></li>
+      <li><build>Fat</build><model>Models/gene_furskin_fat_lower.obj</model></li>
+      <li><build>Hulk</build><model>Models/gene_furskin_hulk_lower.obj</model></li>
+    </geneBuilds>
+  </IsoRim.ModelDef>
+
+  <!-- Mods that draw gene parts on IsoRim's figures themselves: IsoRim leaves those genes to them. -->
+  <IsoRim.GenePartsYieldDef>
+    <defName>R3D_Yield_BiotechPawnParts</defName>
+    <!-- "IsoRim - Biotech Pawn Parts" by Maru: draws every gene part with a graphic through IsoRim's figure hooks, but
+         skips Furskin (its GenePartDefs.xml): IsoRim keeps drawing the fur -->
+    <packageIds>
+      <li>marumirai.IsoRimBiotechPawnParts</li>
+    </packageIds>
+    <publishedFileIds>
+      <li>3823611866</li>
+    </publishedFileIds>
+    <exceptGenes>
+      <li>Furskin</li>
+    </exceptGenes>
+  </IsoRim.GenePartsYieldDef>
+
+</Defs>

@@ -275,6 +275,8 @@
   <R3D_Settings_UprightPawnsTip>用于没有模型的人和动物。</R3D_Settings_UprightPawnsTip>
   <R3D_Settings_HairUnderHats>  帽子下显示头发</R3D_Settings_HairUnderHats>
   <R3D_Settings_HairUnderHatsTip>头发会显示在帽子和便帽下面，并收进帽子里。</R3D_Settings_HairUnderHatsTip>
+  <R3D_Settings_GeneParts3D>  3D 基因部件</R3D_Settings_GeneParts3D>
+  <R3D_Settings_GeneParts3DTip>基因带来的耳朵、角、尾巴和毛皮。</R3D_Settings_GeneParts3DTip>
   <R3D_Settings_KeepAsPaper>保持纸片人</R3D_Settings_KeepAsPaper>
   <R3D_Settings_KeepAsPaperTip>这些异种族保持平面。</R3D_Settings_KeepAsPaperTip>
   <R3D_AlienTune_Title>异种族调整</R3D_AlienTune_Title>

@@ -69,7 +69,10 @@ namespace IsoRim
         // outline or shadow), ModelDef.beamFlicker / beamPulse / beamMotes; Api.Dev.BeamMoteDraws, BeamPartDraws, BeamPartBaked, BeamDrawn.
         // 34: wall shapes (Api34.cs): AddWallShapes (WallShapeRule, WallShape): another mod's convex wall pieces per cell, drawn as
         // IsoRim's 3D walls (optionally instead of the cell's block), roofs over them clipped to the shapes (WallShapeRoofs).
-        public static int Version => 34;
+        // 35: gene parts (GeneParts.cs, Api35.cs): ModelDef.geneDef with geneAnchor (GeneAnchor), geneTint (GeneTint), geneBuilds
+        // (GeneBuildModel), geneTuck, geneHidesHair, geneTintsHead; the geneParts3D setting; YieldGeneParts / YieldAllGeneParts /
+        // StopYieldingGeneParts and the XML IsoRim.GenePartsYieldDef (another mod draws those genes' parts itself).
+        public static int Version => 35;
 
         // ---- glass parts (Version 30)
 

@@ -117,6 +117,7 @@ Common fields:
 | `byAppearance`, `byState`, `byStyle` | | Other models by stuff look (Planks, Bricks ...), by an addon's state (Api 6), by Ideology style |
 | `aged` | 0 | Api 15: drawn old and rusty |
 | `immatureModels`, `immatureHide` | | Api 24, plants: the young stage, drawn while the plant is not yet harvestable (as the game's `immatureGraphic`, growth up to `harvestMinGrowth`). `immatureModels`: own models, one per variant of `models` (same order). `immatureHide`: material names left out of the young stage, e.g. the produce; with no `immatureModels` the young stage is the mature model without them. `growthScale` still shrinks it |
+| `geneDef`, `geneAnchor`, `geneTint`, `geneBuilds`, `geneTuck`, `geneHidesHair`, `geneTintsHead` | | Api 35: a gene part on 3D people instead of a thing; see "Gene parts" below |
 | `hoverHeight`, `hoverBob` | 0 | Api 32, animals and mechs: the figure floats this many cells over the ground (times its size) while up and about, drifting up and down by `hoverBob`; downed, dead or lying it settles onto the ground (Api part 21) |
 
 Doors (`doorLeafModel`, ...), turrets (`topModel`), animals, mechs and many special parts have their own fields; see the
@@ -208,7 +209,33 @@ half-set model), a new enough one gets the whole entry:
 fields 14; `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20; `immatureModels`, `immatureHide` 24; alien packs
 (`IsoRim.AlienModelDef`, `ApparelModelDef.aliens`) 25; `bobByState` 27; `slots` 28; any binding of a multi-cell supported door (not the
 game's `Building_MultiTileDoor`) 29, which draws it from its models (Api part 18); `glassTint`, `glassOpacity`, `glassGlow`
-and a door's `glassModel` 30 (Api part 19); `topThroughRoof`, `roofModel` 31 (Api part 20); `hoverHeight`, `hoverBob` 32 (Api part 21). The highest one used counts.
+and a door's `glassModel` 30 (Api part 19); `topThroughRoof`, `roofModel` 31 (Api part 20); `hoverHeight`, `hoverBob` 32 (Api part 21); `geneDef` and the other gene fields 35 (Api part 24). The highest one used counts.
+
+## Gene parts
+
+Api 35: a ModelDef with `geneDef` (a GeneDef defName) instead of `thingDef` draws its model on 3D people with that gene
+(active), merged into the head or body like hair and clothes. Build it in figure space, on IsoRim's own figure
+(`Models/person_head.obj`, `person_<build>_upper/_lower.obj`: one unit = one cell, +y up, the face at -z as loaded, an adult of
+size 1), placed where it belongs as built.
+
+```xml
+<IsoRim.ModelDef>
+  <defName>MyPack_Gene_FloppyEars</defName>
+  <geneDef>Ears_Floppy</geneDef>
+  <model>Models/floppy_ears.obj</model>
+  <geneAnchor>Head</geneAnchor>   <!-- Head, UpperBody, LowerBody (fur: left out under clothing), LowerBack (tails) -->
+  <geneTint>Skin</geneTint>       <!-- stuff* faces in the skin or hair colour, or None -->
+</IsoRim.ModelDef>
+```
+
+- `geneBuilds`: `<li><build>Fat</build><model>Models/x_fat.obj</model></li>` per build (Male, Female, Thin, Fat, Hulk).
+- `geneTuck`: head parts hidden where the game hides hair and tucked into headgear like hair; `geneHidesHair`: the hair
+  is left out; `geneTintsHead`: the head takes this part's tint. Several ModelDefs may name one gene.
+- Gate the whole entry: an older IsoRim does not know `geneDef` (keep the ModelDef without it and add `geneDef` by patch
+  with `minVersion` 35). The setting "3D gene parts" turns all gene parts off.
+- A mod that draws gene parts itself makes IsoRim leave them out with `IsoRim.GenePartsYieldDef` (by packageId or
+  Workshop id; these genes, all, or all but some) or `Api.YieldGeneParts`; see `Docs/Api.md` part 24. Put a yield def in a
+  folder loaded only with IsoRim 35 or newer (an older IsoRim does not know the def type).
 
 ## Alien packs
 

@@ -275,6 +275,8 @@
   <R3D_Settings_UprightPawnsTip>For people and animals without a model.</R3D_Settings_UprightPawnsTip>
   <R3D_Settings_HairUnderHats>  Show hair under hats</R3D_Settings_HairUnderHats>
   <R3D_Settings_HairUnderHatsTip>Hair shows below brimmed hats and caps, tucked in.</R3D_Settings_HairUnderHatsTip>
+  <R3D_Settings_GeneParts3D>  3D gene parts</R3D_Settings_GeneParts3D>
+  <R3D_Settings_GeneParts3DTip>Ears, horns, tails and fur from genes.</R3D_Settings_GeneParts3DTip>
   <R3D_Settings_KeepAsPaper>Keep as paper</R3D_Settings_KeepAsPaper>
   <R3D_Settings_KeepAsPaperTip>Aliens that stay flat.</R3D_Settings_KeepAsPaperTip>
   <R3D_AlienTune_Title>Alien tuning</R3D_AlienTune_Title>

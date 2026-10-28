@@ -115,6 +115,7 @@ namespace IsoRim
         public int lookMode = 0;         // free look drag button: 0 = middle button with R3D_LookModifier (Ctrl), 1 = right button with nothing selected
         public bool pawns3D = true;
         public bool hairUnderHats = false;   // hair shown, tucked in, under headgear that covers only the upper head (People.HairUnderHat)
+        public bool geneParts3D = true;      // (Api 35) gene parts (ModelDef.geneDef: pig ears, horns, tails, fur) on 3D people (GeneParts)
         public List<string> keepPaper = new List<string>();   // races (ThingDef defNames) kept as cards although an alien pack makes them 3D (Api 25, AlienFigures)
         public bool effects3D = true;
         public bool collapseDebris = true;
@@ -245,6 +246,7 @@ namespace IsoRim
             Scribe_Values.Look(ref fpEyeHeight, "fpEyeHeight", 0.95f);
             Scribe_Values.Look(ref pawns3D, "pawns3D", true);
             Scribe_Values.Look(ref hairUnderHats, "hairUnderHats", false);
+            Scribe_Values.Look(ref geneParts3D, "geneParts3D", true);
             Scribe_Collections.Look(ref keepPaper, "keepPaper", LookMode.Value);
             if (keepPaper == null)
             {
@@ -1090,6 +1092,10 @@ namespace IsoRim
                 if (st.pawns3D)
                 {
                     Check(r, "R3D_Settings_HairUnderHats".Translate(), ref st.hairUnderHats, "R3D_Settings_HairUnderHatsTip".Translate());
+                    if (ModsConfig.BiotechActive)
+                    {
+                        Check(r, "R3D_Settings_GeneParts3D".Translate(), ref st.geneParts3D, "R3D_Settings_GeneParts3DTip".Translate());
+                    }
                     AliensUI.KeepAsPaper(r, st);   // (Api 25: only with other humanlike races loaded)
                 }
                 if (st.pawns3D && ModsConfig.IsActive("Nals.FacialAnimation"))
@@ -1239,6 +1245,7 @@ namespace IsoRim
             try
             {
                 ModelLibrary.LoadAll();
+                GeneParts.LoadAll();   // (Api 35) gene parts and their yields
             }
             catch (Exception e)
             {

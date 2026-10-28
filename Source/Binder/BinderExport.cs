@@ -47,6 +47,7 @@ namespace IsoRim
             { "topThroughRoof", 31 }, { "roofModel", 31 },
             { "hoverHeight", 32 }, { "hoverBob", 32 },
             { "beamFlicker", 33 }, { "beamPulse", 33 }, { "beamMotes", 33 },
+            { "geneDef", 35 }, { "geneAnchor", 35 }, { "geneTint", 35 }, { "geneBuilds", 35 }, { "geneTuck", 35 }, { "geneHidesHair", 35 }, { "geneTintsHead", 35 },
         };
         private const int BaseVersion = 2;
 
