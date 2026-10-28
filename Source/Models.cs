@@ -425,6 +425,8 @@ namespace IsoRim
         public ModelMaterial[] materials;
         public Vector3[] hull;  // how far each vertex moves outward to form the dark outline
         public bool[] noOutline; // per vertex: true where its triangle gets no outline (ModelDef.outlineMinSize); null for none
+        public bool[] ownColor;  // per vertex: true where the OBJ gives the corner its own colour ("v x y z r g b"); null for none
+                                 // (see OwnColour)
         public float maxY;
         public float halfDepth; // furthest the model reaches north or south of its centre
         public float minX, maxX, minZ, maxZ;   // the box the model covers on the ground
@@ -436,6 +438,20 @@ namespace IsoRim
         public bool footprintTried;
         public Model beam;               // (Api 33) its beam_* faces, drawn as light (Beams.cs); null for none
         public float beamFlicker, beamPulse;   // on a beam part: its def's beamFlicker / beamPulse (Beams.Tag)
+
+        // Whether the triangle starting at corner i has a corner of its own colour (ownColor). Its textured face is then drawn
+        // in the plain copy's corner colours (vertex colour, stuff tint, sheet colour) on a material of colour OwnBase, times
+        // the texture: the texture's detail stays, its colour comes from the vertices (the vertex colour takes the place of the
+        // material's Kd, so a vertex colour equal to Kd looks as before). Other faces: the material's colour, white corners.
+        // The one rule for every writer of textured faces (ModelBaker.Write, DynamicModels.Build).
+        public bool OwnColour(int i)
+        {
+            return ownColor != null && i + 2 < ownColor.Length && (ownColor[i] || ownColor[i + 1] || ownColor[i + 2]);
+        }
+
+        // The textured material's colour for such faces: only the lift every textured face gets (ModelBaker.TextureLift).
+        public static readonly Color OwnBase = new Color(ModelBaker.TextureLift, ModelBaker.TextureLift, ModelBaker.TextureLift, 1f);
+        public const string OwnKey = "|own";   // their materials' cache key tag (R3DMaterials.LitTexture, R3DTextures.MaterialFor)
     }
 
     // A simple stand-in for a model when it casts a shadow: the outline of its leaves seen from
@@ -1675,6 +1691,7 @@ namespace IsoRim
             m.hull = src.hull;
             m.beam = src.beam;   // (Api 33) the beam part as it was
             m.noOutline = src.noOutline;
+            m.ownColor = src.ownColor;
             m.maxY = src.maxY;
             m.halfDepth = src.halfDepth;
             m.minX = src.minX;
@@ -1739,6 +1756,7 @@ namespace IsoRim
             m.hull = src.hull;
             m.beam = src.beam;   // (Api 33) the beam part as it was
             m.noOutline = src.noOutline;
+            m.ownColor = src.ownColor;
             m.maxY = src.maxY;
             m.halfDepth = src.halfDepth;
             m.minX = src.minX;
@@ -1871,6 +1889,7 @@ namespace IsoRim
             m.hull = src.hull;
             m.beam = src.beam;   // (Api 33) the beam part as it was
             m.noOutline = src.noOutline;
+            m.ownColor = src.ownColor;
             m.maxY = src.maxY;
             m.halfDepth = src.halfDepth;
             m.minX = src.minX;
@@ -1996,6 +2015,15 @@ namespace IsoRim
                 }
                 m.noOutline = none.ToArray();
             }
+            if (models.Exists(src => src.ownColor != null))
+            {
+                List<bool> own = new List<bool>();
+                foreach (Model src in models)
+                {
+                    own.AddRange(src.ownColor ?? new bool[src.positions.Length]);
+                }
+                m.ownColor = own.ToArray();
+            }
             m.id = nextId++;
             return m;
         }
@@ -2018,6 +2046,7 @@ namespace IsoRim
             m.uvs = src.uvs != null ? new Vector2[n] : null;
             m.material = src.material != null ? new int[n] : null;
             m.noOutline = src.noOutline != null ? new bool[n] : null;
+            m.ownColor = src.ownColor != null ? new bool[n] : null;
             for (int i = 0; i < n; i++)
             {
                 int j = i % 3 == 1 ? i + 1 : i % 3 == 2 ? i - 1 : i;   // corners 1 and 2 swapped: the winding stays outward
@@ -2034,6 +2063,7 @@ namespace IsoRim
                 if (m.uvs != null) m.uvs[i] = src.uvs[j];
                 if (m.material != null) m.material[i] = src.material[j];
                 if (m.noOutline != null) m.noOutline[i] = src.noOutline[j];
+                if (m.ownColor != null) m.ownColor[i] = src.ownColor[j];
             }
             m.materials = src.materials;
             m.maxY = src.maxY;
@@ -2092,6 +2122,7 @@ namespace IsoRim
             m.uvs = src.uvs != null ? new Vector2[k] : null;
             m.material = new int[k];
             m.noOutline = src.noOutline != null ? new bool[k] : null;
+            m.ownColor = src.ownColor != null ? new bool[k] : null;
             m.minX = m.minZ = float.MaxValue;
             m.maxX = m.maxZ = float.MinValue;
             for (int i = 0; i < k; i++)
@@ -2106,6 +2137,7 @@ namespace IsoRim
                 if (m.uvs != null) m.uvs[i] = src.uvs[j];
                 m.material[i] = src.material[j];
                 if (m.noOutline != null) m.noOutline[i] = src.noOutline[j];
+                if (m.ownColor != null) m.ownColor[i] = src.ownColor[j];
                 m.maxY = Mathf.Max(m.maxY, p.y);
                 m.halfDepth = Mathf.Max(m.halfDepth, Mathf.Abs(p.z));
                 m.minX = Mathf.Min(m.minX, p.x);
@@ -2146,6 +2178,7 @@ namespace IsoRim
             m.hull = src.hull;
             m.beam = src.beam;   // (Api 33) the beam part as it was
             m.noOutline = src.noOutline;
+            m.ownColor = src.ownColor;
             m.tinted = src.tinted;
             m.material = src.material;
             m.maxY = src.maxY;
@@ -2247,6 +2280,7 @@ namespace IsoRim
             m.hull = src.hull;
             m.beam = src.beam;   // (Api 33) the beam part as it was
             m.noOutline = none;
+            m.ownColor = src.ownColor;
             m.maxY = src.maxY;
             m.halfDepth = src.halfDepth;
             m.minX = src.minX;
@@ -2289,6 +2323,7 @@ namespace IsoRim
             List<Vector3> outNormal = new List<Vector3>();
             List<Color> outColor = new List<Color>();
             List<bool> outTint = new List<bool>();
+            List<bool> outOwn = new List<bool>();
             List<Vector2> outUV = new List<Vector2>();
             List<int> outMaterial = new List<int>();
 
@@ -2382,6 +2417,7 @@ namespace IsoRim
                             outPos.Add(pos[pi]);
                             outNormal.Add(n);
                             outColor.Add(hasVertColor[pi] ? vertColor[pi] : mat.color);
+                            outOwn.Add(hasVertColor[pi]);
                             outTint.Add(mat.tinted);
                             outUV.Add(ti >= 0 ? tex[ti] : Vector2.zero);
                             outMaterial.Add(current);
@@ -2396,9 +2432,9 @@ namespace IsoRim
                 return null;
             }
 
-            TurnRoundIfInsideOut(outPos, outNormal, outColor, outTint, outUV, outMaterial);
+            TurnRoundIfInsideOut(outPos, outNormal, outColor, outTint, outOwn, outUV, outMaterial);
             // (Api 33) beam_* faces out of the model into its beam part: no hull, outline, shadow or glass for them
-            Model beamPart = Beams.Split(outPos, outNormal, outColor, outTint, outUV, outMaterial, materials);
+            Model beamPart = Beams.Split(outPos, outNormal, outColor, outTint, outOwn, outUV, outMaterial, materials);
 
             Model m = new Model();
             m.beam = beamPart;
@@ -2406,6 +2442,7 @@ namespace IsoRim
             m.normals = outNormal.ToArray();
             m.colors = outColor.ToArray();
             m.tinted = outTint.ToArray();
+            m.ownColor = outOwn.Contains(true) ? outOwn.ToArray() : null;
             m.uvs = outUV.ToArray();
             m.material = outMaterial.ToArray();
             m.materials = materials.ToArray();
@@ -2474,7 +2511,7 @@ namespace IsoRim
         // closed model whose faces enclose a clearly negative volume is turned round here.
         // (Open shapes such as grass blades enclose almost nothing and are left as they are.)
         private static void TurnRoundIfInsideOut(List<Vector3> pos, List<Vector3> normal, List<Color> color, List<bool> tint,
-            List<Vector2> uv, List<int> material)
+            List<bool> own, List<Vector2> uv, List<int> material)
         {
             float volume = 0f;
             Vector3 min = pos[0];
@@ -2501,6 +2538,7 @@ namespace IsoRim
                 Swap(pos, i + 1, i + 2);
                 Swap(color, i + 1, i + 2);
                 Swap(tint, i + 1, i + 2);
+                Swap(own, i + 1, i + 2);
                 Swap(uv, i + 1, i + 2);
                 Swap(material, i + 1, i + 2);
                 for (int k = i; k < i + 3; k++)
@@ -2558,6 +2596,7 @@ namespace IsoRim
             m.material = src.material;
             m.materials = src.materials;
             m.noOutline = src.noOutline;
+            m.ownColor = src.ownColor;
             m.minX = float.MaxValue;
             m.minZ = float.MaxValue;
             m.maxX = float.MinValue;
@@ -2609,6 +2648,7 @@ namespace IsoRim
             m.hull = new Vector3[n];
             m.beam = src.beam;   // (Api 33) the beam part as it was
             m.noOutline = src.noOutline != null ? new bool[n] : null;
+            m.ownColor = src.ownColor != null ? new bool[n] : null;
             m.materials = src.materials;
             int k = 0;
             foreach (int i in keep)
@@ -2625,6 +2665,10 @@ namespace IsoRim
                     if (m.noOutline != null)
                     {
                         m.noOutline[k] = src.noOutline[v];
+                    }
+                    if (m.ownColor != null)
+                    {
+                        m.ownColor[k] = src.ownColor[v];
                     }
                 }
             }
@@ -2658,6 +2702,7 @@ namespace IsoRim
             List<Vector3> pos = new List<Vector3>(), nor = new List<Vector3>();
             List<Color> col = new List<Color>();
             List<bool> tint = new List<bool>(), none = src.noOutline != null ? new List<bool>() : null;
+            List<bool> own = src.ownColor != null ? new List<bool>() : null;
             List<Vector2> uv = new List<Vector2>();
             List<int> mat = new List<int>();
             int n = src.positions.Length;
@@ -2709,6 +2754,7 @@ namespace IsoRim
                         {
                             none.Add(src.noOutline[i]);
                         }
+                        own?.Add(src.ownColor[a] || src.ownColor[b]);   // a cut corner between its two corners' colours
                     }
                 }
             }
@@ -2727,6 +2773,7 @@ namespace IsoRim
                     uv.Add(box.uvs[i]);
                     mat.Add(box.material[i] + offset);
                     none?.Add(false);
+                    own?.Add(false);
                 }
             }
             if (pos.Count == 0)
@@ -2742,6 +2789,7 @@ namespace IsoRim
             m.material = mat.ToArray();
             m.materials = mats.ToArray();
             m.noOutline = none?.ToArray();
+            m.ownColor = own?.ToArray();
             m.minX = float.MaxValue;
             m.minZ = float.MaxValue;
             m.maxX = float.MinValue;
@@ -3070,8 +3118,9 @@ namespace IsoRim
         }
 
         // A material showing this texture multiplied by a colour, or null if the texture is missing.
-        // queue -1 = the textured def's own queue (2001, opaque).
-        public static Material MaterialFor(string path, Color color, int queue = -1)
+        // queue -1 = the textured def's own queue (2001, opaque). keyTag: kept apart from materials of the same texture whose
+        // colour rounds to the same bytes (Model.OwnBase is over 1).
+        public static Material MaterialFor(string path, Color color, int queue = -1, string keyTag = null)
         {
             Texture2D tex = Get(path);
             if (tex == null)
@@ -3080,7 +3129,7 @@ namespace IsoRim
             }
             color.a = 1f;
             Color32 c = color;
-            string key = path + "|" + c.r + "," + c.g + "," + c.b + "|" + queue;
+            string key = path + "|" + c.r + "," + c.g + "," + c.b + "|" + queue + keyTag;
             Material m;
             if (!materials.TryGetValue(key, out m))
             {
@@ -3635,11 +3684,12 @@ namespace IsoRim
 
         // A texture times a colour, lit by the sun. Shared by every face with the same texture,
         // colour and curve; bin is ignored (see Lit). Null if the texture is missing.
-        public static Material LitTexture(string path, Color baseColor, int bin = 0, int curve = 0)
+        // keyTag: as R3DTextures.MaterialFor's.
+        public static Material LitTexture(string path, Color baseColor, int bin = 0, int curve = 0, string keyTag = null)
         {
             curve = curve == 1 ? 1 : 0;
             Color32 c = baseColor;
-            string key = path + "|" + c.r + "," + c.g + "," + c.b + "|" + curve;
+            string key = path + "|" + c.r + "," + c.g + "," + c.b + "|" + curve + keyTag;
             Material m;
             if (litByKey.TryGetValue(key, out m))
             {

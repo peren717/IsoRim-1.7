@@ -2085,6 +2085,7 @@ namespace IsoRim
             fitted.materials = over.materials;
             fitted.hull = over.hull;
             fitted.noOutline = over.noOutline;
+            fitted.ownColor = over.ownColor;
             fitted.maxY = maxY;
             fitted.minX = minX;
             fitted.maxX = maxX;

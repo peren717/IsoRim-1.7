@@ -2826,8 +2826,9 @@ namespace IsoRim
             Color sheetTint = R3DTextures.HasSheet(m) ? R3DTextures.SheetTint(thing) : Color.white;
             // Reused from one model to the next: thousands of plants are written in a row.
             // The shader lights each face by its own direction, so all plain faces share one piece
-            // of mesh (see R3DMaterials.Lit) and textured faces one per material.
-            int slots = textured ? m.materials.Length : 0;
+            // of mesh (see R3DMaterials.Lit) and textured faces one per material (and a second one per material for its faces
+            // with corners of their own colour, Model.OwnColour: slot materials.Length + material).
+            int slots = textured ? m.materials.Length * (m.ownColor != null ? 2 : 1) : 0;
             if (texturedPool.Length < slots)
             {
                 texturedPool = new LayerSubMesh[slots * 2];
@@ -2889,24 +2890,30 @@ namespace IsoRim
 
                 // Find (once per material) where this triangle's textured face goes.
                 LayerSubMesh tm = null;
+                bool own = textured && m.OwnColour(i);   // its corners carry the colour (Model.OwnColour)
                 if (textured && mm != null && mm.texture != null)
                 {
-                    int slot = mi;
+                    int slot = own ? m.materials.Length + mi : mi;
                     if (!looked[slot])
                     {
                         looked[slot] = true;
-                        Color c = mm.color * TextureLift;
-                        if (mm.tinted)
+                        Color c = Model.OwnBase;
+                        if (!own)
                         {
-                            c *= tint;
-                        }
-                        if (mm.sheet)
-                        {
-                            c *= sheetTint;
+                            c = mm.color * TextureLift;
+                            if (mm.tinted)
+                            {
+                                c *= tint;
+                            }
+                            if (mm.sheet)
+                            {
+                                c *= sheetTint;
+                            }
                         }
                         string path = mm.texture.Replace("{stuff}", swatch);
-                        Material tmat = mm.runtimeTexture != null ? R3DMaterials.LitTexture(mm.runtimeTexture, mm.runtimeName, c, 1)
-                            : glow ? R3DTextures.MaterialFor(path, c) : R3DMaterials.LitTexture(path, c);
+                        string ownKey = own ? Model.OwnKey : null;
+                        Material tmat = mm.runtimeTexture != null ? R3DMaterials.LitTexture(mm.runtimeTexture, mm.runtimeName + ownKey, c, 1)
+                            : glow ? R3DTextures.MaterialFor(path, c, -1, ownKey) : R3DMaterials.LitTexture(path, c, 0, 0, ownKey);
                         texturedMeshes[slot] = tmat != null ? MeshWriter.Sub(layer, tmat) : null;
                     }
                     tm = texturedMeshes[slot];
@@ -2962,7 +2969,7 @@ namespace IsoRim
                         Vector2 uv = m.uvs[k];
                         tm.tris.Add(tm.verts.Count);
                         tm.verts.Add(new Vector3(center.x + q.x, baseY + Mathf.Max(Floor, q.y) / squash, center.z + q.z));
-                        tm.colors.Add(White);
+                        tm.colors.Add(own ? R3DMaterials.Shaded(c, 1f) : White);
                         tm.uvs.Add(new Vector3(uv.x, uv.y, 0f));
                         if (tagged)
                         {

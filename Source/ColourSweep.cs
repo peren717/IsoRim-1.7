@@ -127,7 +127,7 @@ namespace IsoRim
                     string path = mm.texture.Replace("{stuff}", swatch);
                     if (TexMean(path, out Color tm))
                     {
-                        col = mm.color * (m.tinted[i] ? tint : Color.white) * tm * ModelBaker.TextureLift;
+                        col = (m.OwnColour(i) ? m.colors[i] : mm.color) * (m.tinted[i] ? tint : Color.white) * tm * ModelBaker.TextureLift;   // as ModelBaker.Write
                     }
                     else
                     {

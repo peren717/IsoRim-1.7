@@ -562,6 +562,7 @@ namespace IsoRim
             c.material = m.material;
             c.materials = m.materials;
             c.noOutline = m.noOutline;
+            c.ownColor = m.ownColor;
             c.maxY = maxY;
             c.id = ObjLoader.NewId();
             return c;

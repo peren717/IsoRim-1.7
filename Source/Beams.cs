@@ -378,8 +378,8 @@ namespace IsoRim
         // Splits the faces of beam_* materials off a model being loaded (its lists, as ObjLoader.Load builds them) into a beam
         // part: positions, normals, colours and materials of those faces; the lists keep the rest. Null if there are none, or
         // if every face is a beam (then the model keeps them as faces).
-        internal static Model Split(List<Vector3> pos, List<Vector3> normal, List<Color> colour, List<bool> tint, List<Vector2> uv, List<int> material,
-            List<ModelMaterial> materials)
+        internal static Model Split(List<Vector3> pos, List<Vector3> normal, List<Color> colour, List<bool> tint, List<bool> own, List<Vector2> uv,
+            List<int> material, List<ModelMaterial> materials)
         {
             bool any = false;
             for (int i = 0; i < materials.Count; i++)
@@ -425,6 +425,7 @@ namespace IsoRim
                         normal[keep] = normal[k];
                         colour[keep] = colour[k];
                         tint[keep] = tint[k];
+                        own[keep] = own[k];
                         uv[keep] = uv[k];
                         material[keep] = material[k];
                         keep++;
@@ -436,6 +437,7 @@ namespace IsoRim
             normal.RemoveRange(keep, cut);
             colour.RemoveRange(keep, cut);
             tint.RemoveRange(keep, cut);
+            own.RemoveRange(keep, cut);
             uv.RemoveRange(keep, cut);
             material.RemoveRange(keep, cut);
             Model b = new Model();

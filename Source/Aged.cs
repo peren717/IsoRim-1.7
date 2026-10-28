@@ -65,6 +65,7 @@ namespace IsoRim
             m.normals = lit.normals;
             m.hull = lit.hull;
             m.noOutline = lit.noOutline;
+            m.ownColor = lit.ownColor;
             m.maxY = lit.maxY;
             m.halfDepth = lit.halfDepth;
             m.minX = lit.minX;

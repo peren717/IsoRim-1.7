@@ -295,6 +295,7 @@ namespace IsoRim
                     o.tinted[w] = m.tinted[i + (c < 3 ? c : 0)];
                     if (o.material != null) o.material[w] = m.material[i];
                     if (o.noOutline != null) o.noOutline[w] = m.noOutline[i + (c < 3 ? c : 0)];
+                    if (o.ownColor != null) o.ownColor[w] = m.OwnColour(i);   // the face's: one of its corners has its own colour
                 }
             }
             Finish(o);
@@ -331,6 +332,7 @@ namespace IsoRim
                 if (o.uvs != null) o.uvs[w] = m.uvs[i];
                 if (o.material != null) o.material[w] = m.material[i];
                 if (o.noOutline != null) o.noOutline[w] = m.noOutline[i];
+                if (o.ownColor != null) o.ownColor[w] = m.ownColor != null && m.ownColor[i];
             }
             Finish(o);
             return o;
@@ -347,6 +349,7 @@ namespace IsoRim
             o.uvs = m.uvs != null ? new Vector2[n] : null;
             o.material = m.material != null ? new int[n] : null;
             o.noOutline = m.noOutline != null ? new bool[n] : null;
+            o.ownColor = m.ownColor != null ? new bool[n] : null;
             o.materials = m.materials;
             o.id = ObjLoader.NewId();
             return o;

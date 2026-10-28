@@ -261,6 +261,7 @@ namespace IsoRim
         {
             public Vector3 p, n;
             public Color col;
+            public bool own;   // the corner has its own colour (Model.ownColor)
             public Vector2 uv;
         }
 
@@ -388,6 +389,7 @@ namespace IsoRim
                         p = turn * m.positions[k],
                         n = turn * m.normals[k],
                         col = m.colors != null ? m.colors[k] : Color.white,
+                        own = m.ownColor != null && m.ownColor[k],
                         uv = m.uvs != null ? m.uvs[k] : Vector2.zero
                     };
                     s.v.Add(v);
@@ -421,7 +423,7 @@ namespace IsoRim
         // Output being built.
         private static readonly List<Vector3> oPos = new List<Vector3>(), oNor = new List<Vector3>();
         private static readonly List<Color> oCol = new List<Color>();
-        private static readonly List<bool> oTint = new List<bool>(), oNone = new List<bool>();
+        private static readonly List<bool> oTint = new List<bool>(), oNone = new List<bool>(), oOwn = new List<bool>();
         private static readonly List<Vector2> oUv = new List<Vector2>();
         private static readonly List<int> oMat = new List<int>();
 
@@ -507,7 +509,7 @@ namespace IsoRim
             }
 
             // Pass 2: the model.
-            oPos.Clear(); oNor.Clear(); oCol.Clear(); oTint.Clear(); oNone.Clear(); oUv.Clear(); oMat.Clear();
+            oPos.Clear(); oNor.Clear(); oCol.Clear(); oTint.Clear(); oNone.Clear(); oOwn.Clear(); oUv.Clear(); oMat.Clear();
             ClipAll(src, pieces, mid, margin, seg, cuts, null);
             if (oPos.Count == 0)
             {
@@ -522,6 +524,7 @@ namespace IsoRim
             m.material = oMat.ToArray();
             m.materials = seg.mats.ToArray();
             m.noOutline = oNone.ToArray();
+            m.ownColor = oOwn.Contains(true) ? oOwn.ToArray() : null;
             m.minX = m.minZ = float.MaxValue;
             m.maxX = m.maxZ = float.MinValue;
             for (int i = 0; i < m.positions.Length; i++)
@@ -905,6 +908,7 @@ namespace IsoRim
                 p = turn * m.positions[k] + shift,
                 n = turn * m.normals[k],
                 col = m.colors != null ? m.colors[k] : Color.white,
+                own = m.ownColor != null && m.ownColor[k],
                 uv = m.uvs != null ? m.uvs[k] : Vector2.zero
             };
         }
@@ -947,6 +951,7 @@ namespace IsoRim
                         p = Vector3.Lerp(a.p, b.p, t),
                         n = Vector3.Lerp(a.n, b.n, t),
                         col = Color.Lerp(a.col, b.col, t),
+                        own = a.own || b.own,
                         uv = Vector2.Lerp(a.uv, b.uv, t)
                     };
                     float dm = pl.Dist(m.p);
@@ -981,6 +986,7 @@ namespace IsoRim
             oMat.Add(mat);
             oTint.Add(tint);
             oNone.Add(none);
+            oOwn.Add(v.own);
         }
 
         // ------------------------------------------------------------------ caps

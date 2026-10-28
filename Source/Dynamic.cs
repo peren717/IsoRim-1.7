@@ -476,8 +476,10 @@ namespace IsoRim
             Lists solid = new Lists();
             Lists glowing = new Lists();
             Lists outline = new Lists();
-            Lists[] texturedLists = textured ? new Lists[m.materials.Length] : null;
-            bool[] looked = textured ? new bool[m.materials.Length] : null;
+            // one per material, and a second one per material for its faces with corners of their own colour (Model.OwnColour)
+            int slots = textured ? m.materials.Length * (m.ownColor != null ? 2 : 1) : 0;
+            Lists[] texturedLists = textured ? new Lists[slots] : null;
+            bool[] looked = textured ? new bool[slots] : null;
 
             int n = m.positions.Length;
             for (int i = 0; i + 2 < n; i += 3)
@@ -487,25 +489,32 @@ namespace IsoRim
                 bool glow = mm != null && mm.glow;   // a flame is as bright on every side
 
                 Lists tl = null;
+                bool own = textured && m.OwnColour(i);   // its corners carry the colour (Model.OwnColour)
                 if (textured && mm != null && mm.texture != null)
                 {
-                    if (!looked[mi])
+                    int slot = own ? m.materials.Length + mi : mi;
+                    if (!looked[slot])
                     {
-                        looked[mi] = true;
-                        Color c = mm.color * ModelBaker.TextureLift;
-                        if (mm.tinted)
+                        looked[slot] = true;
+                        Color c = Model.OwnBase;
+                        if (!own)
                         {
-                            c *= tint;
+                            c = mm.color * ModelBaker.TextureLift;
+                            if (mm.tinted)
+                            {
+                                c *= tint;
+                            }
                         }
+                        string ownKey = own ? Model.OwnKey : null;
                         string path = mm.texture.Replace("{stuff}", swatch);
-                        Material tmat = glow ? R3DTextures.MaterialFor(path, c) : R3DMaterials.LitTexture(path, c);
+                        Material tmat = glow ? R3DTextures.MaterialFor(path, c, -1, ownKey) : R3DMaterials.LitTexture(path, c, 0, 0, ownKey);
                         if (tmat != null)
                         {
-                            texturedLists[mi] = new Lists();
-                            texturedLists[mi].material = tmat;
+                            texturedLists[slot] = new Lists();
+                            texturedLists[slot].material = tmat;
                         }
                     }
-                    tl = texturedLists[mi];
+                    tl = texturedLists[slot];
                 }
 
                 Lists into = glow ? glowing : solid;
@@ -524,7 +533,7 @@ namespace IsoRim
                     }
                     if (tl != null)
                     {
-                        tl.Add(m.positions[k] + m.normals[i] * ModelBaker.FaceLift, White, m.uvs[k]);
+                        tl.Add(m.positions[k] + m.normals[i] * ModelBaker.FaceLift, own ? R3DMaterials.Shaded(c, 1f) : White, m.uvs[k]);
                     }
                 }
             }
