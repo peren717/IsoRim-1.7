@@ -12,7 +12,6 @@ import bmesh
 from mathutils import Vector
 
 OUT = sys.argv[sys.argv.index("--") + 1] if "--" in sys.argv else "out"
-os.makedirs(OUT, exist_ok=True)
 
 # Colours of the isorim.mtl materials used, for the preview renders only.
 COLOURS = {
@@ -22,7 +21,7 @@ COLOURS = {
     "ember": (0.96, 0.42, 0.18), "chemfuel": (0.74, 0.30, 0.16), "rust": (0.50, 0.32, 0.22),
     "rust_dark": (0.30, 0.21, 0.16), "plasteel": (0.70, 0.80, 0.84), "brass": (0.80, 0.64, 0.30),
     "paint_red": (0.56, 0.24, 0.20), "spike": (0.80, 0.80, 0.80), "warning": (0.90, 0.75, 0.20),
-    "glow_amber": (1.00, 0.72, 0.30), "food_green": (0.44, 0.62, 0.30), "metal_dark": (0.32, 0.33, 0.36),
+    "glow_amber": (1.00, 0.72, 0.30), "food_green": (0.44, 0.62, 0.30), "metal_dark": (0.32, 0.33, 0.36), "stuff_plain": (1.0, 1.0, 1.0), "stuff_plain_light": (1.0, 1.0, 1.0), "stuff_plain_dark": (0.8, 0.8, 0.8), "an_dark": (0.11, 0.10, 0.10), "an_horn": (0.85, 0.81, 0.69),
     "agave": (0.29, 0.54, 0.52), "wood_end": (0.78, 0.62, 0.40), "jade": (0.40, 0.66, 0.46), "glow_red": (0.98, 0.36, 0.30), "string": (0.86, 0.82, 0.72),
 }
 GLOWING = {"charge", "glow_green", "ember", "glow_amber", "glow_red"}
@@ -62,6 +61,7 @@ class Model:
     def __init__(self, name, recolour=None):
         self.name = name
         self.recolour = recolour or {}   # material -> (material, exact sRGB colour) for a recoloured variant
+        self.xf = None                   # a function placing each new vertex (parts built in their own frame)
         self.bm = bmesh.new()
         self.mats = []
 
@@ -73,7 +73,7 @@ class Model:
     def _faces(self, verts, faces, mat):
         if mat in self.recolour:
             mat = coloured(*self.recolour[mat])
-        vs = [self.bm.verts.new(v) for v in verts]
+        vs = [self.bm.verts.new(self.xf(v) if self.xf else v) for v in verts]
         i = self._mat(mat)
         for f in faces:
             face = self.bm.faces.new([vs[k] for k in f])
@@ -741,7 +741,13 @@ def render(ob, path, direction=(0.35, -1.0, 0.55)):
     bpy.data.objects.remove(cam)
 
 
-for build in MODELS:
+def main():
+    os.makedirs(OUT, exist_ok=True)
+    for build in MODELS:
+        build_one(build)
+
+
+def build_one(build):
     clear()
     ob = build().finish()
     p = export(ob)
@@ -749,3 +755,8 @@ for build in MODELS:
     render(ob, os.path.join(OUT, "previews", ob.name + "_side.png"), (0.0, -1.0, 0.0))
     render(ob, os.path.join(OUT, "previews", ob.name + "_top.png"), (0.0, -0.0001, 1.0))
     print("built", p, len(ob.data.vertices), "verts", len(ob.data.polygons), "faces")
+    return ob
+
+
+if __name__ == "__main__":
+    main()
