@@ -851,6 +851,7 @@ namespace IsoRim
                 h = h * 31 + (st.itemsFromArt ? 1 : 0);
                 h = h * 31 + (st.pawns3D ? 1 : 0);   // apparel on the ground is dressed as the figures (GroundGear)
                 h = h * 31 + (st.rawModels ? 1 : 0);
+                h = h * 31 + (st.weaponModels3D ? 1 : 0);   // weapons lying about as their models (WeaponModels)
                 h = h * 31 + Mathf.RoundToInt(st.itemThickness * 20f);
                 h = h * 31 + (st.ghosts3D ? 1 : 0);
                 h = h * 31 + (st.cutRock ? 1 : 0);

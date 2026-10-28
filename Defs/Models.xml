@@ -443,6 +443,7 @@
     <defName>R3D_Gun_Revolver</defName>
     <thingDef>Gun_Revolver</thingDef>
     <model>Models/revolver.obj</model>
+    <scale>1.81</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -451,6 +452,7 @@
     <defName>R3D_Gun_Autopistol</defName>
     <thingDef>Gun_Autopistol</thingDef>
     <model>Models/pistol.obj</model>
+    <scale>1.45</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -459,6 +461,7 @@
     <defName>R3D_Gun_MachinePistol</defName>
     <thingDef>Gun_MachinePistol</thingDef>
     <model>Models/machine_pistol.obj</model>
+    <scale>1.57</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -467,6 +470,7 @@
     <defName>R3D_Gun_HeavySMG</defName>
     <thingDef>Gun_HeavySMG</thingDef>
     <model>Models/smg.obj</model>
+    <scale>1.23</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -475,6 +479,7 @@
     <defName>R3D_Gun_PumpShotgun</defName>
     <thingDef>Gun_PumpShotgun</thingDef>
     <model>Models/shotgun.obj</model>
+    <scale>0.82</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -491,6 +496,7 @@
     <defName>R3D_Gun_BoltActionRifle</defName>
     <thingDef>Gun_BoltActionRifle</thingDef>
     <model>Models/bolt_rifle.obj</model>
+    <scale>0.75</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -507,6 +513,7 @@
     <defName>R3D_Gun_SniperRifle</defName>
     <thingDef>Gun_SniperRifle</thingDef>
     <model>Models/sniper_rifle.obj</model>
+    <scale>0.66</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -515,6 +522,7 @@
     <defName>R3D_Gun_LMG</defName>
     <thingDef>Gun_LMG</thingDef>
     <model>Models/lmg.obj</model>
+    <scale>0.73</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -531,6 +539,7 @@
     <defName>R3D_Gun_ChargeRifle</defName>
     <thingDef>Gun_ChargeRifle</thingDef>
     <model>Models/charge_rifle.obj</model>
+    <scale>0.76</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -539,6 +548,7 @@
     <defName>R3D_Gun_ChargeLance</defName>
     <thingDef>Gun_ChargeLance</thingDef>
     <model>Models/charge_lance.obj</model>
+    <scale>0.69</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -547,6 +557,7 @@
     <defName>R3D_Gun_IncendiaryLauncher</defName>
     <thingDef>Gun_IncendiaryLauncher</thingDef>
     <model>Models/launcher.obj</model>
+    <scale>1.32</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -555,6 +566,7 @@
     <defName>R3D_Gun_EmpLauncher</defName>
     <thingDef>Gun_EmpLauncher</thingDef>
     <model>Models/launcher.obj</model>
+    <scale>1.32</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -563,6 +575,7 @@
     <defName>R3D_Gun_SmokeLauncher</defName>
     <thingDef>Gun_SmokeLauncher</thingDef>
     <model>Models/launcher.obj</model>
+    <scale>1.34</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -571,6 +584,7 @@
     <defName>R3D_Gun_TripleRocket</defName>
     <thingDef>Gun_TripleRocket</thingDef>
     <model>Models/rocket_launcher.obj</model>
+    <scale>0.82</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -579,6 +593,7 @@
     <defName>R3D_Gun_DoomsdayRocket</defName>
     <thingDef>Gun_DoomsdayRocket</thingDef>
     <model>Models/rocket_launcher.obj</model>
+    <scale>0.83</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -603,6 +618,7 @@
     <defName>R3D_Bow_Great</defName>
     <thingDef>Bow_Great</thingDef>
     <model>Models/bow_great.obj</model>
+    <scale>0.75</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -611,6 +627,7 @@
     <defName>R3D_Pila</defName>
     <thingDef>Pila</thingDef>
     <model>Models/pila.obj</model>
+    <scale>0.75</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -643,6 +660,7 @@
     <defName>R3D_MeleeWeapon_Club</defName>
     <thingDef>MeleeWeapon_Club</thingDef>
     <model>Models/club.obj</model>
+    <scale>1.26</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -675,6 +693,7 @@
     <defName>R3D_MeleeWeapon_Spear</defName>
     <thingDef>MeleeWeapon_Spear</thingDef>
     <model>Models/spear.obj</model>
+    <scale>0.61</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -683,6 +702,7 @@
     <defName>R3D_MeleeWeapon_Mace</defName>
     <thingDef>MeleeWeapon_Mace</thingDef>
     <model>Models/mace.obj</model>
+    <scale>0.8</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -691,6 +711,7 @@
     <defName>R3D_MeleeWeapon_LongSword</defName>
     <thingDef>MeleeWeapon_LongSword</thingDef>
     <model>Models/longsword.obj</model>
+    <scale>0.79</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -707,6 +728,7 @@
     <defName>R3D_MeleeWeapon_BreachAxe</defName>
     <thingDef>MeleeWeapon_BreachAxe</thingDef>
     <model>Models/axe.obj</model>
+    <scale>1.19</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>
@@ -715,6 +737,257 @@
     <defName>R3D_MeleeWeapon_Warhammer</defName>
     <thingDef>MeleeWeapon_Warhammer</thingDef>
     <model>Models/warhammer.obj</model>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <!-- Weapons batches 1-3 (2026-10-27, approved WIP from claude/intelligent-meitner-jfly6r, make_weapons.py): Royalty,
+       Biotech, Anomaly, Odyssey. Vertex-coloured files (v x y z r g b): beam_*, persona_*, jade_knife. jade_knife.obj is
+       not bound: the jade knife is MeleeWeapon_Knife made of Jade (Tribal scenario), and a ModelDef cannot pick a model by
+       stuff (byAppearance only). -->
+  <IsoRim.ModelDef>
+    <defName>R3D_MeleeWeapon_MonoSword</defName>
+    <thingDef>MeleeWeapon_MonoSword</thingDef>
+    <model>Models/monosword.obj</model>
+    <scale>0.84</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_MeleeWeapon_MonoSwordBladelink</defName>
+    <thingDef>MeleeWeapon_MonoSwordBladelink</thingDef>
+    <model>Models/persona_monosword.obj</model>
+    <scale>0.84</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_MeleeWeapon_PlasmaSword</defName>
+    <thingDef>MeleeWeapon_PlasmaSword</thingDef>
+    <model>Models/plasmasword.obj</model>
+    <scale>0.81</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_MeleeWeapon_PlasmaSwordBladelink</defName>
+    <thingDef>MeleeWeapon_PlasmaSwordBladelink</thingDef>
+    <model>Models/persona_plasmasword.obj</model>
+    <scale>0.81</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_MeleeWeapon_Zeushammer</defName>
+    <thingDef>MeleeWeapon_Zeushammer</thingDef>
+    <model>Models/zeushammer.obj</model>
+    <scale>0.8</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_MeleeWeapon_ZeusHammerBladelink</defName>
+    <thingDef>MeleeWeapon_ZeusHammerBladelink</thingDef>
+    <model>Models/persona_zeushammer.obj</model>
+    <scale>0.8</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_MeleeWeapon_PsyfocusStaff</defName>
+    <thingDef>MeleeWeapon_PsyfocusStaff</thingDef>
+    <model>Models/eltex_staff.obj</model>
+    <scale>0.78</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_ToxbombLauncher</defName>
+    <thingDef>Gun_ToxbombLauncher</thingDef>
+    <model>Models/toxbomb_launcher.obj</model>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Flamebow</defName>
+    <thingDef>Flamebow</thingDef>
+    <model>Models/flamebow.obj</model>
+    <scale>0.71</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Weapon_GrenadeTox</defName>
+    <thingDef>Weapon_GrenadeTox</thingDef>
+    <model>Models/grenade_tox.obj</model>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_BeamGraser</defName>
+    <thingDef>Gun_BeamGraser</thingDef>
+    <model>Models/beam_graser.obj</model>
+    <scale>0.85</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_Incinerator</defName>
+    <thingDef>Gun_Incinerator</thingDef>
+    <model>Models/incinerator.obj</model>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_HellcatRifle</defName>
+    <thingDef>Gun_HellcatRifle</thingDef>
+    <model>Models/hellcat_rifle.obj</model>
+    <scale>0.84</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_BeamRepeater</defName>
+    <thingDef>Gun_BeamRepeater</thingDef>
+    <model>Models/beam_repeater.obj</model>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <!-- Nerve spiker: a crossbow whose sprite is its top view; not laid flat, so it lies limbs-down; its grip reaches 0.15
+       below the origin, lifted by that much. -->
+  <IsoRim.ModelDef>
+    <defName>R3D_NerveSpiker</defName>
+    <thingDef>NerveSpiker</thingDef>
+    <model>Models/nerve_spiker.obj</model>
+    <rotation>-18</rotation>
+    <offset>(0, 0.15, 0)</offset>
+  </IsoRim.ModelDef>
+
+  <!-- Odyssey unique weapons: their base gun's model. -->
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_Revolver_Unique</defName>
+    <thingDef>Gun_Revolver_Unique</thingDef>
+    <model>Models/revolver.obj</model>
+    <scale>1.79</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_HeavySMG_Unique</defName>
+    <thingDef>Gun_HeavySMG_Unique</thingDef>
+    <model>Models/smg.obj</model>
+    <scale>1.21</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_ChainShotgun_Unique</defName>
+    <thingDef>Gun_ChainShotgun_Unique</thingDef>
+    <model>Models/chain_shotgun.obj</model>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_BoltActionRifle_Unique</defName>
+    <thingDef>Gun_BoltActionRifle_Unique</thingDef>
+    <model>Models/bolt_rifle.obj</model>
+    <scale>0.75</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_AssaultRifle_Unique</defName>
+    <thingDef>Gun_AssaultRifle_Unique</thingDef>
+    <model>Models/assault_rifle.obj</model>
+    <scale>0.74</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_SniperRifle_Unique</defName>
+    <thingDef>Gun_SniperRifle_Unique</thingDef>
+    <model>Models/sniper_rifle.obj</model>
+    <scale>0.66</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_LMG_Unique</defName>
+    <thingDef>Gun_LMG_Unique</thingDef>
+    <model>Models/lmg.obj</model>
+    <scale>0.73</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_Minigun_Unique</defName>
+    <thingDef>Gun_Minigun_Unique</thingDef>
+    <model>Models/minigun.obj</model>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_ChargeRifle_Unique</defName>
+    <thingDef>Gun_ChargeRifle_Unique</thingDef>
+    <model>Models/charge_rifle.obj</model>
+    <scale>0.77</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_ChargeLance_Unique</defName>
+    <thingDef>Gun_ChargeLance_Unique</thingDef>
+    <model>Models/charge_lance.obj</model>
+    <scale>0.69</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_HellcatRifle_Unique</defName>
+    <thingDef>Gun_HellcatRifle_Unique</thingDef>
+    <model>Models/hellcat_rifle.obj</model>
+    <scale>0.67</scale>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Gun_BeamRepeater_Unique</defName>
+    <thingDef>Gun_BeamRepeater_Unique</thingDef>
+    <model>Models/beam_repeater.obj</model>
+    <rotation>-18</rotation>
+    <layFlat>true</layFlat>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Bow_Great_Unique</defName>
+    <thingDef>Bow_Great_Unique</thingDef>
+    <model>Models/bow_great.obj</model>
+    <scale>0.75</scale>
     <rotation>-18</rotation>
     <layFlat>true</layFlat>
   </IsoRim.ModelDef>

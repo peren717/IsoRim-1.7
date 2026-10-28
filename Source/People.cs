@@ -462,7 +462,8 @@ namespace IsoRim
                 // Aiming, the body turns smoothly to face the aim as drawn (the game turns the pawn to face its target).
                 float aimGame, aimDrawn = 0f;
                 bool aiming = !lying && FigureWeapons.AimOf(pawn, neverAim, out aimGame, out aimDrawn);
-                Animals.Track(pawn, drawLoc, lying && !crawling, 0.9f * size, out yaw, out phase, out gait, aiming ? aimDrawn : (float?)null);
+                // (not aiming: the facing another mod gives the sprite, BodyAnims.Facing)
+                Animals.Track(pawn, drawLoc, lying && !crawling, 0.9f * size, out yaw, out phase, out gait, aiming ? aimDrawn : lying ? (float?)null : BodyAnims.FacingTurn(pawn));
             }
 
             float ground = 0f;
@@ -727,7 +728,7 @@ namespace IsoRim
             }
             Poses.Seat seat = default(Poses.Seat);
             bool seated = lift <= 0f && Poses.Seated(pawn, ref drawLoc, out seat);
-            float yaw = aiming ? aimDrawn : pawn.Rotation.AsAngle;
+            float yaw = aiming ? aimDrawn : BodyAnims.Facing(pawn).AsAngle;
             Matrix4x4 pose = BodyAnims.Apply(pawn, drawLoc, yaw, size, Matrix4x4.identity);
             Vector3 at = new Vector3(drawLoc.x, (seated ? seat.Lift : 0f) + lift, drawLoc.z);
             Matrix4x4 whole = pose * Matrix4x4.Scale(new Vector3(size, size, size));

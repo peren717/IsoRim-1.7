@@ -2378,7 +2378,7 @@ namespace IsoRim
         [HarmonyPriority(Priority.Last)]
         public static void PreRenderResults_Prefix(PawnRenderer __instance, ref Rot4? __1, bool __2)
         {
-            if (rotFromCaller || !View3D.Ready || !IsoRimMod.Settings.uprightPawns)
+            if (rotFromCaller || !View3D.Ready)
             {
                 return;
             }
@@ -2386,6 +2386,13 @@ namespace IsoRim
             {
                 Pawn pawn = pawnOfRenderer != null ? pawnOfRenderer(__instance) : null;
                 if (pawn == null || pawn.Dead || pawn.GetPosture() != PawnPosture.Standing)
+                {
+                    return;
+                }
+                // The facing other mods' prefixes gave the sprite (a map facing, before the camera's turn): a 3D figure faces
+                // it too (BodyAnims.Facing).
+                BodyAnims.NoteFacing(pawn, __1);
+                if (!IsoRimMod.Settings.uprightPawns)
                 {
                     return;
                 }
@@ -2716,6 +2723,10 @@ namespace IsoRim
         public static bool HeldWeapon3D(Thing weapon, Vector3 position, float aim)
         {
             IsoRimSettings st = IsoRimMod.Settings;
+            if (WeaponModels.On && WeaponModels.DrawHeld(weapon, position, aim))
+            {
+                return true;   // its 3D model where its sprite would be (WeaponModels)
+            }
             if (GroundGear.HeldSprite(weapon.def) && SpriteSolids.DrawHeld(weapon, position, aim))
             {
                 return true;

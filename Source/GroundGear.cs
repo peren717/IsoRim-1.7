@@ -43,13 +43,17 @@ namespace IsoRim
         // binds a model of its own to this very thing.
         public static bool Replaces(ThingDef def, ModelEntry entry)
         {
-            return def != null && def.category == ThingCategory.Item && !IsoRimMod.Settings.itemsFromArt && Gear(def, entry);
+            return def != null && def.category == ThingCategory.Item && !IsoRimMod.Settings.itemsFromArt && Gear(def, entry) && !WeaponModels.Uses(def);
         }
 
         // Whether a held weapon of this def (outfit stands, mechs: Patches.HeldWeapon3D) is its own sprite made solid, as a 3D
         // colonist holds it: with the game's art, or without it unless another mod binds a model of its own to this very weapon.
         public static bool HeldSprite(ThingDef def)
         {
+            if (WeaponModels.Uses(def))
+            {
+                return false;   // its 3D model (WeaponModels)
+            }
             if (IsoRimMod.Settings.itemsFromArt)
             {
                 return true;

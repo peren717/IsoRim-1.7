@@ -93,6 +93,14 @@ namespace IsoRim
             }
             // (A landed drop pod is an item to the game, but a bound one is drawn as its pod model: ActiveTransporter defs.)
             bool podModel = listed && entry.HasModel && st.models3D && typeof(ActiveTransporter).IsAssignableFrom(def.thingClass);
+            if (def.category == ThingCategory.Item && WeaponModels.Uses(def))
+            {
+                // A weapon with a 3D model lies as its model (WeaponModels), with or without the game's art.
+                f.form = Form3D.Model;
+                f.model = entry;
+                f.height = entry.SurfaceHeight * entry.Fit(def).y;
+                return f;
+            }
             if (def.category == ThingCategory.Item && st.itemsFromArt && !IsChunk(def) && !OverArt(listed ? entry : null) && !podModel)
             {
                 // Items are made solid from their own game sprite, so they read exactly as
@@ -2323,7 +2331,7 @@ namespace IsoRim
                 center.x += (Hashing.Unit(id, 13, 3) - 0.5f) * def.scatter;
                 center.z += (Hashing.Unit(id, 17, 4) - 0.5f) * def.scatter;
             }
-            if (def.overArt && thing.MultipleItemsPerCellDrawn())
+            if ((def.overArt || (thing.def.category == ThingCategory.Item && WeaponModels.Uses(thing.def))) && thing.MultipleItemsPerCellDrawn())
             {
                 fit *= 0.8f;   // as the game draws several items in one cell (a shelf) at 0.8 size
             }

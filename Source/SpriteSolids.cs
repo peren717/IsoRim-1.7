@@ -40,22 +40,27 @@ namespace IsoRim
                 return false;
             }
 
-            Vector2 draw = g.drawSize;
-            float s = View3D.Squash;
-            Matrix4x4 m = Matrix4x4.Translate(new Vector3(hand.x, hand.y / s, hand.z))
-                * Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f))
-                * Matrix4x4.Rotate(Quaternion.AngleAxis(aim - 90f, Vector3.up))
-                // The game turns some sprites (swords, spears) by a set angle to hold them;
-                // turning the other way first lines the weapon up with where it points.
-                * Matrix4x4.Rotate(Quaternion.AngleAxis(-weapon.def.equippedAngleOffset, Vector3.forward))
-                * Matrix4x4.Scale(new Vector3(draw.x * Size, draw.y * Size, 1f));
-            m = Floors.DrawnMatrix(m);
+            Matrix4x4 m = Floors.DrawnMatrix(HeldMatrix(weapon, hand, aim, g.drawSize));
             IsoGlow.DrawLit(solid.sides, m, sideMat, 0);
             if (!ShipCapture.Note(solid.faces, m, mat, null))
             {
                 Graphics.DrawMesh(solid.faces, m, mat, 0);
             }
             return true;
+        }
+
+        // Where DrawHeld puts the slab (drawn space, before the floor shift); a weapon's model goes there in its place
+        // (WeaponModels.DrawHeld).
+        public static Matrix4x4 HeldMatrix(Thing weapon, Vector3 hand, float aim, Vector2 draw)
+        {
+            float s = View3D.Squash;
+            return Matrix4x4.Translate(new Vector3(hand.x, hand.y / s, hand.z))
+                * Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f))
+                * Matrix4x4.Rotate(Quaternion.AngleAxis(aim - 90f, Vector3.up))
+                // The game turns some sprites (swords, spears) by a set angle to hold them;
+                // turning the other way first lines the weapon up with where it points.
+                * Matrix4x4.Rotate(Quaternion.AngleAxis(-weapon.def.equippedAngleOffset, Vector3.forward))
+                * Matrix4x4.Scale(new Vector3(draw.x * Size, draw.y * Size, 1f));
         }
 
         // The slab of a sprite drawn with this material, placed by m (drawn space, the floor applied): a 3D figure's weapon as the

@@ -257,6 +257,12 @@
   <R3D_Settings_Animals3D>Animals</R3D_Settings_Animals3D>
   <R3D_Settings_Mechs3D>Mechanoids</R3D_Settings_Mechs3D>
   <R3D_Settings_HeldWeapons3D>Weapons in hand</R3D_Settings_HeldWeapons3D>
+  <R3D_Settings_WeaponModels3D>Weapons as 3D models</R3D_Settings_WeaponModels3D>
+  <R3D_Settings_WeaponModels3DTip>Weapons with a 3D model show it on the ground, on shelves and stands, and in hand.</R3D_Settings_WeaponModels3DTip>
+  <R3D_Settings_AimSide>Aim: shoulder side</R3D_Settings_AimSide>
+  <R3D_Settings_AimHeight>Aim: shoulder height</R3D_Settings_AimHeight>
+  <R3D_Settings_AimReach>Aim: forward reach</R3D_Settings_AimReach>
+  <R3D_Settings_AimTip>Where a ranged weapon's butt rests while aiming.</R3D_Settings_AimTip>
   <R3D_Settings_WorkAnimations>Work animations with tools</R3D_Settings_WorkAnimations>
   <R3D_Settings_WorkAnimationsTip>Axes, pickaxes, hammers, scythes, hoes and brooms while colonists work.</R3D_Settings_WorkAnimationsTip>
   <R3D_Settings_Ghosts3D>Blueprints show the finished build</R3D_Settings_Ghosts3D>

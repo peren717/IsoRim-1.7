@@ -858,6 +858,18 @@ namespace IsoRim
             }
         }
 
+        // FigureWeapons: a 3D figure's weapon drawn as its model, its barrel's end at (true cells), its middle at centre.
+        public static void FigureTipAt(Thing pawn, Thing weapon, Vector3 at, Vector3 centre)
+        {
+            Tip t = tips.GetValue(pawn, k => new Tip());
+            t.at = at;
+            t.centre = centre;
+            t.gun = weapon.def;
+            t.frame = Time.frameCount;
+            t.yaw = View3D.Yaw;
+            t.pitch = View3D.Pitch;
+        }
+
         // Harness only (probe tipmarks=1): a magenta dot where a 2D pawn's shots start (the drawn tip) and a cyan one where
         // they started before (MuzzleReach along the aim at MuzzleHeight), for measuring both against the drawn barrel.
         public static bool TipMarks;

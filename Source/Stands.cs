@@ -103,7 +103,7 @@ namespace IsoRim
             bool weaponDrawn = weapon == null;
             if (weapon != null && IsoRimMod.Settings.heldWeapons3D)
             {
-                weaponDrawn = DrawWeapon(stand, weapon, def, size, c, outfit);
+                weaponDrawn = DrawWeapon(stand, weapon, def, size, c, outfit, yaw, figure, body);
             }
 
             // Clothing with no 3D part is left out, as on a 3D colonist (People.Dress).
@@ -144,8 +144,18 @@ namespace IsoRim
         // moved by the game's offset for the stand's facing (east-west across the picture, south = lower on the
         // figure), held just clear of the dressed body: in front of it (south), or behind it for a stand facing
         // north, which the game draws under the body. Sized with the dressed figure.
-        private static bool DrawWeapon(Building_OutfitStand stand, ThingWithComps weapon, ModelDef def, float size, Vector3 c, Outfit outfit)
+        private static bool DrawWeapon(Building_OutfitStand stand, ThingWithComps weapon, ModelDef def, float size, Vector3 c, Outfit outfit, float yaw, Matrix4x4 figure,
+            BodyTypeDef body)
         {
+            if (WeaponModels.On)
+            {
+                // As a colonist of the stand's build carries it (FigureWeapons: the game's carry picture on the chest), its model
+                // or its sprite made solid.
+                Model upper = People.Part("person_" + People.BuildOf(body ?? BodyTypeDefOf.Male) + "_upper");
+                float front = upper != null ? upper.halfDepth : outfit.halfDepth;
+                float side = upper != null ? Mathf.Max(-upper.minX, upper.maxX) : outfit.halfWidth;
+                return FigureWeapons.DrawOnStand(weapon, (float)weaponFactorGetter.Invoke(stand, null), new Vector3(c.x, 0f, c.z), yaw, figure, front, side);
+            }
             Rot4 facing = stand.Rotation;
             float aim = facing == Rot4.West ? 217f : 143f;
             Vector3 off = EqLoc[facing.AsInt] * (float)weaponFactorGetter.Invoke(stand, null);

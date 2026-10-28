@@ -23,6 +23,10 @@ namespace IsoRim
     //     recoil and any mod's offsets come out as drawn. The barrel's end as drawn is where shots start (Projectiles);
     //   - anything else (worn extras: the shield bubble) a card facing the camera round the figure's middle.
     // Nothing caught means nothing shows: the game would not draw a weapon now (sheathed, carrying something, eating).
+    // With "Weapons as 3D models" (WeaponModels.On, 2026-10-27): a weapon with a model shows it where its slab would be (its hold
+    // frame); a ranged weapon that is not thrown is aimed from the right shoulder (the settings), its butt there and its barrel
+    // along the aim, and whatever the game's drawing differs by from the game's own placing (other mods' animation, the
+    // recoil) goes on top (Shoulder); an outfit stand carries its weapon as a colonist does (DrawOnStand). Off: as before.
     public static class FigureWeapons
     {
         private const float PersonHeight = 1.12f;   // a figure of size 1, feet to the top of the head (People.FigureHeight)
@@ -164,7 +168,7 @@ namespace IsoRim
             {
                 if (report != null)
                 {
-                    reports[pawn.thingIDNumber] = "nothing drawn";
+                    reports[pawn.thingIDNumber] = "nothing drawn, figure yaw " + yaw.ToString("0") + (BodyAnims.Facing(pawn) != pawn.Rotation ? "; mod facing " + BodyAnims.Facing(pawn) : "");
                 }
                 return;
             }
@@ -174,6 +178,7 @@ namespace IsoRim
             Matrix4x4 figure = Matrix4x4.Translate(at) * Matrix4x4.Rotate(Quaternion.AngleAxis(yaw, Vector3.up)) * local;   // true cells
             Vector3 origin = new Vector3(drawLoc.x, 0f, drawLoc.z);
             bool weapons = IsoRimMod.Settings.heldWeapons3D;
+            bool models = WeaponModels.On;   // the new hold (models, the shoulder); off: as before
             for (int i = 0; i < caught.Count; i++)
             {
                 Caught c = caught[i];
@@ -202,48 +207,75 @@ namespace IsoRim
                 }
                 else if (c.carried)
                 {
-                    // The front picture on the chest: picture x to the figure's left (as seen from its front), picture up
-                    // (north) to up, at the body's middle, turned about the body's side so the muzzle comes forward.
-                    Matrix4x4 onChest = Matrix4x4.Translate(new Vector3(0f, PersonHeight * 0.5f, front + WeaponGap))
-                        * Matrix4x4.Translate(new Vector3(side * 0.8f, 0f, 0f)) * Matrix4x4.Rotate(Quaternion.AngleAxis(Tilt, Vector3.up))
-                        * Matrix4x4.Translate(new Vector3(-side * 0.8f, 0f, 0f))
-                        * Matrix4x4.Scale(new Vector3(Picture, Picture, Picture)) * PictureToFront * m * SlabToPlane(flipped);
-                    SpriteSolids.DrawSlab(c.material, Floors.DrawnMatrix(placed * local * onChest));
+                    Matrix4x4 slab = placed * local * OnChest(m, flipped, front, side);
+                    bool asModel = DrawPiece(c, slab, models);
                     if (report != null)
                     {
-                        report += "carried " + c.weapon.def.defName + (flipped ? " (flipped)" : "") + " angle " + Angle(m).ToString("0") + "; ";
+                        report += "carried " + c.weapon.def.defName + (flipped ? " (flipped)" : "") + " angle " + Angle(m).ToString("0") + (asModel ? " model" : "") + "; ";
                     }
                 }
                 else
                 {
                     float game, aim;
-                    if (!AimOf(pawn, neverAim, out game, out aim))
+                    bool known = AimOf(pawn, neverAim, out game, out aim);
+                    if (!known)
                     {
                         game = aim = c.matrix.rotation.eulerAngles.y + 90f;   // a mod aiming on its own: along the picture
                     }
                     Vector3 dir = Quaternion.AngleAxis(aim, Vector3.up) * Vector3.forward;
-                    // Onto the aim as drawn (another floor: the target shows elsewhere than in the game's rows).
-                    Matrix4x4 turned = Matrix4x4.Rotate(Quaternion.AngleAxis(Mathf.DeltaAngle(game, aim), Vector3.up)) * m;
-                    // Stood up about the aim line: the side of it nearest the picture's top goes up.
                     Vector3 right = Vector3.Cross(Vector3.up, dir);
-                    Vector3 top = ((Vector3)turned.GetColumn(2)).normalized;
-                    Vector3 side2 = Vector3.Dot(top, right) >= 0f ? right : -right;
-                    Quaternion standUp = Quaternion.FromToRotation(side2, Vector3.up);
-                    Vector3 hands = figure.MultiplyPoint3x4(new Vector3(0f, HandY, 0f));
-                    float pitch = PitchOf(pawn, hands.y);
-                    Quaternion raise = Quaternion.FromToRotation(dir, dir * Mathf.Cos(pitch * Mathf.Deg2Rad) + Vector3.up * Mathf.Sin(pitch * Mathf.Deg2Rad));
-                    Matrix4x4 world = Matrix4x4.Translate(hands) * Matrix4x4.Rotate(raise * standUp)
-                        * Matrix4x4.Scale(new Vector3(Picture * size, Picture * size, Picture * size)) * turned * SlabToPlane(flipped);
+                    Matrix4x4 world;
+                    string how;
+                    float pitch;
+                    WeaponModels.Hold hold = models ? HoldFor(c) : null;
+                    Model model = hold != null ? WeaponModels.ModelOf(c.weapon) : null;
+                    if (models && known && AtShoulder(c.weapon.def))
+                    {
+                        // A ranged weapon (with the new hold): its butt at the right shoulder, along the aim, other mods' motion
+                        // on top as it differs from the game's own placing (Shoulder).
+                        Vector3 butt = hold != null ? hold.butt : WeaponModels.SpriteButt(c.material, c.weapon.Graphic.drawSize, c.weapon.def.equippedAngleOffset);
+                        if (!Shoulder(pawn, c, m, flipped, game, aim, dir, right, figure, size, front, side, butt, out world, out pitch, out how))
+                        {
+                            if (report != null)
+                            {
+                                report += "aimed " + c.weapon.def.defName + " hidden (" + how + "); ";
+                            }
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        // Onto the aim as drawn (another floor: the target shows elsewhere than in the game's rows).
+                        Matrix4x4 turned = Matrix4x4.Rotate(Quaternion.AngleAxis(Mathf.DeltaAngle(game, aim), Vector3.up)) * m;
+                        // Stood up about the aim line: the side of it nearest the picture's top goes up.
+                        Quaternion standUp = StandUp(turned, right);
+                        Vector3 hands = figure.MultiplyPoint3x4(new Vector3(0f, HandY, 0f));
+                        pitch = PitchOf(pawn, hands.y);
+                        world = Matrix4x4.Translate(hands) * Matrix4x4.Rotate(Raise(dir, pitch) * standUp)
+                            * Matrix4x4.Scale(new Vector3(Picture * size, Picture * size, Picture * size)) * turned * SlabToPlane(flipped);
+                        how = "hands " + hands.ToString("F2");
+                    }
+                    bool asModel = false;
                     if (!measure)
                     {
-                        SpriteSolids.DrawSlab(c.material, Floors.DrawnMatrix(Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f)) * world));
+                        asModel = DrawPiece(c, Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f)) * world, models);
                     }
-                    Projectiles.FigureTip(pawn, c.weapon, world);
+                    if (model != null)
+                    {
+                        Projectiles.FigureTipAt(pawn, c.weapon, world.MultiplyPoint3x4(hold.tip), world.MultiplyPoint3x4(Vector3.zero));
+                    }
+                    else
+                    {
+                        Projectiles.FigureTip(pawn, c.weapon, world);
+                    }
                     if (report != null)
                     {
+                        Vector3 tip;
+                        int age;
+                        Projectiles.LastTip(pawn, out tip, out age);
                         report += "aimed " + c.weapon.def.defName + (flipped ? " (flipped)" : "") + " game " + game.ToString("0") + " drawn " + aim.ToString("0")
                             + " pitch " + pitch.ToString("0.0") + " picture angle " + Angle(m).ToString("0") + " reach " + new Vector2(m.m03, m.m23).magnitude.ToString("0.000")
-                            + " hands " + hands.ToString("F2") + " figure yaw " + yaw.ToString("0") + "; ";
+                            + " " + how + " tip " + tip.ToString("F3") + " figure yaw " + yaw.ToString("0") + (asModel ? " model" : "") + "; ";
                     }
                 }
             }
@@ -251,6 +283,10 @@ namespace IsoRim
             {
                 Vector3 shift;
                 float turn;
+                if (BodyAnims.Facing(pawn) != pawn.Rotation)
+                {
+                    report += "mod facing " + BodyAnims.Facing(pawn) + "; ";
+                }
                 if (BodyAnims.Active && BodyAnims.Read(pawn, drawLoc, out shift, out turn))
                 {
                     report += "body anim shift " + shift.ToString("F3") + " turn " + turn.ToString("0.0") + "; ";
@@ -264,6 +300,161 @@ namespace IsoRim
         {
             string r;
             return reports.TryGetValue(pawn.thingIDNumber, out r) ? r : "not drawn as a figure yet";
+        }
+
+        // The front picture on the chest (figure space): picture x to the figure's left (as seen from its front), picture up
+        // (north) to up, at the body's middle, turned about the body's side so the muzzle comes forward. m: the game's flat
+        // picture about the pawn's middle (its normal a unit column). Gives SpriteSolids' slab.
+        private static Matrix4x4 OnChest(Matrix4x4 m, bool flipped, float front, float side)
+        {
+            return Matrix4x4.Translate(new Vector3(0f, PersonHeight * 0.5f, front + WeaponGap))
+                * Matrix4x4.Translate(new Vector3(side * 0.8f, 0f, 0f)) * Matrix4x4.Rotate(Quaternion.AngleAxis(Tilt, Vector3.up))
+                * Matrix4x4.Translate(new Vector3(-side * 0.8f, 0f, 0f))
+                * Matrix4x4.Scale(new Vector3(Picture, Picture, Picture)) * PictureToFront * m * SlabToPlane(flipped);
+        }
+
+        // The weapon's piece drawn at slab (SpriteSolids' slab matrix, drawn space before the floor shift): its 3D model through
+        // its hold frame (models: the setting), else its sprite made solid. True if the model was drawn.
+        private static bool DrawPiece(Caught c, Matrix4x4 slab, bool models)
+        {
+            WeaponModels.Hold hold = models ? HoldFor(c) : null;
+            Model model = hold != null ? WeaponModels.ModelOf(c.weapon) : null;
+            if (model != null)
+            {
+                WeaponModels.Draw(c.weapon, model, hold, slab);
+                return true;
+            }
+            SpriteSolids.DrawSlab(c.material, Floors.DrawnMatrix(slab));
+            return false;
+        }
+
+        // The weapon's model fitted to the sprite the game drew (null: no model, or none to fit).
+        private static WeaponModels.Hold HoldFor(Caught c)
+        {
+            Model model = WeaponModels.ModelOf(c.weapon);
+            Graphic g = model != null ? c.weapon.Graphic : null;
+            return g != null ? WeaponModels.HoldOf(model, c.material, g.drawSize, c.weapon.def.equippedAngleOffset) : null;
+        }
+
+        // A weapon aimed from the right shoulder: every ranged weapon (bows too) but what is thrown (a grenade, a pilum: from
+        // the hands, as before); melee weapons keep the hands.
+        private static bool AtShoulder(ThingDef def)
+        {
+            return def.IsRangedWeapon && !Projectiles.Thrown(def);
+        }
+
+        private static Quaternion StandUp(Matrix4x4 turned, Vector3 right)
+        {
+            Vector3 top = ((Vector3)turned.GetColumn(2)).normalized;
+            Vector3 side2 = Vector3.Dot(top, right) >= 0f ? right : -right;
+            return Quaternion.FromToRotation(side2, Vector3.up);
+        }
+
+        private static Quaternion Raise(Vector3 dir, float pitch)
+        {
+            return Quaternion.FromToRotation(dir, dir * Mathf.Cos(pitch * Mathf.Deg2Rad) + Vector3.up * Mathf.Sin(pitch * Mathf.Deg2Rad));
+        }
+
+        // The game's own placing of an aimed weapon (PawnRenderUtility.DrawEquipmentAndApparelExtras / DrawEquipmentAiming,
+        // 1.7) about the pawn's middle, flat, without the recoil: the centre 0.4 (plus equippedDistanceOffset) toward the aim,
+        // times the life stage's equipmentDrawDistanceFactor; turned aim - 90 + equippedAngleOffset, or with the flipped mesh
+        // aim - 270 - equippedAngleOffset; the drawn size. Its normal a unit column, as the caught pictures get.
+        private static Matrix4x4 Expected(Pawn pawn, Thing weapon, float aim, bool flipped)
+        {
+            float factor = pawn.ageTracker != null && pawn.ageTracker.CurLifeStage != null ? pawn.ageTracker.CurLifeStage.equipmentDrawDistanceFactor : 1f;
+            Vector3 pos = new Vector3(0f, 0f, 0.4f + weapon.def.equippedDistanceOffset).RotatedBy(aim) * factor;
+            float angle = flipped ? aim - 270f - weapon.def.equippedAngleOffset : aim - 90f + weapon.def.equippedAngleOffset;
+            Vector2 ds = weapon.Graphic != null ? weapon.Graphic.drawSize : Vector2.one;
+            Matrix4x4 e = Matrix4x4.TRS(pos, Quaternion.AngleAxis(angle % 360f, Vector3.up), new Vector3(ds.x, 1f, ds.y));
+            return e;
+        }
+
+        // A ranged weapon aimed from the right shoulder (true cells: x, z in the game's rows, y over the floor): SpriteSolids'
+        // slab with its butt (slab space) at the shoulder (the settings: to the pawn's right of its aim, up, forward; for the
+        // figure's build and size), its barrel along the aim, raised toward the target's height about the shoulder. On top goes
+        // whatever the drawn picture m differs by from the game's own placing (Expected, with the mesh it drew): other mods'
+        // animation and the game's recoil, as a shift along and across the aim, a turn about the weapon's middle, a stretch;
+        // shrunk to nothing it is hidden (false).
+        private static bool Shoulder(Pawn pawn, Caught c, Matrix4x4 m, bool flipped, float game, float aim, Vector3 dir, Vector3 right, Matrix4x4 figure,
+            float size, float front, float side, Vector3 butt, out Matrix4x4 world, out float pitch, out string how)
+        {
+            world = Matrix4x4.identity;
+            pitch = 0f;
+            Matrix4x4 e = Expected(pawn, c.weapon, game, flipped);
+            Vector3 fGame = Quaternion.AngleAxis(game, Vector3.up) * Vector3.forward;
+            Vector3 rGame = Vector3.Cross(Vector3.up, fGame);
+            Vector3 dPos = (Vector3)m.GetColumn(3) - (Vector3)e.GetColumn(3);
+            dPos.y = 0f;
+            float along = Vector3.Dot(dPos, fGame), across = Vector3.Dot(dPos, rGame);
+            Vector3 ex = e.GetColumn(0), cx = m.GetColumn(0);
+            ex.y = 0f;
+            cx.y = 0f;
+            float turn = ex.sqrMagnitude > 1e-8f && cx.sqrMagnitude > 1e-8f ? Vector3.SignedAngle(ex, cx, Vector3.up) : 0f;
+            float stretchX = ((Vector3)m.GetColumn(0)).magnitude / Mathf.Max(1e-5f, ((Vector3)e.GetColumn(0)).magnitude);
+            float stretchY = ((Vector3)m.GetColumn(2)).magnitude / Mathf.Max(1e-5f, ((Vector3)e.GetColumn(2)).magnitude);
+            how = "shift " + along.ToString("0.000") + "/" + across.ToString("0.000") + " turn " + turn.ToString("0.0") + " stretch " + stretchX.ToString("0.00") + "/" + stretchY.ToString("0.00");
+            if (stretchX < 0.05f || stretchY < 0.05f)
+            {
+                return false;
+            }
+            // The game's own placing stood up about the aim as drawn (the side nearest the picture's top up), about its middle.
+            Matrix4x4 eFlat = e;
+            eFlat.SetColumn(3, new Vector4(0f, 0f, 0f, 1f));
+            Vector3 normal = Vector3.Cross(eFlat.GetColumn(2), eFlat.GetColumn(0)).normalized;
+            eFlat.SetColumn(1, new Vector4(normal.x, normal.y, normal.z, 0f));
+            Matrix4x4 turned = Matrix4x4.Rotate(Quaternion.AngleAxis(Mathf.DeltaAngle(game, aim), Vector3.up)) * eFlat;
+            float k = Picture * size;
+            Matrix4x4 stood = Matrix4x4.Rotate(StandUp(turned, right)) * Matrix4x4.Scale(new Vector3(k, k, k)) * turned * SlabToPlane(flipped);
+            Vector3 buttAt = stood.MultiplyPoint3x4(butt);
+            // The shoulder: to the pawn's right of its aim, scaled to its build (a man's shoulders: half width 0.231, chest 0.134).
+            IsoRimSettings st = IsoRimMod.Settings;
+            Vector3 shoulder = figure.MultiplyPoint3x4(new Vector3(0f, st.aimHeight, 0f))
+                + right * (st.aimSide * size * (side / 0.231f)) + dir * (st.aimReach * size * (front / 0.134f));
+            pitch = PitchOf(pawn, shoulder.y);
+            world = Matrix4x4.Translate(shoulder) * Matrix4x4.Rotate(Raise(dir, pitch)) * Matrix4x4.Translate((dir * along + right * across) * k)
+                * Matrix4x4.Translate(-buttAt) * Matrix4x4.Rotate(Quaternion.AngleAxis(turn, Vector3.up)) * stood * Matrix4x4.Scale(new Vector3(stretchX, stretchY, 1f));
+            how += " shoulder " + shoulder.ToString("F2");
+            return true;
+        }
+
+        // An outfit stand's weapon (Stands), as a colonist carries it: the game's carry picture of the stand seen from the south
+        // (PawnRenderUtility.DrawCarriedWeapon, caught), on the chest of the figure it is dressed as. ground: the stand's middle on
+        // the ground; yaw its figure's facing; local the figure (its lift onto the stand and size); front and side its body's
+        // reach (figure units). False if the game drew nothing.
+        public static bool DrawOnStand(ThingWithComps weapon, float factor, Vector3 ground, float yaw, Matrix4x4 local, float front, float side)
+        {
+            caught.Clear();
+            Capturing = true;
+            try
+            {
+                PawnRenderUtility.DrawCarriedWeapon(weapon, Vector3.zero, Rot4.South, factor);
+            }
+            finally
+            {
+                Capturing = false;
+                drawingWeapon = null;
+                carryPath = false;
+            }
+            float s = View3D.Squash;
+            Matrix4x4 placed = Matrix4x4.Translate(new Vector3(ground.x, ground.y / s, ground.z)) * Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f))
+                * Matrix4x4.Rotate(Quaternion.AngleAxis(yaw, Vector3.up));
+            bool any = false;
+            for (int i = 0; i < caught.Count; i++)
+            {
+                Caught c = caught[i];
+                if (c.weapon == null)
+                {
+                    continue;
+                }
+                Matrix4x4 m = c.matrix;
+                m.m13 = 0f;
+                Vector3 normal = Vector3.Cross(m.GetColumn(2), m.GetColumn(0)).normalized;
+                m.SetColumn(1, new Vector4(normal.x, normal.y, normal.z, 0f));
+                DrawPiece(c, placed * local * OnChest(m, c.mesh == MeshPool.plane10Flip, front, side), true);
+                any = true;
+            }
+            caught.Clear();
+            return any;
         }
 
         private static float Angle(Matrix4x4 m)

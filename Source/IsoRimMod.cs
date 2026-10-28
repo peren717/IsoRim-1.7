@@ -127,6 +127,10 @@ namespace IsoRim
         public bool animals3D = true;
         public bool mechs3D = true;
         public bool heldWeapons3D = true;
+        public bool weaponModels3D = true;   // weapons with a 3D model show it everywhere (WeaponModels)
+        public float aimSide = 0.15f;        // a 3D figure aiming a ranged weapon: its butt this far to its right (figure units) ...
+        public float aimHeight = 0.62f;      // ... this high ...
+        public float aimReach = 0.12f;       // ... and this far forward (FigureWeapons, with weaponModels3D)
         public bool doors3D = true;
         public bool models3D = true;
         public bool lightingFix = true;
@@ -259,6 +263,10 @@ namespace IsoRim
             Scribe_Values.Look(ref animals3D, "animals3D", true);
             Scribe_Values.Look(ref mechs3D, "mechs3D", true);
             Scribe_Values.Look(ref heldWeapons3D, "heldWeapons3D", true);
+            Scribe_Values.Look(ref weaponModels3D, "weaponModels3D", true);
+            Scribe_Values.Look(ref aimSide, "aimSide", 0.15f);
+            Scribe_Values.Look(ref aimHeight, "aimHeight", 0.62f);
+            Scribe_Values.Look(ref aimReach, "aimReach", 0.12f);
             Scribe_Values.Look(ref doors3D, "doors3D", true);
             Scribe_Values.Look(ref models3D, "models3D", true);
             Scribe_Values.Look(ref lightingFix, "lightingFix", true);
@@ -1066,6 +1074,7 @@ namespace IsoRim
                 Check(l, "R3D_Settings_ItemsFromArt".Translate(), ref st.itemsFromArt,
                     "R3D_Settings_ItemsFromArtTip".Translate());
                 Check(l, "R3D_Settings_RawModels".Translate(), ref st.rawModels, "R3D_Settings_RawModelsTip".Translate());
+                Check(l, "R3D_Settings_WeaponModels3D".Translate(), ref st.weaponModels3D, "R3D_Settings_WeaponModels3DTip".Translate());
                 Check(l, "R3D_Settings_UprightPlants".Translate(), ref st.uprightPlants);
                 if (st.uprightPlants)
                 {
@@ -1098,6 +1107,12 @@ namespace IsoRim
                 Check(r, "R3D_Settings_Animals3D".Translate(), ref st.animals3D);
                 Check(r, "R3D_Settings_Mechs3D".Translate(), ref st.mechs3D);
                 Check(r, "R3D_Settings_HeldWeapons3D".Translate(), ref st.heldWeapons3D);
+                if (st.heldWeapons3D && st.weaponModels3D)
+                {
+                    st.aimSide = Slider(r, "R3D_Settings_AimSide".Translate(), st.aimSide, -0.3f, 0.3f, st.aimSide.ToString("+0.00;-0.00;0"), "R3D_Settings_AimTip".Translate());
+                    st.aimHeight = Slider(r, "R3D_Settings_AimHeight".Translate(), st.aimHeight, 0.3f, 1f, st.aimHeight.ToString("0.00"), "R3D_Settings_AimTip".Translate());
+                    st.aimReach = Slider(r, "R3D_Settings_AimReach".Translate(), st.aimReach, -0.2f, 0.4f, st.aimReach.ToString("+0.00;-0.00;0"), "R3D_Settings_AimTip".Translate());
+                }
                 Check(r, "R3D_Settings_WorkAnimations".Translate(), ref st.workAnimations, "R3D_Settings_WorkAnimationsTip".Translate());
                 Check(r, "R3D_Settings_Ghosts3D".Translate(), ref st.ghosts3D, "R3D_Settings_Ghosts3DTip".Translate());
                 Check(r, "R3D_Settings_Damage3D".Translate(), ref st.damage3D);

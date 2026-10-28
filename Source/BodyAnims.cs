@@ -127,7 +127,7 @@ namespace IsoRim
             }
             if (Probe.On)
             {
-                Probe.LeanSample(pawn, turn, ForwardLean(pawn.Rotation, turn));   // (harness: leancheck)
+                Probe.LeanSample(pawn, turn, ForwardLean(Facing(pawn), turn));   // (harness: leancheck)
             }
             Vector3 right = Quaternion.AngleAxis(View3D.Yaw, Vector3.up) * Vector3.right;
             float k = Picture * size;
@@ -135,10 +135,41 @@ namespace IsoRim
             float middle = Middle * size;
             // The sprite's turn is a lean the figure makes along its own facing, forward or back, as much as the sprite
             // turns (a turn in the camera's view leaned the figure sideways whenever it faced away from the screen's sides).
-            Matrix4x4 lean = Matrix4x4.Translate(new Vector3(0f, middle, 0f)) * Matrix4x4.Rotate(Quaternion.AngleAxis(ForwardLean(pawn.Rotation, turn), Vector3.right))
+            Matrix4x4 lean = Matrix4x4.Translate(new Vector3(0f, middle, 0f)) * Matrix4x4.Rotate(Quaternion.AngleAxis(ForwardLean(Facing(pawn), turn), Vector3.right))
                 * Matrix4x4.Translate(new Vector3(0f, -middle, 0f));
             Quaternion facing = Quaternion.AngleAxis(yaw, Vector3.up);
             return Matrix4x4.Rotate(Quaternion.Inverse(facing)) * Matrix4x4.Translate(move) * Matrix4x4.Rotate(facing) * lean * pose;
+        }
+
+        // The facing other mods give a standing pawn's sprite (PawnRenderer.ParallelGetPreRenderResults' rotOverride, set in
+        // their prefixes: Patches.PreRenderResults_Prefix notes it, on the game's worker threads, before IsoRim's camera turn),
+        // per pawn with the frame it was noted in. A figure faces it while it lasts (People: standing, not aiming; the lean).
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, int> facings = new System.Collections.Concurrent.ConcurrentDictionary<int, int>();
+
+        public static void NoteFacing(Pawn pawn, Rot4? rot)
+        {
+            if (rot.HasValue || facings.ContainsKey(pawn.thingIDNumber))
+            {
+                facings[pawn.thingIDNumber] = (rot.HasValue ? rot.Value.AsInt + 1 : 0) | (RealTime.frameCount << 3);
+            }
+        }
+
+        // The facing the game draws this pawn's sprite with: another mod's while it gives one (noted a moment ago), else its own.
+        public static Rot4 Facing(Pawn pawn)
+        {
+            int v;
+            if (facings.TryGetValue(pawn.thingIDNumber, out v) && (v & 7) != 0 && RealTime.frameCount - (v >> 3) <= 3)
+            {
+                return new Rot4((v & 7) - 1);
+            }
+            return pawn.Rotation;
+        }
+
+        // The same as a turn for the figure (degrees clockwise from north), only where it differs from the pawn's own facing.
+        public static float? FacingTurn(Pawn pawn)
+        {
+            Rot4 f = Facing(pawn);
+            return f != pawn.Rotation ? f.AsAngle : (float?)null;
         }
 
         // The sprite's turn (degrees clockwise) as a lean forward (positive) along the pawn's facing. Such mods draw a

@@ -415,7 +415,7 @@ namespace IsoRim
                     {
                         t.SetFaction(Faction.OfPlayer);
                     }
-                    GenSpawn.Spawn(t, new IntVec3(I(a[1]), 0, I(a[2])), map, Rot4.North);
+                    GenSpawn.Spawn(t, new IntVec3(I(a[1]), 0, I(a[2])), map, a.Length > 5 ? new Rot4(I(a[5])) : Rot4.North);   // (6th: its facing)
                     break;
                 }
                 case "stack":

@@ -257,6 +257,12 @@
   <R3D_Settings_Animals3D>动物</R3D_Settings_Animals3D>
   <R3D_Settings_Mechs3D>机械族</R3D_Settings_Mechs3D>
   <R3D_Settings_HeldWeapons3D>手持武器</R3D_Settings_HeldWeapons3D>
+  <R3D_Settings_WeaponModels3D>武器使用 3D 模型</R3D_Settings_WeaponModels3D>
+  <R3D_Settings_WeaponModels3DTip>有 3D 模型的武器在地上、货架、衣架和手中都显示模型。</R3D_Settings_WeaponModels3DTip>
+  <R3D_Settings_AimSide>瞄准：肩部横向</R3D_Settings_AimSide>
+  <R3D_Settings_AimHeight>瞄准：肩部高度</R3D_Settings_AimHeight>
+  <R3D_Settings_AimReach>瞄准：前伸</R3D_Settings_AimReach>
+  <R3D_Settings_AimTip>瞄准时远程武器枪托的位置。</R3D_Settings_AimTip>
   <R3D_Settings_WorkAnimations>使用工具的工作动画</R3D_Settings_WorkAnimations>
   <R3D_Settings_WorkAnimationsTip>殖民者工作时的斧头、镐、锤子、镰刀、锄头和扫帚。</R3D_Settings_WorkAnimationsTip>
   <R3D_Settings_Ghosts3D>蓝图显示建成后的样子</R3D_Settings_Ghosts3D>
