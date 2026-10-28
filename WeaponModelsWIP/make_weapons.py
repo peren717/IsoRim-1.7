@@ -23,30 +23,45 @@ COLOURS = {
     "rust_dark": (0.30, 0.21, 0.16), "plasteel": (0.70, 0.80, 0.84), "brass": (0.80, 0.64, 0.30),
     "paint_red": (0.56, 0.24, 0.20), "spike": (0.80, 0.80, 0.80), "warning": (0.90, 0.75, 0.20),
     "glow_amber": (1.00, 0.72, 0.30), "food_green": (0.44, 0.62, 0.30), "metal_dark": (0.32, 0.33, 0.36),
-    "agave": (0.29, 0.54, 0.52), "wood_end": (0.78, 0.62, 0.40), "glow_red": (0.98, 0.36, 0.30), "string": (0.86, 0.82, 0.72),
+    "agave": (0.29, 0.54, 0.52), "wood_end": (0.78, 0.62, 0.40), "jade": (0.40, 0.66, 0.46), "glow_red": (0.98, 0.36, 0.30), "string": (0.86, 0.82, 0.72),
 }
 GLOWING = {"charge", "glow_green", "ember", "glow_amber", "glow_red"}
+
+
+def coloured(mat, rgb):
+    # A part of material mat in an exact colour (sRGB 0..1), written as vertex colours: IsoRim's .obj reader takes
+    # "v x y z r g b" and uses that colour instead of the material's (its texture swatch stays).
+    return "%s__c_%03d_%03d_%03d" % ((mat,) + tuple(int(round(v * 1000)) for v in rgb))
+
+
+def split_colour(name):
+    if "__c_" not in name:
+        return name, None
+    base, c = name.split("__c_")
+    return base, tuple(int(v) / 1000 for v in c.split("_"))
 
 
 def material(name):
     m = bpy.data.materials.get(name)
     if m is None:
         m = bpy.data.materials.new(name)
-        c = tuple(v ** 2.2 for v in COLOURS[name])   # isorim.mtl colours are sRGB; Blender wants linear
+        base, rgb = split_colour(name)
+        c = tuple(v ** 2.2 for v in (rgb or COLOURS[base]))   # isorim.mtl colours are sRGB; Blender wants linear
         m.diffuse_color = (c[0], c[1], c[2], 1.0)
         m.use_nodes = True
         bsdf = m.node_tree.nodes.get("Principled BSDF")
         bsdf.inputs["Base Color"].default_value = (c[0], c[1], c[2], 1.0)
         bsdf.inputs["Roughness"].default_value = 0.55
-        if name in GLOWING:
+        if base in GLOWING:
             bsdf.inputs["Emission Color"].default_value = (c[0], c[1], c[2], 1.0)
             bsdf.inputs["Emission Strength"].default_value = 0.6
     return m
 
 
 class Model:
-    def __init__(self, name):
+    def __init__(self, name, recolour=None):
         self.name = name
+        self.recolour = recolour or {}   # material -> (material, exact sRGB colour) for a recoloured variant
         self.bm = bmesh.new()
         self.mats = []
 
@@ -56,6 +71,8 @@ class Model:
         return self.mats.index(name)
 
     def _faces(self, verts, faces, mat):
+        if mat in self.recolour:
+            mat = coloured(*self.recolour[mat])
         vs = [self.bm.verts.new(v) for v in verts]
         i = self._mat(mat)
         for f in faces:
@@ -329,9 +346,9 @@ def hellcat_rifle():
 # Batch 1, second pass: shaped after the game's own sprites (rimworldwiki.com). The sprite's side view is the model's
 # side view (x along, z up); a 128 px sprite is about 0.0068 cells per pixel, as IsoRim's assault rifle to its sprite.
 
-def monosword():
+def monosword(name="monosword", recolour=None):
     # Straight white blade with a blue line, a short angled point, small dark guard, grey grip, dark pommel.
-    m = Model("monosword")
+    m = Model(name, recolour)
     m.tube("gun_dark", "x", (-0.235, 0.0, 0.0), 0.030, 0.020, 0.024, sides=8)          # pommel
     m.tube("gun_metal", "x", (-0.205, 0.0, 0.0), 0.205, 0.021, sides=8)                # grip
     m.box("gun_dark", (0.0, -0.020, -0.046), (0.024, 0.020, 0.046))                    # guard
@@ -341,9 +358,9 @@ def monosword():
     return m
 
 
-def plasmasword():
+def plasmasword(name="plasmasword", recolour=None):
     # Grey hilt with a round collar, a curved, widening orange plasma blade with a yellow core line.
-    m = Model("plasmasword")
+    m = Model(name, recolour)
     m.tube("gun_metal", "x", (-0.250, 0.0, 0.0), 0.070, 0.020, 0.026, sides=8)         # pommel
     m.tube("gun_dark", "x", (-0.180, 0.0, 0.0), 0.130, 0.022, sides=8)                 # grip
     m.ball("gun_metal", (-0.020, 0.0, 0.0), 0.042, rings=4, sides=8)                   # collar / emitter
@@ -411,11 +428,11 @@ def incinerator():
     return m
 
 
-def zeushammer():
+def zeushammer(name="zeushammer", recolour=None):
     # Remade after the sprite: round teal pommel with a dark core, dark tapering grip, long light grey shaft, and a tall
     # dark head of two chamfered (octagonal) lobes joined by a teal neck behind a round hub, each lobe with a grey band
     # and a muted teal panel near its end.
-    m = Model("zeushammer")
+    m = Model(name, recolour)
     m.tube("agave", "x", (-0.310, 0.0, 0.0), 0.060, 0.052, sides=8)                   # pommel
     m.tube("gun_dark", "x", (-0.316, 0.0, 0.0), 0.072, 0.030, sides=8)                # its dark core, both ends
     m.tube("gun_dark", "x", (-0.250, 0.0, 0.0), 0.085, 0.036, 0.026, sides=8)          # tapering grip
@@ -534,7 +551,85 @@ def hellcat_rifle():
     return m
 
 
-MODELS = [eltex_staff, flamebow, grenade_tox, nerve_spiker, hellcat_rifle]
+# ---------------------------------------------------------------------------------------------------------------------
+# Batch 3: jade knife, beam graser, beam repeater, and the persona (bladelink) weapons as recoloured copies.
+
+def persona_monosword():
+    # The monosword in the persona sprite's colours: pale pink blade, a muted blue-grey line, dark red-brown hilt.
+    return monosword("persona_monosword", {
+        "gun_white": ("gun_white", (0.97, 0.78, 0.76)), "charge": ("gun_dark", (0.42, 0.47, 0.58)),
+        "gun_dark": ("gun_dark", (0.22, 0.16, 0.16)), "gun_metal": ("gun_metal", (0.40, 0.31, 0.31))})
+
+
+def persona_plasmasword():
+    # The plasmasword with the persona sprite's brown hilt (the orange blade is the same).
+    return plasmasword("persona_plasmasword", {
+        "gun_dark": ("gun_dark", (0.32, 0.26, 0.25)), "gun_metal": ("gun_metal", (0.45, 0.35, 0.35))})
+
+
+def persona_zeushammer():
+    # The zeushammer in the persona sprite's colours: dark red-brown head, dusty pink panels and shaft.
+    return zeushammer("persona_zeushammer", {
+        "gun_dark": ("gun_dark", (0.25, 0.20, 0.20)), "agave": ("gun_light", (0.71, 0.52, 0.52)),
+        "gun_light": ("gun_light", (0.71, 0.52, 0.51)), "gun_metal": ("gun_metal", (0.47, 0.35, 0.34))})
+
+
+def jade_knife():
+    # A knife carved from one piece of jade: round pommel, grip, small guard, leaf-shaped blade (IsoRim's knife size).
+    m = Model("jade_knife", {"jade": ("jade", (0.33, 0.46, 0.27))})   # the sprite's darker green
+    m.ball("jade", (-0.118, 0.0, 0.0), 0.022, rings=4, sides=8)                         # pommel
+    m.tube("jade", "x", (-0.105, 0.0, 0.0), 0.100, 0.014, 0.017, sides=8)               # grip
+    m.prism("jade", [(-0.008, -0.034), (0.020, -0.026), (0.020, 0.026), (-0.008, 0.034)], -0.016, 0.016)  # guard
+    m.prism("jade", [(0.020, -0.018), (0.090, -0.026), (0.180, -0.016), (0.240, 0.0), (0.180, 0.016),
+                     (0.090, 0.026), (0.020, 0.018)], -0.008, 0.008)                    # leaf blade
+    return m
+
+
+MAROON = (0.50, 0.21, 0.23)
+PINK = (0.78, 0.67, 0.67)
+
+
+def beam_graser():
+    # A chunky spacer gun: a maroon rear block over a grey stock, a grey collar, a dark ribbed coil, a maroon front
+    # housing with dark slots, and a tall maroon flange at the muzzle.
+    m = Model("beam_graser")
+    P = px(0.0068, 40, 26)
+    red = coloured("gun_metal", MAROON)
+    m.prism(red, P([(2, 3), (2, 22), (10, 26), (20, 20), (28, 27), (48, 27), (48, 3)]), -0.060, 0.060)  # rear block
+    m.box(coloured("gun_light", PINK), ((4 - 40) * 0.0068, -0.061, (26 - 9) * 0.0068), ((46 - 40) * 0.0068, 0.061, (26 - 5) * 0.0068))
+    m.prism("gun_metal", P([(4, 28), (2, 44), (8, 50), (40, 50), (40, 28)]), -0.055, 0.055)            # stock
+    m.prism("gun_metal", P([(44, 6), (44, 48), (60, 48), (60, 6)]), -0.070, 0.070)                     # collar
+    m.tube("gun_dark", "x", ((58 - 40) * 0.0068, 0.0, 0.0), 0.100, 0.085, sides=10)                    # coil
+    for c in (60, 64, 68, 72):
+        m.tube("metal_dark", "x", ((c - 40) * 0.0068, 0.0, 0.0), 0.010, 0.090, sides=10, cap=False)
+    m.prism(red, P([(72, 5), (72, 47), (102, 47), (102, 5)]), -0.068, 0.068)                           # housing
+    for r0, r1 in ((12, 17), (23, 28), (34, 39)):
+        m.box("gun_dark", ((76 - 40) * 0.0068, -0.070, (26 - r1) * 0.0068), ((100 - 40) * 0.0068, 0.070, (26 - r0) * 0.0068))
+    m.prism(red, P([(100, 0), (100, 51), (114, 51), (116, 46), (116, 4), (114, 0)]), -0.074, 0.074)  # flange
+    m.box("gun_dark", ((114 - 40) * 0.0068, -0.040, -0.040), ((117 - 40) * 0.0068, 0.040, 0.040))     # muzzle
+    return m
+
+
+def beam_repeater():
+    # A barrel-shaped spacer gun: a grey stepped rear block over a maroon base with a pink stripe, grey bands, and a big
+    # rounded maroon body with dark lengthwise slots.
+    m = Model("beam_repeater")
+    P = px(0.0068, 30, 32)
+    k = 0.0068
+    red = coloured("gun_metal", MAROON)
+    m.prism("gun_light", P([(2, 22), (8, 6), (18, 6), (22, 14), (28, 8), (40, 8), (40, 34), (2, 34)]), -0.070, 0.070)
+    m.prism(red, P([(6, 34), (10, 58), (40, 60), (40, 26), (12, 26)]), -0.080, 0.080)                 # maroon base
+    m.box(coloured("gun_light", PINK), ((10 - 30) * k, -0.081, (32 - 33) * k), ((38 - 30) * k, 0.081, (32 - 29) * k))
+    m.box("gun_light", ((38 - 30) * k, -0.120, (32 - 62) * k), ((46 - 30) * k, 0.120, (32 - 2) * k))   # rear band
+    m.tube(red, "x", ((46 - 30) * k, 0.0, 0.0), (92 - 46) * k, 0.178, sides=12)                      # body
+    for z in (-0.105, -0.035, 0.035, 0.105):
+        m.box("gun_dark", ((54 - 30) * k, -0.181, z - 0.014), ((90 - 30) * k, 0.181, z + 0.014))      # slots, both sides
+    m.tube("gun_light", "x", ((92 - 30) * k, 0.0, 0.0), (100 - 92) * k, 0.190, sides=12)             # front band
+    m.tube(red, "x", ((100 - 30) * k, 0.0, 0.0), (110 - 100) * k, 0.165, 0.095, sides=12)            # rounded nose
+    return m
+
+
+MODELS = [jade_knife, beam_graser, beam_repeater, persona_monosword, persona_plasmasword, persona_zeushammer]
 ALL = [monosword, plasmasword, zeushammer, eltex_staff, toxbomb_launcher, grenade_tox, nerve_spiker,
           incinerator, hellcat_rifle]
 
@@ -560,11 +655,51 @@ def export(ob):
             "# the grip at the origin, the muzzle / tip along +X. Materials: Models/isorim.mtl.",
             "mtllib isorim.mtl"]
     body = [l for l in lines if not l.startswith("#") and not l.startswith("mtllib")]
+    if any("__c_" in l for l in body if l.startswith("usemtl")):
+        body = vertex_colours(body)
     open(path, "w").write("\n".join(head + body) + "\n")
     mtl = os.path.join(OUT, ob.name + ".mtl")
     if os.path.exists(mtl):
         os.remove(mtl)
     return path
+
+
+def mtl_colours():
+    kd, name = {}, None
+    here = os.path.dirname(os.path.abspath(__file__))
+    # IsoRim's material library: next to this script, or the mod's Models/ folder (this script in a subfolder of it).
+    paths = [os.path.join(here, "isorim.mtl"), os.path.join(here, "..", "Models", "isorim.mtl"),
+             os.path.join(here, "isorim_mtl_colours.txt")]
+    for line in open(next(p for p in paths if os.path.exists(p))):
+        t = line.split()
+        if t and t[0] == "newmtl":
+            name = t[1]
+        elif t and t[0] == "Kd" and name:
+            kd[name] = tuple(float(v) for v in t[1:4])
+    return kd
+
+
+def vertex_colours(body):
+    # Every vertex gets a colour: its part's exact colour, or its material's own Kd (as IsoRim would use), and the
+    # usemtl lines lose their colour suffix.
+    kd = mtl_colours()
+    colour, current = {}, None
+    for l in body:
+        if l.startswith("usemtl"):
+            current = split_colour(l.split()[1])
+        elif l.startswith("f "):
+            for c in l.split()[1:]:
+                colour[int(c.split("/")[0])] = current[1] or kd[current[0]]
+    out, n = [], 0
+    for l in body:
+        if l.startswith("v "):
+            n += 1
+            c = colour[n]
+            l = l + " %.3f %.3f %.3f" % c
+        elif l.startswith("usemtl"):
+            l = "usemtl " + split_colour(l.split()[1])[0]
+        out.append(l)
+    return out
 
 
 def render(ob, path, direction=(0.35, -1.0, 0.55)):
