@@ -211,7 +211,29 @@ half-set model), a new enough one gets the whole entry:
 fields 14; `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20; `immatureModels`, `immatureHide` 24; alien packs
 (`IsoRim.AlienModelDef`, `ApparelModelDef.aliens`) 25; `bobByState` 27; `slots` 28; any binding of a multi-cell supported door (not the
 game's `Building_MultiTileDoor`) 29, which draws it from its models (Api part 18); `glassTint`, `glassOpacity`, `glassGlow`
-and a door's `glassModel` 30 (Api part 19); `topThroughRoof`, `roofModel` 31 (Api part 20); `hoverHeight`, `hoverBob` 32 (Api part 21); `geneDef` and the other gene fields 35 (Api part 24); `barAt`, `barScale` 36 (Api part M). The highest one used counts.
+and a door's `glassModel` 30 (Api part 19); `topThroughRoof`, `roofModel` 31 (Api part 20); `hoverHeight`, `hoverBob` 32 (Api part 21); `geneDef` and the other gene fields 35 (Api part 24); `barAt`, `barScale` 36 (Api part M); `femaleModel`, `femaleModels`, `femaleLegModel`, `femaleWingModel` 38 (female animals, below). The highest one used counts.
+
+## Female animals
+
+Some animals look different by gender (the game gives them a female texture, `femaleGraphicData` in a life stage). Give
+the animal's ModelDef her own body with `femaleModel` (or `femaleModels` for several variants; each animal keeps the same
+one, as with `models`). A female is then drawn with it everywhere: walking, asleep, downed, as a corpse, flying, carried.
+Males, genderless animals and entries without it stay as before; keep `model` set for the males. `femaleLegModel` and
+`femaleWingModel` give her own legs and wings (unset: `legModel`, `wingModel`). Hips (`legs`), wing hinges (`wings`),
+`legLength`, `scale` and the other fields are shared, so build her on the same hips and hinges. Needs Api 38: add the
+fields by gated patch (`minVersion` 38).
+
+```xml
+<Operation Class="MyPack.PatchOperation_IfIsoRimApi">
+  <minVersion>38</minVersion>
+  <apply Class="PatchOperationAdd">
+    <xpath>/Defs/IsoRim.ModelDef[defName="R3D_MyPack_Elk"]</xpath>
+    <value>
+      <femaleModel>Models/my_elk_female.obj</femaleModel>   <!-- no antlers -->
+    </value>
+  </apply>
+</Operation>
+```
 
 ## Gene parts
 

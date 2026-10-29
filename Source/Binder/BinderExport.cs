@@ -49,6 +49,7 @@ namespace IsoRim
             { "beamFlicker", 33 }, { "beamPulse", 33 }, { "beamMotes", 33 },
             { "geneDef", 35 }, { "geneAnchor", 35 }, { "geneTint", 35 }, { "geneBuilds", 35 }, { "geneTuck", 35 }, { "geneHidesHair", 35 }, { "geneTintsHead", 35 },
             { "barAt", 36 }, { "barScale", 36 },
+            { "femaleModel", 38 }, { "femaleModels", 38 }, { "femaleLegModel", 38 }, { "femaleWingModel", 38 },
         };
         private const int BaseVersion = 2;
 

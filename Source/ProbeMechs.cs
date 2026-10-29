@@ -11,7 +11,7 @@ namespace IsoRim
     // Harness-only probe keys for mechanoids and carried things (Mechs.cs, Carried.cs). Cells are map cells.
     //   clearzone=x0,z0,x1,z1         destroys the pawns (not colonists), corpses, items, filth and plants in the rectangle
     //   mech=x,z,<PawnKindDef>,<player|enemy>,<age>,<rot 0-3>[,<state>]  a new mech of that kind, faction and age facing rot
-    //                                 (no overseer: the jobs below are started directly, as forced jobs); state: raid (an enemy in an assault lord), draft, down (damaged until downed), dead (killed), shutdown (self-shutdown job)
+    //                                 (no overseer: the jobs below are started directly, as forced jobs); state: raid (an enemy in an assault lord), draft, down (damaged until downed), dead (killed), shutdown (self-shutdown job); an 8th value f | m fixes the pawn's gender (Api 38 tests; a[6] may be empty)
     //   attack=x0,z0,x1,z1            the pawn in the first cell given the job to fire at the thing (or cell) in the second
     //   undrafted=x,z,wait|tx,tz      the colonist in (x,z) undrafted and given a job that shows its weapon (the game's alwaysShowWeapon):
     //                                 wait = standing guard (Wait_Combat, the carry pose), or fire at the thing in (tx,tz) (AttackStatic)
@@ -89,12 +89,13 @@ namespace IsoRim
                     PawnKindDef kind = DefDatabase<PawnKindDef>.GetNamed(a[2]);
                     Faction f = a[3] == "enemy" ? Find.FactionManager.OfMechanoids : Faction.OfPlayer;
                     float age = F(a[4]);
+                    Gender? gender = a.Length > 7 && a[7] == "f" ? Gender.Female : a.Length > 7 && a[7] == "m" ? Gender.Male : (Gender?)null;   // optional 8th: f | m
                     Rand.PushState(Gen.HashCombineInt(I(a[0]), I(a[1]) * 7919 + 17));   // fixed seed per cell: the same mech every run
                     Pawn p;
                     try
                     {
                         p = PawnGenerator.GeneratePawn(new PawnGenerationRequest(kind, f, PawnGenerationContext.NonPlayer,
-                            fixedBiologicalAge: age, fixedChronologicalAge: age));
+                            fixedBiologicalAge: age, fixedChronologicalAge: age, fixedGender: gender));
                     }
                     finally
                     {

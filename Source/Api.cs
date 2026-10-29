@@ -77,7 +77,9 @@ namespace IsoRim
         // 37: roofed shells (Shell.cs, Api37.cs): BuildShell reads a map area's walls, shut doors, closed roofs, deck and the
         // buildings with models that stand out into a Shell drawn at any pose (Shell.Draw, Dispose); HeightForSlide, LiveShells;
         // flight effect cards DrawGlowCard, DrawAxialCard, DrawScreenCard, WorldToViewport (as ShipFlight draws its effects).
-        public static int Version => 37;
+        // 38: female animals: ModelDef.femaleModel / femaleModels (her body variants), femaleLegModel, femaleWingModel; every
+        // animal draw picks them for a female (ModelEntry.Pick, LegFor, WingFor).
+        public static int Version => 38;
 
         // ---- glass parts (Version 30)
 

@@ -336,6 +336,16 @@ namespace IsoRim
         public float wingBeat = 6f;         // in flight: beats per second at normal game speed (insects ~6, big birds ~2)
         // (rotation, for an animal, turns its body model only; legs and hips are given facing north.)
         public float stride = 1f;           // cells walked for one full swing of the legs
+        // Female animals (Api 38): a female (pawn.gender Female) is drawn with these instead; males, genderless pawns and
+        // entries without them are drawn as before. femaleModel / femaleModels are her body, as model / models (variants:
+        // the same animal always keeps the same one, by the same rule; parts and outlineMinSize apply as to model). Her legs
+        // and wings use femaleLegModel / femaleWingModel if set, else legModel / wingModel. Everything else (legs and wings
+        // hinges, legLength, bodyCentre, scale ...) is shared: build her on the same hips and hinges. model / models must
+        // still be set (males, and the entry's checks).
+        public string femaleModel;
+        public List<string> femaleModels;
+        public string femaleLegModel;
+        public string femaleWingModel;
         // Hovering (Api 32; Hover.cs), for animals and mechs: while it is up and about (standing, walking, working) the whole
         // figure floats hoverHeight cells over the ground (times its size) and drifts up and down by hoverBob cells; downed,
         // dead, asleep or resting it settles onto the ground (eased, not snapped). Its ground shadow stays on the ground under it.
@@ -691,6 +701,10 @@ namespace IsoRim
         public Dictionary<string, Model> byState;        // addon state name -> model (byState); null if none
         public Model[] immature;   // (Api 24) a plant's young stage, one per variant (immatureModels / immatureHide); null if none
         public Model leg;   // animals only
+        public Model[] female;      // (Api 38) femaleModel / femaleModels: a female animal's body variants, or null
+        public Model femaleLeg;     // (Api 38) femaleLegModel, or null (she uses leg)
+        public Model femaleWing;    // (Api 38) femaleWingModel, or null (she uses wing)
+        public Model femaleWingMirror;
         public Model wing;        // animals with wings only (wingModel), the right wing
         public Model wingMirror;  // the same, mirrored: the left wing
         public Model top;   // turrets only
@@ -835,7 +849,31 @@ namespace IsoRim
             {
                 n = -n;
             }
-            return variants[n % variants.Length];
+            Model[] set = IsFemale(t) ? female : variants;   // (Api 38) a female animal's own models
+            return set[n % set.Length];
+        }
+
+        // (Api 38) True if t is a female pawn and this entry has female body models.
+        public bool IsFemale(Thing t)
+        {
+            Pawn p = t as Pawn;
+            return female != null && female.Length > 0 && p != null && p.gender == Gender.Female;
+        }
+
+        // (Api 38) The leg model the animal is drawn with: femaleLeg for a female if set, else leg.
+        public Model LegFor(Pawn pawn)
+        {
+            return femaleLeg != null && pawn != null && pawn.gender == Gender.Female ? femaleLeg : leg;
+        }
+
+        // (Api 38) The right wing (mirror: the left one) the animal is drawn with: femaleWing for a female if set, else wing.
+        public Model WingFor(Pawn pawn, bool mirror)
+        {
+            if (femaleWing != null && pawn != null && pawn.gender == Gender.Female)
+            {
+                return mirror ? femaleWingMirror ?? femaleWing : femaleWing;
+            }
+            return mirror ? wingMirror ?? wing : wing;
         }
 
         private static bool IndexedGraphic(ThingDef def)
@@ -1156,18 +1194,10 @@ namespace IsoRim
             return all.Count > 1 ? ObjLoader.Merge(all) : main;
         }
 
-        private static ModelEntry MakeEntry(ModelDef md)
+        // The body models of these files (model / models, or femaleModel / femaleModels), missing ones left out: the def's
+        // parts merged into the first, small pieces' outlines dropped (outlineMinSize).
+        private static List<Model> LoadBodies(ModelDef md, List<string> files)
         {
-            List<string> files = new List<string>();
-            if (!md.model.NullOrEmpty())
-            {
-                files.Add(md.model);
-            }
-            if (md.models != null)
-            {
-                files.AddRange(md.models);
-            }
-
             List<Model> loaded = new List<Model>();
             if (md.modContentPack != null)
             {
@@ -1192,9 +1222,40 @@ namespace IsoRim
                     loaded[i] = ObjLoader.WithoutSmallOutlines(loaded[i], md.outlineMinSize);
                 }
             }
+            return loaded;
+        }
+
+        private static ModelEntry MakeEntry(ModelDef md)
+        {
+            List<string> files = new List<string>();
+            if (!md.model.NullOrEmpty())
+            {
+                files.Add(md.model);
+            }
+            if (md.models != null)
+            {
+                files.AddRange(md.models);
+            }
+
+            List<Model> loaded = LoadBodies(md, files);
             ModelEntry entry = new ModelEntry();
             entry.def = md;
             entry.variants = loaded.ToArray();
+            // (Api 38) a female animal's own body variants, loaded the same way
+            List<string> femaleFiles = new List<string>();
+            if (!md.femaleModel.NullOrEmpty())
+            {
+                femaleFiles.Add(md.femaleModel);
+            }
+            if (md.femaleModels != null)
+            {
+                femaleFiles.AddRange(md.femaleModels);
+            }
+            if (femaleFiles.Count > 0)
+            {
+                List<Model> female = LoadBodies(md, femaleFiles);
+                entry.female = female.Count > 0 ? female.ToArray() : null;
+            }
             if (md.stackModels != null && md.stackModels.Count > 0 && md.modContentPack != null)
             {
                 List<Model> stack = new List<Model>();
@@ -1277,6 +1338,15 @@ namespace IsoRim
             {
                 entry.wing = LoadFile(Path.Combine(md.modContentPack.RootDir, md.wingModel));
                 entry.wingMirror = entry.wing != null ? ObjLoader.Mirrored(entry.wing) : null;
+            }
+            if (!md.femaleLegModel.NullOrEmpty() && md.modContentPack != null)
+            {
+                entry.femaleLeg = LoadFile(Path.Combine(md.modContentPack.RootDir, md.femaleLegModel));   // (Api 38)
+            }
+            if (!md.femaleWingModel.NullOrEmpty() && md.wings != null && md.wings.Count > 0 && md.modContentPack != null)
+            {
+                entry.femaleWing = LoadFile(Path.Combine(md.modContentPack.RootDir, md.femaleWingModel));   // (Api 38)
+                entry.femaleWingMirror = entry.femaleWing != null ? ObjLoader.Mirrored(entry.femaleWing) : null;
             }
             if (!md.topModel.NullOrEmpty() && md.modContentPack != null)
             {

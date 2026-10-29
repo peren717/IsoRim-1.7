@@ -232,7 +232,8 @@ namespace IsoRim
                     GroundShadows.Blob(position, yaw, def.bodyHalfWidth * size * 1.5f * spread, def.bodyHalfLength * size * 1.25f * spread);
                 }
 
-                if (drawLegs && entry.leg != null && def.legs != null)
+                Model legModel = entry.LegFor(pawn);   // (Api 38) hers, for a female with femaleLegModel
+                if (drawLegs && legModel != null && def.legs != null)
                 {
                     Matrix4x4 drop = Matrix4x4.Translate(new Vector3(0f, -def.legLength, 0f));
                     for (int i = 0; i < def.legs.Count; i++)
@@ -271,11 +272,11 @@ namespace IsoRim
                             Quaternion turn = Quaternion.AngleAxis(splay, Vector3.forward) * Quaternion.AngleAxis(swing, Vector3.right);
                             local = legPose * sized * Matrix4x4.Translate(hip) * Matrix4x4.Rotate(turn) * drop;
                         }
-                        DynamicModels.DrawLocal(Corpses.Body(pawn, entry.leg), position, yaw, local, Color.white, null);
+                        DynamicModels.DrawLocal(Corpses.Body(pawn, legModel), position, yaw, local, Color.white, null);
                     }
                 }
 
-                if (entry.wing != null)
+                if (entry.WingFor(pawn, false) != null)
                 {
                     DrawWings(pawn, entry, def, position, yaw, bodyPose * sized, air);
                 }
@@ -480,8 +481,8 @@ namespace IsoRim
             // mirror image, drawn from the mirrored model with the mirrored turn (still a plain rotation).
             Matrix4x4 turn = Matrix4x4.Rotate(Quaternion.AngleAxis(fold, Vector3.up) * Quaternion.AngleAxis(lift, Vector3.forward));
             Matrix4x4 turnLeft = Mirror * turn * Mirror;
-            Model right = Corpses.Body(pawn, entry.wing);
-            Model left = Corpses.Body(pawn, entry.wingMirror ?? entry.wing);
+            Model right = Corpses.Body(pawn, entry.WingFor(pawn, false));   // (Api 38) hers, for a female with femaleWingModel
+            Model left = Corpses.Body(pawn, entry.WingFor(pawn, true));
             for (int i = 0; i < def.wings.Count; i++)
             {
                 Vector3 hinge = def.wings[i];

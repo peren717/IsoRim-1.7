@@ -115,7 +115,7 @@ namespace IsoRim
             return m;
         }
 
-        // Every body model of an entry (variants, per-stuff, per-style, per-state, stack, empty, hacked, open) aged.
+        // Every body model of an entry (variants, female variants, per-stuff, per-style, per-state, stack, empty, hacked, open) aged.
         // Glass, turret guns, spinning, bobbing and glowing parts keep their own look.
         public static void Apply(ModelEntry e, float s)
         {
@@ -124,6 +124,7 @@ namespace IsoRim
                 return;
             }
             e.variants = CopyAll(e.variants, s);
+            e.female = CopyAll(e.female, s);   // (Api 38) a female animal's body models
             e.stack = CopyAll(e.stack, s);
             e.empty = Copy(e.empty, s);
             e.hacked = Copy(e.hacked, s);

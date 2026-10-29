@@ -74,7 +74,7 @@ namespace IsoRim
                         ModelEntry entry;
                         if (ModelLibrary.TryGet(def, out entry))
                         {
-                            foreach (Model mo in (entry.variants ?? new Model[0]).Concat(new[] { entry.leg, entry.wing, entry.wingMirror }))
+                            foreach (Model mo in (entry.variants ?? new Model[0]).Concat(entry.female ?? new Model[0]).Concat(new[] { entry.leg, entry.wing, entry.wingMirror, entry.femaleLeg, entry.femaleWing, entry.femaleWingMirror }))
                             {
                                 if (mo != null)
                                 {
@@ -157,7 +157,7 @@ namespace IsoRim
                     return true;
                 }
             }
-            return false;
+            return FemaleKey(key, a, map);   // (ProbeFemale)
         }
 
         private static void Pose(Pawn p, (IntVec3 cell, Rot4 rot, string state) at)
