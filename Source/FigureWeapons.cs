@@ -128,12 +128,12 @@ namespace IsoRim
                 return false;
             }
             drawn = game;
-            Verb verb = pawn.CurrentEffectiveVerb;
+            Stance_Busy busy = (Stance_Busy)pawn.stances.curStance;
+            Verb verb = busy.verb;   // (the stance's verb, as CardAim: thread-safe)
             if (verb != null && verb.AimAngleOverride.HasValue)
             {
                 return true;
             }
-            Stance_Busy busy = (Stance_Busy)pawn.stances.curStance;
             Vector3 to = busy.focusTarg.HasThing ? busy.focusTarg.Thing.DrawPos : busy.focusTarg.Cell.ToVector3Shifted();
             Vector3 d = Floors.FlatDelta(pawn.DrawPos, to);
             if (d.x * d.x + d.z * d.z > 0.001f)

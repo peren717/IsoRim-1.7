@@ -2607,7 +2607,9 @@ namespace IsoRim
             {
                 game = (to - from).AngleFlat();
             }
-            Verb verb = pawn.CurrentEffectiveVerb;
+            // The stance's own verb (the one aiming), not pawn.CurrentEffectiveVerb as the game asks on the main thread: that
+            // walks the pawn's verb lists and abilities, which the game changes while workers draw ("Collection was modified").
+            Verb verb = busy.verb;
             if (verb != null && verb.AimAngleOverride.HasValue)
             {
                 game = verb.AimAngleOverride.Value;

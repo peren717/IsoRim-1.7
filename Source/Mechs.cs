@@ -537,7 +537,7 @@ namespace IsoRim
                 {
                     aim = to.AngleFlat();
                 }
-                Verb verb = pawn.CurrentEffectiveVerb;
+                Verb verb = busy.verb;   // (the stance's verb, as Patches.CardAim: thread-safe)
                 if (verb != null && verb.AimAngleOverride.HasValue)
                 {
                     aim = verb.AimAngleOverride.Value;
