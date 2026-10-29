@@ -1,0 +1,34 @@
+# IsoRim core paste dispenser + hopper (2026-10-28): fixed colours sampled from the vanilla sprites.
+newmtl paste_panel
+Kd 0.58 0.58 0.58
+map_Kd IsoRim/Swatches/Metal
+newmtl paste_frame
+Kd 0.62 0.62 0.62
+map_Kd IsoRim/Swatches/Metal
+newmtl paste_body
+Kd 0.54 0.54 0.54
+map_Kd IsoRim/Swatches/Metal
+newmtl paste_seam
+Kd 0.36 0.36 0.36
+map_Kd IsoRim/Swatches/Metal
+newmtl paste_light
+Kd 0.64 0.64 0.64
+map_Kd IsoRim/Swatches/Metal
+newmtl paste_dark
+Kd 0.20 0.20 0.20
+map_Kd IsoRim/Swatches/Metal
+newmtl paste_olive
+Kd 0.45 0.54 0.32
+map_Kd IsoRim/Swatches/Metal
+newmtl paste_hopper
+Kd 0.52 0.52 0.52
+map_Kd IsoRim/Swatches/Metal
+newmtl paste_hopper_rim
+Kd 0.68 0.68 0.68
+map_Kd IsoRim/Swatches/Metal
+newmtl paste_hopper_in
+Kd 0.27 0.27 0.27
+map_Kd IsoRim/Swatches/Metal
+newmtl paste_hopper_floor
+Kd 0.42 0.42 0.42
+map_Kd IsoRim/Swatches/Metal

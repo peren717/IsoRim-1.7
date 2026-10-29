@@ -2213,6 +2213,7 @@
     <surfaceHeight>0.00</surfaceHeight>
     <builtFor>(3, 4)</builtFor>
     <rotation>180</rotation>   <!-- paste hatch faces the interaction cell, as the vanilla nozzle -->
+    <wallFit>1.65</wallFit>    <!-- impassable full cover: the drum top meets the wall top at any wall height -->
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
