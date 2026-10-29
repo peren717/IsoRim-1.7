@@ -394,6 +394,7 @@ namespace IsoRim
             Probe.Lap(1);
 
             RegenerateIfStateChanged();
+            RecachePawnsIfReadyChanged();
             Probe.Lap(2);
             MapSections.Process(8);
             Probe.Lap(3);
@@ -966,6 +967,36 @@ namespace IsoRim
             MapSections.Clear();
             stale.Clear();
             IsoCellMap.Rebuilt(map);
+        }
+
+        private static bool lastReady;
+
+        // The game keeps each pawn's list of what to draw (PawnRenderTree.ParallelPreDraw) until its draw parameters change
+        // (facing, posture...); a switch of the 3D view changes none of them. Nodes whose CanDrawNow follows the view (IsoRim's
+        // own, an addon's such as the Giddy-Up pack's rider nodes) would keep the other view's answer on a pawn standing still
+        // (a rider gone in 2D until its mount turns). When Ready flips, every spawned pawn's list is rebuilt on its next draw
+        // (the same work as a pawn turning; the graphics are kept).
+        private static void RecachePawnsIfReadyChanged()
+        {
+            bool ready = Ready;
+            if (ready == lastReady)
+            {
+                return;
+            }
+            lastReady = ready;
+            List<Map> maps = Current.Game != null ? Current.Game.Maps : null;
+            for (int m = 0; maps != null && m < maps.Count; m++)
+            {
+                IReadOnlyList<Pawn> pawns = maps[m].mapPawns.AllPawnsSpawned;
+                for (int i = 0; i < pawns.Count; i++)
+                {
+                    PawnRenderNode root = pawns[i].Drawer?.renderer?.renderTree?.rootNode;
+                    if (root != null)
+                    {
+                        root.requestRecache = true;
+                    }
+                }
+            }
         }
 
         private static void RegenerateIfStateChanged()
