@@ -72,7 +72,9 @@ namespace IsoRim
         // 35: gene parts (GeneParts.cs, Api35.cs): ModelDef.geneDef with geneAnchor (GeneAnchor), geneTint (GeneTint), geneBuilds
         // (GeneBuildModel), geneTuck, geneHidesHair, geneTintsHead; the geneParts3D setting; YieldGeneParts / YieldAllGeneParts /
         // StopYieldingGeneParts and the XML IsoRim.GenePartsYieldDef (another mod draws those genes' parts itself).
-        public static int Version => 35;
+        // 36: ModelDef.barAt: the game's fillable bars (GenDraw.DrawFillableBar) drawn with a thing centred at that point of its
+        // model, flat at its height; ModelDef.barScale resizes them (Bars.DrawFillableBar_Prefix).
+        public static int Version => 36;
 
         // ---- glass parts (Version 30)
 

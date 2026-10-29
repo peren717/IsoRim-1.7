@@ -261,6 +261,15 @@ namespace IsoRim
                                             // mech, a vat embryo or child) is fitted between surfaceHeight and this
         public bool heldPawnUpright = false; // the person held inside floats upright (growth vat) instead of lying
         public float barHeight = -1f;       // height of the game's progress bar over it (mech gestator console); -1 surfaceHeight
+        // (Api 36) Where the game's fillable bars drawn with this thing (GenDraw.DrawFillableBar from its own or its comps'
+        // drawing: a charge or fuel gauge) sit on the model: one point (x, height, z; model space, facing north, as
+        // cableAnchors), turned, fitted and offset with the model. The bar is centred there, flat at that height, with the
+        // size and orientation the game or mod gives it. Unset: where the game puts it, on the model's top (or barHeight).
+        public Vector3? barAt;
+        // (Api 36) Those bars resized: x along the bar's length, y its thickness, in the bar's own frame as the game or mod
+        // draws it (so it follows the bar's rotation). Size and margin are scaled together (the margin by the smaller of
+        // the two), so the filled part stays in proportion. (1, 1): the bar's own size.
+        public Vector2 barScale = Vector2.one;
         // Harvesters (WorkParts.cs). cableAnchors: the connectors (x, height, z; model space, facing north) the
         // game's cables to holding platforms (CompCableConnection) run up to, taken in turn. workPanel: the two
         // ends (x, height, z) of a strip on the model where lights run while the building works (stopped while

@@ -51,10 +51,11 @@ if (IsoRim.Api.Version >= 33) { /* beam parts: beam_* materials, ModelDef.beamFl
 if (IsoRim.Api.Version >= 34) { /* wall shapes: AddWallShapes (WallShapeRule, WallShape), roofs clipped to them (part 23) */ }
 if (IsoRim.Api.Version >= 35) { /* gene parts: ModelDef.geneDef and gene fields, YieldGeneParts / YieldAllGeneParts /
                                    YieldAllGenePartsExcept / StopYieldingGeneParts, GenePartsYieldDef (part 24) */ }
+if (IsoRim.Api.Version >= 36) { /* ModelDef.barAt, barScale: a thing's fillable bars centred on a point of its model, resized (part M) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24 (Api 23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt) (Api 23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1390,6 +1391,8 @@ mods' things.
 | `immatureModels`, `immatureHide` (24) | A plant's young stage, drawn while it is not yet harvestable (as the game's `immatureGraphic`: growth up to `harvestMinGrowth`): its own models (one per variant of `models`, same order), or the mature models without the `immatureHide` materials (the produce). `growthScale` still shrinks it. |
 | `spriteTint`, `paintedHull`, `outline`, `outlineMinSize`, `groundShadow`, `aged` (15) | Colour and look. |
 | `geneDef`, `geneAnchor`, `geneTint`, `geneBuilds`, `geneTuck`, `geneHidesHair`, `geneTintsHead` (35) | A gene part on 3D people instead of a thing (no `thingDef`): see part 24. |
+| `barAt` (36) | Where the fillable bars the thing draws (`GenDraw.DrawFillableBar` from its own or its comps' drawing: a charge or fuel gauge, e.g. VEF's `CustomFillableBarGaugeData`) sit on the model: one point `(x, height, z)` in model space facing north, placed like the model (`world = thing centre + R(yaw)·(barAt ∘ fit + offset)`, so it turns with the thing and follows `wallFit`). The bar is centred there, flat at that height, with the size and orientation the game or mod gives it; several bars of one thing all go there. Unset: as before (where the game puts it, raised onto the model's top, or `barHeight`). 3D only. |
+| `barScale` (36) | Those bars resized, `(length, thickness)` in the bar's own frame as the game or mod draws it (so it follows the bar's rotation per facing): size times these, margin times the smaller one, so the filled part keeps its proportion. The drawn background is `size + margin` per side, e.g. VEF's default 0.9 × 0.3 with margin 0.15 is 1.05 × 0.45 cells. Default `(1, 1)`: unchanged. 3D only. |
 | `wallTop` (11), `cutaway` (20), `backHeight` (13), wing fields (14), `doorLeafModel`, `doorLeafGather` (18), `crownTop`, `doorLeafRise` (6) | See their parts. |
 
 The numbers in brackets are the Api version a field needs; fields without one are there from version 2.

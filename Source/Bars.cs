@@ -136,5 +136,80 @@ namespace IsoRim
                 __instance.alwaysShow = __state.alwaysShow;
             }
         }
+
+        // ---- (Api 36) ModelDef.barAt: a thing's own fillable bars on its model
+
+        // The thing being drawn whose model sets barAt, and its model (Patches.BeginLift sets them for the thing's drawing,
+        // Scope_Finalizer puts them back); null otherwise.
+        public static Thing BarOwner;
+        public static ModelEntry BarEntry;
+
+        public static int BarAtDraws;       // probe: fillable bars moved to a model's barAt
+        public static Vector3 LastBarAt;    // probe: the last one's centre (map x, z; y = height over the ground, cells)
+        public static string LastBarOwner;  // probe: and whose it was
+
+        public struct BarAtState
+        {
+            public bool changed;
+            public Matrix4x4 wasXform;
+        }
+
+        // GenDraw.DrawFillableBar prefix: while a thing whose model sets barAt is drawn (raised onto its model by the thing's
+        // draw scope), every fillable bar it draws (its own, or a comp's gauge such as VEF's CustomFillableBarGaugeData) is
+        // centred on that point of the model and laid flat at its height. With barScale it is resized in its own frame
+        // (length, thickness), the margin by the smaller factor, so the filled part keeps its proportion. Rotation stays the
+        // game's.
+        public static void DrawFillableBar_Prefix(ref GenDraw.FillableBarRequest __0, out BarAtState __state)
+        {
+            __state = default(BarAtState);
+            Thing t = BarOwner;
+            ModelEntry entry = BarEntry;
+            if (t == null || entry == null || !View3D.Ready || !DrawHook.active || DrawHook.billboard)
+            {
+                return;
+            }
+            try
+            {
+                Vector2 scale = entry.def.barScale;
+                if (scale != Vector2.one)
+                {
+                    __0.size = new Vector2(__0.size.x * scale.x, __0.size.y * scale.y);
+                    __0.margin *= Mathf.Min(scale.x, scale.y);
+                    __0.preRotationOffset = new Vector2(__0.preRotationOffset.x * scale.x, __0.preRotationOffset.y * scale.y);
+                }
+                if (!entry.def.barAt.HasValue)
+                {
+                    return;
+                }
+                Model m = entry.Pick(t);
+                if (m == null)
+                {
+                    return;
+                }
+                Vector3 fit;
+                float yaw;
+                Vector3 p = ModelBaker.PointOnMap(t, entry, m, entry.def.barAt.Value, out fit, out yaw);
+                __0.center = new Vector3(p.x, __0.center.y, p.z);
+                __0.preRotationOffset = Vector2.zero;   // centred on barAt
+                __state.changed = true;
+                __state.wasXform = DrawHook.xform;
+                DrawHook.xform = View3D.LiftMatrix(p.y);
+                BarAtDraws++;
+                LastBarAt = p;
+                LastBarOwner = t.ThingID;
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Placing a bar on its model failed: " + e, 93611236);
+            }
+        }
+
+        public static void DrawFillableBar_Finalizer(BarAtState __state)
+        {
+            if (__state.changed)
+            {
+                DrawHook.xform = __state.wasXform;
+            }
+        }
     }
 }

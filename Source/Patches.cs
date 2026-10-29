@@ -479,6 +479,27 @@ namespace IsoRim
             Patch("3D turning parts", AccessTools.DeclaredMethod(typeof(Mote), "DrawAt", new[] { typeof(Vector3), typeof(bool) }),
                 prefix: nameof(MoteDrawAt_Prefix));
 
+            // (Api 36) A thing's own fillable bars centred on its model's barAt (Bars.DrawFillableBar_Prefix).
+            MethodInfo fillable = AccessTools.DeclaredMethod(typeof(GenDraw), "DrawFillableBar", new[] { typeof(GenDraw.FillableBarRequest) });
+            if (fillable == null)
+            {
+                missed.Add("bars on models (GenDraw.DrawFillableBar not found)");
+            }
+            else
+            {
+                try
+                {
+                    harmony.Patch(fillable, prefix: new HarmonyMethod(typeof(Bars), nameof(Bars.DrawFillableBar_Prefix)),
+                        finalizer: new HarmonyMethod(typeof(Bars), nameof(Bars.DrawFillableBar_Finalizer)));
+                    hooked.Add("GenDraw.DrawFillableBar");
+                }
+                catch (Exception e)
+                {
+                    missed.Add("GenDraw.DrawFillableBar (" + e.Message + ")");
+                    ModLog.Warn("[IsoRim] Could not hook GenDraw.DrawFillableBar for bars on models: " + e.Message);
+                }
+            }
+
             // Work progress bars: hung over the thing worked on without the game's southward offset, shown farther out (Bars).
             MethodInfo barDraw = AccessTools.DeclaredMethod(typeof(MoteProgressBar), "DrawAt", new[] { typeof(Vector3), typeof(bool) });
             if (barDraw == null)
@@ -3584,6 +3605,9 @@ namespace IsoRim
             public Vector3 wasPivot;
             public int uprightMark;   // a thing's drawing: UprightScopes.Depth + 1 when it started (0: not marked)
             public bool floorSet;     // the scope put the thing's upper-floor matrix on (Overhead: a pawn's status icon)
+            public bool barOwnerSet;  // the scope made the thing the owner of the fillable bars drawn in it (Api 36 barAt)
+            public Thing wasBarOwner;
+            public ModelEntry wasBarEntry;
         }
 
         // Wraps the game's per-frame drawing of one thing. __0 is the drawing phase; only the
@@ -4026,6 +4050,11 @@ namespace IsoRim
             {
                 UprightScopes.CloseFrom(__state.uprightMark - 1);
             }
+            if (__state.barOwnerSet)
+            {
+                Bars.BarOwner = __state.wasBarOwner;
+                Bars.BarEntry = __state.wasBarEntry;
+            }
             if (__state.changed)
             {
                 DrawHook.active = __state.wasActive;
@@ -4068,6 +4097,15 @@ namespace IsoRim
                 {
                     Vector3 shift = Quaternion.AngleAxis(form.model.Yaw(t.Rotation), Vector3.up) * form.model.def.contentOffset;
                     DrawHook.xform = Matrix4x4.Translate(new Vector3(shift.x, 0f, shift.z)) * DrawHook.xform;
+                }
+                // (Api 36) Its fillable bars go where the model says (Bars.DrawFillableBar_Prefix).
+                if (form.form == Form3D.Model && form.model != null && (form.model.def.barAt.HasValue || form.model.def.barScale != Vector2.one))
+                {
+                    state.barOwnerSet = true;
+                    state.wasBarOwner = Bars.BarOwner;
+                    state.wasBarEntry = Bars.BarEntry;
+                    Bars.BarOwner = t;
+                    Bars.BarEntry = form.model;
                 }
                 DrawHook.active = true;
             }
