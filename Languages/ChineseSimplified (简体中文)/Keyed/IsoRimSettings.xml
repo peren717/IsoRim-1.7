@@ -279,6 +279,8 @@
   <R3D_Settings_GeneParts3DTip>基因带来的耳朵、角、尾巴和毛皮。</R3D_Settings_GeneParts3DTip>
   <R3D_Settings_SmoothPeople>  人物平滑光照</R3D_Settings_SmoothPeople>
   <R3D_Settings_SmoothPeopleTip>3D 人物和服装架的光照更圆润。</R3D_Settings_SmoothPeopleTip>
+  <R3D_Settings_SmoothAnimals>  动物平滑光照</R3D_Settings_SmoothAnimals>
+  <R3D_Settings_SmoothAnimalsTip>3D 动物的光照更圆润。</R3D_Settings_SmoothAnimalsTip>
   <R3D_Settings_SmoothCrease>  硬边角度</R3D_Settings_SmoothCrease>
   <R3D_Settings_SmoothCreaseTip>夹角大于此值的面保留硬边。</R3D_Settings_SmoothCreaseTip>
   <R3D_Settings_KeepAsPaper>保持纸片人</R3D_Settings_KeepAsPaper>

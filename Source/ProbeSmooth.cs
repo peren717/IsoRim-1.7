@@ -158,7 +158,7 @@ namespace IsoRim
                     return true;
                 }
             }
-            return false;
+            return SmoothAnimalKey(key, a, map);   // (ProbeSmoothAnimals)
         }
 
         // The figure's drawn turn as last tracked (Animals.Track), or NaN.

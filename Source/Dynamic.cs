@@ -375,6 +375,11 @@ namespace IsoRim
         // the setting is on (SmoothFigures). Their ready-made meshes are kept apart.
         internal static bool FigurePart;
 
+        // The same for the parts of an animal (Animals.Draw: not a mechanoid), by the animals' setting.
+        internal static bool AnimalPart;
+
+        private static int partStampSeen;   // SmoothFigures.PartStamp the cached meshes are for
+
         // While set, DrawLocal draws each model as a see-through placement ghost in GhostColour instead (Doors.Ghost).
         internal static bool Ghosting;
         internal static Color GhostColour;
@@ -495,7 +500,17 @@ namespace IsoRim
             {
                 Forget();
             }
-            bool smooth = FigurePart && SmoothFigures.On;
+            bool smooth = (FigurePart && SmoothFigures.On) || (AnimalPart && SmoothFigures.AnimalsOn);
+            if (smooth || partStampSeen != 0)
+            {
+                int stamp = SmoothFigures.PartStamp;
+                if (stamp != partStampSeen)
+                {
+                    // a smooth setting or the crease changed: smooth meshes made for the old ones thrown away
+                    partStampSeen = stamp;
+                    Forget();
+                }
+            }
             long key = ((long)m.id << 34) | ((long)(smooth ? 1 : 0) << 29) | ((long)(ThroughRoof ? 1 : 0) << 28) | ((long)(textured ? 1 : 0) << 27) | ((long)R3DTextures.SwatchIndex(swatch) << 24)
                 | (uint)((t.r << 16) | (t.g << 8) | t.b);
 

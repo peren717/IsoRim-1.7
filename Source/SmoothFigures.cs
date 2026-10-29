@@ -14,7 +14,10 @@ namespace IsoRim
     // smooth): the mesh normal carries it and the vertex flag Bit tells IsoRim.vert.glsl to hand it to the fragment
     // stage (IsoRimSolid.frag.glsl), which lights the pixel by it, unsnapped, instead of the face normal from screen
     // derivatives. Nothing is done per frame. The outline shells (Model.hull) are not touched.
-    // Everything else (weapons, furniture, animals, buildings) is lit as before.
+    // Animals (setting smoothAnimals, on by default, the same crease): every model part an animal is drawn with (body, legs,
+    // wings; Animals.Draw: standing, walking, asleep, downed, dead, flying, carried) while DynamicModels.AnimalPart is set.
+    // Insects too; mechanoids (and entities, Mechs.Draw) not.
+    // Everything else (weapons, furniture, mechs, buildings) is lit as before.
     public static class SmoothFigures
     {
         // Bit 17 of the vertex flags (texture coordinate 1 z, next to RoofClip.Moving and ShaderCut.See): the mesh normal
@@ -30,6 +33,12 @@ namespace IsoRim
 
         // Changes whenever the look of smooth people would (People.LookOf throws away the made meshes then).
         public static int Stamp => On ? 1 + Mathf.RoundToInt(Crease * 10f) : 0;
+
+        // Smooth shading on animals (not mechanoids).
+        public static bool AnimalsOn => IsoRimMod.Settings != null && IsoRimMod.Settings.smoothAnimals;
+
+        // Changes whenever the made meshes of smooth model parts would (DynamicModels.PartsFor throws them away then).
+        public static int PartStamp => (On || AnimalsOn ? 1 + Mathf.RoundToInt(Crease * 10f) : 0) * 4 + (On ? 1 : 0) + (AnimalsOn ? 2 : 0);
 
         // Harness: time spent working out normals (Stopwatch ticks) and how many models were worked out.
         public static long Ticks;

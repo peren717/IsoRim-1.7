@@ -218,61 +218,71 @@ namespace IsoRim
             // rotation turns the body model only (one built facing south); its hips and legs are given facing north.
             Matrix4x4 bodyTurn = def.rotation != 0f ? Matrix4x4.Rotate(Quaternion.AngleAxis(def.rotation, Vector3.up)) : Matrix4x4.identity;
             FigureScope.Root(position, yaw);   // (Api.DrawFigure: placed elsewhere)
-            DynamicModels.DrawLocal(body, position, yaw, bodyPose * sized * bodyTurn, Color.white, null);
-            WoundMarks.DrawAnimal(pawn, body, position, yaw, bodyPose * sized, bodyTurn, size);   // the game's wounds on the body
-            if (ground - flight <= 0f)
+            // body, legs and wings lit by smooth normals while the setting is on (SmoothFigures; mechanoids stay flat)
+            bool partWas = DynamicModels.AnimalPart;
+            DynamicModels.AnimalPart = pawn.RaceProps == null || !pawn.RaceProps.IsMechanoid;
+            try
             {
-                // On the ground, or flying: the shadow stays on the ground (the blob is drawn at ground height).
-                float spread = Hover.ShadowScale(hover);   // (Api 32) under a hovering animal, a little smaller
-                GroundShadows.Blob(position, yaw, def.bodyHalfWidth * size * 1.5f * spread, def.bodyHalfLength * size * 1.25f * spread);
-            }
-
-            if (drawLegs && entry.leg != null && def.legs != null)
-            {
-                Matrix4x4 drop = Matrix4x4.Translate(new Vector3(0f, -def.legLength, 0f));
-                for (int i = 0; i < def.legs.Count; i++)
+                DynamicModels.DrawLocal(body, position, yaw, bodyPose * sized * bodyTurn, Color.white, null);
+                WoundMarks.DrawAnimal(pawn, body, position, yaw, bodyPose * sized, bodyTurn, size);   // the game's wounds on the body
+                if (ground - flight <= 0f)
                 {
-                    Vector3 hip = def.legs[i];
+                    // On the ground, or flying: the shadow stays on the ground (the blob is drawn at ground height).
+                    float spread = Hover.ShadowScale(hover);   // (Api 32) under a hovering animal, a little smaller
+                    GroundShadows.Blob(position, yaw, def.bodyHalfWidth * size * 1.5f * spread, def.bodyHalfLength * size * 1.25f * spread);
+                }
 
-                    // Legs at opposite corners move together, as in a trot.
-                    float beat = ((i + i / 2) % 2) * Mathf.PI;
-                    float swing = gait > 0.01f ? Mathf.Sin(phase + beat) * Mathf.Min(def.legSwing, 40f) * Mathf.Clamp01(gait) : 0f;
-                    Matrix4x4 local;
-                    if (def.legFromHip)
+                if (drawLegs && entry.leg != null && def.legs != null)
+                {
+                    Matrix4x4 drop = Matrix4x4.Translate(new Vector3(0f, -def.legLength, 0f));
+                    for (int i = 0; i < def.legs.Count; i++)
                     {
-                        // Turned toward the front by its spread plus the swing, about the upright axis (the foot keeps
-                        // its height); the foot raised (about the leg's own side axis) while it swings forward.
-                        float spread = def.legYaw != null && i < def.legYaw.Count ? def.legYaw[i] : 0f;
-                        float raise = gait > 0.01f ? Mathf.Max(0f, Mathf.Cos(phase + beat)) * def.legLift * Mathf.Clamp01(gait) : 0f;
-                        if (bellyUp)
+                        Vector3 hip = def.legs[i];
+
+                        // Legs at opposite corners move together, as in a trot.
+                        float beat = ((i + i / 2) % 2) * Mathf.PI;
+                        float swing = gait > 0.01f ? Mathf.Sin(phase + beat) * Mathf.Min(def.legSwing, 40f) * Mathf.Clamp01(gait) : 0f;
+                        Matrix4x4 local;
+                        if (def.legFromHip)
                         {
-                            // Curled in: bunched together, the feet drawn in over the belly.
-                            spread *= 0.5f;
-                            raise = -BellyUpCurl;
+                            // Turned toward the front by its spread plus the swing, about the upright axis (the foot keeps
+                            // its height); the foot raised (about the leg's own side axis) while it swings forward.
+                            float spread = def.legYaw != null && i < def.legYaw.Count ? def.legYaw[i] : 0f;
+                            float raise = gait > 0.01f ? Mathf.Max(0f, Mathf.Cos(phase + beat)) * def.legLift * Mathf.Clamp01(gait) : 0f;
+                            if (bellyUp)
+                            {
+                                // Curled in: bunched together, the feet drawn in over the belly.
+                                spread *= 0.5f;
+                                raise = -BellyUpCurl;
+                            }
+                            float forward = spread + swing;
+                            Quaternion side = hip.x >= 0f ? Quaternion.AngleAxis(-forward, Vector3.up) : Quaternion.AngleAxis(180f + forward, Vector3.up);
+                            local = legPose * sized * Matrix4x4.Translate(hip) * Matrix4x4.Rotate(side * Quaternion.AngleAxis(raise, Vector3.forward));
                         }
-                        float forward = spread + swing;
-                        Quaternion side = hip.x >= 0f ? Quaternion.AngleAxis(-forward, Vector3.up) : Quaternion.AngleAxis(180f + forward, Vector3.up);
-                        local = legPose * sized * Matrix4x4.Translate(hip) * Matrix4x4.Rotate(side * Quaternion.AngleAxis(raise, Vector3.forward));
-                    }
-                    else
-                    {
-                        float splay = hip.x >= 0f ? def.legSplay : -def.legSplay;
-                        if (bellyUp)
+                        else
                         {
-                            // Short straight legs: only leaning a little over the belly and toward its middle (more would lay them flat).
-                            splay = hip.x >= 0f ? -BellyUpCurl * 0.4f : BellyUpCurl * 0.4f;
-                            swing = Mathf.Abs(hip.z) > 0.02f ? Mathf.Sign(hip.z) * BellyUpCurl * 0.3f : 0f;
+                            float splay = hip.x >= 0f ? def.legSplay : -def.legSplay;
+                            if (bellyUp)
+                            {
+                                // Short straight legs: only leaning a little over the belly and toward its middle (more would lay them flat).
+                                splay = hip.x >= 0f ? -BellyUpCurl * 0.4f : BellyUpCurl * 0.4f;
+                                swing = Mathf.Abs(hip.z) > 0.02f ? Mathf.Sign(hip.z) * BellyUpCurl * 0.3f : 0f;
+                            }
+                            Quaternion turn = Quaternion.AngleAxis(splay, Vector3.forward) * Quaternion.AngleAxis(swing, Vector3.right);
+                            local = legPose * sized * Matrix4x4.Translate(hip) * Matrix4x4.Rotate(turn) * drop;
                         }
-                        Quaternion turn = Quaternion.AngleAxis(splay, Vector3.forward) * Quaternion.AngleAxis(swing, Vector3.right);
-                        local = legPose * sized * Matrix4x4.Translate(hip) * Matrix4x4.Rotate(turn) * drop;
+                        DynamicModels.DrawLocal(Corpses.Body(pawn, entry.leg), position, yaw, local, Color.white, null);
                     }
-                    DynamicModels.DrawLocal(Corpses.Body(pawn, entry.leg), position, yaw, local, Color.white, null);
+                }
+
+                if (entry.wing != null)
+                {
+                    DrawWings(pawn, entry, def, position, yaw, bodyPose * sized, air);
                 }
             }
-
-            if (entry.wing != null)
+            finally
             {
-                DrawWings(pawn, entry, def, position, yaw, bodyPose * sized, air);
+                DynamicModels.AnimalPart = partWas;
             }
 
             if (!lying && pawn.carryTracker != null && pawn.carryTracker.CarriedThing != null)

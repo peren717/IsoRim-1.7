@@ -279,6 +279,8 @@
   <R3D_Settings_GeneParts3DTip>Ears, horns, tails and fur from genes.</R3D_Settings_GeneParts3DTip>
   <R3D_Settings_SmoothPeople>  Smooth shading on people</R3D_Settings_SmoothPeople>
   <R3D_Settings_SmoothPeopleTip>Rounder light on 3D people and outfit stands.</R3D_Settings_SmoothPeopleTip>
+  <R3D_Settings_SmoothAnimals>  Smooth shading on animals</R3D_Settings_SmoothAnimals>
+  <R3D_Settings_SmoothAnimalsTip>Rounder light on 3D animals.</R3D_Settings_SmoothAnimalsTip>
   <R3D_Settings_SmoothCrease>  Hard edge angle</R3D_Settings_SmoothCrease>
   <R3D_Settings_SmoothCreaseTip>Faces meeting at more than this keep a sharp edge.</R3D_Settings_SmoothCreaseTip>
   <R3D_Settings_KeepAsPaper>Keep as paper</R3D_Settings_KeepAsPaper>
