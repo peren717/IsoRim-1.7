@@ -333,6 +333,15 @@ namespace IsoRim
         // draw on an upper deck, given in its floor's rows, moved over the ground and raised: ShipCells.Holds).
         public static bool Note(Mesh mesh, Matrix4x4 matrix, Material mat, MaterialPropertyBlock props)
         {
+            if (Shell.Recording != null)
+            {
+                // (Api 37) a shell being built notes every draw of its moving parts; none of them is drawn
+                if (mesh != null && mat != null)
+                {
+                    Shell.Recording.Add(new Rec { mesh = mesh, matrix = matrix, mat = mat, props = props });
+                }
+                return true;
+            }
             if (!Recording || mesh == null || mat == null || cells == null)
             {
                 return false;

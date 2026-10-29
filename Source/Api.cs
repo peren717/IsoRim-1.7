@@ -74,7 +74,10 @@ namespace IsoRim
         // StopYieldingGeneParts and the XML IsoRim.GenePartsYieldDef (another mod draws those genes' parts itself).
         // 36: ModelDef.barAt: the game's fillable bars (GenDraw.DrawFillableBar) drawn with a thing centred at that point of its
         // model, flat at its height; ModelDef.barScale resizes them (Bars.DrawFillableBar_Prefix).
-        public static int Version => 36;
+        // 37: roofed shells (Shell.cs, Api37.cs): BuildShell reads a map area's walls, shut doors, closed roofs, deck and the
+        // buildings with models that stand out into a Shell drawn at any pose (Shell.Draw, Dispose); HeightForSlide, LiveShells;
+        // flight effect cards DrawGlowCard, DrawAxialCard, DrawScreenCard, WorldToViewport (as ShipFlight draws its effects).
+        public static int Version => 37;
 
         // ---- glass parts (Version 30)
 

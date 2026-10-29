@@ -520,7 +520,7 @@ namespace IsoRim
 
         // Vanilla's fake height is a slide up the screen by that many cells; a point raised h cells moves h cos(pitch)
         // up the screen, so h = slide / cos(pitch). Kept well below the eye (and the near plane).
-        private static float HeightFor(float slide)
+        internal static float HeightFor(float slide)
         {
             float c = Mathf.Max(0.05f, Mathf.Cos(View3D.Pitch * Mathf.Deg2Rad));
             float cap = Mathf.Max(2f, 0.4f * View3D.EyePosition.y);
@@ -1270,6 +1270,8 @@ namespace IsoRim
         // decals showed through): the deck's terrain first writes its depth alone, before anything of the map is drawn.
         private static Material depthMat;
         private static bool depthTried;
+
+        internal static Material DepthMaterial => DepthMat;
 
         private static Material DepthMat
         {

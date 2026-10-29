@@ -52,10 +52,11 @@ if (IsoRim.Api.Version >= 34) { /* wall shapes: AddWallShapes (WallShapeRule, Wa
 if (IsoRim.Api.Version >= 35) { /* gene parts: ModelDef.geneDef and gene fields, YieldGeneParts / YieldAllGeneParts /
                                    YieldAllGenePartsExcept / StopYieldingGeneParts, GenePartsYieldDef (part 24) */ }
 if (IsoRim.Api.Version >= 36) { /* ModelDef.barAt, barScale: a thing's fillable bars centred on a point of its model, resized (part M) */ }
+if (IsoRim.Api.Version >= 37) { /* roofed shells: BuildShell, Shell (Draw, Dispose), HeightForSlide, LiveShells, flight effect cards DrawGlowCard / DrawAxialCard / DrawScreenCard / WorldToViewport (part 25) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt) (Api 23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25 (Api 23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1365,6 +1366,53 @@ matched once at startup by packageId or Workshop PublishedFileId (either is enou
 IsoRim's own entry: "IsoRim - Biotech Pawn Parts" (marumirai.IsoRimBiotechPawnParts, Workshop 3823611866) draws every
 gene part but furskin, so IsoRim yields all genes except `Furskin` to it.
 
+## Part 25: roofed shells (version 37)
+
+A structure on some map (another mod's temporary map, say) is read once into an `IsoRim.Shell`, which is then drawn at any
+pose after that map is gone: a ship flying in, a building lifted off. The VGE pack uses it for VGE's enemy ship arrivals.
+
+```csharp
+// IsoRim.Api.Version >= 37; main thread; only in the 3D view (null otherwise)
+IsoRim.Shell shell = IsoRim.Api.BuildShell(map, rect);      // reads rect on map now
+// every frame while it should show (true space: x, z map cells; height in true cells over the ground):
+shell.Draw(new Vector3(x, 0f, z), yawDegrees, height);      // origin (rect's centre) over x, z; turned yaw clockwise
+float h = IsoRim.Api.HeightForSlide(slide);                 // the game's fake 2D height (a slide up the screen) as a true height
+shell.Dispose();                                            // meshes and the shadow texture let go
+int live = IsoRim.Api.LiveShells;                           // shells not disposed yet (leak checks)
+```
+
+What a shell holds:
+- the walls (IsoRim's walls layer, at full height), doors drawn shut as they draw at build time, and every roofed cell closed
+  with IsoRim's roof (also while the player hides roofs);
+- the deck: substructure, foundations and built floors, the gravship hull edges and corner pieces, a thin dark slab under the
+  deck and a soft shadow on the ground (fading in over the first cell of height, away from IsoRim's sun or moon);
+- the buildings with models that stand out: in the open (a cell unroofed), on the outside of the hull (beside an open cell:
+  thrusters and guns set into the hull under the roof's edge), turrets, and models with a part through the roof
+  (`topThroughRoof`, `roofModel`); their moving parts (turret guns) as drawn at build time.
+- not: pawns, items, plants, filth, furniture under the roof, the map's lighting.
+
+Notes:
+- Combined per material: a few dozen draws plus one per moving part; never cut away or roof-clipped.
+- `Shell.Origin` is the map point the shell was built round (rect's centre); `Draw` puts it over its centre. `alpha` (0-1)
+  scales the shadow; at 0 nothing is drawn. Nothing is drawn outside the 3D view or once disposed.
+- A shell is not saved. After a load, build it again (the VGE pack lets VGE photograph its ship again, as VGE does itself).
+- Read-outs for logs: `Vertices`, `Triangles`, `Meshes`, `Parts`, `Buildings`, `DeckCells`, `WallCells`, `BuildMs`, `ToString()`.
+- On maps with stacked floors the shell is drawn where it is told (never moved onto a floor).
+
+### Flight effect cards
+
+The pieces IsoRim's own gravship flight draws its effects with, for an addon flying something of its own (the VGE pack
+draws VGE's thruster flames, glows and lens flares round its shells with them). True space; only
+while `Api.ViewReady`.
+
+```csharp
+IsoRim.Api.DrawGlowCard(at, size, glowMat, pull);                // a glow sprite stood up facing the camera, centred on at
+IsoRim.Api.DrawAxialCard(at, thrustDir, size, flameMat, props);  // a flame card along its thrust, turned to face the camera
+Vector2 vp = IsoRim.Api.WorldToViewport(point);                  // for a screen-space material's _DrawPos
+IsoRim.Api.DrawScreenCard(screenMat, props);                     // the game's screen-space effects, in front of everything
+IsoRim.Api.DrawScreenCard(downwashMat, null, groundPoint);       // ... or at the depth of a point (what is in front covers it)
+```
+
 ## Part M: model packs (IsoRim.ModelDef)
 
 A model pack is an XML-only mod (or a mod with a small DLL) that adds `IsoRim.ModelDef`s binding OBJ models to other
