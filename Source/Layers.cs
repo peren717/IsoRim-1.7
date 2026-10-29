@@ -943,6 +943,14 @@ namespace IsoRim
         // In the roof texture it clips what stands under it while that floor is drawn solid (RoofClip).
         private const int FloorLid = RoofClip.Slab;
 
+        // Set into a wall in place of a block (coolers, vents: canPlaceOverWall; a mod's window or wall piece that holds the
+        // roof). Not just anything full (fillPercent 1): an impassable building beside a wall (a toxifier generator) is no
+        // wall and carries no roof edge.
+        internal static bool SetInWall(Building b)
+        {
+            return b.def.holdsRoof || (b.def.building != null && b.def.building.canPlaceOverWall);
+        }
+
         // 0: no lid here. 1: a built roof (or a wall under the edge of one). 2: a natural rock roof over open ground.
         // 3 (ShipRoofs.Kind): a built roof over a gravship, or a wall standing on Substructure under its edge (Gravship.cs).
         private static int LidKind(Map map, IntVec3 c)
@@ -978,7 +986,7 @@ namespace IsoRim
                 }
                 return solidBlock ? 0 : 2;
             }
-            if (natural || b == null || !(solidBlock || b is Building_Door || b.def.fillPercent >= 0.99f))
+            if (natural || b == null || !(solidBlock || b is Building_Door || SetInWall(b)))
             {
                 return 0;
             }

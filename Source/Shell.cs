@@ -142,7 +142,7 @@ namespace IsoRim
                     continue;
                 }
                 Building b = c.GetEdifice(map);
-                if (b == null || !(b is Building_Door || WallBoxes.IsWallForm(Forms.For(b.def)) || b.def.fillPercent >= 0.99f))
+                if (b == null || !(b is Building_Door || WallBoxes.IsWallForm(Forms.For(b.def)) || SectionLayer_IsoRimRoofs.SetInWall(b)))
                 {
                     return true;   // open ground or deck beside it
                 }
