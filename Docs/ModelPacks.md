@@ -211,7 +211,36 @@ half-set model), a new enough one gets the whole entry:
 fields 14; `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20; `immatureModels`, `immatureHide` 24; alien packs
 (`IsoRim.AlienModelDef`, `ApparelModelDef.aliens`) 25; `bobByState` 27; `slots` 28; any binding of a multi-cell supported door (not the
 game's `Building_MultiTileDoor`) 29, which draws it from its models (Api part 18); `glassTint`, `glassOpacity`, `glassGlow`
-and a door's `glassModel` 30 (Api part 19); `topThroughRoof`, `roofModel` 31 (Api part 20); `hoverHeight`, `hoverBob` 32 (Api part 21); `geneDef` and the other gene fields 35 (Api part 24); `barAt`, `barScale` 36 (Api part M); `femaleModel`, `femaleModels`, `femaleLegModel`, `femaleWingModel` 38 (female animals, below). The highest one used counts.
+and a door's `glassModel` 30 (Api part 19); `topThroughRoof`, `roofModel` 31 (Api part 20); `hoverHeight`, `hoverBob` 32 (Api part 21); `geneDef` and the other gene fields 35 (Api part 24); `barAt`, `barScale` 36 (Api part M); `femaleModel`, `femaleModels`, `femaleLegModel`, `femaleWingModel` 38 (female animals, below); `byGraphic` 39 (models by runtime sprite, below). The highest one used counts.
+
+## Models by runtime sprite (byGraphic)
+
+Some mods pick a thing's sprite while the game runs: a conveyor piece shows a straight belt, a turn, a merger or a
+splitter by what is next to it; a hopper lights up for input or output. Give its ModelDef one `byGraphic` entry per
+sprite (IsoRim Api 39): the thing's current `Graphic.path` picks the model, and the block is rebuilt when it changes.
+
+```xml
+<IsoRim.ModelDef>
+  <defName>R3D_MyBelt</defName>
+  <thingDef>MyMod_Belt</thingDef>
+  <model>Models/my_belt.obj</model>                  <!-- no match: this one -->
+  <surfaceHeight>0.22</surfaceHeight>               <!-- where items it carries ride -->
+  <byGraphic>
+    <li><path>Things/Building/Belts/BeltTurnLeft_north</path><model>Models/my_belt_turn_left.obj</model></li>
+    <li><path>Things/Building/Belts/BeltTurnLeft_east</path><model>Models/my_belt_turn_left.obj</model><yaw>90</yaw></li>
+    <li><path>Things/Building/Belts/BeltSplitter_EastWest</path><prefix>true</prefix><model>Models/my_split_t.obj</model><yaw>90</yaw></li>
+  </byGraphic>
+</IsoRim.ModelDef>
+```
+
+- `path` is the full texture path the mod gives the graphic (no `_north` suffix of a Graphic_Multi). `prefix`: every path
+  that starts with it (a suffix that flips while the thing works then does not rebuild anything).
+- `facing` (North, East, South, West) limits an entry to things facing that way: when one sprite path stands for pieces that differ by the thing's facing (a 2-output splitter's sprite names its outputs, the belt's facing says which side feeds it), give one entry per facing.
+- Build each model facing north as the north sprite. A Graphic_Multi sprite's model turns with the thing; a single sprite
+  (Graphic_Single) is drawn north-up, as the game draws it, so one OBJ with a `yaw` per sprite covers sprites that are the
+  same piece in other directions.
+- While the model stands in, the mod's own per-frame drawing of the sprite is left out; items it carries are still drawn.
+- Add the field through `PatchOperation_IfIsoRimApi` with `minVersion` 39 so older IsoRim keeps `model`.
 
 ## Female animals
 

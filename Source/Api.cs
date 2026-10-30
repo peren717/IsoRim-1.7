@@ -79,7 +79,10 @@ namespace IsoRim
         // flight effect cards DrawGlowCard, DrawAxialCard, DrawScreenCard, WorldToViewport (as ShipFlight draws its effects).
         // 38: female animals: ModelDef.femaleModel / femaleModels (her body variants), femaleLegModel, femaleWingModel; every
         // animal draw picks them for a female (ModelEntry.Pick, LegFor, WingFor).
-        public static int Version => 38;
+        // 39: ModelDef.byGraphic (GraphicModel: path, prefix, model, yaw): models by the sprite the game draws a thing with
+        // now (Thing.Graphic.path, a mod's runtime Graphic override), rebuilt when it changes; the thing's own per-frame
+        // sprite (Graphic.Draw of thing.Graphic) is left out while such a model stands in (GraphicModels.cs).
+        public static int Version => 39;
 
         // ---- glass parts (Version 30)
 

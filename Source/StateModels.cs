@@ -137,6 +137,15 @@ namespace IsoRim
                     return off;
                 }
             }
+            // (Api 39) the model for the sprite the game draws the thing with now (GraphicModels)
+            if (entry.byGraphic != null)
+            {
+                Model byGraphic = GraphicModels.Choose(t, entry, null);
+                if (byGraphic != null)
+                {
+                    return byGraphic;
+                }
+            }
             if (entry.byState != null)
             {
                 string key = StateOf(t);
@@ -215,6 +224,7 @@ namespace IsoRim
         public static void Track(Thing t)
         {
             TrackState(t);
+            GraphicModels.Track(t);   // (Api 39) its sprite (Graphic.path) now matches another byGraphic entry
             bool was;
             if (!View3D.Ready || !baked.TryGetValue(t.thingIDNumber, out was))
             {

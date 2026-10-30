@@ -157,7 +157,7 @@ namespace IsoRim
                     return true;
                 }
             }
-            return FemaleKey(key, a, map);   // (ProbeFemale)
+            return FemaleKey(key, a, map) || GraphicKey(key, a, map);   // (ProbeFemale, ProbeGraphic)
         }
 
         private static void Pose(Pawn p, (IntVec3 cell, Rot4 rot, string state) at)

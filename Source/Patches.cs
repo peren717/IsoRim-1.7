@@ -2964,6 +2964,18 @@ namespace IsoRim
 
         public static bool GraphicDraw_Prefix(Graphic __instance, Thing thing)
         {
+            // (Api 39) a thing whose byGraphic model stands in: its own sprite, drawn by its custom DrawAt, is left out
+            try
+            {
+                if (thing != null && GraphicModels.SkipsSprite(__instance, thing))
+                {
+                    return false;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Checking a thing's byGraphic model failed: " + e, 93623901);
+            }
             if (fieldDoor == null || thing != fieldDoor)
             {
                 return true;

@@ -2281,7 +2281,7 @@ namespace IsoRim
         {
             ModelDef def = entry.def;
             scale = def.scale;
-            yaw = entry.Yaw(thing.Rotation);
+            yaw = entry.byGraphic != null ? GraphicModels.YawFor(thing, entry) : entry.Yaw(thing.Rotation);   // (Api 39)
             int id = thing.thingIDNumber;
             if (def.randomRotation)
             {

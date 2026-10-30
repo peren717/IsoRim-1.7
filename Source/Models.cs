@@ -66,6 +66,14 @@ namespace IsoRim
                                             // game's Graphic_Appearances: Planks, Bricks, Smooth ...); others use model
         public List<StateModel> byState;    // a different model for things in a state an addon names (Api.AddModelState):
                                             // <li><state>full</state><model>Models/x.obj</model></li>; others use model
+        // (Api 39) A different model by the sprite the game draws the thing with NOW (Thing.Graphic.path, which a mod's own
+        // Graphic override may change at runtime: a conveyor piece showing a turn or a merger): the first entry whose path
+        // matches (exact, or a prefix with <prefix>true</prefix>; case-insensitive, \ = /) is used, turned by its yaw. A
+        // Graphic_Multi model turns with the thing's facing; any other graphic (Graphic_Single) is drawn north-up, as the
+        // sprite is. The block is rebuilt when the matching entry changes (GraphicModels.Track, with the byState check);
+        // while such a thing's model stands in, its own sprite drawn every frame (Graphic.Draw of thing.Graphic) is left
+        // out. No match: model (and the other rules) as usual. See GraphicModels.cs.
+        public List<GraphicModel> byGraphic;
         public List<StyleModel> byStyle;    // a different model for things of this style (Ideology's ThingStyleDef):
                                             // <li><style>Morbid_AltarSmall</style><model>Models/x.obj</model></li>;
                                             // wins over byAppearance; things of no listed style use model
@@ -684,6 +692,21 @@ namespace IsoRim
         public string model;
     }
 
+    // (Api 39) One entry of ModelDef.byGraphic:
+    //   <li><path>Things/Building/Belts/BeltTurnLeft_north</path><model>Models/belt_turn_left.obj</model></li>
+    //   <li><path>Things/Building/Belts/BeltSplitter_EastNorth</path><prefix>true</prefix><model>..</model><yaw>90</yaw></li>
+    //   <li><path>..BeltSplitter_EastNorth</path><prefix>true</prefix><facing>North</facing><model>..</model></li>
+    public class GraphicModel
+    {
+        public string path;         // the runtime Graphic.path (case-insensitive, \ = /)
+        public bool prefix = false; // true: matches every path that starts with it
+        public string model;
+        public float yaw = 0f;      // extra turn (degrees, clockwise seen from above, as the game's rotations)
+        public string facing;       // optional: only for a thing facing this way (north, east, south, west); unset: any
+                                    // facing. For a one-direction sprite whose look also depends on the thing's facing
+                                    // (a belt splitter's sprite names its outputs, not which side feeds it)
+    }
+
     // One entry of ModelDef.byStyle.
     public class StyleModel
     {
@@ -699,6 +722,7 @@ namespace IsoRim
         public Dictionary<string, Model> byAppearance;   // StuffAppearanceDef defName -> model; null if none
         public Dictionary<string, Model[]> byStyle;      // ThingStyleDef defName -> its models (one per random variant); null if none
         public Dictionary<string, Model> byState;        // addon state name -> model (byState); null if none
+        public GraphicModels.Entry[] byGraphic;          // (Api 39) byGraphic in order; null if none
         public Model[] immature;   // (Api 24) a plant's young stage, one per variant (immatureModels / immatureHide); null if none
         public Model leg;   // animals only
         public Model[] female;      // (Api 38) femaleModel / femaleModels: a female animal's body variants, or null
@@ -1017,6 +1041,13 @@ namespace IsoRim
                     tallest = Mathf.Max(tallest, m != null ? m.maxY : 0f);
                 }
             }
+            if (byGraphic != null)
+            {
+                for (int i = 0; i < byGraphic.Length; i++)
+                {
+                    tallest = Mathf.Max(tallest, byGraphic[i].model.maxY);   // (Api 39)
+                }
+            }
             if (roofPart != null)
             {
                 tallest = Mathf.Max(tallest, roofPart.maxY);   // (Api 31) the part over the roof
@@ -1329,6 +1360,7 @@ namespace IsoRim
                     }
                 }
             }
+            entry.byGraphic = GraphicModels.Load(md);   // (Api 39)
             entry.immature = ImmatureModels(md, entry.variants);
             if (!md.legModel.NullOrEmpty() && md.modContentPack != null)
             {

@@ -50,6 +50,7 @@ namespace IsoRim
             { "geneDef", 35 }, { "geneAnchor", 35 }, { "geneTint", 35 }, { "geneBuilds", 35 }, { "geneTuck", 35 }, { "geneHidesHair", 35 }, { "geneTintsHead", 35 },
             { "barAt", 36 }, { "barScale", 36 },
             { "femaleModel", 38 }, { "femaleModels", 38 }, { "femaleLegModel", 38 }, { "femaleWingModel", 38 },
+            { "byGraphic", 39 },
         };
         private const int BaseVersion = 2;
 

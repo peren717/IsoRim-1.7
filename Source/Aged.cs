@@ -143,6 +143,13 @@ namespace IsoRim
                     e.byState[k] = Copy(e.byState[k], s);
                 }
             }
+            if (e.byGraphic != null)
+            {
+                for (int i = 0; i < e.byGraphic.Length; i++)
+                {
+                    e.byGraphic[i].model = Copy(e.byGraphic[i].model, s);   // (Api 39)
+                }
+            }
             if (e.byStyle != null)
             {
                 foreach (string k in new List<string>(e.byStyle.Keys))

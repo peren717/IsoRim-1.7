@@ -168,6 +168,7 @@ namespace IsoRim
             live.stackModels = null;
             live.byAppearance = null;
             live.byState = null;
+            live.byGraphic = null;       // (Api 39)
             live.immatureModels = null;  // (Api 24) the copied def's young stage; its immatureHide still applies to the new file
             live.byStyle = null;
             live.parts = null;
