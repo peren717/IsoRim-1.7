@@ -89,8 +89,9 @@ The view (version 2):
 
 Stacked floors (version 2): an addon that puts upper floors on the rows of the same map registers an `IFloorLayout` in
 `Api.Floors` (ground rows, floor count, each floor's height and row shift and whether it is drawn, the pointer's floor, a
-thing's extra offset, optional `ViewFloor` and `ShipCell`). IsoRim then draws each floor over the ground. Null (the
-default) costs nothing. Also: `Api.HiddenRoof` (a `Predicate<RoofDef>` for roofs kept for the game but not drawn) and
+thing's extra offset, optional `ViewFloor` and `ShipCell`). IsoRim then draws each floor over the ground, and draws
+the light of each floor on the floor right above and below it where no roof (a floor's slab is a roof below it) or wall
+is between them; the game's glow grid (gameplay light) stays per floor. Null (the default) costs nothing. Also: `Api.HiddenRoof` (a `Predicate<RoofDef>` for roofs kept for the game but not drawn) and
 `Api.RoofHidden(roof)`, `Api.ModelHeight(ThingDef)` (how tall a thing is drawn from its model, 0 for things that follow the
 wall height), `Api.Debris(Map, IEnumerable<IntVec3>)` (version 4: collapse debris; call it before the cells' things are
 removed), `Api.XrayDesignator(Type designator, bool below, bool above)` (version 5: the mining x-ray shows the floors
@@ -1302,73 +1303,73 @@ IsoRim.Api.HideFlatLayer(typeof(MySectionLayer));               // the mod's own
 First user: Vanilla Diagonal Walls (its diagonal bands and trimmed wall cells, through a small assembly it loads only
 with IsoRim).
 
-## Part 24: gene parts (version 35)
-
-IsoRim draws 3D parts for Biotech genes on its 3D people from `IsoRim.ModelDef`s with a `geneDef` (no `thingDef`): the
-model is merged into the person's head or body like hair and clothes, so it follows every facing, lying in bed, sitting,
-crawling and the body animations. Only active genes count. The setting "3D gene parts" (default on) turns them all off:
-then figures look exactly as before. Gene parts are left out on a dried corpse (as the game), on other races drawn as 3D
-figures (part 16), and head parts on heads that are not IsoRim's own (a ghoul's head, a skull, under a burka).
-IsoRim's own entries: pig ears and pig nose (Pigskin), mini-horns (Impid), furry tail and furskin (Yttakin).
-
-```xml
-<IsoRim.ModelDef>
-  <defName>MyPack_Gene_CatEars</defName>
-  <geneDef>Ears_Cat</geneDef>
-  <model>Models/cat_ears.obj</model>
-  <geneAnchor>Head</geneAnchor>       <!-- Head, UpperBody, LowerBody, LowerBack -->
-  <geneTint>Hair</geneTint>           <!-- Skin, Hair, None -->
-</IsoRim.ModelDef>
-```
-
-- The model is built in figure space, like `Models/person_head.obj` and `person_<build>_upper/_lower.obj`: one unit = one
-  cell, +y up, the face's side at -z (as loaded), a figure of size 1 (adult); it sits where it belongs as built. Children
-  and other sizes scale with the figure.
-- `geneAnchor`: `Head` (the head mesh, widened with narrow and wide head types); `UpperBody` / `LowerBody` (the body,
-  scaled by body type like clothes, and left out where clothing covers that part, as the game draws clothes over its fur);
-  `LowerBack` (the body at the part's own size, moved back with the build's back: a fat body's back is further out than
-  the male body it is built on; shown over clothes: tails).
-- `geneTint`: `stuff*` faces are multiplied by the skin colour (greyed when dead, rotten when rotting), the hair colour, or
-  nothing; other materials keep their colour.
-- `geneBuilds`: another model per build, `<li><build>Fat</build><model>Models/x_fat.obj</model></li>` (Male, Female, Thin,
-  Fat, Hulk; children use Thin, babies Fat); other builds use `model`.
-- `geneTuck` (head): shown only where the game shows hair, and tucked inside headgear like hair (head fur).
-- `geneHidesHair`: the person's hair is left out (head fur replacing it); beards stay.
-- `geneTintsHead`: the head itself takes this part's tint (furskin: the face in the fur colour).
-- Several ModelDefs may name the same gene (furskin: head fur, upper and lower coat).
-
-### Yielding genes to another mod
-
-A mod that draws some genes' parts on IsoRim's figures itself (through figure hooks, part 1) tells IsoRim to leave those
-genes out; other genes are still drawn.
-
-```csharp
-// IsoRim.Api.Version >= 35
-IsoRim.Api.YieldGeneParts("my.mod", new[] { myEarsGene, myTailGene });   // only these genes
-IsoRim.Api.YieldAllGeneParts("my.mod");                                 // or every gene
-IsoRim.Api.YieldAllGenePartsExcept("my.mod", new[] { furskinGene });    // or every gene but these
-IsoRim.Api.StopYieldingGeneParts("my.mod");                             // takes it back
-bool mine = IsoRim.Api.GenePartsYielded(gene);                          // code or XML yield
-```
-
-A later call by the same owner replaces its earlier yield. Any thread; figures are worked out again at once.
-
-Without code, an `IsoRim.GenePartsYieldDef` (any mod may add one, IsoRim ships some) yields genes while a mod is active,
-matched once at startup by packageId or Workshop PublishedFileId (either is enough):
-
-```xml
-<IsoRim.GenePartsYieldDef>
-  <defName>MyPack_Yield_SomeMod</defName>
-  <packageIds><li>author.somemod</li></packageIds>
-  <publishedFileIds><li>1234567890</li></publishedFileIds>
-  <genes><li>Ears_Pig</li></genes>                 <!-- these genes; leave out for all genes ... -->
-  <exceptGenes><li>Furskin</li></exceptGenes>      <!-- ... but these (only without genes) -->
-</IsoRim.GenePartsYieldDef>
-```
-
-IsoRim's own entry: "IsoRim - Biotech Pawn Parts" (marumirai.IsoRimBiotechPawnParts, Workshop 3823611866) draws every
-gene part but furskin, so IsoRim yields all genes except `Furskin` to it.
-
+## Part 24: gene parts (version 35)
+
+IsoRim draws 3D parts for Biotech genes on its 3D people from `IsoRim.ModelDef`s with a `geneDef` (no `thingDef`): the
+model is merged into the person's head or body like hair and clothes, so it follows every facing, lying in bed, sitting,
+crawling and the body animations. Only active genes count. The setting "3D gene parts" (default on) turns them all off:
+then figures look exactly as before. Gene parts are left out on a dried corpse (as the game), on other races drawn as 3D
+figures (part 16), and head parts on heads that are not IsoRim's own (a ghoul's head, a skull, under a burka).
+IsoRim's own entries: pig ears and pig nose (Pigskin), mini-horns (Impid), furry tail and furskin (Yttakin).
+
+```xml
+<IsoRim.ModelDef>
+  <defName>MyPack_Gene_CatEars</defName>
+  <geneDef>Ears_Cat</geneDef>
+  <model>Models/cat_ears.obj</model>
+  <geneAnchor>Head</geneAnchor>       <!-- Head, UpperBody, LowerBody, LowerBack -->
+  <geneTint>Hair</geneTint>           <!-- Skin, Hair, None -->
+</IsoRim.ModelDef>
+```
+
+- The model is built in figure space, like `Models/person_head.obj` and `person_<build>_upper/_lower.obj`: one unit = one
+  cell, +y up, the face's side at -z (as loaded), a figure of size 1 (adult); it sits where it belongs as built. Children
+  and other sizes scale with the figure.
+- `geneAnchor`: `Head` (the head mesh, widened with narrow and wide head types); `UpperBody` / `LowerBody` (the body,
+  scaled by body type like clothes, and left out where clothing covers that part, as the game draws clothes over its fur);
+  `LowerBack` (the body at the part's own size, moved back with the build's back: a fat body's back is further out than
+  the male body it is built on; shown over clothes: tails).
+- `geneTint`: `stuff*` faces are multiplied by the skin colour (greyed when dead, rotten when rotting), the hair colour, or
+  nothing; other materials keep their colour.
+- `geneBuilds`: another model per build, `<li><build>Fat</build><model>Models/x_fat.obj</model></li>` (Male, Female, Thin,
+  Fat, Hulk; children use Thin, babies Fat); other builds use `model`.
+- `geneTuck` (head): shown only where the game shows hair, and tucked inside headgear like hair (head fur).
+- `geneHidesHair`: the person's hair is left out (head fur replacing it); beards stay.
+- `geneTintsHead`: the head itself takes this part's tint (furskin: the face in the fur colour).
+- Several ModelDefs may name the same gene (furskin: head fur, upper and lower coat).
+
+### Yielding genes to another mod
+
+A mod that draws some genes' parts on IsoRim's figures itself (through figure hooks, part 1) tells IsoRim to leave those
+genes out; other genes are still drawn.
+
+```csharp
+// IsoRim.Api.Version >= 35
+IsoRim.Api.YieldGeneParts("my.mod", new[] { myEarsGene, myTailGene });   // only these genes
+IsoRim.Api.YieldAllGeneParts("my.mod");                                 // or every gene
+IsoRim.Api.YieldAllGenePartsExcept("my.mod", new[] { furskinGene });    // or every gene but these
+IsoRim.Api.StopYieldingGeneParts("my.mod");                             // takes it back
+bool mine = IsoRim.Api.GenePartsYielded(gene);                          // code or XML yield
+```
+
+A later call by the same owner replaces its earlier yield. Any thread; figures are worked out again at once.
+
+Without code, an `IsoRim.GenePartsYieldDef` (any mod may add one, IsoRim ships some) yields genes while a mod is active,
+matched once at startup by packageId or Workshop PublishedFileId (either is enough):
+
+```xml
+<IsoRim.GenePartsYieldDef>
+  <defName>MyPack_Yield_SomeMod</defName>
+  <packageIds><li>author.somemod</li></packageIds>
+  <publishedFileIds><li>1234567890</li></publishedFileIds>
+  <genes><li>Ears_Pig</li></genes>                 <!-- these genes; leave out for all genes ... -->
+  <exceptGenes><li>Furskin</li></exceptGenes>      <!-- ... but these (only without genes) -->
+</IsoRim.GenePartsYieldDef>
+```
+
+IsoRim's own entry: "IsoRim - Biotech Pawn Parts" (marumirai.IsoRimBiotechPawnParts, Workshop 3823611866) draws every
+gene part but furskin, so IsoRim yields all genes except `Furskin` to it.
+
 ## Part 25: roofed shells (version 37)
 
 A structure on some map (another mod's temporary map, say) is read once into an `IsoRim.Shell`, which is then drawn at any

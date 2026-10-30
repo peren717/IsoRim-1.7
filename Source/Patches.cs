@@ -678,11 +678,11 @@ namespace IsoRim
         }
 
         // __0 map, __1 subMesh, __2 rect, __3 ref firstCenterInd, __4 centered, __5 filter.
-        public static void GenerateLightingOverlay_Postfix(Map __0, LayerSubMesh __1, CellRect __2, bool __4, Predicate<int> __5)
+        public static void GenerateLightingOverlay_Postfix(Map __0, LayerSubMesh __1, CellRect __2, ref int __3, bool __4, Predicate<int> __5)
         {
             try
             {
-                IsoGlow.Generated(__0, __1, __2, __4, __5);
+                IsoGlow.Generated(__0, __1, __2, __3, __4, __5);
             }
             catch (Exception e)
             {

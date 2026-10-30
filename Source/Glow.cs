@@ -406,14 +406,23 @@ namespace IsoRim
 
         // Postfix of SectionLayer_LightingOverlay.GenerateLightingOverlay(map, subMesh, rect, ref
         // firstCenterInd, centered, filter): only for the map's own blocks (not centred, unfiltered:
-        // the gravship bake passes those).
-        public static void Generated(Map map, LayerSubMesh subMesh, CellRect rect, bool centered, Predicate<int> filter)
+        // the gravship bake passes those). With stacked floors the light of the floors above and below is
+        // added to the block's colours first (GlowFloors, render only).
+        public static void Generated(Map map, LayerSubMesh subMesh, CellRect rect, int firstCenter, bool centered, Predicate<int> filter)
         {
             if (centered || filter != null || map == null || subMesh == null || subMesh.mesh == null)
             {
                 return;
             }
             rect = rect.ClipInsideMap(map);
+            try
+            {
+                GlowFloors.Apply(map, subMesh, rect, firstCenter);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Light between floors failed: " + e, 93611206);
+            }
             IsoGlowMap.For(map).CopySection(rect, subMesh.mesh.colors32);
         }
 
