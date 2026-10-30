@@ -153,6 +153,9 @@
     <thingDef>Battery</thingDef>
     <model>Models/battery.obj</model>
     <surfaceHeight>0.00</surfaceHeight>
+    <!-- the charge bar flat on the top, between the two terminals (Api 36) -->
+    <barAt>(0, 0.605, 0)</barAt>
+    <barScale>(0.36, 0.8)</barScale>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -396,6 +399,9 @@
     <thingDef>FermentingBarrel</thingDef>
     <model>Models/barrel.obj</model>
     <surfaceHeight>0.00</surfaceHeight>
+    <!-- the fermentation bar on the lid, just over the bung (Api 36) -->
+    <barAt>(0, 0.765, 0)</barAt>
+    <barScale>(0.7, 1)</barScale>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -2369,6 +2375,9 @@
     <thingDef>PodLauncher</thingDef>
     <model>Models/pod_launcher.obj</model>
     <surfaceHeight>0.00</surfaceHeight>
+    <!-- the fuel gauge on top of the chemfuel tank (Api 36) -->
+    <barAt>(0, 0.67, 0.5)</barAt>
+    <barScale>(0.4, 1)</barScale>
     <builtFor>(1, 2)</builtFor>
   </IsoRim.ModelDef>
 

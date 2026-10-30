@@ -97,7 +97,11 @@ namespace IsoRim
                     && (def.plant != null && def.plant.IsTree ? !st.trees3D : !st.smallPlants3D);
                 if (hasModel && !flat && form.form != Form3D.Model && !door && st.models3D && !plantOff)
                 {
-                    if (item && st.itemsFromArt && !Forms.IsChunk(def) && !Forms.OverArt(entry))
+                    if (item && (GroundGear.IsWeapon(def) || (def.IsApparel && !GroundGear.ApparelOn)) && !Forms.IsChunk(def) && !Forms.OverArt(entry))
+                    {
+                        flags.Add("GEAR_ART");   // weapons and apparel follow their own switches (Forms.Compute)
+                    }
+                    else if (item && !GroundGear.IsWeapon(def) && !def.IsApparel && st.itemsFromArt && !Forms.IsChunk(def) && !Forms.OverArt(entry))
                     {
                         flags.Add("ITEM_ART");
                     }

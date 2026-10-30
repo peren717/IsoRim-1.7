@@ -101,7 +101,23 @@ namespace IsoRim
                 f.height = entry.SurfaceHeight * entry.Fit(def).y;
                 return f;
             }
-            if (def.category == ThingCategory.Item && st.itemsFromArt && !IsChunk(def) && !OverArt(listed ? entry : null) && !podModel)
+            // Weapons and apparel each follow a switch of their own (GroundGear), not "items from the game's art" (2026-10-30):
+            // a weapon without its model (above) and apparel with "Apparel as 3D models" off are their sprite made solid, as
+            // with the game's art; apparel with it on lies as GroundGear's laid clothes (a model another mod binds to the very
+            // apparel: that model, below).
+            bool weapon = def.category == ThingCategory.Item && GroundGear.IsWeapon(def);
+            bool apparel = def.category == ThingCategory.Item && def.IsApparel;
+            if ((weapon || (apparel && !GroundGear.ApparelOn)) && !IsChunk(def) && !OverArt(listed ? entry : null))
+            {
+                float thick = st.thickItems ? ItemThickness(def) * Mathf.Clamp01(st.itemThickness) : 0f;
+                if (st.autoExtrude && thick > 0.004f)
+                {
+                    f.form = Form3D.Extruded;
+                    f.height = thick;
+                }
+                return f;
+            }
+            if (def.category == ThingCategory.Item && !weapon && !apparel && st.itemsFromArt && !IsChunk(def) && !OverArt(listed ? entry : null) && !podModel)
             {
                 // Items are made solid from their own game sprite, so they read exactly as
                 // they do in the game. (Chunks keep their rock and scrap models.)
@@ -115,8 +131,8 @@ namespace IsoRim
             }
             if (def.category == ThingCategory.Item && GroundGear.Replaces(def, listed ? entry : null))
             {
-                // Apparel and weapons look as a colonist wears or holds them (GroundGear): clothes as the 3D figure's clothes laid
-                // down, weapons from their own sprite (as held), not a generic model for their category.
+                // Apparel looks as a colonist wears it (GroundGear): the 3D figure's clothes laid down, not a generic model for its
+                // category (none of its own on a figure, or figures off: its sprite made solid).
                 if (GroundGear.WornLook(def))
                 {
                     f.form = Form3D.Worn;

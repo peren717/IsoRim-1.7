@@ -82,7 +82,9 @@ namespace IsoRim
         // 39: ModelDef.byGraphic (GraphicModel: path, prefix, model, yaw): models by the sprite the game draws a thing with
         // now (Thing.Graphic.path, a mod's runtime Graphic override), rebuilt when it changes; the thing's own per-frame
         // sprite (Graphic.Draw of thing.Graphic) is left out while such a model stands in (GraphicModels.cs).
-        public static int Version => 39;
+        // 40: Api.DrawItem (Api40.cs): one item drawn as IsoRim shows an item on the ground by the player's item settings (its model, its
+        // sprite made solid, or flat), at a point of the caller's (an item another mod draws itself: on a belt); LiveItems share it (ItemDraw).
+        public static int Version => 40;
 
         // ---- glass parts (Version 30)
 

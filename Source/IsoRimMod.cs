@@ -9,6 +9,9 @@ namespace IsoRim
 {
     public class IsoRimSettings : ModSettings
     {
+        // Never delete or rename a field here or its Scribe key: other mods read them (directly or by name through
+        // Api.SetOption). A retired option keeps its field and saved name, hidden from the settings window, with a comment
+        // "kept for compatibility".
         public float pitch = 55f;        // camera angle in degrees; 90 looks straight down
         public bool isometric = true;    // camera turned 45 degrees and lowered, as in isometric games
         public float isoPitch = 35.3f;   // camera angle while isometric; 35.3 is the true isometric angle
@@ -47,6 +50,7 @@ namespace IsoRim
         public bool texturedWalls = true;
         public bool autoExtrude = true;
         public bool thickItems = true;
+        // (Api 40) Ordinary items only (not weapons: weaponModels3D; not apparel: apparelModels3D). Name and saved key unchanged.
         public bool itemsFromArt = true;
         public bool rawModels = true;    // raw materials (steel, wood, blocks ...) keep the mod's 3D models even with itemsFromArt
         public bool ghosts3D = true;
@@ -132,6 +136,7 @@ namespace IsoRim
         public bool mechs3D = true;
         public bool heldWeapons3D = true;
         public bool weaponModels3D = true;   // weapons with a 3D model show it everywhere (WeaponModels)
+        public bool apparelModels3D = true;  // apparel items lie as the 3D clothes a figure wears, laid down (GroundGear)
         public float aimSide = 0.15f;        // a 3D figure aiming a ranged weapon: its butt this far to its right (figure units) ...
         public float aimHeight = 0.62f;      // ... this high ...
         public float aimReach = 0.12f;       // ... and this far forward (FigureWeapons, with weaponModels3D)
@@ -272,6 +277,7 @@ namespace IsoRim
             Scribe_Values.Look(ref mechs3D, "mechs3D", true);
             Scribe_Values.Look(ref heldWeapons3D, "heldWeapons3D", true);
             Scribe_Values.Look(ref weaponModels3D, "weaponModels3D", true);
+            Scribe_Values.Look(ref apparelModels3D, "apparelModels3D", true);
             Scribe_Values.Look(ref aimSide, "aimSide", 0.15f);
             Scribe_Values.Look(ref aimHeight, "aimHeight", 0.62f);
             Scribe_Values.Look(ref aimReach, "aimReach", 0.12f);
@@ -1083,6 +1089,7 @@ namespace IsoRim
                     "R3D_Settings_ItemsFromArtTip".Translate());
                 Check(l, "R3D_Settings_RawModels".Translate(), ref st.rawModels, "R3D_Settings_RawModelsTip".Translate());
                 Check(l, "R3D_Settings_WeaponModels3D".Translate(), ref st.weaponModels3D, "R3D_Settings_WeaponModels3DTip".Translate());
+                Check(l, "R3D_Settings_ApparelModels3D".Translate(), ref st.apparelModels3D, "R3D_Settings_ApparelModels3DTip".Translate());
                 Check(l, "R3D_Settings_UprightPlants".Translate(), ref st.uprightPlants);
                 if (st.uprightPlants)
                 {

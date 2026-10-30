@@ -152,6 +152,38 @@ namespace IsoRim
         {
             public bool changed;
             public Matrix4x4 wasXform;
+            public bool fillSet;
+            public Material wasFill;
+            public Material wasBack;
+        }
+
+        // ---- the fill over its back from every camera angle (playtest 2026-10-30)
+        // GenDraw.DrawFillableBar draws the grey back and then the fill 0.01 above it (a hair in the 3D view, where heights are
+        // squashed) with the game's SolidColor materials, both in the same transparent queue (2900). Unity sorts that queue by
+        // distance from the camera, and the fill's middle is off to one side of the back's: with the camera turned so the fill
+        // lies on the far side, it was drawn first and the back painted over it (the yellow gone at some yaws). While a bar is
+        // drawn in 3D, its fill goes through DrawHook with a copy of its material one queue after the back's (FillOver), so it
+        // is always drawn over it.
+        public static Material FillMat;   // the fill and back of the fillable bar being drawn now (3D only), else null
+        public static Material BackMat;
+        private static readonly System.Collections.Generic.Dictionary<long, Material> over = new System.Collections.Generic.Dictionary<long, Material>();
+
+        // The material to draw mat with: mat itself, or, for the fill of the bar being drawn, its copy drawn after the back.
+        public static Material FillOver(Material mat)
+        {
+            if (mat == null || mat != FillMat || BackMat == null || mat == BackMat || mat.renderQueue > BackMat.renderQueue)
+            {
+                return mat;
+            }
+            int queue = BackMat.renderQueue + 1;
+            long key = ((long)mat.GetInstanceID() << 16) ^ queue;
+            Material copy;
+            if (!over.TryGetValue(key, out copy) || copy == null)
+            {
+                copy = new Material(mat) { name = mat.name + " (over its back)", renderQueue = queue };
+                over[key] = copy;
+            }
+            return copy;
         }
 
         // GenDraw.DrawFillableBar prefix: while a thing whose model sets barAt is drawn (raised onto its model by the thing's
@@ -162,6 +194,14 @@ namespace IsoRim
         public static void DrawFillableBar_Prefix(ref GenDraw.FillableBarRequest __0, out BarAtState __state)
         {
             __state = default(BarAtState);
+            if (View3D.Ready)
+            {
+                __state.fillSet = true;
+                __state.wasFill = FillMat;
+                __state.wasBack = BackMat;
+                FillMat = __0.filledMat;
+                BackMat = __0.unfilledMat;
+            }
             Thing t = BarOwner;
             ModelEntry entry = BarEntry;
             if (t == null || entry == null || !View3D.Ready || !DrawHook.active || DrawHook.billboard)
@@ -209,6 +249,11 @@ namespace IsoRim
             if (__state.changed)
             {
                 DrawHook.xform = __state.wasXform;
+            }
+            if (__state.fillSet)
+            {
+                FillMat = __state.wasFill;
+                BackMat = __state.wasBack;
             }
         }
     }

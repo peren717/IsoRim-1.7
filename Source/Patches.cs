@@ -4097,16 +4097,19 @@ namespace IsoRim
                 {
                     h = FireBaseHeight(fire);
                 }
-                if (h <= 0f)
+                ThingForm form = Forms.For(t.def);
+                // (Api 36) A model that places its bars (barAt) gets the scope even with nothing raised (surfaceHeight 0: a
+                // battery, a fermenting barrel), so its bars still go onto the model instead of the ground inside it.
+                bool barAt = form.form == Form3D.Model && form.model != null && form.model.def.barAt.HasValue;
+                if (h <= 0f && !barAt)
                 {
                     return;
                 }
                 state.changed = true;
                 state.wasActive = DrawHook.active;
                 state.wasXform = DrawHook.xform;
-                DrawHook.xform = View3D.LiftMatrix(h);
+                DrawHook.xform = View3D.LiftMatrix(Mathf.Max(0f, h));
                 // What the game draws inside it (a reliquary's relic) moved to where the model holds it.
-                ThingForm form = Forms.For(t.def);
                 if (form.form == Form3D.Model && form.model != null && form.model.def.contentOffset != Vector3.zero)
                 {
                     Vector3 shift = Quaternion.AngleAxis(form.model.Yaw(t.Rotation), Vector3.up) * form.model.def.contentOffset;

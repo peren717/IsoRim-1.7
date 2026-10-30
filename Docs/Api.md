@@ -55,10 +55,11 @@ if (IsoRim.Api.Version >= 36) { /* ModelDef.barAt, barScale: a thing's fillable 
 if (IsoRim.Api.Version >= 37) { /* roofed shells: BuildShell, Shell (Draw, Dispose), HeightForSlide, LiveShells, flight effect cards DrawGlowCard / DrawAxialCard / DrawScreenCard / WorldToViewport (part 25) */ }
 if (IsoRim.Api.Version >= 38) { /* ModelDef.femaleModel / femaleModels, femaleLegModel, femaleWingModel: female animals' own models (part M) */ }
 if (IsoRim.Api.Version >= 39) { /* ModelDef.byGraphic: models by the thing's runtime Graphic.path (part M) */ }
+if (IsoRim.Api.Version >= 40) { /* DrawItem: an item drawn as IsoRim shows items on the ground, by the player's item settings (part 26) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic) (Api 23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26 (Api 23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1414,6 +1415,49 @@ Vector2 vp = IsoRim.Api.WorldToViewport(point);                  // for a screen
 IsoRim.Api.DrawScreenCard(screenMat, props);                     // the game's screen-space effects, in front of everything
 IsoRim.Api.DrawScreenCard(downwashMat, null, groundPoint);       // ... or at the depth of a point (what is in front covers it)
 ```
+
+## Part 26: drawing an item the IsoRim way (version 40)
+
+For a mod that draws items itself somewhere of its own instead of leaving them on the map (a belt carrying them, a display
+case, a machine's tray). The game draws such an item as its flat sprite; with `DrawItem` it looks as the same item lying on
+the ground does in IsoRim, by the player's item settings, and follows them when the player changes them. The VFE Factory pack
+draws the items riding VFE's conveyor belts with it.
+
+```csharp
+// IsoRim.Api.Version >= 40; draw-time code, main thread
+// true space: x, z map cells (the item's middle), y the height of its underside over its floor (cells)
+if (!IsoRim.Api.DrawItem(item, new Vector3(x, beltTop, z), yawDegrees, scale))
+{
+    item.DynamicDrawPhaseAt(DrawPhase.Draw, drawPos);   // false: 3D off or nothing drawn, draw it your own way
+}
+```
+
+What is drawn (the same choice and placing as an item baked into the map mesh):
+- its **3D model** when the item has one in use ("3D raw materials", "items from the game's art" off, a weapon model): the
+  stack model for its stack count, its variant, its stuff's colour and surface, its turn, fit and offset;
+- its **own sprite made solid** ("items from the game's art", "item thickness"), with the stack sprite and the small
+  random turn the game gives some items on the ground;
+- the game's **flat sprite** lying at that height when the settings make the item flat (thickness 0, solid items off).
+
+Notes:
+- `yaw` (degrees, clockwise seen from above) is added to the item's own turn; `scale` scales its drawn size (1: as on the ground).
+- The item need not be spawned (one held in a container); its own position is not used.
+- Stacked floors: the point's row decides its floor, as `DrawModel`; nothing shows on a floor the viewer has hidden. Inside a
+  thing's drawing the flat sprite follows that thing's floor.
+- Returns false and draws nothing outside the 3D view, for a null or non-item thing, or when nothing could be drawn.
+- Apparel is drawn as the same laid-down 3D clothes it shows on the ground ("Apparel as 3D models"), or its sprite made
+  solid where it has no shape of its own on a figure.
+- Labels, selection and the item's comps stay the caller's.
+
+### Item settings by class (version 40)
+
+From Api 40, `itemsFromArt` covers ordinary items only; weapons follow `weaponModels3D`, apparel follows `apparelModels3D` (new,
+default on). The setting names and saved keys are unchanged (`Api.SetOption` still takes them):
+- ordinary items: `itemsFromArt` (the sprite made solid; off: IsoRim's item models), `rawModels`, item thickness;
+- weapons: `weaponModels3D` (on: the weapon's own bound model, else its sprite made solid as held; off: the sprite made solid);
+- apparel: `apparelModels3D` (on: the 3D clothes a figure wears, laid down, with 3D figures on; a model another mod binds to
+  that very apparel by thingDef still wins; off: the sprite made solid). Clothes worn by pawns and on outfit stands are not
+  affected.
 
 ## Part M: model packs (IsoRim.ModelDef)
 

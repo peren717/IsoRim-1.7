@@ -109,6 +109,10 @@ namespace IsoRim
             {
                 return;
             }
+            if (Bars.FillMat != null)
+            {
+                material = Bars.FillOver(material);   // a fillable bar's fill: drawn after its back (Bars.FillOver)
+            }
             if (active)
             {
                 if (Projectiles.CatchingTip)

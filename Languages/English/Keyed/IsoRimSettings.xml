@@ -243,8 +243,8 @@
   <R3D_Settings_ThickItems>Items get a little thickness</R3D_Settings_ThickItems>
   <R3D_Settings_ItemThickness>  How thick items are</R3D_Settings_ItemThickness>
   <R3D_Settings_ItemThicknessTip>Thins out items, weapons and clothes on the ground. All the way down lays them flat.</R3D_Settings_ItemThicknessTip>
-  <R3D_Settings_ItemsFromArt>Items and weapons use the game's art</R3D_Settings_ItemsFromArt>
-  <R3D_Settings_ItemsFromArtTip>Items, weapons and clothing are made solid from their own game sprites, so they look exactly like RimWorld. Off: the mod's hand-made item models.</R3D_Settings_ItemsFromArtTip>
+  <R3D_Settings_ItemsFromArt>Items use the game's art</R3D_Settings_ItemsFromArt>
+  <R3D_Settings_ItemsFromArtTip>Items are made solid from their own game sprites, so they look like RimWorld. Off: the mod's hand-made item models. Weapons and clothing have their own settings.</R3D_Settings_ItemsFromArtTip>
   <R3D_Settings_RawModels>3D raw materials</R3D_Settings_RawModels>
   <R3D_Settings_RawModelsTip>Steel, wood, blocks, cloth, leather and other resources as 3D models, by stack size.</R3D_Settings_RawModelsTip>
   <R3D_Settings_UprightPlants>Other plants stand upright</R3D_Settings_UprightPlants>
@@ -259,6 +259,8 @@
   <R3D_Settings_HeldWeapons3D>Weapons in hand</R3D_Settings_HeldWeapons3D>
   <R3D_Settings_WeaponModels3D>Weapons as 3D models</R3D_Settings_WeaponModels3D>
   <R3D_Settings_WeaponModels3DTip>Weapons with a 3D model show it on the ground, on shelves and stands, and in hand.</R3D_Settings_WeaponModels3DTip>
+  <R3D_Settings_ApparelModels3D>Apparel as 3D models</R3D_Settings_ApparelModels3D>
+  <R3D_Settings_ApparelModels3DTip>Clothing on the ground, on shelves and on belts lies as the 3D clothes colonists wear. Off: made solid from its game sprite.</R3D_Settings_ApparelModels3DTip>
   <R3D_Settings_AimSide>Aim: shoulder side</R3D_Settings_AimSide>
   <R3D_Settings_AimHeight>Aim: shoulder height</R3D_Settings_AimHeight>
   <R3D_Settings_AimReach>Aim: forward reach</R3D_Settings_AimReach>

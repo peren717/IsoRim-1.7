@@ -243,8 +243,8 @@
   <R3D_Settings_ThickItems>物品带一点厚度</R3D_Settings_ThickItems>
   <R3D_Settings_ItemThickness>  物品厚度</R3D_Settings_ItemThickness>
   <R3D_Settings_ItemThicknessTip>让地上的物品、武器和衣物变薄。拉到最低则平放。</R3D_Settings_ItemThicknessTip>
-  <R3D_Settings_ItemsFromArt>物品和武器使用游戏原画</R3D_Settings_ItemsFromArt>
-  <R3D_Settings_ItemsFromArtTip>物品、武器和衣物由游戏自身的贴图生成立体模型，看起来和原版完全一样。关闭：使用模组手工制作的物品模型。</R3D_Settings_ItemsFromArtTip>
+  <R3D_Settings_ItemsFromArt>物品使用游戏原画</R3D_Settings_ItemsFromArt>
+  <R3D_Settings_ItemsFromArtTip>物品由游戏自身的贴图生成立体模型，看起来和原版一样。关闭：使用模组手工制作的物品模型。武器和衣物有各自的设置。</R3D_Settings_ItemsFromArtTip>
   <R3D_Settings_RawModels>3D 原材料</R3D_Settings_RawModels>
   <R3D_Settings_RawModelsTip>钢铁、木材、砖块、布料、皮革等资源按堆叠数量显示为 3D 模型。</R3D_Settings_RawModelsTip>
   <R3D_Settings_UprightPlants>其他植物竖立</R3D_Settings_UprightPlants>
@@ -259,6 +259,8 @@
   <R3D_Settings_HeldWeapons3D>手持武器</R3D_Settings_HeldWeapons3D>
   <R3D_Settings_WeaponModels3D>武器使用 3D 模型</R3D_Settings_WeaponModels3D>
   <R3D_Settings_WeaponModels3DTip>有 3D 模型的武器在地上、货架、衣架和手中都显示模型。</R3D_Settings_WeaponModels3DTip>
+  <R3D_Settings_ApparelModels3D>衣物使用 3D 模型</R3D_Settings_ApparelModels3D>
+  <R3D_Settings_ApparelModels3DTip>地上、货架和传送带上的衣物显示为殖民者穿的 3D 衣服。关闭：由游戏贴图生成立体模型。</R3D_Settings_ApparelModels3DTip>
   <R3D_Settings_AimSide>瞄准：肩部横向</R3D_Settings_AimSide>
   <R3D_Settings_AimHeight>瞄准：肩部高度</R3D_Settings_AimHeight>
   <R3D_Settings_AimReach>瞄准：前伸</R3D_Settings_AimReach>

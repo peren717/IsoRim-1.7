@@ -358,6 +358,28 @@ namespace IsoRim
             }
         }
 
+        // (Api 40) Ready-made parts from triangles already laid out and coloured, one corner per entry, three per triangle:
+        // lit faces, glowing faces and the outline (GroundGear's laid clothes drawn every frame). Drawn with DrawParts.
+        internal static List<Part> PartsFromCorners(KeyValuePair<List<Vector3>, List<Color32>> lit, KeyValuePair<List<Vector3>, List<Color32>> glow,
+            KeyValuePair<List<Vector3>, List<Color32>> line)
+        {
+            List<Part> parts = new List<Part>();
+            AddPart(parts, ListsOf(lit), R3DMaterials.LitModel, false);
+            AddPart(parts, ListsOf(glow), R3DMaterials.Solid, false);
+            AddPart(parts, ListsOf(line), R3DMaterials.OutlineMoving, true);
+            return parts;
+        }
+
+        private static Lists ListsOf(KeyValuePair<List<Vector3>, List<Color32>> corners)
+        {
+            Lists l = new Lists();
+            for (int i = 0; i < corners.Key.Count; i++)
+            {
+                l.Add(corners.Key[i], corners.Value[i], Vector2.zero);
+            }
+            return l;
+        }
+
         private static void AddPart(List<Part> parts, Lists lists, Material material, bool isOutline)
         {
             if (lists == null || lists.verts.Count == 0 || material == null)

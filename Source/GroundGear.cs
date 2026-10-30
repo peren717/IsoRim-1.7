@@ -8,20 +8,22 @@ using Verse;
 namespace IsoRim
 {
     // Apparel and weapons lying on the map look like what a colonist wears or holds, not like a generic model for their
-    // category (with "items and weapons from the game's art" off; with it on they are the game's own sprite made solid,
-    // as before, which is also what a held weapon is):
-    //   - a weapon: its own sprite made solid (Extruded), as a 3D colonist holds it (FigureWeapons, SpriteSolids); outfit
-    //     stands and mechs hold the same (HeldSprite);
-    //   - apparel, while colonists are 3D figures: the same 3D clothes a figure wears (People.Dress, the list the outfit
+    // category. Each has a switch of its own (2026-10-30; the "items from the game's art" setting is for other items only):
+    //   - a weapon ("Weapons as 3D models", WeaponModels.On): its own model if one is bound to it (WeaponModels.Uses), else
+    //     its own sprite made solid (Extruded), as a 3D colonist holds it (FigureWeapons, SpriteSolids); switch off: the
+    //     sprite made solid. Outfit stands and mechs hold the same (HeldSprite);
+    //   - apparel ("Apparel as 3D models", ApparelOn; default on), while colonists are 3D figures: the same 3D clothes a figure wears (People.Dress, the list the outfit
     //     stands use: People.ClothesParts), on the adult male build (child-only apparel: the child's build and size), at
     //     the figure's size, laid down: what goes on the body lies on its back, front up, collar to the north (as the
     //     game's sprite), squashed to Flatten of its depth; what goes only on the head (hats, helmets, masks) stands on its
     //     rim, front to the south. Turned as the game turns the sprite (onGroundRandomRotateAngle; none on a shelf), shrunk
     //     only if longer than its cell, 0.8 where the game draws several items in a cell. Baked into the map mesh: nothing
     //     is drawn per frame;
+    //     Drawn every frame instead where another mod draws the item itself (Api.DrawItem: a belt; DrawLaid);
     //   - apparel that puts no shape of its own on a figure (a plain shirt or trousers only colour the bare body; glasses,
-    //     most belts put on nothing) and anything when figures are off: the game's sprite made solid.
-    // A model another mod binds to the very thing (ModelDef thingDef) still wins over all of this.
+    //     most belts put on nothing), apparel with its switch off, and anything when figures are off: the game's sprite made
+    //     solid.
+    // With the apparel switch on, a model another mod binds to the very apparel (ModelDef thingDef) still wins (Forms).
     //
     // The laid clothes are a simplified copy of the worn parts, made once per shape (def, build, parts) whatever the colours
     // and reused by every item that dresses the same: the parts welded, merged where flattest (Decimate), without the faces
@@ -39,27 +41,34 @@ namespace IsoRim
                                                 // lowest pitch (30°): the model's faces turned down, the outline's turned up
         private const int MaxShapes = 1024;     // shapes kept before the cache starts over
 
-        // Whether the look of this item lying on the map is GroundGear's: apparel and weapons (IsGear), unless another mod
-        // binds a model of its own to this very thing.
+        // "Apparel as 3D models" is on (and models at all).
+        public static bool ApparelOn
+        {
+            get
+            {
+                IsoRimSettings st = IsoRimMod.Settings;
+                return st.apparelModels3D && st.models3D;
+            }
+        }
+
+        // Whether apparel lying on the map takes GroundGear's look (laid clothes, or its sprite made solid if it has no shape
+        // on a figure): ApparelOn, unless another mod binds a model of its own to this very apparel (that model is used).
         public static bool Replaces(ThingDef def, ModelEntry entry)
         {
-            return def != null && def.category == ThingCategory.Item && !IsoRimMod.Settings.itemsFromArt && Gear(def, entry) && !WeaponModels.Uses(def);
+            return def != null && def.category == ThingCategory.Item && def.IsApparel && ApparelOn && Gear(def, entry);
         }
 
         // Whether a held weapon of this def (outfit stands, mechs: Patches.HeldWeapon3D) is its own sprite made solid, as a 3D
-        // colonist holds it: with the game's art, or without it unless another mod binds a model of its own to this very weapon.
+        // colonist holds it: always, unless it shows its 3D model (WeaponModels.Uses, "Weapons as 3D models").
         public static bool HeldSprite(ThingDef def)
         {
-            if (WeaponModels.Uses(def))
-            {
-                return false;   // its 3D model (WeaponModels)
-            }
-            if (IsoRimMod.Settings.itemsFromArt)
-            {
-                return true;
-            }
-            ModelEntry entry;
-            return def != null && Gear(def, ModelLibrary.TryGet(def, out entry) ? entry : null);
+            return !WeaponModels.Uses(def);
+        }
+
+        // A weapon as GroundGear files them (IsGear, not apparel): its look follows "Weapons as 3D models" only.
+        public static bool IsWeapon(ThingDef def)
+        {
+            return def != null && !def.IsApparel && IsGear(def);
         }
 
         private static bool Gear(ThingDef def, ModelEntry entry)
@@ -581,35 +590,14 @@ namespace IsoRim
         // (nothing written) if it has no shape of its own on a figure: the caller prints its sprite.
         public static bool Bake(SectionLayer layer, Thing thing, float baseHeight)
         {
-            Apparel a = thing as Apparel;
-            if (a == null || !WornLook(thing.def) || ModelBaker.DamageMarks > 0 || ModelBaker.Ghost.a > 0f)
+            if (ModelBaker.DamageMarks > 0 || ModelBaker.Ghost.a > 0f)
             {
                 return false;
             }
-            string build = BuildFor(thing.def);
-            Dress(a, build);
-            if (models.Count == 0 || OnlyBody(build))
+            Shape shape = Prepare(thing);
+            if (shape == null)
             {
                 return false;   // nothing of its own on a figure (or only the body in its colour): the sprite made solid
-            }
-            Shape shape = ShapeFor(thing.def, build, SizeFor(thing.def));
-            if (itemTints.Length < tints.Count)
-            {
-                itemTints = new Color[tints.Count * 2];
-            }
-            tints.CopyTo(itemTints);
-            int np = shape.palColor.Length;
-            if (litPal.Length < np)
-            {
-                litPal = new Color32[np * 2];
-                linePal = new Color32[np * 2];
-            }
-            for (int i = 0; i < np; i++)
-            {
-                // As ModelBaker.Write colours: the colour times the part's tint where tinted; the outline darker.
-                Color c = shape.palPart[i] >= 0 ? shape.palColor[i] * itemTints[shape.palPart[i]] : shape.palColor[i];
-                litPal[i] = R3DMaterials.Shaded(c, 1f);
-                linePal[i] = R3DMaterials.Shaded(c, ModelBaker.OutlineShade);
             }
 
             float scale = shape.fit * (thing.MultipleItemsPerCellDrawn() ? 0.8f : 1f);
@@ -636,6 +624,120 @@ namespace IsoRim
                 RoofClip.Tag(layer, mark, thing.Position);
             }
             return any;
+        }
+
+        // The laid shape of this apparel item (null: none, the sprite made solid), with its colours in itemTints, litPal and
+        // linePal. For the bake and for DrawLaid alike.
+        private static Shape Prepare(Thing thing)
+        {
+            Apparel a = thing as Apparel;
+            if (a == null || !WornLook(thing.def))
+            {
+                return null;
+            }
+            string build = BuildFor(thing.def);
+            Dress(a, build);
+            if (models.Count == 0 || OnlyBody(build))
+            {
+                return null;
+            }
+            Shape shape = ShapeFor(thing.def, build, SizeFor(thing.def));
+            if (itemTints.Length < tints.Count)
+            {
+                itemTints = new Color[tints.Count * 2];
+            }
+            tints.CopyTo(itemTints);
+            int np = shape.palColor.Length;
+            if (litPal.Length < np)
+            {
+                litPal = new Color32[np * 2];
+                linePal = new Color32[np * 2];
+            }
+            for (int i = 0; i < np; i++)
+            {
+                // As ModelBaker.Write colours: the colour times the part's tint where tinted; the outline darker.
+                Color c = shape.palPart[i] >= 0 ? shape.palColor[i] * itemTints[shape.palPart[i]] : shape.palColor[i];
+                litPal[i] = R3DMaterials.Shaded(c, 1f);
+                linePal[i] = R3DMaterials.Shaded(c, ModelBaker.OutlineShade);
+            }
+            return shape;
+        }
+
+        // ------------------------------------------------------------------ drawn every frame (Api 40)
+
+        // Ready-made meshes of laid clothes in their colours (one per shape and colour set), for apparel another mod draws
+        // itself (Api.DrawItem: on a belt); dropped with the shapes when the look changes.
+        private static readonly Dictionary<Shape, Dictionary<long, List<DynamicModels.Part>>> laidParts = new Dictionary<Shape, Dictionary<long, List<DynamicModels.Part>>>();
+        private static int laidStamp = -1, laidCount;
+        private const int MaxLaid = 512;
+
+        // Draws this apparel item laid down as Bake writes it into the map mesh (same shape, colours, turn and size), its middle
+        // at bottom (x, z), bottom.y cells up, turned yaw more and scale times its size; false if it has no laid shape (the
+        // caller makes its sprite solid, as the bake does then).
+        public static bool DrawLaid(Thing thing, Vector3 bottom, float yaw, float scale)
+        {
+            Shape shape = Prepare(thing);
+            if (shape == null)
+            {
+                return false;
+            }
+            if (laidStamp != View3D.Stamp || laidCount > MaxLaid)
+            {
+                foreach (Dictionary<long, List<DynamicModels.Part>> byColour in laidParts.Values)
+                {
+                    foreach (List<DynamicModels.Part> ps in byColour.Values)
+                    {
+                        DynamicModels.Destroy(ps);
+                    }
+                }
+                laidParts.Clear();
+                laidCount = 0;
+                laidStamp = View3D.Stamp;
+            }
+            int np = shape.palColor.Length;
+            long key = 17;
+            for (int i = 0; i < np; i++)
+            {
+                Color32 c = litPal[i];
+                key = key * 1000003 + ((c.r << 16) | (c.g << 8) | c.b);
+            }
+            Dictionary<long, List<DynamicModels.Part>> byKey;
+            if (!laidParts.TryGetValue(shape, out byKey))
+            {
+                byKey = new Dictionary<long, List<DynamicModels.Part>>();
+                laidParts[shape] = byKey;
+            }
+            List<DynamicModels.Part> parts;
+            if (!byKey.TryGetValue(key, out parts))
+            {
+                parts = DynamicModels.PartsFromCorners(Corners(shape.lit, litPal), Corners(shape.glow, litPal), Corners(shape.line, linePal));
+                byKey[key] = parts;
+                laidCount++;
+            }
+            float size = shape.fit * (thing.Spawned && thing.MultipleItemsPerCellDrawn() ? 0.8f : 1f) * scale;
+            float turn = Turn(thing) + yaw;
+            DynamicModels.DrawParts(parts, bottom, turn, Matrix4x4.Scale(Vector3.one * size));
+            for (int i = 0; i < shape.slowParts.Length; i++)
+            {
+                DynamicModels.DrawLocal(shape.slowParts[i], bottom, turn, Matrix4x4.Scale(Vector3.one * size), itemTints[shape.slowPart[i]],
+                    IsoRimMod.Settings.texturedModels ? R3DTextures.ModelSwatch(thing) : null);   // as ModelBaker.Write surfaces them
+            }
+            return true;
+        }
+
+        // A triangle list as one corner per index (position with nothing below the ground, as Put writes it; its colour).
+        private static KeyValuePair<List<Vector3>, List<Color32>> Corners(Tris tris, Color32[] pal)
+        {
+            List<Vector3> pos = new List<Vector3>(tris.index.Length);
+            List<Color32> col = new List<Color32>(tris.index.Length);
+            for (int k = 0; k < tris.index.Length; k++)
+            {
+                int i = tris.index[k];
+                Vector3 p = tris.pos[i];
+                pos.Add(new Vector3(p.x, Mathf.Max(0f, p.y), p.z));
+                col.Add(pal[tris.pal[i]]);
+            }
+            return new KeyValuePair<List<Vector3>, List<Color32>>(pos, col);
         }
 
         // Appends a triangle list to a piece of the block's mesh: scaled, turned about up, placed at center, baseHeight up,
@@ -670,7 +772,7 @@ namespace IsoRim
         }
 
         // The game's turn for an apparel sprite on the ground (Graphic_RandomRotated; its rack rule is for weapons only): a set angle per item.
-        private static float Turn(Thing thing)
+        internal static float Turn(Thing thing)
         {
             GraphicData data = thing.def.graphicData;
             float max = data != null ? data.onGroundRandomRotateAngle : 0f;
