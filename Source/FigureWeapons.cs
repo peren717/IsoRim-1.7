@@ -51,12 +51,27 @@ namespace IsoRim
             public Material material;
             public Thing weapon;   // null: not a weapon (a worn extra)
             public bool carried;
+            public Recoil recoil;  // the recoil in this drawing (Shoulder takes it apart from other mods' motion)
+        }
+
+        // The recoil in the weapon picture being drawn (2026-10-31, headrecoil): the game's EquipmentUtility.Recoil as it gave
+        // it (a shift, mostly back along the aim, and a turn of random side in the picture's plane) and Flourish's rise (the
+        // turn it added to the aim, and its rise in degrees, up positive; Compat/FlourishMuzzle). Seen flat from above both
+        // turns read as the muzzle climbing; on a figure Shoulder makes them a raise of the muzzle about the shoulder instead
+        // of a turn sideways.
+        public struct Recoil
+        {
+            public Vector3 shift;
+            public float turn;
+            public float riseTurn;
+            public float rise;
         }
 
         private static readonly List<Caught> caught = new List<Caught>();
         public static bool Capturing;
         private static Thing drawingWeapon;
         private static bool carryPath;
+        private static Recoil recoilNow;
 
         // For the harness (weaponcheck): what was drawn last for each pawn.
         private static readonly Dictionary<int, string> reports = new Dictionary<int, string>();
@@ -70,15 +85,38 @@ namespace IsoRim
                 ApparelModels.GameDrew = true;   // a bound shield's own worn picture: its model stands in (People.Draw)
                 return;
             }
-            caught.Add(new Caught { mesh = mesh, matrix = matrix, material = material, weapon = drawingWeapon, carried = carryPath });
+            caught.Add(new Caught { mesh = mesh, matrix = matrix, material = material, weapon = drawingWeapon, carried = carryPath,
+                recoil = drawingWeapon != null ? recoilNow : default(Recoil) });
         }
 
-        // Patches.DrawEquipmentAiming_Prefix / _Finalizer: the game is drawing this weapon (null when done).
+        // Patches.DrawEquipmentAiming_Prefix / _Finalizer: the game is drawing this weapon (null when done). (The prefix runs
+        // first of all, before Flourish's.)
         public static void Weapon(Thing weapon)
         {
+            recoilNow = default(Recoil);
             if (Capturing)
             {
                 drawingWeapon = weapon;
+            }
+        }
+
+        // Patches.Recoil_Postfix: EquipmentUtility.Recoil gave this (after other mods' postfixes) while a figure's weapon is drawn.
+        public static void NoteRecoil(Vector3 drawOffset, float angleOffset)
+        {
+            if (Capturing && drawingWeapon != null)
+            {
+                recoilNow.shift = drawOffset;
+                recoilNow.turn = angleOffset;
+            }
+        }
+
+        // Compat/FlourishMuzzle: Flourish turned the aim by turn for its rise (degrees, up positive) while a figure's weapon is drawn.
+        public static void FlourishRise(float turn, float rise)
+        {
+            if (Capturing && drawingWeapon != null)
+            {
+                recoilNow.riseTurn += turn;
+                recoilNow.rise += rise;
             }
         }
 
@@ -375,11 +413,12 @@ namespace IsoRim
         // 1.7) about the pawn's middle, flat, without the recoil: the centre 0.4 (plus equippedDistanceOffset) toward the aim,
         // times the life stage's equipmentDrawDistanceFactor; turned aim - 90 + equippedAngleOffset, or with the flipped mesh
         // aim - 270 - equippedAngleOffset; the drawn size. Its normal a unit column, as the caught pictures get.
-        private static Matrix4x4 Expected(Pawn pawn, Thing weapon, float aim, bool flipped)
+        // shift, turn: the recoil's (Recoil), put in as the game puts its own (the drawn centre moved, the picture turned).
+        private static Matrix4x4 Expected(Pawn pawn, Thing weapon, float aim, bool flipped, Vector3 shift, float turn)
         {
             float factor = pawn.ageTracker != null && pawn.ageTracker.CurLifeStage != null ? pawn.ageTracker.CurLifeStage.equipmentDrawDistanceFactor : 1f;
-            Vector3 pos = new Vector3(0f, 0f, 0.4f + weapon.def.equippedDistanceOffset).RotatedBy(aim) * factor;
-            float angle = flipped ? aim - 270f - weapon.def.equippedAngleOffset : aim - 90f + weapon.def.equippedAngleOffset;
+            Vector3 pos = new Vector3(0f, 0f, 0.4f + weapon.def.equippedDistanceOffset).RotatedBy(aim) * factor + new Vector3(shift.x, 0f, shift.z);
+            float angle = (flipped ? aim - 270f - weapon.def.equippedAngleOffset : aim - 90f + weapon.def.equippedAngleOffset) + turn;
             Vector2 ds = weapon.Graphic != null ? weapon.Graphic.drawSize : Vector2.one;
             Matrix4x4 e = Matrix4x4.TRS(pos, Quaternion.AngleAxis(angle % 360f, Vector3.up), new Vector3(ds.x, 1f, ds.y));
             return e;
@@ -388,27 +427,36 @@ namespace IsoRim
         // A ranged weapon aimed from the right shoulder (true cells: x, z in the game's rows, y over the floor): SpriteSolids'
         // slab with its butt (slab space) at the shoulder (the settings: to the pawn's right of its aim, up, forward; for the
         // figure's build and size), its barrel along the aim, raised toward the target's height about the shoulder. On top goes
-        // whatever the drawn picture m differs by from the game's own placing (Expected, with the mesh it drew): other mods'
-        // animation and the game's recoil, as a shift along and across the aim, a turn about the weapon's middle, a stretch;
-        // shrunk to nothing it is hidden (false).
+        // whatever the drawn picture m differs by from the game's own placing with its recoil (Expected, with the mesh it drew):
+        // other mods' animation, as a shift along and across the aim, a turn about the weapon's middle, a stretch; shrunk to
+        // nothing it is hidden (false). The recoil (the game's, Flourish's rise: Recoil) kicks it back along the aim and raises
+        // the muzzle about the shoulder (was: turned it sideways with the rest, 2026-10-31).
         private static bool Shoulder(Pawn pawn, Caught c, Matrix4x4 m, bool flipped, float game, float aim, Vector3 dir, Vector3 right, Matrix4x4 figure,
             float size, float front, float side, Vector3 butt, out Matrix4x4 world, out float pitch, out string how)
         {
             world = Matrix4x4.identity;
             pitch = 0f;
-            Matrix4x4 e = Expected(pawn, c.weapon, game, flipped);
+            Matrix4x4 e = Expected(pawn, c.weapon, game, flipped, Vector3.zero, 0f);
+            // The recoil apart (Recoil): the picture as the game places it with the recoil in, so what is left over is other
+            // mods' motion; the recoil itself goes on as a kick back along the aim (its shift's part along it; the small shift
+            // to a random side dropped) and a raise of the muzzle about the shoulder (its turns, the game's of random side).
+            Recoil r = c.recoil;
+            Matrix4x4 eSeen = Expected(pawn, c.weapon, game, flipped, r.shift, r.turn + r.riseTurn);
             Vector3 fGame = Quaternion.AngleAxis(game, Vector3.up) * Vector3.forward;
             Vector3 rGame = Vector3.Cross(Vector3.up, fGame);
-            Vector3 dPos = (Vector3)m.GetColumn(3) - (Vector3)e.GetColumn(3);
+            Vector3 dPos = (Vector3)m.GetColumn(3) - (Vector3)eSeen.GetColumn(3);
             dPos.y = 0f;
-            float along = Vector3.Dot(dPos, fGame), across = Vector3.Dot(dPos, rGame);
-            Vector3 ex = e.GetColumn(0), cx = m.GetColumn(0);
+            float kick = Vector3.Dot(new Vector3(r.shift.x, 0f, r.shift.z), fGame);
+            float climb = Mathf.Abs(r.turn) + r.rise;
+            float along = Vector3.Dot(dPos, fGame) + kick, across = Vector3.Dot(dPos, rGame);
+            Vector3 ex = eSeen.GetColumn(0), cx = m.GetColumn(0);
             ex.y = 0f;
             cx.y = 0f;
             float turn = ex.sqrMagnitude > 1e-8f && cx.sqrMagnitude > 1e-8f ? Vector3.SignedAngle(ex, cx, Vector3.up) : 0f;
             float stretchX = ((Vector3)m.GetColumn(0)).magnitude / Mathf.Max(1e-5f, ((Vector3)e.GetColumn(0)).magnitude);
             float stretchY = ((Vector3)m.GetColumn(2)).magnitude / Mathf.Max(1e-5f, ((Vector3)e.GetColumn(2)).magnitude);
-            how = "shift " + along.ToString("0.000") + "/" + across.ToString("0.000") + " turn " + turn.ToString("0.0") + " stretch " + stretchX.ToString("0.00") + "/" + stretchY.ToString("0.00");
+            how = "shift " + along.ToString("0.000") + "/" + across.ToString("0.000") + " turn " + turn.ToString("0.0") + " stretch " + stretchX.ToString("0.00") + "/" + stretchY.ToString("0.00")
+                + " recoil kick " + kick.ToString("0.000") + " climb " + climb.ToString("0.0") + " (game turn " + r.turn.ToString("0.0") + ", rise " + r.rise.ToString("0.0") + "/" + r.riseTurn.ToString("0.0") + ")";
             if (stretchX < 0.05f || stretchY < 0.05f)
             {
                 return false;
@@ -426,7 +474,7 @@ namespace IsoRim
             IsoRimSettings st = IsoRimMod.Settings;
             Vector3 shoulder = figure.MultiplyPoint3x4(new Vector3(0f, st.aimHeight, 0f))
                 + right * (st.aimSide * size * (side / 0.231f)) + dir * (st.aimReach * size * (front / 0.134f));
-            pitch = PitchOf(pawn, shoulder.y);
+            pitch = Mathf.Clamp(PitchOf(pawn, shoulder.y) + climb, -MaxPitch, MaxPitch);
             world = Matrix4x4.Translate(shoulder) * Matrix4x4.Rotate(Raise(dir, pitch)) * Matrix4x4.Translate((dir * along + right * across) * k)
                 * Matrix4x4.Translate(-buttAt) * Matrix4x4.Rotate(Quaternion.AngleAxis(turn, Vector3.up)) * stood * Matrix4x4.Scale(new Vector3(stretchX, stretchY, 1f));
             how += " shoulder " + shoulder.ToString("F2");

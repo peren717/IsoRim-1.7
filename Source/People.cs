@@ -179,6 +179,7 @@ namespace IsoRim
         private static readonly List<Model> mergeModels = new List<Model>();
         private static readonly List<Matrix4x4> mergeLocals = new List<Matrix4x4>();
         private static readonly List<Color> mergeTints = new List<Color>();
+        private static readonly List<bool> mergeRound = new List<bool>();   // left out of stepped light (SmoothFigures.RoundBit)
 
         // The body (head = false) or the head of a figure as ready-made meshes.
         // The parts hidden by figure hooks or a face drawer (Api 21, FigureParts) that change the head's or the body's
@@ -218,6 +219,7 @@ namespace IsoRim
             mergeModels.Clear();
             mergeLocals.Clear();
             mergeTints.Clear();
+            mergeRound.Clear();
             if (headPart)
             {
                 Matrix4x4 headPlace = Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f));
@@ -232,21 +234,21 @@ namespace IsoRim
                 }
                 else if (look.skull != null)
                 {
-                    AddPart(look.skull, Matrix4x4.identity, Color.white);   // one size, as the game's Skull head
+                    AddPart(look.skull, Matrix4x4.identity, Color.white, true);   // one size, as the game's Skull head
                 }
                 else if (look.ownHead != null)
                 {
-                    AddPart(look.ownHead, Matrix4x4.identity, look.alien != null ? skin : Color.white);   // its skin colour is in the model (a race's own head: the skin's, Api 25)
+                    AddPart(look.ownHead, Matrix4x4.identity, look.alien != null ? skin : Color.white, true);   // its skin colour is in the model (a race's own head: the skin's, Api 25)
                 }
                 else
                 {
-                    AddPart(head, headPlace, headSkin);
+                    AddPart(head, headPlace, headSkin, true);
                     if (!look.faceHidden && !look.faceDecal && (hide & (int)FigureParts.Face) == 0)
                     {
-                        AddPart(look.ownFace ?? (look.femaleEyes && faceFemale != null ? faceFemale : face), headPlace, look.ownFace != null ? look.faceTint : Color.white);
-                        AddPart(look.eyeLeft, headPlace, Color.white);
-                        AddPart(look.eyeRight, headPlace, Color.white);
-                        AddPart(look.scars, headPlace, Color.white);
+                        AddPart(look.ownFace ?? (look.femaleEyes && faceFemale != null ? faceFemale : face), headPlace, look.ownFace != null ? look.faceTint : Color.white, true);
+                        AddPart(look.eyeLeft, headPlace, Color.white, true);
+                        AddPart(look.eyeRight, headPlace, Color.white, true);
+                        AddPart(look.scars, headPlace, Color.white, true);
                     }
                 }
                 if ((hide & (int)FigureParts.Hair) != 0)
@@ -255,32 +257,34 @@ namespace IsoRim
                 }
                 else if (look.ownHair)
                 {
-                    AddPart(look.hair, Matrix4x4.identity, Color.white);
+                    AddPart(look.hair, Matrix4x4.identity, Color.white, true);
                 }
                 else if (look.headHidden)
                 {
-                    AddPart(look.hair, headPlace, look.hairColor);
-                    AddPart(look.hairTop, headPlace, look.hairColor);
+                    AddPart(look.hair, headPlace, look.hairColor, true);
+                    AddPart(look.hairTop, headPlace, look.hairColor, true);
                 }
                 else
                 {
                     // Hair shown with headgear goes inside it instead of through it (HairTuck); unchanged without.
-                    AddPart(HairTuck.Under(look.hair, hat, mouthWear, eyeWear), headPlace, look.hairColor);
-                    AddPart(HairTuck.Under(look.hairTop, hat, mouthWear, eyeWear), headPlace, look.hairColor);
+                    AddPart(HairTuck.Under(look.hair, hat, mouthWear, eyeWear), headPlace, look.hairColor, true);
+                    AddPart(HairTuck.Under(look.hairTop, hat, mouthWear, eyeWear), headPlace, look.hairColor, true);
                 }
                 if ((hide & (int)FigureParts.Beard) == 0)
                 {
-                    AddPart(look.headHidden ? look.beard : HairTuck.Under(look.beard, hat, mouthWear, eyeWear), headPlace, look.hairColor);
+                    AddPart(look.headHidden ? look.beard : HairTuck.Under(look.beard, hat, mouthWear, eyeWear), headPlace, look.hairColor, true);
                 }
                 for (int i = 0; look.genes != null && i < look.genes.Count; i++)
                 {
-                    // Gene parts on the head (Api 35): with the head; a tucked one (head fur) as the hair, inside headgear.
+                    // Gene parts on the head (Api 35): with the head; a tucked one (head fur) as the hair, inside headgear. Skin- or
+                    // hair-coloured ones (ears, head fur) shaded round as the head is; the rest (horns, antennae) stepped.
                     GeneParts.Placed g = look.genes[i];
                     if (g.anchor != GeneAnchor.Head || (hide & (int)FigureParts.Head) != 0 || (g.tuck && (hide & (int)FigureParts.Hair) != 0))
                     {
                         continue;
                     }
-                    AddPart(g.tuck ? HairTuck.Under(g.model, hat, mouthWear, eyeWear) : g.model, headPlace, GeneColour(look, g.tint, skin));
+                    AddPart(g.tuck ? HairTuck.Under(g.model, hat, mouthWear, eyeWear) : g.model, headPlace, GeneColour(look, g.tint, skin),
+                        g.tuck || g.tint == GeneTint.Skin || g.tint == GeneTint.Hair);
                 }
                 AddPart(eyeWear, headPlace, look.eyeColor);
                 AddPart(mouthWear, headPlace, look.mouthColor);
@@ -344,9 +348,14 @@ namespace IsoRim
             }
             AlienFigures.AddParts(look, headPart, hide, mergeModels, mergeLocals, mergeTints,   // a race's addon models, eyes on its own head (Api 25)
                 noLegs && headPart ? AlienFigures.ChinClip(look) : float.NegativeInfinity);
+            while (mergeRound.Count < mergeModels.Count)
+            {
+                mergeRound.Add(false);   // (a race's addons: stepped)
+            }
             long buildStart = System.Diagnostics.Stopwatch.GetTimestamp();
             parts = DynamicModels.BuildMerged(mergeModels, mergeLocals, mergeTints, turned, mono,
-                noLegs ? (headPart ? AlienFigures.ChinClip(look) : Attachments.Hips * look.bodyScale.y) : float.NegativeInfinity, SmoothFigures.On);
+                noLegs ? (headPart ? AlienFigures.ChinClip(look) : Attachments.Hips * look.bodyScale.y) : float.NegativeInfinity, SmoothFigures.On,
+                mono.HasValue ? null : mergeRound);
             MergeTicks += System.Diagnostics.Stopwatch.GetTimestamp() - buildStart;
             Merges++;
             look.meshes[key] = parts;
@@ -363,7 +372,8 @@ namespace IsoRim
             return tint == GeneTint.Skin ? skin : (tint == GeneTint.Hair ? look.hairColor : Color.white);
         }
 
-        private static void AddPart(Model m, Matrix4x4 local, Color tint)
+        // round: the head's skin, the face and the hair: smooth light with stepped light on too (SmoothFigures.RoundBit).
+        private static void AddPart(Model m, Matrix4x4 local, Color tint, bool round = false)
         {
             if (m == null)
             {
@@ -372,6 +382,7 @@ namespace IsoRim
             mergeModels.Add(m);
             mergeLocals.Add(local);
             mergeTints.Add(tint);
+            mergeRound.Add(round);
         }
 
         private const int RefreshFrames = 90;

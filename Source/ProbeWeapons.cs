@@ -12,6 +12,8 @@ namespace IsoRim
     //                              for the downed pawn in (tx,tz)
     //   tickjitter=N,x,z,min       game ticks one at a time (at most N) until the pawn in (x,z) is pushed by its jitter
     //                              (a melee lunge, a hit) at least min cells
+    //   tickshot=N,after           game ticks one at a time (at most N) until every colonist on an attack job has fired and
+    //                              the latest shot was `after` ticks ago (the recoil `after` ticks into its kick)
     //   shieldfull=x,z             the shield belt worn by the pawn in (x,z) charged full
     //   weaponcheck=1              logs every standing colonist's held weapon as drawn (FigureWeapons.Report, by reflection:
     //                              builds without it too), its jitter and lean
@@ -261,6 +263,49 @@ namespace IsoRim
                         tp.Drawer.tweener.ResetTweenedPosToRoot();
                     }
                     Log.Message("[IsoRim probe] tickaim: " + done + " ticks, all aiming " + all());
+                    return true;
+                }
+                case "tickshot":
+                {
+                    // tickshot=N,after: game ticks one at a time (at most N) until every colonist on an attack job has fired since
+                    // (its gun's recoil verb, EquipmentUtility.GetRecoilVerb) and the latest of those shots was `after` ticks ago:
+                    // a pass shows the recoil `after` ticks into the kick.
+                    int limit = Mathf.Clamp(I(a[0]), 1, 900), after = Mathf.Max(0, I(a[1])), done = 0, start = Find.TickManager.TicksGame;
+                    System.Func<Pawn, int> age = p =>
+                    {
+                        CompEquippable eq = p.equipment != null && p.equipment.Primary != null ? p.equipment.Primary.GetComp<CompEquippable>() : null;
+                        Verb_LaunchProjectile v = eq != null ? EquipmentUtility.GetRecoilVerb(eq.AllVerbs) : null;
+                        return v != null && v.LastShotTick >= start ? Find.TickManager.TicksGame - v.LastShotTick : -1;
+                    };
+                    System.Func<bool> ready = () =>
+                    {
+                        int latest = int.MaxValue;
+                        foreach (Pawn p in map.mapPawns.FreeColonistsSpawned)
+                        {
+                            if (p.CurJob == null || p.CurJob.def != JobDefOf.AttackStatic)
+                            {
+                                continue;
+                            }
+                            int g = age(p);
+                            if (g < 0)
+                            {
+                                return false;
+                            }
+                            latest = Mathf.Min(latest, g);
+                        }
+                        return latest == after;
+                    };
+                    while (done < limit && !ready())
+                    {
+                        Find.TickManager.DoSingleTick();
+                        done++;
+                    }
+                    foreach (Pawn tp in map.mapPawns.AllPawnsSpawned)
+                    {
+                        tp.Drawer.tweener.ResetTweenedPosToRoot();
+                    }
+                    Log.Message("[IsoRim probe] tickshot: " + done + " ticks, ready " + ready() + ", shot ages "
+                        + string.Join(" ", map.mapPawns.FreeColonistsSpawned.Select(p => p.LabelShort + ":" + age(p))));
                     return true;
                 }
                 case "vanillaheight":

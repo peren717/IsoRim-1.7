@@ -1152,6 +1152,17 @@ namespace IsoRim
                             dp.style.beardDef = DefDatabase<BeardDef>.GetNamed(ds[1]);
                             continue;
                         }
+                        Color dskin;
+                        if (ds[0] == "skin" && ColorUtility.TryParseHtmlString("#" + ds[1], out dskin))
+                        {
+                            dp.story.skinColorOverride = dskin;   // skin:RRGGBB (head-shading tests)
+                            continue;
+                        }
+                        if (ds[0] == "haircolor" && ColorUtility.TryParseHtmlString("#" + ds[1], out dskin))
+                        {
+                            dp.story.HairColor = dskin;   // haircolor:RRGGBB
+                            continue;
+                        }
                         ThingDef dd = DefDatabase<ThingDef>.GetNamed(ds[0]);
                         ThingDef dstuff = ds.Length > 1 && ds[1] != "-" ? DefDatabase<ThingDef>.GetNamed(ds[1]) : (dd.MadeFromStuff ? GenStuff.DefaultStuffFor(dd) : null);
                         Thing dt = ThingMaker.MakeThing(dd, dstuff);

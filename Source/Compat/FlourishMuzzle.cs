@@ -21,6 +21,12 @@ namespace IsoRim
     // the muzzle's height (Api.StandFleck, Api.StandMote): the flash and the bloom standing up at the barrel's end, the tracer
     // lying flat at that height along the shot. Flourish's own switch for this (muzzleAnchorEnabled) is followed.
     //
+    // Its recoil (2026-10-31): Flourish.Recoil.ApplyTo, called in its DrawEquipmentAiming prefix, moves the picture back
+    // (recoilKick: along the aim, kept as it is) and turns the aim by its rise (recoilRise, toward the top of the screen). That
+    // turn is noted (FigureWeapons.FlourishRise) so a 3D figure raises the muzzle by the rise instead of turning the gun
+    // sideways. Its shot animations (wep.rot kick, scaled by recoilIntensity) are noted the same way (HookRecoil). Each is
+    // hooked on its own: one missing, only that one stays a sideways turn.
+    //
     // Only patched when Flourish is active; fails soft: if a target is missing (Flourish renamed it), one log line and the
     // adapter stays off, nothing else changes. Outside the 3D view Api.TryGetMuzzle returns false and Flourish is untouched.
     internal static class FlourishMuzzle
@@ -102,7 +108,104 @@ namespace IsoRim
                 return false;
             }
             On = true;
+            HookRecoil(harmony);
             return true;
+        }
+
+        // Flourish's two recoils, each turning the aim in the picture's plane, noted for a figure's weapon
+        // (FigureWeapons.FlourishRise: FigureWeapons.Shoulder raises the muzzle by them instead):
+        //   - Flourish.Recoil.ApplyTo(ref Vector3 loc, ref float angle, float baseAngle, float kick, float rise): its rise;
+        //   - Patch_PawnRenderUtility_DrawEquipmentAiming.ApplyWeaponOffsets(..., ref float aimAngle, ..., float m, ...) while a
+        //     shot animation plays (FlourishGame.HasActiveTrigger ShotFired or BurstShot; the "recoil" Flourish scales by its
+        //     recoilIntensity): the kick of its wep.rot track, authored side-on (up is -wep.rot), mirrored by m.
+        public static bool RecoilHooked;
+        public static bool ShotHooked;
+
+        private static MethodInfo hasTrigger;   // FlourishGame.HasActiveTrigger(Pawn, AnimTrigger)
+        private static object[] shotTriggers;   // AnimTrigger.ShotFired, AnimTrigger.BurstShot (boxed)
+
+        private static void HookRecoil(Harmony harmony)
+        {
+            try
+            {
+                Type recoil = AccessTools.TypeByName("Flourish.Recoil");
+                MethodInfo apply = recoil != null ? AccessTools.DeclaredMethod(recoil, "ApplyTo",
+                    new[] { typeof(Vector3).MakeByRefType(), typeof(float).MakeByRefType(), typeof(float), typeof(float), typeof(float) }) : null;
+                if (apply == null)
+                {
+                    Log.Warning("[IsoRim] Flourish's recoil (Flourish.Recoil.ApplyTo) was not found: its rise turns a 3D figure's gun sideways.");
+                }
+                else
+                {
+                    harmony.Patch(apply, prefix: new HarmonyMethod(AccessTools.Method(typeof(FlourishMuzzle), nameof(ApplyTo_Prefix))),
+                        postfix: new HarmonyMethod(AccessTools.Method(typeof(FlourishMuzzle), nameof(ApplyTo_Postfix))));
+                    RecoilHooked = true;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warning("[IsoRim] Could not hook Flourish's recoil: its rise turns a 3D figure's gun sideways (" + e.Message + ").");
+            }
+            try
+            {
+                Type patch = AccessTools.TypeByName("Flourish.Patch_PawnRenderUtility_DrawEquipmentAiming");
+                Type game = AccessTools.TypeByName("Flourish.FlourishGame");
+                Type trigger = AccessTools.TypeByName("Flourish.AnimTrigger");
+                MethodInfo offsets = patch != null ? AccessTools.DeclaredMethod(patch, "ApplyWeaponOffsets") : null;
+                hasTrigger = game != null && trigger != null ? AccessTools.DeclaredMethod(game, "HasActiveTrigger", new[] { typeof(Pawn), trigger }) : null;
+                if (offsets == null || hasTrigger == null || hasTrigger.ReturnType != typeof(bool) || !Enum.IsDefined(trigger, "ShotFired") || !Enum.IsDefined(trigger, "BurstShot"))
+                {
+                    Log.Warning("[IsoRim] Flourish's shot animation (ApplyWeaponOffsets, HasActiveTrigger) was not found: its kick turns a 3D figure's gun sideways.");
+                    return;
+                }
+                shotTriggers = new[] { Enum.Parse(trigger, "ShotFired"), Enum.Parse(trigger, "BurstShot") };
+                harmony.Patch(offsets, prefix: new HarmonyMethod(AccessTools.Method(typeof(FlourishMuzzle), nameof(Offsets_Prefix))),
+                    postfix: new HarmonyMethod(AccessTools.Method(typeof(FlourishMuzzle), nameof(Offsets_Postfix))));
+                ShotHooked = true;
+            }
+            catch (Exception e)
+            {
+                Log.Warning("[IsoRim] Could not hook Flourish's shot animation: its kick turns a 3D figure's gun sideways (" + e.Message + ").");
+            }
+        }
+
+        public static void Offsets_Prefix(ref float aimAngle, out float __state)
+        {
+            __state = aimAngle;
+        }
+
+        public static void Offsets_Postfix(Pawn pawn, ref float aimAngle, float m, float __state)
+        {
+            try
+            {
+                float turn = Mathf.DeltaAngle(__state, aimAngle);
+                if (turn == 0f || m == 0f || !FigureWeapons.Capturing)
+                {
+                    return;
+                }
+                if ((bool)hasTrigger.Invoke(null, new[] { pawn, shotTriggers[0] }) || (bool)hasTrigger.Invoke(null, new[] { pawn, shotTriggers[1] }))
+                {
+                    FigureWeapons.FlourishRise(turn, -turn * Mathf.Sign(m));
+                }
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Reading Flourish's shot animation failed: " + e, 93611943);
+            }
+        }
+
+        public static void ApplyTo_Prefix(ref float angle, out float __state)
+        {
+            __state = angle;
+        }
+
+        public static void ApplyTo_Postfix(ref float angle, float rise, float __state)
+        {
+            float turn = Mathf.DeltaAngle(__state, angle);
+            if (turn != 0f)
+            {
+                FigureWeapons.FlourishRise(turn, rise);
+            }
         }
 
         // Flourish's switch "muzzle anchor" (on unless the player turned it off; unknown counts as on).

@@ -24,6 +24,12 @@ namespace IsoRim
         // is a smooth normal (IsoRim.vert.glsl).
         public const int Bit = 131072;
 
+        // Bit 18, with Bit (2026-10-31): the corner is shaded smooth with stepped light on too (IsoRim.vert.glsl hands the
+        // normal on in vUv.x + 3072 instead of + 1024, IsoRimSolid.frag.glsl leaves SteppedAmount out): a figure's head skin,
+        // face and eyes, hair and beard, skin- or hair-coloured head gene parts (People.Merged). Headgear, the body, clothes and
+        // everything else stay stepped; the rim light is the same on both.
+        public const int RoundBit = 262144;
+
         // Welding: corners closer than 1/Weld (model units) count as one position.
         private const float Weld = 10000f;
 

@@ -285,6 +285,13 @@ float ModelShade(vec3 n, vec3 L)
 // the nearest flat tone and the average over a colony stays about the same as the smooth curve. The step is blended over
 // tw (t's change per pixel, from the smooth normals; 0 on flat faces), at least a little, so band edges are anti-aliased
 // and a face crossing a step as the sun moves fades over instead of popping.
+// A smooth figure corner's normal x is handed on in vUv.x + 1024, or + 3072 for one left out of the stepped light (a head's
+// skin, the hair: SmoothFigures.RoundBit, IsoRim.vert.glsl).
+float SmoothBase()
+{
+    return vUv.x > 2048.0 ? 3072.0 : 1024.0;
+}
+
 float SteppedAmount(float t, float bands, float tw)
 {
     float k = bands - 1.0;
@@ -364,7 +371,7 @@ void main()
 #ifndef USE_TEXTURE
     if (uMaterial._IsoToon.x > 1.5)
     {
-        vec3 sn = vec3(vUv.x - 1024.0, vUv.y, vColor.a);
+        vec3 sn = vec3(vUv.x - SmoothBase(), vUv.y, vColor.a);
         sn *= inversesqrt(max(1e-12, dot(sn, sn)));
         if (dot(sn, faceNormal) < 0.0)
             sn = -sn;
@@ -444,7 +451,7 @@ void main()
 #ifndef USE_TEXTURE
         if (smooth)
         {
-            n = normalize(vec3(vUv.x - 1024.0, vUv.y, vColor.a));
+            n = normalize(vec3(vUv.x - SmoothBase(), vUv.y, vColor.a));
             if (dot(n, faceNormal) < 0.0)
                 n = -n;
         }
@@ -461,7 +468,12 @@ void main()
             // Models: the stylised light options apply here only (not walls, roofs or the ground).
             float t = SunAmount(n, L);
             vec4 toon = uMaterial._IsoToon;
-            if (toon.x > 1.5)
+#ifndef USE_TEXTURE
+            bool round = vUv.x > 2048.0;   // a head's skin, the hair (SmoothFigures.RoundBit): smooth, never stepped
+#else
+            bool round = false;
+#endif
+            if (toon.x > 1.5 && !round)
             {
 #ifndef USE_TEXTURE
                 t = SteppedAmount(t, toon.x, smooth ? sunAmountWidth : 0.0);

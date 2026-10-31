@@ -368,6 +368,8 @@ namespace IsoRim
                 aiming = null;
             }
             Patch("3D weapons in hand", aiming, prefix: nameof(DrawEquipmentAiming_Prefix), finalizer: nameof(DrawEquipmentAiming_Finalizer));
+            // The recoil in a 3D figure's weapon picture, taken apart from other mods' motion (FigureWeapons.Shoulder).
+            Patch("3D weapon recoil", AccessTools.Method(typeof(EquipmentUtility), nameof(EquipmentUtility.Recoil)), postfix: nameof(Recoil_Postfix));
             // A 3D figure aiming a gun shows its aim pie at the muzzle (AimPies).
             Patch("aim pies at the muzzle", AccessTools.Method(typeof(GenDraw), nameof(GenDraw.DrawAimPie)), prefix: nameof(DrawAimPie_Prefix));
             // A 3D figure's weapon is posed by the game (FigureWeapons): which pose it chose, and the shield belt's bubble caught.
@@ -2686,6 +2688,14 @@ namespace IsoRim
         {
             Projectiles.EndTip();
             FigureWeapons.Weapon(null);
+        }
+
+        // The game's recoil for a weapon (EquipmentUtility.Recoil), as the last postfix: noted while a 3D figure's weapon is
+        // drawn, so the figure kicks it back and raises the muzzle instead of turning it sideways (FigureWeapons.Shoulder).
+        [HarmonyPriority(Priority.Last)]
+        public static void Recoil_Postfix(ref Vector3 drawOffset, ref float angleOffset)
+        {
+            FigureWeapons.NoteRecoil(drawOffset, angleOffset);
         }
 
         public static void DrawCarriedWeapon_Prefix()

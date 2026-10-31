@@ -61,6 +61,7 @@ namespace IsoRim
             public List<int> tris = new List<int>();
             public Material material;
             public List<Vector3> normals;   // smooth normals (SmoothFigures), one per corner; null: none (lit by the face)
+            public List<bool> round;        // with normals: the corner is left out of stepped light (SmoothFigures.RoundBit); null: none
 
             public void Add(Vector3 v, Color32 c, Vector2 uv)
             {
@@ -76,6 +77,12 @@ namespace IsoRim
                 normals.Add(normal);
             }
 
+            public void Add(Vector3 v, Color32 c, Vector2 uv, Vector3 normal, bool isRound)
+            {
+                Add(v, c, uv, normal);
+                round.Add(isRound);
+            }
+
             public Mesh ToMesh()
             {
                 Mesh mesh = new Mesh();
@@ -85,6 +92,7 @@ namespace IsoRim
                 mesh.SetUVs(0, uvs);
                 List<Vector3> tags = new List<Vector3>(verts.Count);
                 bool smooth = normals != null && normals.Count == verts.Count;
+                bool rounds = smooth && round != null && round.Count == verts.Count;
                 if (smooth)
                 {
                     mesh.SetNormals(normals);   // lit by these (SmoothFigures.Bit, IsoRim.vert.glsl)
@@ -96,6 +104,10 @@ namespace IsoRim
                     if (smooth)
                     {
                         tag.z += SmoothFigures.Bit;
+                        if (rounds && round[i])
+                        {
+                            tag.z += SmoothFigures.RoundBit;
+                        }
                     }
                     tags.Add(tag);
                 }
@@ -236,6 +248,14 @@ namespace IsoRim
         // smooth: the solid faces lit by smooth normals (SmoothFigures: a person's figure with the setting on).
         public static List<Part> BuildMerged(List<Model> models, List<Matrix4x4> locals, List<Color> tints, int turned, Color? mono, float clipBelow, bool smooth)
         {
+            return BuildMerged(models, locals, tints, turned, mono, clipBelow, smooth, null);
+        }
+
+        // round (with smooth; one per model, or null): the models shaded smooth with stepped light on too (SmoothFigures.RoundBit:
+        // a figure's head skin, face and hair).
+        public static List<Part> BuildMerged(List<Model> models, List<Matrix4x4> locals, List<Color> tints, int turned, Color? mono, float clipBelow, bool smooth,
+            List<bool> round)
+        {
             List<Part> parts = new List<Part>();
             Material solidMat = R3DMaterials.Solid;
             Material litMat = R3DMaterials.LitModel;
@@ -246,9 +266,18 @@ namespace IsoRim
             Lists solid = new Lists();
             Lists glowing = new Lists();
             Lists outline = new Lists();
+            bool anyRound = false;
             if (smooth)
             {
                 solid.normals = new List<Vector3>();
+                for (int k = 0; round != null && k < round.Count && k < models.Count; k++)
+                {
+                    anyRound |= round[k];
+                }
+                if (anyRound)
+                {
+                    solid.round = new List<bool>();
+                }
             }
             try
             {
@@ -260,6 +289,7 @@ namespace IsoRim
                     int n = m.positions.Length;
                     Vector3[] sn = smooth ? SmoothFigures.NormalsOf(m) : null;
                     Matrix4x4 normalPlace = smooth ? NormalMatrix(local) : Matrix4x4.identity;
+                    bool isRound = anyRound && k < round.Count && round[k];
                     for (int i = 0; i + 2 < n; i += 3)
                     {
                         if (clipBelow > float.NegativeInfinity
@@ -281,7 +311,11 @@ namespace IsoRim
                             {
                                 c = Statues.Carved(c, mono.Value);
                             }
-                            if (into.normals != null)
+                            if (into.round != null)
+                            {
+                                into.Add(local.MultiplyPoint3x4(m.positions[v]), R3DMaterials.Shaded(c, 1f), Vector2.zero, PlaceNormal(normalPlace, sn, v), isRound);
+                            }
+                            else if (into.normals != null)
                             {
                                 into.Add(local.MultiplyPoint3x4(m.positions[v]), R3DMaterials.Shaded(c, 1f), Vector2.zero, PlaceNormal(normalPlace, sn, v));
                             }

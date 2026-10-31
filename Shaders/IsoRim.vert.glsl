@@ -16,7 +16,8 @@
 //    front of a wall loses its outline where the wall is less than that far behind it.
 // 3. Smooth shading on people (Source\SmoothFigures.cs, texture coordinate 1 z flag 131072 = bit 17): the mesh normal is a
 //    smooth normal. It is turned into true (unsquashed) space here and handed to IsoRimSolid.frag.glsl in vUv and vColor.a
-//    (these meshes are untextured and opaque): vUv = (1024 + x, y), vColor.a = z.
+//    (these meshes are untextured and opaque): vUv = (1024 + x, y), vColor.a = z. With flag 262144 = bit 18 as well
+//    (SmoothFigures.RoundBit: a head's skin, the hair) vUv.x = 3072 + x: left out of the stepped light.
 
 layout(location = 0) in vec3 inPosition; // @vertex Position required
 layout(location = 1) in vec3 inNormal;   // @vertex Normal optional @default = vec4(0.0, 1.0, 0.0, 0.0)
@@ -293,7 +294,7 @@ void main()
         vec3 nt = mat3(cross(t[1], t[2]), cross(t[2], t[0]), cross(t[0], t[1])) * inNormal;
         float len = length(nt);
         nt = len > 1e-12 ? nt / len : vec3(0.0, 1.0, 0.0);
-        vUv = vec2(1024.0 + nt.x, nt.y);
+        vUv = vec2(((int(inUv1.z + 0.5) & 262144) != 0 ? 3072.0 : 1024.0) + nt.x, nt.y);
         vColor.a = nt.z;
     }
 }
