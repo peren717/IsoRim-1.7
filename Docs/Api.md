@@ -59,10 +59,11 @@ if (IsoRim.Api.Version >= 40) { /* DrawItem: an item drawn as IsoRim shows items
 // 41 was skipped: no IsoRim has Version 41.
 if (IsoRim.Api.Version >= 42) { /* AddModelRule: an addon's code names the ModelDef for things with no thingDef entry (part 27) */ }
 if (IsoRim.Api.Version >= 43) { /* ApparelModelDef.shown: when a Shield binding's model shows (Default, Weapon, Always; part 3) */ }
+if (IsoRim.Api.Version >= 44) { /* a weapon's 3D muzzle: TryGetMuzzle, StandFleck, StandMote (part 28) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1508,6 +1509,41 @@ static string MyRule(ThingDef def)
   an older IsoRim (still create the delegate explicitly, inside a method that runs after the check: see the notes in part M).
 - `HowBound` style reports (the binder, the coverage report) show such things as `rule:<ModelDef>`; the binder treats the
   entry as shared.
+
+## Part 28: a weapon's 3D muzzle (version 44)
+
+For a mod that puts its own effects at a gun's muzzle (flashes, smoke, sparks, a line along the shot): in the 3D view the
+gun is drawn standing up (a 3D model, its sprite made solid on a figure, or a 2D card), so the flat spot the game's sprite
+had is now under or inside the shooter. Ask IsoRim for the muzzle instead and have your effect drawn standing in the air there.
+
+```csharp
+// IsoRim.Api.Version >= 44; at tick time, where you would make your flash
+Vector3 muzzle;
+float aim;
+if (IsoRim.Api.TryGetMuzzle(pawn.equipment.Primary, pawn, out muzzle, out aim))
+{
+    IsoRim.Api.StandFleck(muzzle, FleckDefOf.ShotFlash);                       // before creating the fleck
+    FleckMaker.Static(new Vector3(muzzle.x, 0f, muzzle.z), pawn.Map, FleckDefOf.ShotFlash, 1f);
+
+    Mote glow = MoteMaker.MakeAttachedOverlay(pawn, myGlowDef, new Vector3(muzzle.x - pawn.DrawPos.x, 0f, muzzle.z - pawn.DrawPos.z));
+    IsoRim.Api.StandMote(glow, muzzle.y, false);                               // standing up, facing the camera
+}
+else { /* not in the 3D view: your own position, as before */ }
+```
+
+| Member | What it does |
+|---|---|
+| `Api.TryGetMuzzle(Thing weaponOrTurret, Pawn holder, out Vector3 muzzle, out float aim)` | The muzzle as IsoRim draws the gun now: a pawn's held gun (barrel end of its 3D model, of its solid sprite on a figure, or of its sprite on a 2D card), a mech's gun part, or a turret's gun (pass the turret; `holder` is ignored). `muzzle`: true space, x and z in the game's rows (where a fleck or mote goes), y the height over the holder's floor. `aim`: the way the shot leaves (degrees clockwise from north, as `AngleFlat`). False outside the 3D view or for a thing not spawned. Also without `aim`. |
+| `Api.StandFleck(Vector3 point, FleckDef fleck)` | Flecks of that def created exactly at `point.x, point.z` while it lasts are drawn standing up at `point.y`, as IsoRim's own shot flashes. Call just before creating the fleck, at tick time. |
+| `Api.StandMote(Mote mote, float height, bool flat)` | The mote, as long as it lives, is drawn at `height` cells over the ground under it: standing up facing the camera, or (`flat`) lying flat at that height (a line along a shot). |
+
+- **The point:** the same one IsoRim's own shot flash and the drawn bullet start from (a manned turret's shot from the
+  turret's gun). A gun not drawn just now (off screen, its floor hidden) is posed for it; with no drawn barrel at all (not
+  aiming, a 2D card not drawn for a while) it is IsoRim's estimate, in front of the holder at hand height.
+- **Stacked floors:** x and z are in the holder's own rows, like everything the game places there; flecks and motes put
+  there are drawn on that floor as usual. For a mesh of your own, `Api.DrawnPosition(muzzle)` is where to draw it.
+- **Built in:** Flourish - Combat Animations (`astryl.Flourish`) gets this without doing anything: while it is active,
+  IsoRim answers its muzzle lookup with this point and stands its flash, bloom and tracer there.
 
 ## Part M: model packs (IsoRim.ModelDef)
 

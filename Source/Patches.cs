@@ -665,6 +665,20 @@ namespace IsoRim
                 Log.Error("[IsoRim] Could not hook beams and streams: " + e);
             }
 
+            // (Api 44) Flourish - Combat Animations: its muzzle effects at the 3D muzzle. Only when that mod is loaded;
+            // fails soft on its own (FlourishMuzzle).
+            try
+            {
+                if (FlourishMuzzle.Apply(harmony))
+                {
+                    hooked.Add("FlourishMuzzle (Flourish muzzle effects at the 3D muzzle)");
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warning("[IsoRim] Flourish muzzle adapter off: " + e.Message);
+            }
+
             // Stacked floors (Floors): only when a gameplay addon has registered a floor layout.
             Ready = true;
             Floors.ApplyPatches();
@@ -3646,6 +3660,22 @@ namespace IsoRim
                 Log.ErrorOnce("[IsoRim] Checking whether a building was emptied failed: " + e, 93611211);
             }
             Mote mote = __instance as Mote;
+            // (Api 44) A mote a mod put at a point in the air (a flash at a gun's muzzle: Api.StandMote): standing up facing
+            // the camera at that height, or lying flat at it (a line along a shot).
+            float standHeight;
+            bool standFlat;
+            if (mote != null && Emitters.MoteStandOf(mote, out standHeight, out standFlat))
+            {
+                if (standFlat)
+                {
+                    BeginRaised(ref __state, standHeight);
+                }
+                else
+                {
+                    BeginBillboard(ref __state, standHeight, false, Vector3.zero);
+                }
+                return;
+            }
             if (mote != null && mote.def == ThingDefOf.Mote_TempRoof)
             {
                 // The game's "roof just built here" tile (MoteMaker.PlaceTempRoof) is a roof, not an icon: it lies flat
@@ -3722,6 +3752,20 @@ namespace IsoRim
             state.wasActive = DrawHook.active;
             state.wasXform = DrawHook.xform;
             DrawHook.xform = View3D.LiftMatrix(height) * Matrix4x4.Scale(new Vector3(1f, 0f, 1f));
+            DrawHook.active = true;
+        }
+
+        // Raises every mesh drawn until the scope ends by height cells, as drawn otherwise (a flat mote stays flat).
+        private static void BeginRaised(ref DrawScope state, float height)
+        {
+            if (DrawHook.active)
+            {
+                return;
+            }
+            state.changed = true;
+            state.wasActive = DrawHook.active;
+            state.wasXform = DrawHook.xform;
+            DrawHook.xform = View3D.LiftMatrix(Mathf.Max(0f, height));
             DrawHook.active = true;
         }
 

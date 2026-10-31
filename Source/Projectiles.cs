@@ -502,8 +502,7 @@ namespace IsoRim
                 try
                 {
                     // The same point the bullet is drawn leaving from (Muzzle; the game launches it from caster.DrawPos).
-                    Thing owner = MuzzleOwner(caster, verb.EquipmentSource != null ? verb.EquipmentSource.def : null, caster.DrawPos, map);
-                    Vector3 at = Muzzle(owner, verb.EquipmentSource != null ? verb.EquipmentSource.def : null, caster.DrawPos, Aim(verb));
+                    Vector3 at = ShotMuzzle(caster, verb.EquipmentSource != null ? verb.EquipmentSource.def : null, Aim(verb), map);
                     FleckCreationData data = FleckMaker.GetDataStatic(new Vector3(at.x, 0f, at.z), map, fleck, scale);
                     Emitters.Raise(data.spawnPosition, at.y, 0f, fleck);
                     flashing = true;
@@ -526,6 +525,38 @@ namespace IsoRim
         }
 
         [ThreadStatic] private static bool flashing;
+
+        // The muzzle a shot of caster's (a pawn, a turret) with gun (null if unknown) leaves from now, toward dir (flat): who
+        // it leaves from (MuzzleOwner: a manned turret's gun, not the pawn's hands) and where (Muzzle). x and z in the game's
+        // rows, y cells over the ground. The one point a shot's flash (ShotFlash) and Api.TryGetMuzzle use.
+        internal static Vector3 ShotMuzzle(Thing caster, ThingDef gun, Vector3 dir, Map map)
+        {
+            Thing owner = MuzzleOwner(caster, gun, caster.DrawPos, map);
+            return Muzzle(owner, gun, caster.DrawPos, dir);
+        }
+
+        // Which way a holder's gun points now (flat, unit length), for asking for its muzzle outside a shot (Api.TryGetMuzzle):
+        // along the verb it is busy with (aiming, or just fired: Aim), else toward what it is busy with, else the way it faces.
+        internal static Vector3 HolderAim(Thing holder)
+        {
+            Vector3 d = Vector3.zero;
+            Pawn pawn = holder as Pawn;
+            Stance_Busy busy = pawn != null && pawn.stances != null ? pawn.stances.curStance as Stance_Busy : null;
+            Verb verb = busy != null ? busy.verb : holder is Building_Turret turret ? turret.CurrentEffectiveVerb : null;
+            if (verb != null && verb.caster == holder)
+            {
+                d = Aim(verb);
+            }
+            if (d == Vector3.zero && busy != null && busy.focusTarg.IsValid)
+            {
+                d = FlatDirection(holder.DrawPos, busy.focusTarg.HasThing ? busy.focusTarg.Thing.DrawPos : busy.focusTarg.Cell.ToVector3Shifted());
+            }
+            if (d == Vector3.zero)
+            {
+                d = holder.Rotation.FacingCell.ToVector3().normalized;
+            }
+            return d;
+        }
 
         // A shot flash a mod throws by hand flat in the middle of a 3D-gunned turret's cell (FleckMaker.Static(turret.Position,
         // ..., ShotFlash, ...): Vanilla Gravship Expanded's point defence) goes to the gun's barrel end too, standing up, as

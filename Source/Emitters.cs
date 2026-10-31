@@ -230,5 +230,48 @@ namespace IsoRim
         {
             get { return puffs.Count; }
         }
+
+        // ---- Motes stood at a height (Api 44, Api.StandMote): a mote a mod puts at a point in the air (a flash at a gun's
+        // muzzle) is drawn standing up facing the camera at that height, or lying flat at it (a line along a shot), instead of
+        // on the ground under the point (or over a pawn's head, as icons in its cell are). Read by Patches.ThingDraw_Prefix;
+        // kept with the mote until it is gone.
+
+        private sealed class MoteStand
+        {
+            public float height;
+            public bool flat;
+        }
+
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Mote, MoteStand> moteStands =
+            new System.Runtime.CompilerServices.ConditionalWeakTable<Mote, MoteStand>();
+
+        // Motes stood so far (harness checks).
+        public static int MotesStood;
+
+        public static void StandMote(Mote mote, float height, bool flat)
+        {
+            if (mote == null)
+            {
+                return;
+            }
+            MoteStand s = moteStands.GetValue(mote, k => new MoteStand());
+            s.height = height;
+            s.flat = flat;
+            MotesStood++;
+        }
+
+        internal static bool MoteStandOf(Mote mote, out float height, out bool flat)
+        {
+            height = 0f;
+            flat = false;
+            MoteStand s;
+            if (mote == null || !moteStands.TryGetValue(mote, out s))
+            {
+                return false;
+            }
+            height = s.height;
+            flat = s.flat;
+            return true;
+        }
     }
 }
