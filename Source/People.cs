@@ -376,6 +376,9 @@ namespace IsoRim
 
         private const int RefreshFrames = 90;
         private const float HeadHeight = 0.98f;   // where the middle of the head is on the figure
+        // In a bed that shows only the head (no bed_showSleeperBody): the head's middle this far over the bed's surface, so
+        // the head sinks into the pillow (was 0.24: it rested on top). Beds that show the body keep 0.15.
+        private const float BedHeadLift = 0.12f;
         private const float GibbetScale = 0.78f;  // a corpse hanging in a gibbet cage, shrunk to stay under its dome
         private const float FigureHeight = 1.12f; // top of the head of a figure of size 1
         private const float CarryReach = 0.24f;   // a carried thing's middle, in front of the figure
@@ -534,7 +537,7 @@ namespace IsoRim
                     yaw = bed.Rotation.AsAngle;
                     ground = Poses.SleeperHeight(pawn, bed);   // the bed's surface, or their slot's (Api 28: a bunk's level)
                     headOnly = ground > 0.05f && bed.def.building != null && !bed.def.building.bed_showSleeperBody;
-                    pose = Matrix4x4.Translate(new Vector3(0f, (headOnly ? 0.24f : 0.15f) * size, HeadHeight * size)) * Matrix4x4.Rotate(onBack);
+                    pose = Matrix4x4.Translate(new Vector3(0f, (headOnly ? BedHeadLift : 0.15f) * size, HeadHeight * size)) * Matrix4x4.Rotate(onBack);
                 }
                 else if (!dead && holder != null && pawn.ParentHolder is IThingHolderWithDrawnPawn drawnIn)
                 {
