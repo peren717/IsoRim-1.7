@@ -469,6 +469,27 @@ A race with hair and ears of its own art (tried on Kiiro Race): `Own` with simpl
 anchored at `head`, the back-hair addons hidden), and its ears get solid ear models (`colour` Skin) with `hatLift`
 so they stay out of hats as in 2D.
 
+## Apparel on layers added by mods
+
+Apparel whose layers are all ones the game does not define (`ApparelLayerDef`s added by mods) is not left out. IsoRim gives
+it a figure slot from its body part groups and its layers' `drawOrder`, then draws it as it draws a game item in that slot:
+
+| Groups (and draw order) | Slot | Drawn as |
+|---|---|---|
+| `FullHead` / `UpperHead` | Head | headgear, as any hat (its own model by name, else the generic hat or helmet) |
+| `Teeth` / `Mouth` (with `Eyes`) | Face | its own face model by name, else the gas mask (with `Eyes`) or the cloth mask |
+| `Eyes` only | Eyes | its own model by name, else the blindfold band |
+| `Neck` only | Neck | its own model by name, else the collar |
+| worn picture drawn as a pack (`renderUtilityAsPack`) | Belt, mount `pack` | a stand-in pack on the back |
+| `Waist` only | Belt, mount `belt` | a stand-in belt |
+| anything else (torso, legs ...) | Body | as the game's layer nearest its draw order: `OnSkin` (< 50), `Middle` (< 150), else `Shell` (also above it); IsoRim's name rules and shapes apply as on that layer, else the generic coat |
+
+These items are taken after the ones on the game's own layers, so they never take a slot from them (a mapped coat stays
+hidden under a real coat; a stand-in mask or band only shows where no other is drawn). Stand-ins are not used for laid
+items (the game's picture instead). Left as before: items with any layer the game knows, items whose class draws its own
+worn picture (overrides `DrawWornExtras`, e.g. shields) and items drawn through render nodes of another mod's classes. An
+`ApparelModelDef` binding always wins: bind an item for its real look (a shield on such a layer needs a `Shield` binding).
+
 ## Pitfalls
 
 - **Never add or replace a whole ModelDef from a patch.** A def that a patch adds has no mod of its own

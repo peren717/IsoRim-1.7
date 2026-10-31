@@ -261,6 +261,11 @@ Slots and frames (the file's axes as IsoRim's `person_*.obj`: one unit = one cel
   would never show it. `Always` shows it whenever the person stands (as `alwaysShown`, which keeps working). Other slots
   ignore `shown`. Since the field only exists from version 43, add it through a patch that checks `Api.Version >= 43`.
 
+Apparel without a binding whose layers are all added by mods (none of the game's six) is given a slot from its body part
+groups and its layers' draw order and drawn as IsoRim draws a game item there, with a stand-in model where IsoRim has no
+default (face, eyes, neck, pack, belt); see "Apparel on layers added by mods" in `Docs/ModelPacks.md`. A binding replaces
+this for its item. No Api member; items on the game's layers are drawn as before.
+
 ```xml
 <!-- a hat, a coat with a model per build, a belt and a shield -->
 <IsoRim.ApparelModelDef>

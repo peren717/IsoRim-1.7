@@ -1519,11 +1519,15 @@ namespace IsoRim
             // shapes (ApparelDecals).
             Apparel coatFrom = null, shellArmourFrom = null, vestFrom = null, overFrom = null, midFrom = null, skinFrom = null;
             look.coatFrom = look.overCoatFrom = look.midFrom = look.shirtWearFrom = null;
-            if (worn != null)
+            // Unbound items on layers IsoRim does not know (CustomLayers) come last, each as the slot it maps to; their
+            // stand-in packs and belts.
+            List<Apparel> order = CustomLayers.Ordered(worn);
+            List<Apparel> standGear = null;
+            if (order != null)
             {
-                for (int i = 0; i < worn.Count; i++)
+                for (int i = 0; i < order.Count; i++)
                 {
-                    Apparel a = worn[i];
+                    Apparel a = order[i];
                     ApparelProperties props = a.def != null ? a.def.apparel : null;
                     if (props == null)
                     {
@@ -1632,6 +1636,8 @@ namespace IsoRim
                         (gearWorn ?? (gearWorn = new List<Apparel>())).Add(a);
                         continue;
                     }
+                    // On layers IsoRim does not know: the slot it maps to (null: as before).
+                    CustomLayers.Fit fit = CustomLayers.FitOf(a.def);
                     Color colour = ApparelColour(a);
                     if (PaintedZones(name))
                     {
@@ -1662,6 +1668,35 @@ namespace IsoRim
                         {
                             look.mouthWear = m;
                             look.mouthColor = colour;
+                        }
+                        continue;
+                    }
+                    if (fit != null && fit.kind != CustomLayers.Kind.Head && fit.kind != CustomLayers.Kind.Body)
+                    {
+                        // A face, eye, neck, pack or belt item on a layer IsoRim does not know, with no model of its own:
+                        // IsoRim's stand-in for that slot, where no other item is drawn (not on a laid item).
+                        if (!CustomLayers.Laying)
+                        {
+                            string standFile = CustomLayers.FaceFile(fit, props);
+                            if (fit.kind == CustomLayers.Kind.Eyes && look.eyeWear == null)
+                            {
+                                look.eyeWear = Part("person_hat_" + standFile);
+                                look.eyeColor = colour;
+                            }
+                            else if (fit.kind == CustomLayers.Kind.Neck && look.neckWear == null)
+                            {
+                                look.neckWear = Part("person_hat_" + standFile);
+                                look.neckColor = colour;
+                            }
+                            else if (fit.kind == CustomLayers.Kind.Face && look.mouthWear == null)
+                            {
+                                look.mouthWear = Part("person_hat_" + standFile);
+                                look.mouthColor = colour;
+                            }
+                            else if (CustomLayers.GearFor(fit) != null)
+                            {
+                                (standGear ?? (standGear = new List<Apparel>())).Add(a);
+                            }
                         }
                         continue;
                     }
@@ -1739,14 +1774,14 @@ namespace IsoRim
                             continue;
                         }
                     }
-                    else if (!legs && props.wornGraphicPath.NullOrEmpty() && !OnLayer(props, "Shell"))
+                    else if (!legs && props.wornGraphicPath.NullOrEmpty() && !OnLayerAs(props, fit, "Shell"))
                     {
                         // Drawn as nothing by the game (no worn graphic: the heavy shield unit), so it colours nothing.
                         unshown?.Add(a);
                         continue;
                     }
 
-                    int layer = OnLayer(props, "Shell") ? 2 : (OnLayer(props, "Middle") ? 1 : (OnLayer(props, "OnSkin") ? 0 : -1));
+                    int layer = OnLayerAs(props, fit, "Shell") ? 2 : (OnLayerAs(props, fit, "Middle") ? 1 : (OnLayerAs(props, fit, "OnSkin") ? 0 : -1));
                     if (layer < 0)
                     {
                         unshown?.Add(a);   // belts and the like
@@ -1754,6 +1789,10 @@ namespace IsoRim
                     }
                     if (layer == 2 && torso)
                     {
+                        if (fit != null && (coatKind != null || coatBoundModel != null || shellArmourKind != null))
+                        {
+                            continue;   // drawn as a coat, but an item on the game's own layers already is the coat
+                        }
                         bool longCoat = legs || Has(name, "Duster") || Has(name, "Parka") || Has(name, "Robe") || Has(name, "Cape") || Has(name, "Coat");
                         coatFallback = longCoat && !armour ? "coat_long" : "coat_short";
                         coatBoundModel = null;
@@ -1949,6 +1988,25 @@ namespace IsoRim
                 look.gear.Add(b.ModelFor(build));
                 look.gearPlace.Add(place);
                 look.gearTint.Add(ApparelModels.Tint(b, beltBound[i]));
+                look.gearRigid.Add(rigid);
+                look.gearAnchor.Add(anchor);
+            }
+            for (int i = 0; standGear != null && i < standGear.Count; i++)
+            {
+                // Stand-in packs and belts of items on layers IsoRim does not know (CustomLayers).
+                WornGearDef g = CustomLayers.GearFor(CustomLayers.FitOf(standGear[i].def));
+                Color tint;
+                Model m = WornGear.ModelFor(g, standGear[i], out tint);
+                if (m == null)
+                {
+                    continue;
+                }
+                bool rigid;
+                Vector3 anchor;
+                Matrix4x4 place = WornGear.Place(g, look, out rigid, out anchor);
+                look.gear.Add(m);
+                look.gearPlace.Add(place);
+                look.gearTint.Add(tint);
                 look.gearRigid.Add(rigid);
                 look.gearAnchor.Add(anchor);
             }
@@ -2309,6 +2367,12 @@ namespace IsoRim
                 }
             }
             return false;
+        }
+
+        // On that layer; for an item on layers IsoRim does not know, on the vanilla layer it is drawn as (CustomLayers).
+        private static bool OnLayerAs(ApparelProperties props, CustomLayers.Fit fit, string layer)
+        {
+            return fit != null ? fit.layer == layer : OnLayer(props, layer);
         }
 
         private static bool OnLayer(ApparelProperties props, string layer)

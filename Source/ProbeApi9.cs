@@ -20,6 +20,10 @@ namespace IsoRim
     //   ap9row=a,b               only rows a..b of the set (both inclusive)
     //   ap9shieldcolour=r,g,b    the colour the fixture gives coloured items (CompColorable) on male pawns; females keep
     //                            the item's own
+    //   ap9items=a+b;c;...       set items: one row per ';' entry, the defNames worn in it joined by '+' (before ap9fix)
+    //   ap9cloff=1               CustomLayers off (as before it), for before/after renders (before ap9fix)
+    //   ap9clsweep=label         items on unknown layers (CustomLayers): every apparel def with how it is taken, to
+    //                            IsoRimCustomLayers.tsv, and each fixture pawn's dressed look, to the log (ProbeCustomLayers.cs)
     // Apparel9Check (ProbeApi9Check.cs, Api 9 builds) adds the binding checks.
     public static partial class Probe
     {
@@ -31,6 +35,7 @@ namespace IsoRim
         private static bool ap9Ticking;
         private static int ap9RowFrom, ap9RowTo = 999;
         private static Color? ap9Colour;
+        private static string[][] ap9Items = new string[0][];
 
         // Each row: the items worn over a basic shirt and pants.
         private static readonly string[][] Ap9Vfem2 =
@@ -97,6 +102,15 @@ namespace IsoRim
                     return true;
                 case "ap9shieldcolour":
                     ap9Colour = new Color(F(a[0]), F(a[1]), F(a[2]));
+                    return true;
+                case "ap9items":
+                    ap9Items = a[0].Split(';').Select(r => r.Split('+')).ToArray();
+                    return true;
+                case "ap9cloff":
+                    CustomLayers.Off = a[0] == "1";
+                    return true;
+                case "ap9clsweep":
+                    CustomLayerSweep(a[0]);
                     return true;
             }
             return Api9CheckKey(key, a, map) || Api43CheckKey(key, a, map);
@@ -224,7 +238,7 @@ namespace IsoRim
         private static void Api9Fixture(string set, IntVec3 origin, string mode, Map map)
         {
             Api9Clear();
-            string[][] rows = set == "vanilla" ? Ap9Vanilla : set == "api43" ? Ap9Api43 : Ap9Vfem2;
+            string[][] rows = set == "vanilla" ? Ap9Vanilla : set == "api43" ? Ap9Api43 : set == "items" ? ap9Items : Ap9Vfem2;
             int made = 0;
             for (int r = 0; r < rows.Length; r++)
             {

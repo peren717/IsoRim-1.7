@@ -161,7 +161,15 @@ namespace IsoRim
             one.Clear();
             one.Add(a);
             People.Look look = new People.Look();
-            People.Dress(look, build, one, Color.white, null);
+            CustomLayers.Laying = true;   // (no stand-in models for items on unknown layers: the game's picture instead)
+            try
+            {
+                People.Dress(look, build, one, Color.white, null);
+            }
+            finally
+            {
+                CustomLayers.Laying = false;
+            }
             People.ClothesParts(look, build, addBody, addHead);
             one.Clear();
             bodyCount = models.Count;
