@@ -141,9 +141,9 @@ namespace IsoRim
         public bool heldWeapons3D = true;
         public bool weaponModels3D = true;   // weapons with a 3D model show it everywhere (WeaponModels)
         public bool apparelModels3D = true;  // apparel items lie as the 3D clothes a figure wears, laid down (GroundGear)
-        public float aimSide = 0.15f;        // a 3D figure aiming a ranged weapon: its butt this far to its right (figure units) ...
-        public float aimHeight = 0.62f;      // ... this high ...
-        public float aimReach = 0.12f;       // ... and this far forward (FigureWeapons, with weaponModels3D)
+        public float aimSide = 0.17f;        // a 3D figure aiming a ranged weapon: its butt this far to its right (figure units) ...
+        public float aimHeight = 0.66f;      // ... this high ...
+        public float aimReach = 0.15f;       // ... and this far forward (FigureWeapons, with weaponModels3D)
         public bool doors3D = true;
         public bool models3D = true;
         public bool lightingFix = true;
@@ -286,9 +286,9 @@ namespace IsoRim
             Scribe_Values.Look(ref heldWeapons3D, "heldWeapons3D", true);
             Scribe_Values.Look(ref weaponModels3D, "weaponModels3D", true);
             Scribe_Values.Look(ref apparelModels3D, "apparelModels3D", true);
-            Scribe_Values.Look(ref aimSide, "aimSide", 0.15f);
-            Scribe_Values.Look(ref aimHeight, "aimHeight", 0.62f);
-            Scribe_Values.Look(ref aimReach, "aimReach", 0.12f);
+            Scribe_Values.Look(ref aimSide, "aimSide", 0.17f);
+            Scribe_Values.Look(ref aimHeight, "aimHeight", 0.66f);
+            Scribe_Values.Look(ref aimReach, "aimReach", 0.15f);
             Scribe_Values.Look(ref doors3D, "doors3D", true);
             Scribe_Values.Look(ref models3D, "models3D", true);
             Scribe_Values.Look(ref lightingFix, "lightingFix", true);

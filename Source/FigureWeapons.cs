@@ -29,13 +29,20 @@ namespace IsoRim
     // recoil) goes on top (Shoulder); an outfit stand carries its weapon as a colonist does (DrawOnStand). Off: as before.
     public static class FigureWeapons
     {
-        private const float PersonHeight = 1.12f;   // a figure of size 1, feet to the top of the head (People.FigureHeight)
-        private const float PictureHeight = 1.5f;   // the game's picture of a pawn (its 1.5-cell body mesh)
-        private const float Picture = PersonHeight / PictureHeight;   // the game's picture units to figure units
+        // The game's picture units to figure units (2026-10-31, weaponfit): the game draws a man facing south 1.113 to 1.137
+        // cells tall, feet to the top of his bare head (body and head pictures, opaque pixels; 1.125 the middle of the head
+        // types; harness key vanillaheight), a figure of size 1 is 1.25 (person_head's top; Interaction.PickHeight). Every
+        // picture the game draws for the pawn (its weapon, a mod's body animation) is scaled by this onto the figure, so the
+        // weapon is as long against the figure as against the game's pawn (was 1.12 / 1.5: the whole 1.5-cell mesh, 33% small).
+        internal const float FigureTop = 1.25f;
+        internal const float VanillaHeight = 1.125f;
+        internal const float Picture = FigureTop / VanillaHeight;
+        private const float Middle = 0.56f;         // the body's middle on a figure of size 1 (the carried weapon, worn extras)
         private const float HandY = 0.46f;          // the hands on a figure of size 1 (People.HandY)
         private const float WeaponGap = 0.05f;      // between the chest and the carried weapon, figure units
         private const float Tilt = 35f;             // the carried weapon's turn about the figure's up: muzzle forward
         private const float MaxPitch = 70f;
+        private const bool Guard = true;
 
         private struct Caught
         {
@@ -255,6 +262,14 @@ namespace IsoRim
                             * Matrix4x4.Scale(new Vector3(Picture * size, Picture * size, Picture * size)) * turned * SlabToPlane(flipped);
                         how = "hands " + hands.ToString("F2");
                     }
+                    // Kept out of the body: moved along the aim until its box clears the body (Clearance).
+                    float need;
+                    Vector3 clear = Clearance(c, world, hold, model, figure, dir, front, side, out need);
+                    if (Guard && need > 0f)
+                    {
+                        world = Matrix4x4.Translate(clear) * world;
+                    }
+                    how += " clear " + need.ToString("0.000");
                     bool asModel = false;
                     if (!measure)
                     {
@@ -307,7 +322,7 @@ namespace IsoRim
         // picture about the pawn's middle (its normal a unit column). Gives SpriteSolids' slab.
         private static Matrix4x4 OnChest(Matrix4x4 m, bool flipped, float front, float side)
         {
-            return Matrix4x4.Translate(new Vector3(0f, PersonHeight * 0.5f, front + WeaponGap))
+            return Matrix4x4.Translate(new Vector3(0f, Middle, front + WeaponGap))
                 * Matrix4x4.Translate(new Vector3(side * 0.8f, 0f, 0f)) * Matrix4x4.Rotate(Quaternion.AngleAxis(Tilt, Vector3.up))
                 * Matrix4x4.Translate(new Vector3(-side * 0.8f, 0f, 0f))
                 * Matrix4x4.Scale(new Vector3(Picture, Picture, Picture)) * PictureToFront * m * SlabToPlane(flipped);
@@ -418,6 +433,136 @@ namespace IsoRim
             return true;
         }
 
+        // ------------------------------------------------------------------ keeping the weapon out of the body
+
+        private const float BodyTop = 0.8f;      // the body's top as far as a weapon can meet it (the shoulders and the neck)
+        private const float ClearGap = 0.015f;   // between the body and the weapon's nearest point, figure units
+        private const float Thick = 0.02f;       // a sprite's slab, half its thickness (slab units)
+        private static readonly Vector2[] outline = Outline(48);
+
+        // The body's cross-section as a unit rounded box (a superellipse of power 4: |x|^4 + |z|^4 = 1), in figure space x, z.
+        private static Vector2[] Outline(int n)
+        {
+            Vector2[] o = new Vector2[n];
+            for (int i = 0; i < n; i++)
+            {
+                float t = i * Mathf.PI * 2f / n;
+                float c = Mathf.Cos(t), s = Mathf.Sin(t);
+                o[i] = new Vector2(Mathf.Sign(c) * Mathf.Sqrt(Mathf.Abs(c)), Mathf.Sign(s) * Mathf.Sqrt(Mathf.Abs(s)));
+            }
+            return o;
+        }
+
+        private static readonly Dictionary<int, Bounds> modelBounds = new Dictionary<int, Bounds>();
+
+        // The weapon's box (its model's bounds through its hold frame, else the opaque part of its sprite's slab) at world.
+        private static void Corners(Caught c, Matrix4x4 world, WeaponModels.Hold hold, Model model, Vector3[] into)
+        {
+            Matrix4x4 to;
+            Vector3 lo, hi;
+            if (model != null && hold != null)
+            {
+                Bounds b;
+                if (!modelBounds.TryGetValue(model.id, out b))
+                {
+                    Vector3 l = model.positions[0], h = model.positions[0];
+                    for (int i = 1; i < model.positions.Length; i++)
+                    {
+                        l = Vector3.Min(l, model.positions[i]);
+                        h = Vector3.Max(h, model.positions[i]);
+                    }
+                    b = new Bounds((l + h) * 0.5f, h - l);
+                    modelBounds[model.id] = b;
+                }
+                to = world * hold.slab;
+                lo = b.min;
+                hi = b.max;
+            }
+            else
+            {
+                Rect r = WeaponModels.SpriteBox(c.material);
+                to = world;
+                lo = new Vector3(r.xMin, r.yMin, -Thick);
+                hi = new Vector3(r.xMax, r.yMax, Thick);
+            }
+            for (int i = 0; i < 8; i++)
+            {
+                into[i] = to.MultiplyPoint3x4(new Vector3((i & 1) == 0 ? lo.x : hi.x, (i & 2) == 0 ? lo.y : hi.y, (i & 4) == 0 ? lo.z : hi.z));
+            }
+        }
+
+        private static readonly Vector3[] corners = new Vector3[8];
+
+        // How far (true cells, flat) the weapon must move along dir to clear the figure's body: every point of its box at the
+        // body's height in front of the body's surface along dir (the body a rounded box of half width side and half depth
+        // front, figure space; figure the true-cells figure matrix, its size included). Zero if it is clear.
+        private static Vector3 Clearance(Caught c, Matrix4x4 world, WeaponModels.Hold hold, Model model, Matrix4x4 figure, Vector3 dir, float front, float side, out float need)
+        {
+            need = 0f;
+            Corners(c, world, hold, model, corners);
+            Matrix4x4 inv = figure.inverse;
+            Vector3 d = inv.MultiplyVector(dir);
+            d.y = 0f;
+            if (d.sqrMagnitude < 1e-8f || front <= 0f || side <= 0f)
+            {
+                return Vector3.zero;
+            }
+            d.Normalize();
+            Vector2 d2 = new Vector2(d.x, d.z), e2 = new Vector2(d.z, -d.x);
+            float lMin = float.MaxValue, lMax = float.MinValue;
+            for (int i = 0; i < 8; i++)
+            {
+                Vector3 q = inv.MultiplyPoint3x4(corners[i]);
+                if (q.y < 0f || q.y > BodyTop)
+                {
+                    continue;
+                }
+                float l = q.x * e2.x + q.z * e2.y;
+                lMin = Mathf.Min(lMin, l);
+                lMax = Mathf.Max(lMax, l);
+            }
+            if (lMin > lMax)
+            {
+                return Vector3.zero;   // nothing at the body's height
+            }
+            // The body's furthest point along d over the weapon's lateral span (its outline's points within it, and where its
+            // edges cross the span's ends).
+            float reach = float.MinValue;
+            int n = outline.Length;
+            for (int i = 0; i < n; i++)
+            {
+                Vector2 p0 = new Vector2(outline[i].x * side, outline[i].y * front), p1 = new Vector2(outline[(i + 1) % n].x * side, outline[(i + 1) % n].y * front);
+                float l0 = Vector2.Dot(p0, e2), l1 = Vector2.Dot(p1, e2);
+                if (l0 >= lMin && l0 <= lMax)
+                {
+                    reach = Mathf.Max(reach, Vector2.Dot(p0, d2));
+                }
+                for (int k = 0; k < 2; k++)
+                {
+                    float end = k == 0 ? lMin : lMax;
+                    if ((l0 - end) * (l1 - end) < 0f)
+                    {
+                        reach = Mathf.Max(reach, Vector2.Dot(Vector2.Lerp(p0, p1, (end - l0) / (l1 - l0)), d2));
+                    }
+                }
+            }
+            if (reach == float.MinValue)
+            {
+                return Vector3.zero;   // beside the body
+            }
+            for (int i = 0; i < 8; i++)
+            {
+                Vector3 q = inv.MultiplyPoint3x4(corners[i]);
+                if (q.y >= 0f && q.y <= BodyTop)
+                {
+                    need = Mathf.Max(need, reach + ClearGap - (q.x * d2.x + q.z * d2.y));
+                }
+            }
+            Vector3 shift = figure.MultiplyVector(new Vector3(d.x, 0f, d.z) * need);
+            shift.y = 0f;
+            return shift;
+        }
+
         // An outfit stand's weapon (Stands), as a colonist carries it: the game's carry picture of the stand seen from the south
         // (PawnRenderUtility.DrawCarriedWeapon, caught), on the chest of the figure it is dressed as. ground: the stand's middle on
         // the ground; yaw its figure's facing; local the figure (its lift onto the stand and size); front and side its body's
@@ -524,7 +669,7 @@ namespace IsoRim
             Vector3 pawnPos = pawn.Drawer.DrawPos;
             Matrix4x4 local = Matrix4x4.Translate(new Vector3(-p.x, -p.y, -p.z)) * c.matrix;
             float s = View3D.Squash;
-            Vector3 centre = new Vector3(drawLoc.x + (p.x - pawnPos.x), at.y + PersonHeight * 0.5f * size, drawLoc.z + (p.z - pawnPos.z));
+            Vector3 centre = new Vector3(drawLoc.x + (p.x - pawnPos.x), at.y + Middle * size, drawLoc.z + (p.z - pawnPos.z));
             Matrix4x4 m = Matrix4x4.Translate(new Vector3(centre.x, centre.y / s, centre.z))
                 * Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f))
                 * Matrix4x4.Rotate(Quaternion.Euler(View3D.Pitch - 90f, View3D.Yaw, 0f))

@@ -29,6 +29,101 @@ namespace IsoRim
         private static readonly AccessTools.FieldRef<Pawn_DrawTracker, JitterHandler> probeJitter =
             AccessTools.FieldRefAccess<Pawn_DrawTracker, JitterHandler>("jitterer");
 
+        // vanillaheight: the pawn's body and head pictures as the game draws them facing south (opaque pixels through each
+        // node's matrix): their lowest and highest point (cells, z), the whole height, and the weapon picture's opaque size.
+        private static string VanillaHeight(Pawn p)
+        {
+            PawnRenderTree tree = p.Drawer.renderer.renderTree;
+            if (!tree.Resolved)
+            {
+                tree.EnsureInitialized(PawnRenderFlags.None);
+            }
+            PawnRenderNode headNode, bodyNode;
+            tree.TryGetNodeByTag(PawnRenderNodeTagDefOf.Head, out headNode);
+            tree.TryGetNodeByTag(PawnRenderNodeTagDefOf.Body, out bodyNode);
+            PawnDrawParms parms = PawnDrawParms.Default;
+            parms.pawn = p;
+            parms.matrix = Matrix4x4.identity;
+            parms.facing = Rot4.South;
+            parms.rotDrawMode = RotDrawMode.Fresh;
+            parms.posture = PawnPosture.Standing;
+            parms.flags = PawnRenderFlags.None;
+            string text = "";
+            float bLo = 0f, bHi = 0f, hLo = 0f, hHi = 0f;
+            string bi = "", hi2 = "";
+            if (bodyNode == null || headNode == null || !OpaqueZ(tree, bodyNode, parms, out bLo, out bHi, out bi) || !OpaqueZ(tree, headNode, parms, out hLo, out hHi, out hi2))
+            {
+                return "no body or head picture";
+            }
+            text += "body z " + bLo.ToString("0.000") + ".." + bHi.ToString("0.000") + " (" + bi + "), head z " + hLo.ToString("0.000") + ".." + hHi.ToString("0.000")
+                + " (" + hi2 + "), visible height " + (Mathf.Max(bHi, hHi) - Mathf.Min(bLo, hLo)).ToString("0.000");
+            Thing w = p.equipment != null ? p.equipment.Primary : null;
+            if (w != null && w.Graphic != null)
+            {
+                Material wm = w.Graphic.MatSingleFor(w);
+                int tw = 0, th = 0;
+                Color32[] px = wm != null && wm.mainTexture != null ? SpritePixels.Full(wm.mainTexture, out tw, out th) : null;
+                if (px != null)
+                {
+                    int x0 = tw, x1 = -1, y0 = th, y1 = -1;
+                    for (int y = 0; y < th; y++)
+                    {
+                        for (int x = 0; x < tw; x++)
+                        {
+                            if (px[y * tw + x].a > 128)
+                            {
+                                x0 = Mathf.Min(x0, x);
+                                x1 = Mathf.Max(x1, x);
+                                y0 = Mathf.Min(y0, y);
+                                y1 = Mathf.Max(y1, y);
+                            }
+                        }
+                    }
+                    Vector2 ds = w.Graphic.drawSize;
+                    text += "; weapon " + w.def.defName + " drawSize " + ds.x.ToString("0.00") + "x" + ds.y.ToString("0.00") + " opaque " + ((x1 - x0 + 1f) / tw * ds.x).ToString("0.000")
+                        + " x " + ((y1 - y0 + 1f) / th * ds.y).ToString("0.000") + " cells";
+                }
+            }
+            return text;
+        }
+
+        private static bool OpaqueZ(PawnRenderTree tree, PawnRenderNode n, PawnDrawParms parms, out float lo, out float hi, out string info)
+        {
+            lo = float.MaxValue;
+            hi = float.MinValue;
+            info = "";
+            Material mat = n.Worker.GetFinalizedMaterial(n, parms);
+            Mesh mesh = n.GetMesh(parms);
+            Matrix4x4 m;
+            if (mat == null || mat.mainTexture == null || mesh == null || !tree.TryGetMatrix(n, parms, out m))
+            {
+                return false;
+            }
+            int w, h;
+            Color32[] px = SpritePixels.Full(mat.mainTexture, out w, out h);
+            if (px == null)
+            {
+                return false;
+            }
+            Bounds b = mesh.bounds;
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    if (px[y * w + x].a <= 128)
+                    {
+                        continue;
+                    }
+                    Vector3 local = new Vector3(Mathf.Lerp(b.min.x, b.max.x, (x + 0.5f) / w), 0f, Mathf.Lerp(b.min.z, b.max.z, (y + 0.5f) / h));
+                    float z = m.MultiplyPoint3x4(local).z;
+                    lo = Mathf.Min(lo, z);
+                    hi = Mathf.Max(hi, z);
+                }
+            }
+            info = mat.mainTexture.name + " " + w + "x" + h + " mesh " + b.size.x.ToString("0.00") + "x" + b.size.z.ToString("0.00") + " at " + m.GetColumn(3).ToString("F3");
+            return hi > lo;
+        }
+
         private static bool WeaponKey(string key, string[] a, Map map)
         {
             switch (key)
@@ -149,6 +244,40 @@ namespace IsoRim
                         + (p.stances.curStance is Stance_Busy b ? " left " + b.ticksLeft : ""));
                     return true;
                 }
+                case "tickaim":
+                {
+                    // tickaim=N: game ticks one at a time (at most N) until every colonist on an attack job is busy aiming
+                    // (Stance_Busy: warm-up, burst or cool-down), so a pass shows them all aimed.
+                    int limit = Mathf.Clamp(I(a[0]), 1, 900), done = 0;
+                    System.Func<bool> all = () => map.mapPawns.FreeColonistsSpawned.All(p => p.CurJob == null
+                        || (p.CurJob.def != JobDefOf.AttackStatic && p.CurJob.def != JobDefOf.AttackMelee) || p.stances.curStance is Stance_Busy);
+                    while (done < limit && !all())
+                    {
+                        Find.TickManager.DoSingleTick();
+                        done++;
+                    }
+                    foreach (Pawn tp in map.mapPawns.AllPawnsSpawned)
+                    {
+                        tp.Drawer.tweener.ResetTweenedPosToRoot();
+                    }
+                    Log.Message("[IsoRim probe] tickaim: " + done + " ticks, all aiming " + all());
+                    return true;
+                }
+                case "vanillaheight":
+                {
+                    // vanillaheight=1: for each standing colonist, how tall the game draws its pawn facing south (its body and
+                    // head nodes: the opaque pixels of their pictures through their matrices, cells) and how long its weapon's
+                    // picture is (opaque pixels at the drawn size).
+                    foreach (Pawn p in map.mapPawns.FreeColonistsSpawned)
+                    {
+                        if (p.GetPosture() != PawnPosture.Standing || p.Drawer == null || p.Drawer.renderer == null)
+                        {
+                            continue;
+                        }
+                        Log.Message("[IsoRim probe] vanillaheight " + p.LabelShort + " body " + p.story.bodyType.defName + " head " + p.story.headType.defName + ": " + VanillaHeight(p));
+                    }
+                    return true;
+                }
                 case "launchlog":
                     // launchlog=1: every projectile logs where its drawn flight starts when it is first drawn (Projectiles.LaunchLog).
                     Projectiles.LaunchLog = a[0] == "1";
@@ -228,7 +357,7 @@ namespace IsoRim
                 case "weaponsizes":
                 {
                     System.Reflection.MethodInfo sizes = AccessTools.Method("IsoRim.WeaponModels:SizeReport");
-                    string text = sizes != null ? (string)sizes.Invoke(null, new object[] { 1.12f / 1.5f }) : "no WeaponModels in this build";
+                    string text = sizes != null ? (string)sizes.Invoke(null, new object[] { FigureWeapons.Picture }) : "no WeaponModels in this build";
                     foreach (string line in text.Split('\n'))
                     {
                         if (line.Length > 0)

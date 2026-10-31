@@ -166,6 +166,47 @@ namespace IsoRim
             return b;
         }
 
+        private static readonly Dictionary<int, Rect> boxes = new Dictionary<int, Rect>();
+
+        // The opaque part of a sprite (slab space: the unit square about its middle), per material; the whole square if unknown.
+        public static Rect SpriteBox(Material mat)
+        {
+            Rect r = new Rect(-0.5f, -0.5f, 1f, 1f);
+            if (mat == null || mat.mainTexture == null)
+            {
+                return r;
+            }
+            int key = mat.GetInstanceID();
+            if (boxes.TryGetValue(key, out Rect known))
+            {
+                return known;
+            }
+            bool[] mask = MaskOf(mat);
+            if (mask != null)
+            {
+                int i0 = N, i1 = -1, j0 = N, j1 = -1;
+                for (int j = 0; j < N; j++)
+                {
+                    for (int i = 0; i < N; i++)
+                    {
+                        if (mask[j * N + i])
+                        {
+                            i0 = Mathf.Min(i0, i);
+                            i1 = Mathf.Max(i1, i);
+                            j0 = Mathf.Min(j0, j);
+                            j1 = Mathf.Max(j1, j);
+                        }
+                    }
+                }
+                if (i1 >= i0)
+                {
+                    r = Rect.MinMaxRect((float)i0 / N - 0.5f, (float)j0 / N - 0.5f, (i1 + 1f) / N - 0.5f, (j1 + 1f) / N - 0.5f);
+                }
+            }
+            boxes[key] = r;
+            return r;
+        }
+
         private static readonly Dictionary<Hold, Hold> groundSized = new Dictionary<Hold, Hold>();
 
         // A thrown weapon (a grenade: its sprite a heap of a few): the hold scaled about the model's middle so it comes out at its

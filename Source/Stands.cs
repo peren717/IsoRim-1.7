@@ -31,7 +31,6 @@ namespace IsoRim
         private const float DepthScale = 0.3f;   // the game's drawing heights, squeezed into a thin stack toward the camera
         private const float Nudge = 0.36f;       // and that stack held this far in front of the model's body, in cells
         private const float PersonHeight = 1.12f;        // a figure of size 1, feet to the top of the head (People.FigureHeight)
-        private const float PictureHeight = 1.5f;        // the game's picture of a pawn (its 1.5-cell body mesh)
         private const float WeaponGap = 0.05f;           // between the dressed body and the weapon held in front of it, figure units
 
         // The game's carried-weapon offsets (PawnRenderUtility.EqLoc*), by facing.
@@ -175,7 +174,7 @@ namespace IsoRim
             Rot4 facing = stand.Rotation;
             float aim = facing == Rot4.West ? 217f : 143f;
             Vector3 off = EqLoc[facing.AsInt] * (float)weaponFactorGetter.Invoke(stand, null);
-            float picture = PersonHeight / PictureHeight;   // the game's picture units to figure units
+            float picture = FigureWeapons.Picture;   // the game's picture units to figure units
             float height = def.dressRise + (PersonHeight * 0.5f + off.z * picture) * size;
             float across = off.x * picture * size;
             // Clear of the body: its reach toward the south (its depth, or its width if it faces east or west).

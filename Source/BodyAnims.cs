@@ -19,7 +19,7 @@ namespace IsoRim
     // When no other mod patches either method nothing is read at all (Active: decided once, after every mod has loaded).
     public static class BodyAnims
     {
-        private const float Picture = 1.12f / 1.5f;   // the game's picture units to figure units (FigureWeapons)
+        private const float Picture = FigureWeapons.Picture;   // the game's picture units to figure units
         private const float Middle = 0.56f;           // the body's middle on a figure of size 1
 
         private delegate Vector3 BodyPosFn(PawnRenderer renderer, Vector3 drawLoc, PawnPosture posture, out bool showBody);
