@@ -179,6 +179,11 @@ namespace IsoRim
                     {
                         f.form = Form3D.Block;
                         f.height = setHeight > 0f ? setHeight : fill * View3D.WallHeight;
+                        if (setHeight <= 0f && WallBoxes.LowWallKind(def, fill))
+                        {
+                            // a low wall to shoot over (an embrasure): its top never above a standing person's chin
+                            f.height = Mathf.Min(f.height, WallBoxes.LowWallTop);
+                        }
                         if (tops != null)
                         {
                             // (Api 11) a wall with a shaped top: its own body height, in the walls' proportion
@@ -1668,6 +1673,17 @@ namespace IsoRim
                 return false;
             }
             return Fill(def) >= 0.9f || def.graphicData != null && (def.graphicData.linkFlags & LinkFlags.Wall) != 0;
+        }
+
+        // The top of a low wall linked as walls (an embrasure, a shooting wall: fill under 0.9) drawn from its fill, in cells: a
+        // bit under the chin of a standing adult figure (People: head top 1.12, head middle 0.98), so a person behind it shows
+        // the head; one whose fill makes it lower stays lower. Figures do not follow the wall height option, so this is in cells,
+        // not a share of the wall height. A ModelDef height or a shaped wall top sets its own height instead (Forms.Compute).
+        public const float LowWallTop = 0.76f;
+
+        internal static bool LowWallKind(ThingDef def, float fill)
+        {
+            return fill > 0f && fill < 0.9f && def.graphicData != null && (def.graphicData.linkFlags & LinkFlags.Wall) != 0;
         }
 
         // Whether whatever wall or door stands in this cell is to be drawn cut down: because the
