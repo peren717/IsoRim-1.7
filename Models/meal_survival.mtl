@@ -1,0 +1,19 @@
+# IsoRim packaged survival meal colours (tools/make_survival_meal.py), from the vanilla sprite; fixed
+
+newmtl mealsurv_top
+Kd 0.710 0.550 0.230
+
+newmtl mealsurv_side
+Kd 0.680 0.520 0.220
+
+newmtl mealsurv_gap
+Kd 0.440 0.350 0.150
+
+newmtl mealsurv_seam
+Kd 0.250 0.200 0.100
+
+newmtl mealsurv_mark
+Kd 0.530 0.350 0.180
+
+newmtl mealsurv_label
+Kd 0.530 0.380 0.160

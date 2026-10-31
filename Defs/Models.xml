@@ -3233,7 +3233,12 @@
   <IsoRim.ModelDef>
     <defName>R3D_MealSurvivalPack</defName>
     <thingDef>MealSurvivalPack</thingDef>
-    <model>Models/meal_survival.obj</model>
+    <stackModels>
+      <li>Models/item_mealsurvival_a.obj</li>
+      <li>Models/item_mealsurvival_b.obj</li>
+      <li>Models/item_mealsurvival_c.obj</li>
+    </stackModels>
+    <overArt>true</overArt>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
