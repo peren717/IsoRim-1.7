@@ -305,6 +305,13 @@
   <R3D_Settings_ModelStyle>模型风格</R3D_Settings_ModelStyle>
   <R3D_Settings_TexturedModels>模型使用材质</R3D_Settings_TexturedModels>
   <R3D_Settings_Outlines>模型深色描边</R3D_Settings_Outlines>
+  <R3D_Settings_SteppedLight>模型分层光照</R3D_Settings_SteppedLight>
+  <R3D_Settings_SteppedLightTip>模型上的阳光分成几层平涂色调，接近游戏原画风格。</R3D_Settings_SteppedLightTip>
+  <R3D_Settings_SteppedBands>  色调层数</R3D_Settings_SteppedBands>
+  <R3D_Settings_SteppedBandsTip>2 层更硬朗，3 层更柔和。</R3D_Settings_SteppedBandsTip>
+  <R3D_Settings_RimLight>模型边缘光</R3D_Settings_RimLight>
+  <R3D_Settings_RimLightTip>背光一侧的轮廓带一道淡淡的亮边，让人物和物体从地面上凸显出来。</R3D_Settings_RimLightTip>
+  <R3D_Settings_RimStrength>  强度</R3D_Settings_RimStrength>
 
   <!-- ==================== 画质 ==================== -->
   <R3D_Settings_Image>画面</R3D_Settings_Image>

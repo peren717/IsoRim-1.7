@@ -56,6 +56,7 @@ layout(set = 2, binding = 0) uniform MaterialUniforms
     float _IsoOwnerFloor; // @default = 0.0   per draw (RoofClip.FloorBlock): 1 + the floor a moving model stands on; 0 = not given
     float _IsoFade;   // @default = 0.0   faded floors (FadeFloors): share of pixels kept, 0 = drawn solid
     float _IsoFadeFrom; // @default = 0.0   faded floors: where in the dither pattern (0-1) the kept share starts
+    vec4 _IsoToon;    // global, no default: stylised light (R3DMaterials.SetToon): x = sun bands on models (0 smooth, 2 or 3), y = rim light strength (0 off)
 } uMaterial;
 
 layout(set = 2, binding = 1) uniform sampler2D _MainTex;
@@ -267,11 +268,45 @@ vec3 BinNormal(vec3 n)
     return Dir(sector * 45.0, elevation);
 }
 
+// How much of the sun a face takes, 0 (facing away) to 1 (as the top), before the curve.
+float SunAmount(vec3 n, vec3 L)
+{
+    return clamp(max(0.0, dot(n, L)) / max(0.2, L.y), 0.0, 1.0);
+}
+
 // R3DMaterials.ModelShade: 1 on top by day, 0.5 facing away from the sun.
 float ModelShade(vec3 n, vec3 L)
 {
-    float d = max(0.0, dot(n, L));
-    return 0.5 + 0.5 * clamp(d / max(0.2, L.y), 0.0, 1.0);
+    return 0.5 + 0.5 * SunAmount(n, L);
+}
+
+// ---- Stylised light (settings steppedLight, rimLight; R3DMaterials.SetToon pushes _IsoToon). Models only (_LightMode 1).
+// Stepped light: the sun amount t rounded to one of `bands` flat levels (0, 1 / (bands - 1) .. 1), so a surface takes
+// the nearest flat tone and the average over a colony stays about the same as the smooth curve. The step is blended over
+// tw (t's change per pixel, from the smooth normals; 0 on flat faces), at least a little, so band edges are anti-aliased
+// and a face crossing a step as the sun moves fades over instead of popping.
+float SteppedAmount(float t, float bands, float tw)
+{
+    float k = bands - 1.0;
+    float x = t * k;
+    float w = clamp(tw * k * 0.75, 0.04, 0.5);
+    return (floor(x) + smoothstep(0.5 - w, 0.5 + w, fract(x))) / k;
+}
+
+// Rim light: how much light edge a model face takes, 0..1. Faces seen almost edge-on (the silhouette) on the side away
+// from the sun; tops and faces turned to the camera none. n is turned toward the camera.
+float RimAmount(vec3 n, vec3 L)
+{
+    vec3 V = normalize(uMaterial._IsoView.xyz);
+    float edge = smoothstep(0.4, 0.9, 1.0 - clamp(dot(n, V), 0.0, 1.0));
+    vec2 nf = n.xz;
+    float side = length(nf);
+    if (side < 1e-3)
+        return 0.0;
+    vec2 sf = L.xz;
+    sf = dot(sf, sf) < 1e-6 ? vec2(0.0, -1.0) : normalize(sf);
+    float away = smoothstep(-0.4, 0.5, -dot(nf / side, sf));
+    return edge * away * min(1.0, side * 1.5);
 }
 
 // R3DMaterials.WallShadeFor (curve 1): 1 on top and underneath, 0.52 to 0.80 round the sides.
@@ -324,6 +359,18 @@ void main()
     if (dot(n, uMaterial._IsoView.xyz) < 0.0)
         n = -n;
     vec3 faceNormal = n;   // the exact face normal, turned toward the camera
+    // Stepped light on smooth figures: how fast the sun amount changes per pixel, for the band edges (SteppedAmount).
+    float sunAmountWidth = 0.0;
+#ifndef USE_TEXTURE
+    if (uMaterial._IsoToon.x > 1.5)
+    {
+        vec3 sn = vec3(vUv.x - 1024.0, vUv.y, vColor.a);
+        sn *= inversesqrt(max(1e-12, dot(sn, sn)));
+        if (dot(sn, faceNormal) < 0.0)
+            sn = -sn;
+        sunAmountWidth = fwidth(dot(sn, uMaterial._IsoSun.xyz)) / max(0.2, uMaterial._IsoSun.y);
+    }
+#endif
     if (FadeDrop())
         discard;
 
@@ -391,6 +438,7 @@ void main()
 
     float mode = uMaterial._LightMode;
     float shade = 1.0;
+    vec3 rim = vec3(0.0);
     if (mode > 0.5 && squash > 0.0)
     {
 #ifndef USE_TEXTURE
@@ -409,13 +457,36 @@ void main()
         }
         vec3 L = uMaterial._IsoSun.xyz;
         if (mode < 1.5)
-            shade = ModelShade(n, L);
+        {
+            // Models: the stylised light options apply here only (not walls, roofs or the ground).
+            float t = SunAmount(n, L);
+            vec4 toon = uMaterial._IsoToon;
+            if (toon.x > 1.5)
+            {
+#ifndef USE_TEXTURE
+                t = SteppedAmount(t, toon.x, smooth ? sunAmountWidth : 0.0);
+#else
+                t = SteppedAmount(t, toon.x, 0.0);
+#endif
+            }
+            shade = 0.5 + 0.5 * t;
+            if (toon.y > 0.0)
+            {
+#ifndef USE_TEXTURE
+                vec3 rn = smooth ? n : faceNormal;
+#else
+                vec3 rn = faceNormal;
+#endif
+                // Light of the sky colour: none at night; the game's light then scales it like the rest of the face.
+                rim = uMaterial._IsoSky.rgb * (toon.y * RimAmount(rn, L));
+            }
+        }
         else if (mode < 2.5)
             shade = WallShade(n, L);
         else
             shade = min(1.1, ModelShade(n, L) * 1.05);
     }
-    color.rgb *= shade;
+    color.rgb = color.rgb * shade + rim * mix(color.rgb, vec3(1.0), 0.5);
 
     if (glowMode > 1.5)
     {

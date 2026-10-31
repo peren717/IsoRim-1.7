@@ -305,6 +305,13 @@
   <R3D_Settings_ModelStyle>Model style</R3D_Settings_ModelStyle>
   <R3D_Settings_TexturedModels>Textures on models</R3D_Settings_TexturedModels>
   <R3D_Settings_Outlines>Dark outlines on models</R3D_Settings_Outlines>
+  <R3D_Settings_SteppedLight>Stepped light on models</R3D_Settings_SteppedLight>
+  <R3D_Settings_SteppedLightTip>Sunlight on models in a few flat tones, like the game's art.</R3D_Settings_SteppedLightTip>
+  <R3D_Settings_SteppedBands>  Tones</R3D_Settings_SteppedBands>
+  <R3D_Settings_SteppedBandsTip>2 for a bold look, 3 for softer shapes.</R3D_Settings_SteppedBandsTip>
+  <R3D_Settings_RimLight>Rim light on models</R3D_Settings_RimLight>
+  <R3D_Settings_RimLightTip>A faint light edge on the shaded side, so people and things stand out from the ground.</R3D_Settings_RimLightTip>
+  <R3D_Settings_RimStrength>  Strength</R3D_Settings_RimStrength>
 
   <!-- ==================== Graphics ==================== -->
   <R3D_Settings_Image>Image</R3D_Settings_Image>

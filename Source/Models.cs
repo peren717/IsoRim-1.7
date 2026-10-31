@@ -3703,6 +3703,7 @@ namespace IsoRim
 
         private static readonly int isoSunId = Shader.PropertyToID("_IsoSun");
         private static readonly int isoViewId = Shader.PropertyToID("_IsoView");
+        private static readonly int isoToonId = Shader.PropertyToID("_IsoToon");
 
         // Moves the sun to the given hour of the day and hands it to the shaders (global _IsoSun),
         // which light every face per pixel. Cheap enough to call every frame.
@@ -3773,6 +3774,17 @@ namespace IsoRim
         public static void SetView(Vector3 towardCamera, float squash)
         {
             Shader.SetGlobalVector(isoViewId, new Vector4(towardCamera.x, towardCamera.y, towardCamera.z, squash));
+            SetToon();
+        }
+
+        // The stylised light options for the models (global _IsoToon, IsoRimSolid.frag.glsl): x = sun bands (0 smooth),
+        // y = rim light strength (0 off). Pushed every frame with the view, so a settings change shows at once.
+        public static void SetToon()
+        {
+            IsoRimSettings st = IsoRimMod.Settings;
+            float bands = st != null && st.steppedLight ? Mathf.Clamp(st.steppedBands, 2, 3) : 0f;
+            float rim = st != null && st.rimLight ? Mathf.Clamp01(st.rimStrength) : 0f;
+            Shader.SetGlobalVector(isoToonId, new Vector4(bands, rim, 0f, 0f));
         }
 
         // ---- lit materials

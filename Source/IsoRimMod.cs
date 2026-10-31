@@ -60,6 +60,10 @@ namespace IsoRim
         public bool workAnimations = true;
         public bool damage3D = true;
         public bool outlines = true;
+        public bool steppedLight = false;   // sun light on models in a few flat bands (ShadersIsoRimSolid.frag.glsl SteppedAmount)
+        public int steppedBands = 3;        // 2 or 3
+        public bool rimLight = false;       // a faint light edge on models' silhouettes away from the sun (RimAmount)
+        public float rimStrength = 0.5f;    // 0..1
         public bool texturedModels = true;
         public bool ruggedRock = true;
         public bool trees3D = true;
@@ -195,6 +199,10 @@ namespace IsoRim
             Scribe_Values.Look(ref workAnimations, "workAnimations", true);
             Scribe_Values.Look(ref damage3D, "damage3D", true);
             Scribe_Values.Look(ref outlines, "outlines", true);
+            Scribe_Values.Look(ref steppedLight, "steppedLight", false);
+            Scribe_Values.Look(ref steppedBands, "steppedBands", 3);
+            Scribe_Values.Look(ref rimLight, "rimLight", false);
+            Scribe_Values.Look(ref rimStrength, "rimStrength", 0.5f);
             Scribe_Values.Look(ref texturedModels, "texturedModels", true);
             Scribe_Values.Look(ref ruggedRock, "ruggedRock", true);
             Scribe_Values.Look(ref trees3D, "trees3D", true);
@@ -1160,6 +1168,17 @@ namespace IsoRim
                 Section(r, "R3D_Settings_ModelStyle".Translate());
                 Check(r, "R3D_Settings_TexturedModels".Translate(), ref st.texturedModels);
                 Check(r, "R3D_Settings_Outlines".Translate(), ref st.outlines);
+                Check(r, "R3D_Settings_SteppedLight".Translate(), ref st.steppedLight, "R3D_Settings_SteppedLightTip".Translate());
+                if (st.steppedLight)
+                {
+                    st.steppedBands = Mathf.RoundToInt(Slider(r, "R3D_Settings_SteppedBands".Translate(), st.steppedBands, 2f, 3f, st.steppedBands.ToString(),
+                        "R3D_Settings_SteppedBandsTip".Translate()));
+                }
+                Check(r, "R3D_Settings_RimLight".Translate(), ref st.rimLight, "R3D_Settings_RimLightTip".Translate());
+                if (st.rimLight)
+                {
+                    st.rimStrength = Slider(r, "R3D_Settings_RimStrength".Translate(), st.rimStrength, 0.05f, 1f, (st.rimStrength * 100f).ToString("0") + "%");
+                }
             }
         }
 
