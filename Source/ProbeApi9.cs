@@ -11,7 +11,7 @@ namespace IsoRim
 {
     // Harness-only fixtures for Api version 9 (apparel model bindings, held shields). Each fixture is spawned fresh from
     // fixed seeds (the previous one removed first). Rows of people, one row per item, at x, z + 4 * row:
-    //   ap9fix=<set>,x,z,<mode>   set: vfem2 (VFE Medieval 2 batch 1, 13 items) or vanilla (vanilla apparel, for the
+    //   ap9fix=<set>,x,z,<mode>   set: vfem2 (VFE Medieval 2 batch 1, 13 items), api43 (Api 43 shields, ProbeApi43.cs) or vanilla (vanilla apparel, for the
     //                             before/after comparison); mode:
     //     stand  per row: male facing N, E, S, W, female N, E, S, W (drafted, a knife), male and female lying (downed),
     //            a male undrafted facing S, a male drafted facing S with an assault rifle (two-handed)
@@ -64,6 +64,17 @@ namespace IsoRim
             new[] { "Apparel_Crown", "Apparel_RobeRoyal" },
         };
 
+        // Api 43 (ApparelModelDef.shown): items of the harness-only test addon (api43test), one per row, and the vanilla shield
+        // belt; each bound to a Shield model by that addon (ProbeApi43.cs checks them).
+        private static readonly string[][] Ap9Api43 =
+        {
+            new[] { "Api43Test_ShieldDefault" },
+            new[] { "Api43Test_ShieldWeapon" },
+            new[] { "Api43Test_ShieldAlways" },
+            new[] { "Api43Test_ShieldDrawsOwn" },
+            new[] { "Apparel_ShieldBelt" },
+        };
+
         private static readonly Color[] Ap9Hair = { new Color(0.2f, 0.15f, 0.1f), new Color(0.55f, 0.4f, 0.2f), new Color(0.8f, 0.7f, 0.45f), new Color(0.35f, 0.3f, 0.28f) };
         private static readonly Color[] Ap9Skin = { new Color(0.95f, 0.8f, 0.66f), new Color(0.8f, 0.6f, 0.45f), new Color(0.55f, 0.38f, 0.26f) };
         private static readonly Color[] Ap9Cloth = { new Color(0.3f, 0.45f, 0.65f), new Color(0.6f, 0.55f, 0.35f), new Color(0.35f, 0.55f, 0.35f), new Color(0.55f, 0.3f, 0.5f) };
@@ -88,7 +99,7 @@ namespace IsoRim
                     ap9Colour = new Color(F(a[0]), F(a[1]), F(a[2]));
                     return true;
             }
-            return Api9CheckKey(key, a, map);
+            return Api9CheckKey(key, a, map) || Api43CheckKey(key, a, map);
         }
 
         private static void Api9Patch()
@@ -124,6 +135,7 @@ namespace IsoRim
                 Find.TickManager.DoSingleTick();
             }
             Api9CheckUpdate(map);
+            Api43CheckUpdate(map);
         }
 
         private static void Api9Clear()
@@ -212,7 +224,7 @@ namespace IsoRim
         private static void Api9Fixture(string set, IntVec3 origin, string mode, Map map)
         {
             Api9Clear();
-            string[][] rows = set == "vanilla" ? Ap9Vanilla : Ap9Vfem2;
+            string[][] rows = set == "vanilla" ? Ap9Vanilla : set == "api43" ? Ap9Api43 : Ap9Vfem2;
             int made = 0;
             for (int r = 0; r < rows.Length; r++)
             {

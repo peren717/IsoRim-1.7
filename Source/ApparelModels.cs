@@ -64,6 +64,12 @@ namespace IsoRim
         /// Framework's shields), while the game draws it.</summary>
         public bool alwaysShown;
 
+        /// <summary>Api 43, Shield: when the model shows. Default: as described at alwaysShown. Weapon: exactly while the game
+        /// shows the person's weapon, whether or not the apparel's class draws its own worn picture (for a class that
+        /// overrides DrawWornExtras but draws through render nodes instead). Always: whenever the person stands (the same
+        /// as alwaysShown).</summary>
+        public ApparelShown shown = ApparelShown.Default;
+
         /// <summary>Faces under a material whose name starts with "stuff" take the item's colour (its stuff, its dye, its
         /// colour). spriteColour: the mean colour of its worn sprite instead (for items whose colour is painted into it).</summary>
         public bool spriteColour;
@@ -112,6 +118,14 @@ namespace IsoRim
                 }
             }
         }
+    }
+
+    /// <summary>When a Shield binding's model shows (Api 43, ApparelModelDef.shown).</summary>
+    public enum ApparelShown
+    {
+        Default,
+        Weapon,
+        Always,
     }
 
     /// <summary>A Body binding's model for one race body type (Api 25, ApparelModelDef.alienBodyModels).</summary>
@@ -609,9 +623,9 @@ namespace IsoRim
         private const float FaceOut = 35f;        // degrees from the front toward the left
         private const float Lean = 6f;            // its top back a little
 
-        // Whether the held shield shows now (People.Draw, standing only): always (alwaysShown), else while the game shows
-        // the person's weapon and, for apparel that draws its own worn picture, while the game drew it (GameDrew, caught
-        // by FigureWeapons.Draw just before).
+        // Whether the held shield shows now (People.Draw, standing only): always (alwaysShown or shown Always), else while
+        // the game shows the person's weapon and, for apparel that draws its own worn picture, while the game drew it
+        // (GameDrew, caught by FigureWeapons.Draw just before; not asked with shown Weapon).
         internal static bool ShieldShown(Pawn pawn, People.Look look)
         {
             Binding b = look.shieldBinding;
@@ -619,11 +633,11 @@ namespace IsoRim
             {
                 return false;
             }
-            if (b.def.alwaysShown)
+            if (b.def.alwaysShown || b.def.shown == ApparelShown.Always)
             {
                 return true;
             }
-            if (b.drawsOwn && !GameDrew)
+            if (b.drawsOwn && !GameDrew && b.def.shown != ApparelShown.Weapon)
             {
                 return false;
             }

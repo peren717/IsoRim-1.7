@@ -87,7 +87,9 @@ namespace IsoRim
         // 41: skipped (it was held for the binder's shapes, which come later under a new number).
         // 42: Api.AddModelRule (Api42.cs, ModelRules): an addon's code names a ModelDef for a thing with no thingDef entry while
         // ModelLibrary.LoadAll builds the table (after thingDef, before graphicPath); bound as if the ModelDef named it.
-        public static int Version => 42;
+        // 43: ApparelModelDef.shown (Default, Weapon, Always; ApparelModels.ShieldShown): Weapon follows only the game's
+        // weapon visibility, not whether the apparel's own DrawWornExtras drew; Always equals alwaysShown.
+        public static int Version => 43;
 
         // ---- glass parts (Version 30)
 

@@ -212,7 +212,7 @@ half-set model), a new enough one gets the whole entry:
 fields 14; `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20; `immatureModels`, `immatureHide` 24; alien packs
 (`IsoRim.AlienModelDef`, `ApparelModelDef.aliens`) 25; `bobByState` 27; `slots` 28; any binding of a multi-cell supported door (not the
 game's `Building_MultiTileDoor`) 29, which draws it from its models (Api part 18); `glassTint`, `glassOpacity`, `glassGlow`
-and a door's `glassModel` 30 (Api part 19); `topThroughRoof`, `roofModel` 31 (Api part 20); `hoverHeight`, `hoverBob` 32 (Api part 21); `geneDef` and the other gene fields 35 (Api part 24); `barAt`, `barScale` 36 (Api part M); `femaleModel`, `femaleModels`, `femaleLegModel`, `femaleWingModel` 38 (female animals, below); `byGraphic` 39 (models by runtime sprite, below). The highest one used counts.
+and a door's `glassModel` 30 (Api part 19); `topThroughRoof`, `roofModel` 31 (Api part 20); `hoverHeight`, `hoverBob` 32 (Api part 21); `geneDef` and the other gene fields 35 (Api part 24); `barAt`, `barScale` 36 (Api part M); `femaleModel`, `femaleModels`, `femaleLegModel`, `femaleWingModel` 38 (female animals, below); `byGraphic` 39 (models by runtime sprite, below); `ApparelModelDef.shown` 43 (when a held shield's model shows: `Default`, `Weapon`, `Always`; Api part 3). The highest one used counts.
 
 ## Models by runtime sprite (byGraphic)
 

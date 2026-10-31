@@ -58,10 +58,11 @@ if (IsoRim.Api.Version >= 39) { /* ModelDef.byGraphic: models by the thing's run
 if (IsoRim.Api.Version >= 40) { /* DrawItem: an item drawn as IsoRim shows items on the ground, by the player's item settings (part 26) */ }
 // 41 was skipped: no IsoRim has Version 41.
 if (IsoRim.Api.Version >= 42) { /* AddModelRule: an addon's code names the ModelDef for things with no thingDef entry (part 27) */ }
+if (IsoRim.Api.Version >= 43) { /* ApparelModelDef.shown: when a Shield binding's model shows (Default, Weapon, Always; part 3) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -229,7 +230,8 @@ older IsoRim adds these defs through a patch operation of its own that checks `I
 | `under` | Body on the Shell layer: how a flak vest under it shows: `Hidden` (default), `FrontPlate`, `Whole`. |
 | `mount` | Belt: `belt` (default: stretched round the outermost waist), `hip` or `pack`, as `IsoRim.WornGearDef`. |
 | `offset`, `rotation`, `scale` | A shift, a turn (Euler degrees) and a size applied to the model in its own space first (Shield: about the grip). |
-| `alwaysShown` | Shield: shown whenever the person stands (default: see below). |
+| `alwaysShown` | Shield: shown whenever the person stands (default: see below). The same as `shown` `Always`. |
+| `shown` | Api 43, Shield: when the model shows: `Default` (see below), `Weapon` (exactly while the game shows the person's weapon, whatever the apparel's class draws itself) or `Always` (whenever the person stands, as `alwaysShown`). |
 | `spriteColour` | Colour the `stuff` faces with the mean of the worn sprite instead of the item's colour. |
 
 Colours are as for other IsoRim models: faces under a material whose name starts with `stuff` take the item's colour (its
@@ -253,6 +255,11 @@ Slots and frames (the file's axes as IsoRim's `person_*.obj`: one unit = one cel
   only while the game shows the person's weapon (drafted, aiming, a job or duty that shows weapons) and, for apparel that
   draws its own worn picture (VE Framework's `Apparel_Shield`), while the game draws it (so not with a two-handed weapon);
   that worn picture gives way to the model. Lying and in bed it is not shown.
+  `shown` (Api 43) changes when it shows: `Weapon` shows it exactly while the game shows the person's weapon (drafted,
+  aiming, a job or duty that shows weapons), without asking whether the apparel's class drew its own worn picture: for a
+  class that overrides `DrawWornExtras` but draws nothing there (its picture comes from render nodes), where `Default`
+  would never show it. `Always` shows it whenever the person stands (as `alwaysShown`, which keeps working). Other slots
+  ignore `shown`. Since the field only exists from version 43, add it through a patch that checks `Api.Version >= 43`.
 
 ```xml
 <!-- a hat, a coat with a model per build, a belt and a shield -->
