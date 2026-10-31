@@ -2451,7 +2451,7 @@
     <surfaceHeight>0.00</surfaceHeight>
     <builtFor>(1, 1)</builtFor>
     <topModel>Models/turret_gun_mini.obj</topModel>
-    <topHeight>0.46</topHeight>
+    <topHeight>0.87</topHeight>  <!-- turretheight 2026-10-31: was 0.46; base raised so the muzzle clears the 0.76 low wall -->
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -2461,7 +2461,7 @@
     <surfaceHeight>0.00</surfaceHeight>
     <builtFor>(2, 2)</builtFor>
     <topModel>Models/turret_gun_auto.obj</topModel>
-    <topHeight>0.66</topHeight>
+    <topHeight>0.81</topHeight>  <!-- turretheight 2026-10-31: was 0.66; base raised so the muzzle clears the 0.76 low wall -->
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -2471,7 +2471,7 @@
     <surfaceHeight>0.00</surfaceHeight>
     <builtFor>(2, 2)</builtFor>
     <topModel>Models/turret_gun_sniper.obj</topModel>
-    <topHeight>0.66</topHeight>
+    <topHeight>0.81</topHeight>  <!-- turretheight 2026-10-31: was 0.66; base raised so the muzzle clears the 0.76 low wall -->
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -5673,7 +5673,7 @@
     <model>Models/foam_base.obj</model>
     <builtFor>(1, 1)</builtFor>
     <topModel>Models/foam_top.obj</topModel>
-    <topHeight>0.29</topHeight>
+    <topHeight>0.74</topHeight>  <!-- turretheight 2026-10-31: was 0.29; base raised so the muzzle clears the 0.76 low wall -->
   </IsoRim.ModelDef>
 
   <!-- Twelve rockets in the launcher while it is full, as the game's loaded gun sprite; empty racks otherwise. -->
@@ -9179,7 +9179,7 @@
     <surfaceHeight>0.00</surfaceHeight>
     <builtFor>(1, 1)</builtFor>
     <topModel>Models/mech_turret_gun_mini.obj</topModel>
-    <topHeight>0.45</topHeight>
+    <topHeight>0.90</topHeight>  <!-- turretheight 2026-10-31: was 0.45; base raised so the muzzle clears the 0.76 low wall -->
   </IsoRim.ModelDef>
 
   <!-- The three 2x2 mech turrets share the vanilla base (TurretMechLarge_Base) and so share one model; each its own gun. -->
@@ -9190,7 +9190,7 @@
     <surfaceHeight>0.00</surfaceHeight>
     <builtFor>(2, 2)</builtFor>
     <topModel>Models/mech_turret_gun_chargeblaster.obj</topModel>
-    <topHeight>0.64</topHeight>
+    <topHeight>0.90</topHeight>  <!-- turretheight 2026-10-31: was 0.64; base raised so the muzzle clears the 0.76 low wall -->
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -9200,7 +9200,7 @@
     <surfaceHeight>0.00</surfaceHeight>
     <builtFor>(2, 2)</builtFor>
     <topModel>Models/mech_turret_gun_inferno.obj</topModel>
-    <topHeight>0.68</topHeight>
+    <topHeight>0.94</topHeight>  <!-- turretheight 2026-10-31: was 0.68; base raised so the muzzle clears the 0.76 low wall -->
     <ignoreRotation>true</ignoreRotation>   <!-- needs code\isorim_b4.patch: the base stays put (vanilla Graphic_Multi with one
                                                   texture does not turn); the gun still aims. ChargeBlaster / Mortar are
                                                   Graphic_Single, which the game does turn, so they keep turning. -->
@@ -9213,7 +9213,7 @@
     <surfaceHeight>0.00</surfaceHeight>
     <builtFor>(2, 2)</builtFor>
     <topModel>Models/mech_turret_gun_mortar.obj</topModel>
-    <topHeight>0.72</topHeight>
+    <topHeight>0.98</topHeight>  <!-- turretheight 2026-10-31: was 0.72; base raised so the muzzle clears the 0.76 low wall -->
   </IsoRim.ModelDef>
 
   <!-- Odyssey ancient defender turret: 1x1 (the vanilla base sprite is drawn 3x3 but the legs span about one cell). -->
@@ -9224,7 +9224,7 @@
     <surfaceHeight>0.00</surfaceHeight>
     <builtFor>(1, 1)</builtFor>
     <topModel>Models/ancient_armored_turret_gun.obj</topModel>
-    <topHeight>0.44</topHeight>
+    <topHeight>0.90</topHeight>  <!-- turretheight 2026-10-31: was 0.44; base raised so the muzzle clears the 0.76 low wall -->
   </IsoRim.ModelDef>
 
   <!-- Urn: stuff Metallic / Stony; body "stuff", foot "stuff_dark", mouth "stuff_deep". -->
@@ -9818,7 +9818,7 @@
     <surfaceHeight>0.00</surfaceHeight>
     <builtFor>(1, 1)</builtFor>
     <topModel>Models/tactical_turret_gun.obj</topModel>
-    <topHeight>0.36</topHeight>
+    <topHeight>0.90</topHeight>  <!-- turretheight 2026-10-31: was 0.36; base raised so the muzzle clears the 0.76 low wall -->
   </IsoRim.ModelDef>
 
   <!-- VoidmetalWall (and Odyssey BurrowWall): no model, they stay procedural blocks; their colours come from code 6
