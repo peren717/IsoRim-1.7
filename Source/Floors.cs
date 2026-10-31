@@ -837,16 +837,25 @@ namespace IsoRim
 
         // A block of a hidden floor: only its sun shadow, rebuilt here when its walls changed (the game rebuilds a block's
         // layers when it is drawn, and a hidden one is not).
+        // Most hidden blocks are open air with no shadow at all: they stop at the first test, every frame. That test reads
+        // the layer's own state, so nothing has to be told when the block changes: a building placed or removed there
+        // marks the layer Dirty (the game's MapMeshFlag Buildings, Section.TryUpdate, every frame before drawing), and
+        // the rest below rebuilds it; an empty rebuild leaves no finished sub-mesh (SectionLayer_SunShadows.Regenerate
+        // finalizes only when it has vertices), a non-empty one does.
         private static void DrawHiddenShadow(Section section)
         {
-            Vector3 unusedShift;
-            float unusedLo, unusedHi;
-            if (SunShadowsType == null || !ShadowSlide(section, out unusedShift, out unusedLo, out unusedHi))
+            if (SunShadowsType == null)
             {
                 return;
             }
             SectionLayer layer = SunLayerOf(section);
-            if (layer == null || !layer.Visible)
+            if (layer == null || !layer.Dirty && !AnyFinished(layer) && !SkipEmptyOff)
+            {
+                return;   // nothing to rebuild and nothing to draw (DrawSunShadow draws finished sub-meshes only)
+            }
+            Vector3 unusedShift;
+            float unusedLo, unusedHi;
+            if (!ShadowSlide(section, out unusedShift, out unusedLo, out unusedHi) || !layer.Visible)
             {
                 return;
             }
@@ -866,6 +875,23 @@ namespace IsoRim
             {
                 DrawSunShadow(layer, section);
             }
+        }
+
+        // Harness A/B switch (set by reflection from a test, the same frame drawn both ways): the early stop above off.
+        internal static bool SkipEmptyOff;
+
+        // A sub-mesh DrawSunShadow could draw (finalized, not disabled).
+        private static bool AnyFinished(SectionLayer layer)
+        {
+            List<LayerSubMesh> subs = layer.subMeshes;
+            for (int i = 0; i < subs.Count; i++)
+            {
+                if (subs[i].finalized && !subs[i].disabled)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         // The game's test for a block's sun shadow outside the view (Section.DrawDynamicSections): for an upper floor,
