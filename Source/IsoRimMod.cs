@@ -60,7 +60,7 @@ namespace IsoRim
         public bool workAnimations = true;
         public bool damage3D = true;
         public bool outlines = true;
-        public bool steppedLight = false;   // sun light on models in a few flat bands (ShadersIsoRimSolid.frag.glsl SteppedAmount)
+        public bool steppedLight = true;    // sun light on models in a few flat bands (Shaders/IsoRimSolid.frag.glsl SteppedAmount)
         public int steppedBands = 3;        // 2 or 3
         public bool rimLight = false;       // a faint light edge on models' silhouettes away from the sun (RimAmount)
         public float rimStrength = 0.5f;    // 0..1
@@ -199,7 +199,7 @@ namespace IsoRim
             Scribe_Values.Look(ref workAnimations, "workAnimations", true);
             Scribe_Values.Look(ref damage3D, "damage3D", true);
             Scribe_Values.Look(ref outlines, "outlines", true);
-            Scribe_Values.Look(ref steppedLight, "steppedLight", false);
+            Scribe_Values.Look(ref steppedLight, "steppedLight", true);
             Scribe_Values.Look(ref steppedBands, "steppedBands", 3);
             Scribe_Values.Look(ref rimLight, "rimLight", false);
             Scribe_Values.Look(ref rimStrength, "rimStrength", 0.5f);
