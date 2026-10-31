@@ -77,7 +77,7 @@ namespace IsoRim
             {
                 return false;
             }
-            return entry == null || !entry.HasModel || ModelLibrary.HowBound(def) != "thingDef" || OwnDef(entry.def);
+            return entry == null || !entry.HasModel || !ModelLibrary.BoundByName(ModelLibrary.HowBound(def)) || OwnDef(entry.def);
         }
 
         // Real gear: apparel, and weapons as the game files them (equippable and under the Weapons category, the rule of its

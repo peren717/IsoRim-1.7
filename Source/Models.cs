@@ -1139,12 +1139,18 @@ namespace IsoRim
             return def != null && style != null && styled.TryGetValue(def, out forThing) && forThing.TryGetValue(style.defName, out own) ? own : null;
         }
 
-        // How a thing got its entry: "thingDef", "category:<name>", "match:<name part>" or
-        // "fallback:SmallPlants"; null if it has none (for the harness's model sweep).
+        // How a thing got its entry: "thingDef", "rule:<ModelDef>" (Api 42), "graphicPath:<path>", "category:<name>",
+        // "match:<name part>" or "fallback:SmallPlants"; null if it has none (for the harness's model sweep).
         public static string HowBound(ThingDef def)
         {
             string h;
             return how.TryGetValue(def, out h) ? h : null;
+        }
+
+        // Bound to this very thing: by a thingDef entry, or by a model rule (Api 42), which counts as one.
+        public static bool BoundByName(string how)
+        {
+            return how == "thingDef" || (how != null && how.StartsWith("rule:"));
         }
 
         // A texture path as graphicPath compares it (Api 16): lower case, / for \, no trailing /. Null if empty.
@@ -1512,6 +1518,34 @@ namespace IsoRim
                     how[thing] = "thingDef";
                 }
             }
+
+            // Then model rules (Api 42): an addon's code names a ModelDef for a thing with no thingDef entry, bound as if that
+            // def named it. One entry per ModelDef, shared by the things its rules give it (as graphicPath does).
+            if (ModelRules.Any)
+            {
+                Dictionary<ModelDef, ModelEntry> ruled = new Dictionary<ModelDef, ModelEntry>();
+                foreach (ThingDef thing in DefDatabase<ThingDef>.AllDefs)
+                {
+                    if (thing.IsBlueprint || thing.IsFrame || byThing.ContainsKey(thing))
+                    {
+                        continue;
+                    }
+                    ModelDef md = ModelRules.Resolve(thing);
+                    if (md == null)
+                    {
+                        continue;
+                    }
+                    ModelEntry entry;
+                    if (!ruled.TryGetValue(md, out entry))
+                    {
+                        entry = MakeEntry(md);
+                        ruled[md] = entry;
+                    }
+                    byThing[thing] = entry;
+                    how[thing] = "rule:" + md.defName;
+                }
+            }
+            ModelRules.Seal();
 
             // Then texture paths (Api 16): one model for every thing drawn with the same art, e.g. the meat the game
             // generates per animal (vanilla and modded), before categories.

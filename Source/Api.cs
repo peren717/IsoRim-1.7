@@ -84,7 +84,10 @@ namespace IsoRim
         // sprite (Graphic.Draw of thing.Graphic) is left out while such a model stands in (GraphicModels.cs).
         // 40: Api.DrawItem (Api40.cs): one item drawn as IsoRim shows an item on the ground by the player's item settings (its model, its
         // sprite made solid, or flat), at a point of the caller's (an item another mod draws itself: on a belt); LiveItems share it (ItemDraw).
-        public static int Version => 40;
+        // 41: skipped (it was held for the binder's shapes, which come later under a new number).
+        // 42: Api.AddModelRule (Api42.cs, ModelRules): an addon's code names a ModelDef for a thing with no thingDef entry while
+        // ModelLibrary.LoadAll builds the table (after thingDef, before graphicPath); bound as if the ModelDef named it.
+        public static int Version => 42;
 
         // ---- glass parts (Version 30)
 

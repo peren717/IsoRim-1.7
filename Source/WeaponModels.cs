@@ -56,9 +56,10 @@ namespace IsoRim
             {
                 return false;
             }
-            // Its own model: bound to this very weapon (or its art, Api 16), not a stand-in for its category or name.
+            // Its own model: bound to this very weapon (by name or a model rule, Api 42; or its art, Api 16), not a stand-in for
+            // its category or name.
             string how = ModelLibrary.HowBound(def);
-            return how == "thingDef" || (how != null && how.StartsWith("graphicPath:"));
+            return ModelLibrary.BoundByName(how) || (how != null && how.StartsWith("graphicPath:"));
         }
 
         // The model this weapon shows (its style or appearance), or null.

@@ -56,10 +56,12 @@ if (IsoRim.Api.Version >= 37) { /* roofed shells: BuildShell, Shell (Draw, Dispo
 if (IsoRim.Api.Version >= 38) { /* ModelDef.femaleModel / femaleModels, femaleLegModel, femaleWingModel: female animals' own models (part M) */ }
 if (IsoRim.Api.Version >= 39) { /* ModelDef.byGraphic: models by the thing's runtime Graphic.path (part M) */ }
 if (IsoRim.Api.Version >= 40) { /* DrawItem: an item drawn as IsoRim shows items on the ground, by the player's item settings (part 26) */ }
+// 41 was skipped: no IsoRim has Version 41.
+if (IsoRim.Api.Version >= 42) { /* AddModelRule: an addon's code names the ModelDef for things with no thingDef entry (part 27) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26 (Api 23 is claimed for hand attach points and is not out yet). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1460,6 +1462,41 @@ default on). The setting names and saved keys are unchanged (`Api.SetOption` sti
   that very apparel by thingDef still wins; off: the sprite made solid). Clothes worn by pawns and on outfit stands are not
   affected.
 
+## Part 27: model rules (version 42)
+
+For a pack whose things are only known at load (another mod's generated or patched defs, a family of defs that mod maps to a
+few looks): instead of one `thingDef` entry per thing, the pack's code names the ModelDef for each thing while IsoRim builds
+its model table.
+
+```csharp
+// IsoRim.Api.Version >= 42; in your Mod constructor
+IsoRim.Api.AddModelRule(new Func<ThingDef, string>(MyRule));
+
+static string MyRule(ThingDef def)
+{
+    return def.defName.StartsWith("MyMod_Crate") ? "R3D_MyPack_Crate" : null;   // a ModelDef defName, or null to pass
+}
+```
+
+- **When:** once, at startup, while IsoRim builds its model table. Register in your `Mod` constructor; a rule added after the
+  table is built is ignored (with a warning).
+- **Which things:** every ThingDef with no `thingDef` entry (blueprints and frames are not asked). A `thingDef` entry always
+  wins, whichever mod it is in.
+- **Order:** after the `thingDef` entries, before `graphicPath`, `thingCategory`, `match` and `fallback`. Rules are asked in
+  the order they were added (mod load order); the first that names a known ModelDef wins.
+- **Binding:** the thing gets that ModelDef's entry exactly as if the ModelDef's `thingDef` named it: `model` / `models`,
+  `stackModels`, `byGraphic`, `byState`, colours, `overArt` and every other field apply unchanged, and the thing counts as
+  having its own model (a weapon drawn with its own model, not as ground gear). The things one ModelDef gets from rules share one entry.
+- **The ModelDef:** keep it in your mod's `Defs/` (its files are found from there, as always; never from a patch). It needs no
+  `thingDef`; one it has anyway (a template, or one real thing) keeps working as usual and does not stop the rule. A style
+  ModelDef (`style`) cannot be named by a rule.
+- **Failing soft:** a rule that throws is logged once and passes for that thing; a name that is no ModelDef (or a style def)
+  is warned about once per name and the next rule is asked. Null or empty: pass.
+- **Signature:** only `System.Func<ThingDef, string>`, so code calling it after an `Api.Version >= 42` check never breaks on
+  an older IsoRim (still create the delegate explicitly, inside a method that runs after the check: see the notes in part M).
+- `HowBound` style reports (the binder, the coverage report) show such things as `rule:<ModelDef>`; the binder treats the
+  entry as shared.
+
 ## Part M: model packs (IsoRim.ModelDef)
 
 A model pack is an XML-only mod (or a mod with a small DLL) that adds `IsoRim.ModelDef`s binding OBJ models to other
@@ -1470,6 +1507,7 @@ mods' things.
 | Field | Meaning |
 |---|---|
 | `thingDef` | The ThingDef drawn with this model. A later def for the same thing wins (DefDatabase order). |
+| (model rules, 42) | Not a field: an addon's `Api.AddModelRule` names this ModelDef for things with no `thingDef` entry, bound as if `thingDef` named them; after `thingDef`, before `graphicPath` (part 27). |
 | `graphicPath` (16) | Every thing whose `graphicData.texPath` is this, unless it has its own entry. |
 | `thingCategory`, `match`, `fallback` | Every thing of a category; things whose defName contains one of the words; `SmallPlants`. |
 | `model` / `models` | The OBJ path, relative to the root folder of the mod that holds the ModelDef; several: each thing picks one. |

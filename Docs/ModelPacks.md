@@ -91,7 +91,8 @@ their `stuff*` faces take the colour of the main material in their cost list (st
 ```
 
 `<thingDef>` (the ThingDef's defName, exact) is what binds it; in a pack the patch adds it (next section). Other ways to
-match, in this order: `thingDef`, `graphicPath` (every thing drawn with that texture path), `thingCategory`, `match` (words
+match, in this order: `thingDef`, model rules (a pack's code names the ModelDef, Api 42; see "Models by rule" below),
+`graphicPath` (every thing drawn with that texture path), `thingCategory`, `match` (words
 of the defName), `fallback`. With two `thingDef` entries for one thing, the def loaded later wins: load your pack after the
 mod that already has one.
 
@@ -241,6 +242,59 @@ sprite (IsoRim Api 39): the thing's current `Graphic.path` picks the model, and 
   same piece in other directions.
 - While the model stands in, the mod's own per-frame drawing of the sprite is left out; items it carries are still drawn.
 - Add the field through `PatchOperation_IfIsoRimApi` with `minVersion` 39 so older IsoRim keeps `model`.
+
+## Models by rule (code, Api 42)
+
+When the things to model are only known at load (another mod generates or patches them, or maps a whole family of defs to
+a few looks), a pack with a DLL can name the ModelDef per thing in code instead of writing one `thingDef` entry each.
+
+1. Put the ModelDefs in `Defs/` as usual, **without** `thingDef` (their model files are found from your mod's folder):
+
+```xml
+<IsoRim.ModelDef>
+  <defName>R3D_MyPack_Crate</defName>
+  <stackModels>
+    <li>Models/my_crate_a.obj</li>
+    <li>Models/my_crate_b.obj</li>
+    <li>Models/my_crate_c.obj</li>
+  </stackModels>
+  <overArt>true</overArt>
+</IsoRim.ModelDef>
+```
+
+2. Register a rule in your `Mod` constructor, after checking the version:
+
+```csharp
+public MyPackMod(ModContentPack content) : base(content)
+{
+    int v;
+    try { v = IsoRim.Api.Version; } catch (Exception) { v = 0; }
+    if (v >= 42) { AddRules(); }
+}
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+private static void AddRules()
+{
+    IsoRim.Api.AddModelRule(new Func<ThingDef, string>(Rule));
+}
+
+private static string Rule(ThingDef def)
+{
+    return def.defName.StartsWith("OtherMod_Crate") ? "R3D_MyPack_Crate" : null;   // ModelDef defName or null
+}
+```
+
+- IsoRim asks the rule once per ThingDef that has **no `thingDef` entry**, at startup, after the `thingDef` entries and
+  before `graphicPath`, `thingCategory`, `match` and `fallback`. A `thingDef` entry (yours or anyone's) always wins.
+- The named ModelDef is bound exactly as if its `thingDef` named that thing: stack models, `byGraphic`, colours and all
+  other fields work as usual. One ModelDef can serve many things.
+- Several rules (from several mods) are asked in load order; the first that names a real ModelDef wins. Return null to pass.
+- A ModelDef with a `thingDef` of its own still binds that thing as usual and can also be named by rules (a template entry
+  whose `thingDef` names no loaded thing simply binds nothing itself).
+- A rule that throws is logged once and passes; a misspelt ModelDef name is warned about once. Check Player.log after
+  changing a rule.
+- Only `System.Func<ThingDef, string>` is used, so the pack loads on an older IsoRim (version below 42): there the rule is
+  not registered and the things keep their old look. Keep the call in its own `NoInlining` method as above.
 
 ## Female animals
 
