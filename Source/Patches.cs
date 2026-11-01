@@ -681,6 +681,13 @@ namespace IsoRim
                 Log.Warning("[IsoRim] Flourish muzzle adapter off: " + e.Message);
             }
 
+            // The scene depth for ambient occlusion (DepthGrab): patched now, before anything is drawn; fails soft on its own.
+            DepthGrab.Hook();
+            if (!DepthGrab.Broken)
+            {
+                hooked.Add("DepthGrab (scene depth for ambient occlusion)");
+            }
+
             // Stacked floors (Floors): only when a gameplay addon has registered a floor layout.
             Ready = true;
             Floors.ApplyPatches();

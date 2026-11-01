@@ -28,6 +28,9 @@
     <Reference Include="UnityStubs"><HintPath>$(RimWorldDir)\UnityStubs.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Waylith"><HintPath>$(RimWorldDir)\Waylith.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Brutal.Vulkan"><HintPath>$(RimWorldDir)\Brutal.Vulkan.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Brutal.Vulkan.Abstractions"><HintPath>$(RimWorldDir)\Brutal.Vulkan.Abstractions.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Brutal.Core.Common"><HintPath>$(RimWorldDir)\Brutal.Core.Common.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Brutal.Vulkan.Vma"><HintPath>$(RimWorldDir)\Brutal.Vulkan.Vma.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="0Harmony"><HintPath>$(HarmonyPath)</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 </Project>

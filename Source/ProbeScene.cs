@@ -590,6 +590,23 @@ namespace IsoRim
                     bodiesHeld = 0;
                     RenderPerfStart();
                     break;
+                case "ao":
+                    // ao=debug[,radius,ground,extraDraws]: debug 0 off, 1 AO only, 2 ground/scene classes, 3 normals; -1 keeps the default.
+                    AmbientOcclusion.Debug = I(a[0]);
+                    AmbientOcclusion.RadiusOverride = a.Length > 1 ? F(a[1]) : -1f;
+                    AmbientOcclusion.GroundOverride = a.Length > 2 ? F(a[2]) : -1f;
+                    AmbientOcclusion.ExtraDraws = a.Length > 3 ? I(a[3]) : 0;
+                    AmbientOcclusion.GainOverride = a.Length > 4 ? F(a[4]) : -1f;
+                    Log.Message("[IsoRim probe] ao debug " + AmbientOcclusion.Debug + " copies " + DepthGrab.Copies + " images made " + DepthGrab.Recreated + " broken " + DepthGrab.Broken);
+                    break;
+                case "aofail":
+                    DepthGrab.SimulateFailure = a[0] == "1";
+                    Log.Message("[IsoRim probe] aofail " + a[0] + " broken " + DepthGrab.Broken);
+                    break;
+                case "res":
+                    Screen.SetResolution(I(a[0]), I(a[1]), Screen.fullScreenMode);
+                    Log.Message("[IsoRim probe] resolution set to " + a[0] + "x" + a[1]);
+                    break;
                 case "uncap":
                     Application.targetFrameRate = a[0] == "1" ? 1000 : Mathf.RoundToInt((float)Screen.currentResolution.refreshRateRatio.value);
                     break;

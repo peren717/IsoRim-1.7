@@ -312,6 +312,13 @@
   <R3D_Settings_RimLight>Rim light on models</R3D_Settings_RimLight>
   <R3D_Settings_RimLightTip>A faint light edge on the shaded side, so people and things stand out from the ground.</R3D_Settings_RimLightTip>
   <R3D_Settings_RimStrength>  Strength</R3D_Settings_RimStrength>
+  <R3D_Settings_AO>Ambient occlusion</R3D_Settings_AO>
+  <R3D_Settings_AOTip>Soft shade in corners, at wall feet and where things meet walls.</R3D_Settings_AOTip>
+  <R3D_Settings_AOUnavailable>Not available with this game version.</R3D_Settings_AOUnavailable>
+  <R3D_Settings_AOStrength>  Strength</R3D_Settings_AOStrength>
+  <R3D_Settings_AOSteps>  Tones</R3D_Settings_AOSteps>
+  <R3D_Settings_AOStepsTip>Smooth, or 2 or 3 flat tones like the stepped light.</R3D_Settings_AOStepsTip>
+  <R3D_Settings_AOSmooth>Smooth</R3D_Settings_AOSmooth>
 
   <!-- ==================== Graphics ==================== -->
   <R3D_Settings_Image>Image</R3D_Settings_Image>

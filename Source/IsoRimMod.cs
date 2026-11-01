@@ -64,6 +64,9 @@ namespace IsoRim
         public int steppedBands = 3;        // 2 or 3
         public bool rimLight = false;       // a faint light edge on models' silhouettes away from the sun (RimAmount)
         public float rimStrength = 0.5f;    // 0..1
+        public bool ambientOcclusion = false;   // screen-space AO in the 3D view (AmbientOcclusion.cs)
+        public float aoStrength = 0.6f;         // 0..1
+        public int aoSteps = 0;                 // 0 smooth, 2 or 3 flat levels
         public bool texturedModels = true;
         public bool ruggedRock = true;
         public bool trees3D = true;
@@ -203,6 +206,9 @@ namespace IsoRim
             Scribe_Values.Look(ref steppedBands, "steppedBands", 3);
             Scribe_Values.Look(ref rimLight, "rimLight", false);
             Scribe_Values.Look(ref rimStrength, "rimStrength", 0.5f);
+            Scribe_Values.Look(ref ambientOcclusion, "ambientOcclusion", false);
+            Scribe_Values.Look(ref aoStrength, "aoStrength", 0.6f);
+            Scribe_Values.Look(ref aoSteps, "aoSteps", 0);
             Scribe_Values.Look(ref texturedModels, "texturedModels", true);
             Scribe_Values.Look(ref ruggedRock, "ruggedRock", true);
             Scribe_Values.Look(ref trees3D, "trees3D", true);
@@ -870,6 +876,22 @@ namespace IsoRim
                     st.tiltCentre = Slider(l, "R3D_Settings_TiltCentre".Translate(), st.tiltCentre, 0.3f, 0.7f, (st.tiltCentre * 100f).ToString("0") + "%");
                     st.tiltWidth = Slider(l, "R3D_Settings_TiltWidth".Translate(), st.tiltWidth, 0.1f, 0.6f, (st.tiltWidth * 100f).ToString("0") + "%");
                     Check(l, "R3D_Settings_TiltPop".Translate(), ref st.tiltPop, "R3D_Settings_TiltPopTip".Translate());
+                }
+                if (AmbientOcclusion.Available)
+                {
+                    Check(l, "R3D_Settings_AO".Translate(), ref st.ambientOcclusion, "R3D_Settings_AOTip".Translate());
+                }
+                else
+                {
+                    LockedCheck(l, "R3D_Settings_AO".Translate(), false, "R3D_Settings_AOUnavailable".Translate());
+                }
+                if (st.ambientOcclusion && AmbientOcclusion.Available)
+                {
+                    st.aoStrength = Slider(l, "R3D_Settings_AOStrength".Translate(), st.aoStrength, 0.1f, 1f, (st.aoStrength * 100f).ToString("0") + "%");
+                    int level = st.aoSteps == 2 || st.aoSteps == 3 ? st.aoSteps - 1 : 0;   // slider 0 smooth, 1 two levels, 2 three levels
+                    level = Mathf.RoundToInt(Slider(l, "R3D_Settings_AOSteps".Translate(), level, 0f, 2f,
+                        level == 0 ? "R3D_Settings_AOSmooth".Translate().ToString() : (level + 1).ToString(), "R3D_Settings_AOStepsTip".Translate()));
+                    st.aoSteps = level == 0 ? 0 : level + 1;
                 }
             }
             if (r != null)

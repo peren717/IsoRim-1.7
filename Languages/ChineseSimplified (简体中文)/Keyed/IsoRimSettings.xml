@@ -312,6 +312,13 @@
   <R3D_Settings_RimLight>模型边缘光</R3D_Settings_RimLight>
   <R3D_Settings_RimLightTip>背光一侧的轮廓带一道淡淡的亮边，让人物和物体从地面上凸显出来。</R3D_Settings_RimLightTip>
   <R3D_Settings_RimStrength>  强度</R3D_Settings_RimStrength>
+  <R3D_Settings_AO>环境光遮蔽</R3D_Settings_AO>
+  <R3D_Settings_AOTip>墙角、墙脚和物体贴墙处的柔和阴影。</R3D_Settings_AOTip>
+  <R3D_Settings_AOUnavailable>当前游戏版本不支持。</R3D_Settings_AOUnavailable>
+  <R3D_Settings_AOStrength>  强度</R3D_Settings_AOStrength>
+  <R3D_Settings_AOSteps>  色调</R3D_Settings_AOSteps>
+  <R3D_Settings_AOStepsTip>平滑，或像分层光照一样分成 2 或 3 层平涂色调。</R3D_Settings_AOStepsTip>
+  <R3D_Settings_AOSmooth>平滑</R3D_Settings_AOSmooth>
 
   <!-- ==================== 画质 ==================== -->
   <R3D_Settings_Image>画面</R3D_Settings_Image>

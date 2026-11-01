@@ -466,6 +466,49 @@
     </shaderProgram>
   </ShaderDef>
 
+  <!-- Ambient occlusion (AmbientOcclusion.cs, option, default off): one full-screen pass over the map drawn so far
+       (scene grab IsoRimAO; DepthGrab copies the scene depth at the same grab). Queue 2450: after the opaque 3D
+       geometry and the ground shadows (2420), before cut-out cards and sprites (2900), see-through things, the night
+       light pass (3099/3100) and the fog lid (3175). -->
+  <ShaderDef>
+    <defName>IsoRimAO</defName>
+    <shaderProgram>
+      <vertexShaderFileName>IsoRimScreen.vert.glsl</vertexShaderFileName>
+      <fragmentShaderFileName>IsoRimAO.frag.glsl</fragmentShaderFileName>
+      <useTexture>false</useTexture>
+      <flipTextureST>false</flipTextureST>
+      <blendMode>Opaque</blendMode>
+      <depthTest>false</depthTest>
+      <depthWrite>false</depthWrite>
+      <cullMode>None</cullMode>
+      <renderQueue>2450</renderQueue>
+      <sceneGrab>
+        <name>IsoRimAO</name>
+        <queue>2450</queue>
+      </sceneGrab>
+    </shaderProgram>
+  </ShaderDef>
+
+  <!-- Its second pass: averages the occlusion the first left in the alpha channel and darkens the colour. -->
+  <ShaderDef>
+    <defName>IsoRimAOBlur</defName>
+    <shaderProgram>
+      <vertexShaderFileName>IsoRimScreen.vert.glsl</vertexShaderFileName>
+      <fragmentShaderFileName>IsoRimAOBlur.frag.glsl</fragmentShaderFileName>
+      <useTexture>false</useTexture>
+      <flipTextureST>false</flipTextureST>
+      <blendMode>Opaque</blendMode>
+      <depthTest>false</depthTest>
+      <depthWrite>false</depthWrite>
+      <cullMode>None</cullMode>
+      <renderQueue>2451</renderQueue>
+      <sceneGrab>
+        <name>IsoRimAOBlur</name>
+        <queue>2451</queue>
+      </sceneGrab>
+    </shaderProgram>
+  </ShaderDef>
+
   <!-- Anti-aliasing (AntiAlias.cs): FXAA as one full-screen pass over the map view drawn so far
        (scene grab IsoRimAA), just before the colour grade. The interface is drawn later and untouched. -->
   <ShaderDef>
