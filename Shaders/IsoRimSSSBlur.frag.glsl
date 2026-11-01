@@ -6,8 +6,8 @@
 // alpha (1 = not a receiver). Each pixel takes the samples of a 4 x 4 grid of blocks around it (8 x 8 pixels; the march
 // starts are turned per block in a 4 x 4 pattern, so the grid averages the pattern out), weighted by distance and kept
 // only when the sample is a receiver at about this pixel's view depth: no bleeding across silhouettes, and pixels that
-// were not receivers themselves (a pawn's feet, counted as ground by the first pass) take their neighbours' value
-// instead of a light fringe. Pixels with no depth (ground, floors) are never darkened.
+// were not receivers themselves take their neighbours' value instead of a light fringe. The ground (no depth, or
+// the plane nearer) gets its view distance from the ground plane, so it blends with itself and the feet of things.
 //
 // AO: when the AO passes ran this frame (_SSProjB.w = 1), AO's second pass left its factor in the alpha of every pixel;
 // the other pixels of each block still carry it (the first pass only rewrote the samples). Where both apply the darker
@@ -33,17 +33,42 @@ layout(set = 2, binding = 2) uniform sampler2D _IsoSceneDepth;
 
 const float Lit = 0.98;
 
-float ViewZ(float d)
+// View distance of a pixel: from the depth, or of the ground plane under it when nothing is drawn there (or the plane
+// is nearer: things flat on the ground); 1e6 with neither (sky, past the map).
+float ViewZ(float d, ivec2 q, ivec2 size)
 {
-    if (d <= 0.0)
+    bool persp = u._SSProjB.z > 0.5;
+    float zs = 1e6;
+    if (d > 0.0)
     {
-        return 1e6;
+        zs = persp ? u._SSProj.w / (d + u._SSProj.z) : -(d - u._SSProj.w) / u._SSProj.z;
     }
-    if (u._SSProjB.z > 0.5)
+    vec2 ndc = (vec2(q) + 0.5) / vec2(size) * 2.0 - 1.0;
+    vec3 o, dir;
+    if (persp)
     {
-        return u._SSProj.w / (d + u._SSProj.z);
+        o = vec3(0.0);
+        dir = vec3(ndc.x / u._SSProj.x, ndc.y / u._SSProj.y, -1.0);
     }
-    return -(d - u._SSProj.w) / u._SSProj.z;
+    else
+    {
+        o = vec3((ndc.x - u._SSProjB.x) / u._SSProj.x, (ndc.y - u._SSProjB.y) / u._SSProj.y, 0.0);
+        dir = vec3(0.0, 0.0, -1.0);
+    }
+    float dn = dot(u._SSPlane.xyz, dir);
+    if (dn < -1e-5)
+    {
+        float t = -(dot(u._SSPlane.xyz, o) + u._SSPlane.w) / dn;
+        if (t > 0.0)
+        {
+            float zg = -(o + dir * t).z;   // view distance along -z (perspective: along the axis, as zs)
+            if (zg <= zs + 0.03)
+            {
+                return zg;
+            }
+        }
+    }
+    return zs;
 }
 
 void main()
@@ -65,7 +90,7 @@ void main()
         return;
     }
 
-    float zc = ViewZ(texelFetch(_IsoSceneDepth, clamp(ip, ivec2(0), size - 1), 0).r);
+    float zc = ViewZ(texelFetch(_IsoSceneDepth, clamp(ip, ivec2(0), size - 1), 0).r, ip, size);
     float sh = 0.0;
     if (zc < 1e5)
     {
@@ -83,7 +108,7 @@ void main()
                 {
                     continue;   // not a receiver
                 }
-                float z = ViewZ(texelFetch(_IsoSceneDepth, q, 0).r);
+                float z = ViewZ(texelFetch(_IsoSceneDepth, q, 0).r, q, size);
                 float dz = abs(z - zc);
                 if (dz >= tol)
                 {

@@ -176,6 +176,7 @@ namespace IsoRim
         // cell data yet (it is worked out in full when first used).
         public static void Dirty(Map map, CellRect rect)
         {
+            ShadowHeights.Dirty(map, rect);   // the screen-space shadows' height map follows the same changes
             IsoCellMap c;
             if (map == null || !maps.TryGetValue(map, out c) || c.all)
             {
@@ -217,6 +218,7 @@ namespace IsoRim
         // The whole map is being rebuilt: every cell is worked out again before the next draw.
         public static void Rebuilt(Map map)
         {
+            ShadowHeights.Rebuilt(map);
             IsoCellMap c;
             if (map != null && maps.TryGetValue(map, out c))
             {

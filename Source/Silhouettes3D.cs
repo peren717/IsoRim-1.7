@@ -176,7 +176,7 @@ namespace IsoRim
             float rise = sz * 0.5f * Mathf.Max(0f, (r * Vector3.forward).y);    // the card's foot on the ground
             Vector3 dp = t.DrawPos;
             Vector3 off = Floors.DrawnOffset(t);
-            if (!View3D.InFront(dp))
+            if (!View3D.InFront(dp + off))
             {
                 return;
             }

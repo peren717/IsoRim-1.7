@@ -631,6 +631,12 @@ namespace IsoRim
                         + " cast " + Shader.GetGlobalVector(ShaderPropertyIDs.MapSunLightDirection) + " copies " + DepthGrab.Copies + " reused " + DepthGrab.Reused
                         + " broken " + DepthGrab.Broken + " " + SunShadowsSS.LastInfo);
                     break;
+                case "ssshm":
+                    // ssshm=0/1: the screen-space shadows' world height map off/on (A/B); logs its build stats.
+                    SunShadowsSS.HeightMap = a[0] == "1";
+                    Log.Message("[IsoRim probe] ssshm " + SunShadowsSS.HeightMap + " builds " + ShadowHeights.Builds + " last full " + ShadowHeights.LastFullMs.ToString("0.00")
+                        + " ms, cells worked " + ShadowHeights.CellsWorked);
+                    break;
                 case "aofail":
                     DepthGrab.SimulateFailure = a[0] == "1";
                     Log.Message("[IsoRim probe] aofail " + a[0] + " broken " + DepthGrab.Broken);

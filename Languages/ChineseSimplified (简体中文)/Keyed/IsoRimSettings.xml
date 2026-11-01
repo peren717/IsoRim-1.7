@@ -319,9 +319,9 @@
   <R3D_Settings_AOSteps>  色调</R3D_Settings_AOSteps>
   <R3D_Settings_AOStepsTip>平滑，或像分层光照一样分成 2 或 3 层平涂色调。</R3D_Settings_AOStepsTip>
   <R3D_Settings_AOSmooth>平滑</R3D_Settings_AOSmooth>
-  <R3D_Settings_SSS>墙面和模型上的日照阴影</R3D_Settings_SSS>
+  <R3D_Settings_SSS>屏幕空间阴影</R3D_Settings_SSS>
   <R3D_Settings_SSSStrength>  强度</R3D_Settings_SSSStrength>
-  <R3D_Settings_SSSTip>墙和物体的阴影也投在墙面、家具和人物上。</R3D_Settings_SSSTip>
+  <R3D_Settings_SSSTip>由 3D 场景生成的日照阴影，投在地面、墙面、家具和人物上。</R3D_Settings_SSSTip>
 
   <!-- ==================== 画质 ==================== -->
   <R3D_Settings_Image>画面</R3D_Settings_Image>

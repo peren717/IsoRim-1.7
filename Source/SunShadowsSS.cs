@@ -25,7 +25,8 @@ namespace IsoRim
         public const string GrabName = "IsoRimSSS";
 
         public const float MaxDist = 40f;          // cells, the longest march (low sun)
-        public const float Thickness = 1.0f;       // cells: a surface counts as this thick behind what the depth shows
+        public const float Thickness = 2.0f;       // cells: a surface counts as this thick behind what the depth shows (1 let rays
+                                                   // from the ground pass behind walls seen at an angle; harness sweep 2026-11-01)
         public const float TallestWalls = 3.5f;    // the tallest caster without floors, in wall heights (walls, trees)
         public const int Steps = 24;
         public const float EdgeFade = 0.05f;       // fraction of the screen
@@ -53,6 +54,20 @@ namespace IsoRim
         private static readonly int paramsId = Shader.PropertyToID("_SSParams");
         private static readonly int tuneId = Shader.PropertyToID("_SSTune");
         private static readonly int colorId = Shader.PropertyToID("_SSColor");
+        private static readonly int world0Id = Shader.PropertyToID("_SSWorld0");
+        private static readonly int worldXId = Shader.PropertyToID("_SSWorldX");
+        private static readonly int worldZId = Shader.PropertyToID("_SSWorldZ");
+        private static readonly int heightsId = Shader.PropertyToID("_IsoShadowHeights");
+
+        public static bool HeightMap = true;     // harness A/B (probe key ssshm=0/1)
+
+        // The option is on in the 3D view and can draw: the ground takes its sun shadows from this pass, and the game's own
+        // sun shadows and IsoRim's tree shadows are left out (Patches: SunShadowsRegenerate_Prefix, GraphicShadowDraw_Prefix: models only, cards and sprites keep theirs,
+        // TreeShadows.Print; part of View3D.StateSignature, so switching rebuilds the baked ones). Off: all as before.
+        public static bool ReplacesGround
+        {
+            get { return View3D.Active && IsoRimMod.Settings != null && IsoRimMod.Settings.screenSunShadows && !DepthGrab.Broken; }
+        }
 
         public static bool Available
         {
@@ -125,6 +140,27 @@ namespace IsoRim
                 Vector4 prm = new Vector4(strength, MaxDistOverride > 0f ? MaxDistOverride : MaxDist, ThicknessOverride > 0f ? ThicknessOverride : Thickness, Debug);
                 Vector4 tune = new Vector4(tallest, sunW.y, Mathf.Clamp(StepsOverride > 0 ? StepsOverride : Steps, 4, 64), EdgeFade);
                 Vector4 col = new Vector4(sc.r, sc.g, sc.b, 1f);
+
+                // The world shadow height map (ShadowHeights): world axes in camera space to find a ray point's cell.
+                Map map = Find.CurrentMap;
+                Texture2D hm = null;
+                ShadowHeights sh = null;
+                if (HeightMap && map != null)
+                {
+                    sh = ShadowHeights.For(map);
+                    hm = sh.Update();
+                }
+                Vector3 rx = v.MultiplyVector(Vector3.right).normalized, rz = v.MultiplyVector(Vector3.forward).normalized;
+                Vector4 w0 = new Vector4(p0.x, p0.y, p0.z, hm != null ? 1f : 0f);
+                Vector4 wx = new Vector4(rx.x, rx.y, rx.z, sh != null ? sh.Width : 0f);
+                Vector4 wz = new Vector4(rz.x, rz.y, rz.z, sh != null ? sh.Rows : 0f);
+                if (hm != null)
+                {
+                    Shader.SetGlobalTexture(heightsId, hm);
+                }
+                material.SetVector(world0Id, w0);
+                material.SetVector(worldXId, wx);
+                material.SetVector(worldZId, wz);
                 LastInfo = "sunW " + sunW.ToString("F3") + " tallest " + tallest.ToString("F2") + " strength " + strength.ToString("F2") + " ao " + AmbientOcclusion.DrawnThisFrame;
                 for (int k = 0; k < 2; k++)
                 {

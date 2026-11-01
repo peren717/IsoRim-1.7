@@ -3061,7 +3061,7 @@ namespace IsoRim
         public static void Print(SectionLayer layer, Model m, Vector3 center, Quaternion turnBy, float scaleBy, Vector3 offsetBy, float restingHeight, bool bare)
         {
             ShadowShape shape = ShadowShape.For(m);
-            if (shape == null)
+            if (shape == null || SunShadowsSS.ReplacesGround)
             {
                 return;
             }

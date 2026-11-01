@@ -118,7 +118,7 @@ namespace IsoRim
         private static void Fail(string what, Exception e)
         {
             Broken = true;
-            Log.Warning("[IsoRim] Ambient occlusion and sun shadows on walls are off for this session: reading the scene depth " + what + (e != null ? ": " + e : "."));
+            Log.Warning("[IsoRim] Ambient occlusion and screen-space shadows are off for this session: reading the scene depth " + what + (e != null ? ": " + e : "."));
         }
 
         // Render thread.

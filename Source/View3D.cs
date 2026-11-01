@@ -290,6 +290,14 @@ namespace IsoRim
         // labelFade times the distance to the screen centre they fade out over the next 40 %.
         // Whether a map position is in front of the perspective camera. Behind it, the projection
         // mirrors points up into the sky, so labels for them must not be drawn. Always true orthographic.
+        // Where a thing is drawn, for the label checks below: its game position moved onto its stacked floor (a ProjectZ
+        // floor's rows lie far north of the ground in the game's space, so the game position would read as far away or
+        // behind the camera and the label would fade out or vanish when zoomed in or turned).
+        public static Vector3 LabelPos(Thing t)
+        {
+            return t.DrawPos + Floors.DrawnOffset(t);
+        }
+
         public static bool InFront(Vector3 pos)
         {
             if (!persp)
@@ -860,6 +868,7 @@ namespace IsoRim
                 h = h * 31 + Mathf.RoundToInt(st.itemThickness * 20f);
                 h = h * 31 + (st.ghosts3D ? 1 : 0);
                 h = h * 31 + (st.cutRock ? 1 : 0);
+                h = h * 31 + (SunShadowsSS.ReplacesGround ? 1 : 0);   // with walls3D (above), what the shadow layer keeps   // the game's and the tree shadows left out (baked)
                 h = h * 31 + (st.mapEdge3D ? 1 : 0);
                 h = h * 31 + (st.damage3D ? 1 : 0);
                 h = h * 31 + (st.outlines ? 1 : 0);

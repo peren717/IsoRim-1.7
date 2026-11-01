@@ -620,7 +620,15 @@ namespace IsoRim
             // south sides (its shadows never point north). In 3D the north side gets one too.
             Type sunShadows = AccessTools.TypeByName("Verse.SectionLayer_SunShadows");
             Patch("shadows falling away from the 3D sun", sunShadows == null ? null : AccessTools.DeclaredMethod(sunShadows, "Regenerate"),
-                postfix: nameof(SunShadowsRegenerate_Postfix));
+                prefix: nameof(SunShadowsRegenerate_Prefix), postfix: nameof(SunShadowsRegenerate_Postfix));
+            // Screen-space shadows on (SunShadowsSS.ReplacesGround): the ground takes the sun shadows of what is drawn in 3D
+            // from that pass, so the game's own shadows of those are left out: the buildings' shadow layer above (with 3D
+            // walls), the Graphic_Shadow drawn under a pawn or thing drawn as a model, IsoRim's tree shadows (TreeShadows).
+            // What is drawn as a card or sprite keeps the game's shadow: its printed shadow (Printer_Shadow, plants and
+            // things with shadow data) only ever runs for cards and sprites, since a model's TakePrintFrom skips the
+            // game's print. The baked ones go with the map rebuild the option triggers.
+            Patch("screen-space shadows replace the game's sun shadows", AccessTools.Method(typeof(Graphic_Shadow), "DrawWorker"),
+                prefix: nameof(GraphicShadowDraw_Prefix));
 
             // Night, lamp and indoor light per face (IsoGlow): copy the corner colours of every block
             // of the game's lighting overlay it rebuilds, and hand them to the shaders before the map
@@ -795,6 +803,32 @@ namespace IsoRim
         // Same layout as the game's other edges: the corners on the building stay (alpha 0), the
         // outer pair slides along the cast by the building's shadow height (alpha). Wound so it
         // faces up once slid north; slid south (the game's own sun) it would face away and be culled.
+        // The game's building shadows are left out while screen-space shadows draw the ground's and walls are 3D blocks
+        // (an empty layer; with flat walls the game's shadows stay).
+        public static bool SunShadowsRegenerate_Prefix(SectionLayer __instance)
+        {
+            if (!SunShadowsSS.ReplacesGround || !IsoRimMod.Settings.walls3D)
+            {
+                return true;
+            }
+            foreach (LayerSubMesh sm in __instance.subMeshes)
+            {
+                sm.Clear(MeshParts.All);
+            }
+            return false;
+        }
+
+        // A pawn's or thing's own sun shadow: left out while screen-space shadows draw it, if it is drawn as a 3D model.
+        public static bool GraphicShadowDraw_Prefix(Thing __3)
+        {
+            if (!SunShadowsSS.ReplacesGround || __3 == null)
+            {
+                return true;
+            }
+            Pawn pawn = __3 as Pawn;
+            return pawn != null ? !DrawnAsModel(pawn) : !Api.ModelStandsIn(__3);
+        }
+
         public static void SunShadowsRegenerate_Postfix(SectionLayer __instance)
         {
             if (!View3D.Active)
@@ -1516,11 +1550,11 @@ namespace IsoRim
             {
                 return true;
             }
-            if (!View3D.InFront(__0.DrawPos))
+            if (!View3D.InFront(View3D.LabelPos(__0)))
             {
                 return false;   // behind the camera: it would show mirrored up in the sky
             }
-            float a = View3D.LabelAlpha(__0.DrawPos);
+            float a = View3D.LabelAlpha(View3D.LabelPos(__0));
             if (a <= 0.01f)
             {
                 return false;
@@ -1544,7 +1578,7 @@ namespace IsoRim
             {
                 return true;
             }
-            if (!View3D.InFront(__0.DrawPos))
+            if (!View3D.InFront(View3D.LabelPos(__0)))
             {
                 return false;   // behind the camera: it would show mirrored up in the sky
             }
@@ -1552,7 +1586,7 @@ namespace IsoRim
             {
                 return true;
             }
-            float a = View3D.LabelAlpha(__0.DrawPos);
+            float a = View3D.LabelAlpha(View3D.LabelPos(__0));
             if (a <= 0.01f)
             {
                 return false;

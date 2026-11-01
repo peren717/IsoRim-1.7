@@ -13,10 +13,11 @@
 // must be within the thickness (coarse to fine: long rays at a low sun without skipping through thin things or
 // darkening far behind them). A ray that leaves the screen finds nothing; near the screen edges shadows fade out
 // (_SSTune.w = fade width, a fraction of the screen), so casters just off screen do not pop.
-// The ground (terrain, floors, things flat on it) receives nothing: the game's shadows are there already.
+// The ground (terrain, floors, things flat on it) receives as well: while this pass draws, the game's own sun shadows
+// and IsoRim's tree shadows are left out (SunShadowsSS.ReplacesGround), IsoRim's soft ground shadows stay.
 //
-// Stored in the alpha channel of the sample: 0.98 * (1 - shadow) for a receiver, 1 for a non-receiver (ground, nothing,
-// or not a sample). IsoRimSSSBlur fills every pixel from the nearby samples at its own depth and darkens the colour.
+// Stored in the alpha channel of the sample: 0.98 * (1 - shadow) for a receiver, 1 for a non-receiver (nothing drawn and
+// no ground under it, or not a sample). IsoRimSSSBlur fills every pixel from the nearby samples at its own depth and darkens the colour.
 
 layout(location = 0) out vec4 outColor;
 
@@ -29,10 +30,14 @@ layout(set = 2, binding = 0) uniform MaterialUniforms
     vec4 _SSParams; // @default = vec4(1.0, 40.0, 1.0, 0.0)   strength, longest march (cells), thickness (cells), debug
     vec4 _SSTune;   // @default = vec4(3.0, 0.5, 24.0, 0.05)  tallest caster (cells), sun height (sine), steps, edge fade
     vec4 _SSColor;  // @default = vec4(0.5, 0.5, 0.6, 1.0)    the game's sun shadow colour (multiply)
+    vec4 _SSWorld0; // @default = vec4(0.0, 0.0, 0.0, 0.0)    world origin in camera space, xyz; w = height map on (1)
+    vec4 _SSWorldX; // @default = vec4(1.0, 0.0, 0.0, 0.0)    world x axis in camera space, xyz; w = height map width (cells)
+    vec4 _SSWorldZ; // @default = vec4(0.0, 0.0, 1.0, 0.0)    world z axis in camera space, xyz; w = height map rows
 } u;
 
 layout(set = 2, binding = 1) uniform sampler2D _GrabIsoRimSSS;
 layout(set = 2, binding = 2) uniform sampler2D _IsoSceneDepth;
+layout(set = 2, binding = 3) uniform sampler2D _IsoShadowHeights;   // ShadowHeights.cs: per ground cell two solid spans, 1/8 cell
 
 const float GroundEps = 0.03;
 const float Lit = 0.98;   // alpha of a fully lit receiver (1 = no receiver)
@@ -130,6 +135,20 @@ float Gap(vec3 Q)
     return S.z - Q.z;
 }
 
+// Whether a camera-space point is inside a solid span of the world height map (walls, rock, ProjectZ slabs and the
+// blocks on them, shown or hidden, on screen or not).
+bool InHeightMap(vec3 Q)
+{
+    vec3 d = Q - u._SSWorld0.xyz;
+    float x = dot(d, u._SSWorldX.xyz), z = dot(d, u._SSWorldZ.xyz), y = dot(d, u._SSPlane.xyz);
+    if (x < 0.0 || z < 0.0 || x >= u._SSWorldX.w || z >= u._SSWorldZ.w || y < 0.0)
+    {
+        return false;
+    }
+    vec4 s = texelFetch(_IsoShadowHeights, ivec2(int(x), int(z)), 0) * (255.0 / 8.0);
+    return (y >= s.x && y <= s.y) || (y >= s.z && y <= s.w);
+}
+
 void main()
 {
     gSize = textureSize(_IsoSceneDepth, 0);
@@ -145,21 +164,31 @@ void main()
 
     bool has, ground;
     vec3 P = ScenePos(ip, has, ground);
-    if (!has)
+    if (!has && !ground)
     {
-        outColor = debug == 2 ? vec4(0.15, 0.6, 0.15, 1.0) : vec4(col.rgb, 1.0);
+        outColor = vec4(col.rgb, 1.0);   // nothing there (sky, past the map): not a receiver
+        return;
+    }
+    if (debug == 2)
+    {
+        outColor = ground ? vec4(0.15, 0.6, 0.15, 1.0) : vec4(0.6, 0.6, 0.6, 1.0);
         return;
     }
 
-    vec3 l = ScenePos(ip + ivec2(-1, 0)), r = ScenePos(ip + ivec2(1, 0));
-    vec3 b = ScenePos(ip + ivec2(0, -1)), t = ScenePos(ip + ivec2(0, 1));
-    vec3 dx = abs(r.z - P.z) < abs(P.z - l.z) ? r - P : P - l;
-    vec3 dy = abs(t.z - P.z) < abs(P.z - b.z) ? t - P : P - b;
-    vec3 N = normalize(cross(dx, dy));
-    vec3 toCam = gPersp ? -P : vec3(0.0, 0.0, 1.0);
-    if (dot(N, toCam) < 0.0)
+    // The ground receives too (its plane's normal); the game's own sun shadows are left out while this pass draws.
+    vec3 N = u._SSPlane.xyz;
+    if (!ground)
     {
-        N = -N;
+        vec3 l = ScenePos(ip + ivec2(-1, 0)), r = ScenePos(ip + ivec2(1, 0));
+        vec3 b = ScenePos(ip + ivec2(0, -1)), t = ScenePos(ip + ivec2(0, 1));
+        vec3 dx = abs(r.z - P.z) < abs(P.z - l.z) ? r - P : P - l;
+        vec3 dy = abs(t.z - P.z) < abs(P.z - b.z) ? t - P : P - b;
+        N = normalize(cross(dx, dy));
+        vec3 toCam = gPersp ? -P : vec3(0.0, 0.0, 1.0);
+        if (dot(N, toCam) < 0.0)
+        {
+            N = -N;
+        }
     }
     vec3 L = u._SSLight.xyz;
     float ndl = dot(N, L);
@@ -233,10 +262,30 @@ void main()
             }
             tPrev = tt;
         }
-        // Fade near the screen edges (a caster just off screen is unknown).
+        // Fade near the screen edges (a caster just off screen is unknown to the depth).
         vec2 uv = (vec2(ip) + 0.5) / vec2(gSize);
         float e = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-        shadow *= facing * smoothstep(0.0, max(u._SSTune.w, 1e-4), e);
+        shadow *= smoothstep(0.0, max(u._SSTune.w, 1e-4), e);
+        // The world height map: every 0.5 cells along the ray (at most 64 steps), off screen too; no edge fade.
+        if (shadow < 1.0 && u._SSWorld0.w > 0.5)
+        {
+            float tHM = min(tMax, 64.0 * 0.5);
+            float stepHM = max(0.5, tHM / 64.0);
+            for (int i = 1; i <= 64; i++)
+            {
+                float tt = float(i) * stepHM - 0.2 * jit * stepHM;
+                if (tt > tHM)
+                {
+                    break;
+                }
+                if (InHeightMap(start + L * tt))
+                {
+                    shadow = 1.0;
+                    break;
+                }
+            }
+        }
+        shadow *= facing;
     }
     if (debug == 6)
     {
