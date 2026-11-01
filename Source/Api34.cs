@@ -585,7 +585,8 @@ namespace IsoRim
 
         // (Api 34, stacked floors) A shape piece upstairs standing on a shape piece of the cell below (a slanted wall through
         // both storeys, where no block stands below): how far it reaches down to that piece's top, as WallColumn does for
-        // blocks. 0 when nothing of a shape is under its middle.
+        // blocks. 0 when nothing of a shape is under its middle, or the piece there is not full height (Floors.FullHeight: a
+        // low wall, a fence).
         private static float DropOntoShape(Map map, IntVec3 c, Vector2[] poly, float floorH)
         {
             IntVec3 under = Floors.Stacked(map, c, -1);
@@ -605,9 +606,10 @@ namespace IsoRim
             }
             mid = mid / poly.Length + new Vector2(under.x - c.x, under.z - c.z);
             int k = below.Holding(mid, 0f);
-            if (k < 0)
+            float full;
+            if (k < 0 || !Floors.FullHeight(below.owners[k].def, out full))
             {
-                return 0f;
+                return 0f;   // (as WallColumn's blocks, Floors.FullHeight) a low wall below (an embrasure) is no column: the slab lies over it
             }
             float hb;
             int zb;

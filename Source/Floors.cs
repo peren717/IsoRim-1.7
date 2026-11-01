@@ -1728,11 +1728,21 @@ namespace IsoRim
                 return false;
             }
             Building b = c.GetEdifice(map);
-            if (b == null)
+            return b != null && FullHeight(b.def, out height, blocksOnly);
+        }
+
+        // THE full-height rule of the column (a wall upstairs reaching down to the wall below, a slab's edge starting at the
+        // wall's top): a block of fill 0.9 or more that is not a low wall, or (unless blocksOnly) a wall drawn from a model
+        // (its wall top). Asked for the block in a cell (FullBlock) and for the owner of a wall shape piece below
+        // (WallBoxes.DropOntoShape), so straight and shaped (Api 34) walls follow the same rule.
+        internal static bool FullHeight(ThingDef def, out float height, bool blocksOnly = false)
+        {
+            height = 0f;
+            if (def == null)
             {
                 return false;
             }
-            ThingForm f = Forms.For(b.def);
+            ThingForm f = Forms.For(def);
             if (f.form != Form3D.Block)
             {
                 if (blocksOnly || f.wallTop <= 0f)
@@ -1742,7 +1752,7 @@ namespace IsoRim
                 height = f.wallTop;
                 return true;
             }
-            if (WallBoxes.Fill(b.def) < 0.9f || WallBoxes.LowWall(b.def))
+            if (WallBoxes.Fill(def) < 0.9f || WallBoxes.LowWall(def))
             {
                 return false;   // (Api 20) a low wall drawn under its fill (a half wall) is not full height either
             }
