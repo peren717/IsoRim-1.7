@@ -18,6 +18,7 @@ namespace IsoRim
         {
             { "buzz", null }, { "topknot", "mohawk" }, { "crest", "mohawk" }, { "shoulder", "long" }, { "bob", "medium" },
             { "twintails", "ponytail" }, { "sidebuns", "bun" }, { "jane", "sidebuns" }, { "balding", "short" }, { "topbun_tail", "bun" },
+            { "flattop", "short" }, { "quiff", "short" }, { "recruit", "short" }, { "sweep", "short" }, { "troubadour", "quiff" },
         };
         private static readonly Dictionary<string, string> beardStandIn = new Dictionary<string, string>
         {
@@ -45,10 +46,11 @@ namespace IsoRim
             { "BriefPonytail", "ponytail" }, { "BraidedKnot", "ponytail" },
             { "Spikes", "spiky" }, { "SideSpikes", "spiky" }, { "Firestarter", "spiky" }, { "LargeTuft", "spiky" },
             { "Long", "long" }, { "LongOily", "long" }, { "LongMess", "long" }, { "Wavy", "long" }, { "Princess", "long" },
-            { "Mop", "medium" }, { "Bowlcut", "medium" }, { "GreasySwoop", "medium" }, { "Lackland", "medium" }, { "Decent", "medium" },
+            { "Mop", "medium" }, { "Bowlcut", "medium" }, { "Lackland", "medium" }, { "Decent", "medium" },
             { "Bob", "medium" }, { "Messy", "medium" }, { "Randy", "medium" }, { "Parted", "medium" }, { "SideCut", "medium" },
-            { "Bravo", "short" }, { "William", "short" }, { "Fringe", "short" }, { "Burgundy", "short" }, { "Revolt", "short" },
-            { "Troubadour", "short" }, { "Recruit", "short" }, { "ShortCut", "short" }, { "Topdog", "short" }, { "Warden", "short" },
+            { "Fringe", "short" }, { "William", "ponytail" }, { "Topdog", "flattop" }, { "Recruit", "recruit" }, { "Troubadour", "troubadour" },
+            { "ShortCut", "quiff" }, { "Burgundy", "quiff" }, { "Bravo", "quiff" }, { "GreasySwoop", "quiff" },
+            { "Revolt", "sweep" }, { "Warden", "sweep" },
             // Ghoul hairs: a ghoul's own head brings its own (People.Anomaly); this is for a ghoul head that is missing.
             { "Ghoul_Furious", "short" }, { "Ghoul_Hungry", "short" }, { "Ghoul_Ravenous", "short" }, { "Ghoul_Twisted", "short" },
             { "Ghoul_Vengeful", "short" }, { "Ghoul_Warped", "short" }, { "Ghoul_Wicked", "short" },
@@ -180,6 +182,27 @@ namespace IsoRim
             if (Has(name, "Afro") || Has(name, "Curly") || Has(name, "Poof") || Has(name, "Fro"))
             {
                 return "afro";
+            }
+            // Before Pony/Tail: a "ducktail" or "pompadour" is the troubadour shape, not a ponytail.
+            if (Has(name, "Pompadour") || Has(name, "Ducktail") || Has(name, "Rockabilly") || Has(name, "Elvis"))
+            {
+                return "troubadour";
+            }
+            if (Has(name, "Flattop") || Has(name, "Flat_Top"))
+            {
+                return "flattop";
+            }
+            if (Has(name, "Quiff") || Has(name, "Swoop"))
+            {
+                return "quiff";
+            }
+            if (Has(name, "Recruit") || Has(name, "Military") || Has(name, "HighAndTight") || Has(name, "Crewcut"))
+            {
+                return "recruit";
+            }
+            if (Has(name, "Sweep") || Has(name, "Swept"))
+            {
+                return "sweep";
             }
             if (Has(name, "Pony") || Has(name, "Tail") || Has(name, "Braid") || Has(name, "Queue"))
             {
