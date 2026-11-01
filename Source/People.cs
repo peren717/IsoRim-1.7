@@ -488,6 +488,16 @@ namespace IsoRim
             // Sitting (Poses): the game's shift up the screen taken out of drawLoc before the facing is tracked.
             Poses.Seat seat = default(Poses.Seat);
             bool seated = attached ? AttachedSeat(att, out seat) : !lying && gibbet == null && vat == null && lift <= 0f && Poses.Seated(pawn, ref drawLoc, out seat);
+            // Crouching or face down by an addon's posture rule (Api 45, Poses.Crouched; not seated, attached, carried, in mid-jump,
+            // caged, in a vat, downed or in bed): face down is posed here, not as lying on the back.
+            Poses.Crouch crouch = default(Poses.Crouch);
+            bool crouched = !dead && !attached && !seated && gibbet == null && vat == null && lift <= 0f && !crawling && Poses.Crouched(pawn, out crouch);
+            bool prone = crouched && crouch.Prone;
+            bool proneDown = prone && crouch.prone >= 0.5f;   // (for other mods' hooks: lying face down, as a crawl)
+            if (prone)
+            {
+                lying = false;
+            }
             float size = look.size * (gibbet != null ? GibbetScale : 1f);
             float rise = 0f;
             if (vat != null)
@@ -518,9 +528,10 @@ namespace IsoRim
             {
                 // Aiming, the body turns smoothly to face the aim as drawn (the game turns the pawn to face its target).
                 float aimGame, aimDrawn = 0f;
-                bool aiming = !lying && FigureWeapons.AimOf(pawn, neverAim, out aimGame, out aimDrawn);
-                // (not aiming: the facing another mod gives the sprite, BodyAnims.Facing)
-                Animals.Track(pawn, drawLoc, lying && !crawling, 0.9f * size, out yaw, out phase, out gait, aiming ? aimDrawn : lying ? (float?)null : BodyAnims.FacingTurn(pawn));
+                bool aiming = !lying && !prone && FigureWeapons.AimOf(pawn, neverAim, out aimGame, out aimDrawn);
+                // (not aiming: the facing another mod gives the sprite, BodyAnims.Facing; face down: toward the rule's cell)
+                float? face = prone ? (crouch.hasYaw ? crouch.yaw : (float?)null) : aiming ? aimDrawn : lying ? (float?)null : BodyAnims.FacingTurn(pawn);
+                Animals.Track(pawn, drawLoc, lying && !crawling, 0.9f * size, out yaw, out phase, out gait, face);
             }
 
             float ground = 0f;
@@ -531,7 +542,18 @@ namespace IsoRim
             float workLean = 0f;
             float workDip = 0f;
             float headLift = 0f;
-            if (lying)
+            if (prone)
+            {
+                // Face down (Api 45): as a crawl (Crawl), tipped forward about the feet from the crouch as it eases down (and
+                // back up as it gets up), the body coming to its full length; nothing held.
+                float p = crouch.prone;
+                float chest = Crawl.ChestLift;
+                float front = look.upper.halfDepth * look.bodyScale.z * Mathf.Cos(chest * Mathf.Deg2Rad);
+                pose = Matrix4x4.Translate(new Vector3(0f, front * size * p, -0.55f * size * p))
+                    * Matrix4x4.Rotate(Quaternion.AngleAxis(Mathf.Lerp(crouch.lean, 90f - chest, p), Vector3.right));
+                headLift = Crawl.HeadLift * p;
+            }
+            else if (lying)
             {
                 // On their back, head toward the south of the figure's own space before it is turned.
                 Quaternion onBack = Quaternion.AngleAxis(-90f, Vector3.right);
@@ -630,17 +652,22 @@ namespace IsoRim
 
                 // A body animation another mod gives the game's sprite (BodyAnims: none, unless a mod patches it).
                 pose = BodyAnims.Apply(pawn, drawLoc, yaw, size, pose);
+                if (crouched)
+                {
+                    pose = pose * Poses.CrouchLean(crouch);   // crouching (Api 45): leaning forward about the feet
+                }
             }
 
             Vector3 at = new Vector3(drawLoc.x, ground + lift, drawLoc.z);
             Matrix4x4 whole = pose * Matrix4x4.Scale(new Vector3(size, size, size));
-            // Seated: the body squashed down onto the seat, the head (and the hands) come down by as much.
-            float squash = seated ? seat.Squash : 1f;
-            Matrix4x4 bodyPlace = seated ? whole * Matrix4x4.Scale(new Vector3(1f, squash, 1f)) : whole;
-            Matrix4x4 headPlace = seated ? whole * Matrix4x4.Translate(new Vector3(0f, -(1f - squash) * Poses.BodyTop, 0f)) : whole;
+            // Seated or crouching (Api 45): the body squashed down, the head (and the hands) come down by as much.
+            float squash = seated ? seat.Squash : crouched ? crouch.BodySquash : 1f;
+            bool squashed = seated || crouched;
+            Matrix4x4 bodyPlace = squashed ? whole * Matrix4x4.Scale(new Vector3(1f, squash, 1f)) : whole;
+            Matrix4x4 headPlace = squashed ? whole * Matrix4x4.Translate(new Vector3(0f, -(1f - squash) * Poses.BodyTop, 0f)) : whole;
             if (headLift != 0f)
             {
-                headPlace = whole * Matrix4x4.Translate(new Vector3(0f, Poses.BodyTop, 0f)) * Matrix4x4.Rotate(Quaternion.AngleAxis(-headLift, Vector3.right))
+                headPlace = headPlace * Matrix4x4.Translate(new Vector3(0f, Poses.BodyTop, 0f)) * Matrix4x4.Rotate(Quaternion.AngleAxis(-headLift, Vector3.right))
                     * Matrix4x4.Translate(new Vector3(0f, -Poses.BodyTop, 0f));   // tipped back about the neck: looking ahead
             }
             if (look.alien != null)
@@ -657,7 +684,7 @@ namespace IsoRim
             {
                 // Other mods' attachments (Api.AddFigureHook), placed in this head and body; before the figure is drawn, as
                 // they may hide its own parts (Api 21).
-                hidden = FigureHooks.Raise(pawn, look, at, yaw, headPlace, bodyPlace, size, lift, lying, crawling, seated || noLegs, dead, !headOnly);
+                hidden = FigureHooks.Raise(pawn, look, at, yaw, headPlace, bodyPlace, size, lift, lying || proneDown, crawling || proneDown, seated || noLegs, dead, !headOnly);
             }
             // (a race: where its face goes, Api 25; an Own race's face on its own head at the face anchor)
             Matrix4x4 headLocal = look.alien != null ? headPlace * look.alien.face : headPlace * Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f));
@@ -666,7 +693,7 @@ namespace IsoRim
                 // Where the game leaves the face out, only drawers added with evenWhenHidden are asked (Api 21).
                 FaceHiddenBy hiddenBy = FaceDrawers.HiddenBy(look);
                 if ((hiddenBy == FaceHiddenBy.None || FaceDrawers.Always > 0)
-                    && FaceDrawers.Ask(pawn, look, head, at, yaw, headLocal, lying, crawling, dead, hiddenBy) && hiddenBy == FaceHiddenBy.None)
+                    && FaceDrawers.Ask(pawn, look, head, at, yaw, headLocal, lying || proneDown, crawling || proneDown, dead, hiddenBy) && hiddenBy == FaceHiddenBy.None)
                 {
                     hidden |= FigureParts.Face;   // another mod drew the face (Api 21): IsoRim's own left out (already out when hidden)
                 }
@@ -682,7 +709,7 @@ namespace IsoRim
             DynamicModels.DrawParts(Merged(look, true, dead, turned, null, headOnly && look.alien != null, hidden), at, yaw, headPlace);
             if (look.alien != null)
             {
-                AlienCards.Draw(look, at, yaw, headPlace, bodyPlace, hidden, !headOnly, lying, crawling);   // a race's addons as cards (Api 25)
+                AlienCards.Draw(look, at, yaw, headPlace, bodyPlace, hidden, !headOnly, lying || proneDown, crawling || proneDown);   // a race's addons as cards (Api 25)
             }
             if (look.faceDecal && !look.headHidden && look.skull == null && (hidden & (FigureParts.Head | FigureParts.Face)) == 0)
             {
@@ -699,14 +726,14 @@ namespace IsoRim
             if (workTool != null)
             {
                 // The tool is placed in the figure's own space, so it leans and dips with it.
-                Matrix4x4 hands = seated ? whole * Matrix4x4.Translate(new Vector3(0f, -(1f - squash) * HandY, 0f)) : whole;
+                Matrix4x4 hands = seated ? whole * Matrix4x4.Translate(new Vector3(0f, -(1f - squash) * HandY, 0f)) : crouched ? Poses.CrouchHands(whole, crouch, false) : whole;
                 hands = AlienHands(look, hands);
                 DynamicModels.DrawLocal(workTool, at, yaw, hands * workLocal, Color.white, "Wood");
             }
 
             if (ground <= 0f && lift <= 0f)
             {
-                GroundShadows.Blob(at, yaw, (lying ? 0.30f : 0.34f) * size * look.bodyScale.x, (lying ? 0.70f : 0.30f * look.bodyScale.z) * size);
+                GroundShadows.Blob(at, yaw, (lying || proneDown ? 0.30f : 0.34f) * size * look.bodyScale.x, (lying || proneDown ? 0.70f : 0.30f * look.bodyScale.z) * size);
             }
             standing &= !FigureScope.Active;   // a figure drawn for another mod (Api.DrawFigure): without what it holds
             if (standing && pawn.carryTracker != null && pawn.carryTracker.CarriedThing != null)
@@ -718,7 +745,7 @@ namespace IsoRim
             }
             if (standing)
             {
-                Matrix4x4 hands = seated ? whole * Matrix4x4.Translate(new Vector3(0f, -(1f - squash) * HandY, 0f)) : whole;
+                Matrix4x4 hands = seated ? whole * Matrix4x4.Translate(new Vector3(0f, -(1f - squash) * HandY, 0f)) : crouched ? Poses.CrouchHands(whole, crouch, FigureWeapons.AimOf(pawn, neverAim, out _, out _)) : whole;   // (crouching, Api 45: aimed from the lowered shoulder)
                 hands = AlienHands(look, hands);
                 Model upper = look.upper;
                 FigureWeapons.Draw(pawn, neverAim, drawLoc, at, yaw, hands, size, upper.halfDepth * look.bodyScale.z,
@@ -785,12 +812,23 @@ namespace IsoRim
             }
             Poses.Seat seat = default(Poses.Seat);
             bool seated = lift <= 0f && Poses.Seated(pawn, ref drawLoc, out seat);
+            // crouching (Api 45), as Draw poses it; face down nothing is held
+            Poses.Crouch crouch = default(Poses.Crouch);
+            bool crouched = !seated && lift <= 0f && Poses.Crouched(pawn, out crouch);
+            if (crouched && crouch.Prone)
+            {
+                return false;
+            }
             float yaw = aiming ? aimDrawn : BodyAnims.Facing(pawn).AsAngle;
             Matrix4x4 pose = BodyAnims.Apply(pawn, drawLoc, yaw, size, Matrix4x4.identity);
+            if (crouched)
+            {
+                pose = pose * Poses.CrouchLean(crouch);
+            }
             Vector3 at = new Vector3(drawLoc.x, (seated ? seat.Lift : 0f) + lift, drawLoc.z);
             Matrix4x4 whole = pose * Matrix4x4.Scale(new Vector3(size, size, size));
             float squash = seated ? seat.Squash : 1f;
-            Matrix4x4 hands = seated ? whole * Matrix4x4.Translate(new Vector3(0f, -(1f - squash) * HandY, 0f)) : whole;
+            Matrix4x4 hands = seated ? whole * Matrix4x4.Translate(new Vector3(0f, -(1f - squash) * HandY, 0f)) : crouched ? Poses.CrouchHands(whole, crouch, aiming) : whole;
             hands = AlienHands(look, hands);
             Model upper = look.upper;
             // (it may run in a game tick, for a shot's flash: whatever the game's drawing code rolls stays out of the game's

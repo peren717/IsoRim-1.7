@@ -124,7 +124,8 @@ namespace IsoRim
             return null;
         }
 
-        private static string OwnerOf(Func<ThingDef, string> rule)
+        // (also the posture rules', Api 45)
+        internal static string OwnerOf(Delegate rule)
         {
             try
             {

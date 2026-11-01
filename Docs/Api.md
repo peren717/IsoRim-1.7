@@ -60,10 +60,11 @@ if (IsoRim.Api.Version >= 40) { /* DrawItem: an item drawn as IsoRim shows items
 if (IsoRim.Api.Version >= 42) { /* AddModelRule: an addon's code names the ModelDef for things with no thingDef entry (part 27) */ }
 if (IsoRim.Api.Version >= 43) { /* ApparelModelDef.shown: when a Shield binding's model shows (Default, Weapon, Always; part 3) */ }
 if (IsoRim.Api.Version >= 44) { /* a weapon's 3D muzzle: TryGetMuzzle, StandFleck, StandMote (part 28) */ }
+if (IsoRim.Api.Version >= 45) { /* posture rules: AddPostureRule, AddProneFacingRule, PostureProne, PostureOf, DrawnPostureOf (part 29) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1544,6 +1545,53 @@ else { /* not in the 3D view: your own position, as before */ }
   there are drawn on that floor as usual. For a mesh of your own, `Api.DrawnPosition(muzzle)` is where to draw it.
 - **Built in:** Flourish - Combat Animations (`astryl.Flourish`) gets this without doing anything: while it is active,
   IsoRim answers its muzzle lookup with this point and stands its flash, bloom and tracer there.
+
+## Part 29: posture rules (version 45)
+
+For a mod with postures of its own (crouching in combat, crawling under fire, lying flat): tell IsoRim, pawn by pawn, and
+IsoRim shows it on the figure it already draws. Only transforms are used, no meshes of their own, so other mods' bodies,
+apparel and races keep working.
+
+```csharp
+// IsoRim.Api.Version >= 45; once, at startup (a [StaticConstructorOnStartup] class is fine)
+IsoRim.Api.AddPostureRule(new Func<Pawn, float>(MyPosture));
+IsoRim.Api.AddProneFacingRule(new Func<Pawn, IntVec3>(MyThreat));
+
+static float MyPosture(Pawn p)
+{
+    if (MyMod.IsHiding(p)) return IsoRim.Api.PostureProne;   // face down
+    if (MyMod.IsCrouching(p)) return 1f;                      // a full crouch (0..1)
+    return 0f;                                                // pass: standing
+}
+
+static IntVec3 MyThreat(Pawn p) => MyMod.ThreatCell(p) ?? IntVec3.Invalid;   // where a prone pawn's head points
+```
+
+| Member | What it does |
+|---|---|
+| `Api.AddPostureRule(Func<Pawn, float> rule)` | Asked about once a frame per pawn IsoRim draws or measures (main thread). 0: pass (standing). Over 0 up to 1: crouching that much. `Api.PostureProne` (any negative): lying face down. Rules are asked in the order they were added; face down from any rule wins, else the largest crouch. |
+| `Api.AddProneFacingRule(Func<Pawn, IntVec3> rule)` | For a pawn lying face down by a rule: the map cell its head points to (the threat), or `IntVec3.Invalid` to pass (it keeps its facing). First valid cell wins. |
+| `Api.PostureProne` | The value a posture rule returns for face down (-1). |
+| `Api.PostureOf(Pawn, out float crouch, out bool prone)` | What the rules give the pawn now (before IsoRim's exceptions and easing). |
+| `Api.DrawnPostureOf(Pawn, out float crouch, out float prone, out float drop)` | What IsoRim draws now: crouch and face down 0..1 (eased), and how far the shoulders (and the gun on them) are lowered, cells. False when drawn standing. |
+
+- **Crouching:** the body squashed down about the feet, leaning forward up to 15 degrees toward its facing (the aim while
+  aiming), the head and hands brought down with it. The held weapon, its muzzle (`Api.TryGetMuzzle`, IsoRim's shot flashes
+  and bullets), picking, box selection, the icons over the head and first person all follow. An upright 2D card is
+  squashed about its feet.
+- **How low:** one fixed crouch wherever the pawn is (in the open, behind sandbags or a low wall, on an upper floor): the
+  shoulders, where the gun is held, 0.20 of the figure's height lower (the body squashed to about 0.70), leaning 15
+  degrees. The rule's amount scales it (0.5: half as low and half the lean).
+- **Face down:** as a crawl, the head toward the facing rule's cell; going down it tips forward from the crouch, getting up
+  it eases back (about 0.2 and 0.35 s). Nothing is held while face down. Return a crouch while your own state is still on
+  its way down (a pawn that lies down after a moment), so the figure does not stand first.
+- **Not applied** to a pawn that is seated (IsoRim's sitting pose wins), attached to a host (Api 13: a rider), carried, in
+  mid-jump, downed, dead, in a bed, or a statue; postures ease in and out (about 0.2 s).
+- **Cost:** keep the rule cheap (no allocation, no searches; cache per pawn or def). IsoRim works the posture out once a
+  frame per pawn.
+- **Failing soft:** a rule that throws is logged once and passes from then on. Only standard `System.Func` delegates, so
+  code calling these after an `Api.Version >= 45` check never breaks on an older IsoRim (create the delegate inside a method
+  that only runs after the check).
 
 ## Part M: model packs (IsoRim.ModelDef)
 

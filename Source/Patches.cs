@@ -2064,6 +2064,12 @@ namespace IsoRim
                     pawnLift += skyLift;   // a flying animal arriving or leaving, at its height on the skyfaller's path
                 }
                 DrawHook.xform =Matrix4x4.Translate(new Vector3(feet.x - pivot.x, 0f, feet.z - pivot.z)) * View3D.UprightMatrix(pivot);
+                Poses.Crouch crouch;
+                if (pawn != null && Poses.Crouched(pawn, out crouch) && !crouch.Prone)
+                {
+                    // Crouching (Api 45, Poses): the card squashed down about its feet, with what it holds.
+                    DrawHook.xform = DrawHook.xform * Matrix4x4.Translate(pivot) * Matrix4x4.Scale(new Vector3(1f, 1f, crouch.squash)) * Matrix4x4.Translate(-pivot);
+                }
                 if (pawnLift > 0f)
                 {
                     DrawHook.xform = View3D.LiftMatrix(pawnLift) * DrawHook.xform;

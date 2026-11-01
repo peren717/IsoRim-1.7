@@ -57,6 +57,92 @@ namespace IsoRim
             }
         }
 
+        // ---- crouching and lying face down by an addon's posture rule (Api 45, Api45.cs: PostureRules, Postures)
+        //
+        // A rule says a pawn crouches (0..1) or lies face down; IsoRim shows it with transforms only, as sitting is shown, so
+        // any body, apparel or race keeps working (no mesh of its own, no joints):
+        //   - crouching: the body squashed down about the feet and leaning forward (Lean, about the feet, toward its facing:
+        //     the aim while aiming), the head and the hands (so the held weapon, its muzzle and the shot) brought down with
+        //     the shoulders. One fixed crouch wherever the pawn is (Postures.Drop: the shoulder 0.20 lower, Postures.Lean 15
+        //     degrees), scaled by the rule's amount (crouch-walking: half);
+        //   - face down: as a crawl (Crawl), the head toward where the rule's facing says (the threat), tipped forward from the
+        //     crouch about the feet as it eases down, and back up again;
+        //   - not for a pawn seated, attached to a host (Api 13), carried, in mid-jump, downed, dead, in a bed, or a statue.
+        // Everything that reads a pose reads it here: the figure (People.Draw), its weapon measured when not drawn
+        // (People.MeasureWeapon: the muzzle, Api.TryGetMuzzle, shots), DrawnSpot (picking, box selection, first person, the
+        // icons over the head) and the upright 2D card (Patches.RenderPawnAt_Prefix: squashed about its feet).
+        public struct Crouch
+        {
+            public float amount;     // 0..1 crouched, as shown (eased)
+            public float prone;      // 0..1 face down, as shown (eased)
+            public bool proneTarget; // a rule has it lie face down now (easing down, or down)
+            public float drop;       // how far the shoulders come down, figure units (times size: cells)
+            public float squash;     // the body's height, of standing
+            public float lean;       // degrees forward, about the feet
+            public float size;       // the figure's size (life stage, race)
+            public bool hasYaw;      // face down toward a facing rule's cell: yaw (degrees clockwise from north)
+            public float yaw;
+
+            // Posed face down (or going down, or getting up): drawn as a crawl blended from the crouch, nothing held.
+            public bool Prone
+            {
+                get { return proneTarget || prone > 0f; }
+            }
+
+            // The body squash with the face-down blend (lying, full length).
+            public float BodySquash
+            {
+                get { return Mathf.Lerp(squash, 1f, prone); }
+            }
+
+            // How much higher (lower: negative) the head's top is than standing, cells: a 3D figure squashed and leaning, a
+            // card squashed; face down about as high as a lying figure.
+            public float HeadRise(bool model)
+            {
+                float rise;
+                if (model)
+                {
+                    const float headMid = 0.98f;   // People.HeadHeight
+                    float y = (headMid - (1f - squash) * BodyTop) * Mathf.Cos(lean * Mathf.Deg2Rad);
+                    rise = (y - headMid) * size;
+                }
+                else
+                {
+                    rise = -(1f - squash) * 1.25f;   // a card's top (Interaction.PickHeight) squashed
+                }
+                return Mathf.Lerp(rise, ProneTop - 1.25f, prone);
+            }
+        }
+
+        private const float ProneTop = 0.4f;   // the top of a figure lying face down, cells (picking, icons)
+
+        // Where the gun is held on a standing figure (figure units): the shoulder, IsoRim's aim height setting.
+        public static float ShoulderY
+        {
+            get { return Mathf.Clamp(IsoRimMod.Settings.aimHeight, 0.3f, 1f); }
+        }
+
+        // True if an addon's posture rule poses the pawn now (see above), as drawn this frame (eased).
+        public static bool Crouched(Pawn pawn, out Crouch crouch)
+        {
+            return Postures.Of(pawn, out crouch);
+        }
+
+        // A crouching figure's body: leaning forward about its feet (in its own space, before its size).
+        public static Matrix4x4 CrouchLean(Crouch c)
+        {
+            return Matrix4x4.Rotate(Quaternion.AngleAxis(c.lean, Vector3.right));
+        }
+
+        // A crouching figure's hands, from its whole-figure matrix: brought down with the squashed body where they are on it, at
+        // the shoulder for a weapon aimed from it (so the gun, its muzzle and the shot come down with it), at the hands
+        // (People.HandY) for anything else held (a weapon not aimed, a work tool: as when seated).
+        public static Matrix4x4 CrouchHands(Matrix4x4 whole, Crouch c, bool atShoulder)
+        {
+            const float handsY = 0.46f;   // People.HandY
+            return whole * Matrix4x4.Translate(new Vector3(0f, -(1f - c.squash) * (atShoulder ? ShoulderY : handsY), 0f));
+        }
+
         // True if the pawn sits (see above). drawLoc is where the game draws it: the sitting shift is taken out of it.
         public static bool Seated(Pawn pawn, ref Vector3 drawLoc, out Seat seat)
         {
@@ -93,8 +179,15 @@ namespace IsoRim
                 return at;   // attached to a host (Api 13): DrawPos is already on its anchor
             }
             Seat s;
-            // (a 3D figure's body is squashed; a card is not)
-            headRise = Seated(pawn, ref at, out s) ? s.Lift - (Patches.DrawnAsModel(pawn) ? s.HeadDrop(1f) : 0f) : 0f;
+            if (Seated(pawn, ref at, out s))
+            {
+                // (a 3D figure's body is squashed; a card is not)
+                headRise = s.Lift - (Patches.DrawnAsModel(pawn) ? s.HeadDrop(1f) : 0f);
+                return at;
+            }
+            Crouch c;
+            // crouching or face down (Api 45): the head comes down (in mid-jump or carried the pawn is not spawned: none)
+            headRise = Crouched(pawn, out c) ? c.HeadRise(Patches.DrawnAsModel(pawn)) : 0f;
             return at;
         }
 
