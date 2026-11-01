@@ -1202,6 +1202,11 @@ namespace IsoRim
                             dp.story.hairDef = DefDatabase<HairDef>.GetNamed(ds[1]);
                             continue;
                         }
+                        if (ds[0] == "head")
+                        {
+                            dp.story.headType = DefDatabase<HeadTypeDef>.GetNamed(ds[1]) ?? dp.story.headType;   // head:<HeadTypeDef> (Api 47 tests)
+                            continue;
+                        }
                         if (ds[0] == "beard")
                         {
                             dp.style.beardDef = DefDatabase<BeardDef>.GetNamed(ds[1]);

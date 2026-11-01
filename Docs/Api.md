@@ -3,7 +3,7 @@
 Model packs (XML and .obj files, no code), the dev-mode model binder and the coverage report: see [ModelPacks.md](ModelPacks.md).
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`, `WallShapeRule`, `WallShape`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`, `WallShapeRule`, `WallShape`, `HeadDecal`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
 in any update, even when it is public: do not patch or reflect into it, ask for an Api member instead. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -62,10 +62,11 @@ if (IsoRim.Api.Version >= 43) { /* ApparelModelDef.shown: when a Shield binding'
 if (IsoRim.Api.Version >= 44) { /* a weapon's 3D muzzle: TryGetMuzzle, StandFleck, StandMote (part 28) */ }
 if (IsoRim.Api.Version >= 45) { /* posture rules: AddPostureRule, AddProneFacingRule, PostureProne, PostureOf, DrawnPostureOf (part 29) */ }
 if (IsoRim.Api.Version >= 46) { /* burning fires: AddFireLook, AddBurningFire; burning fires drawn as 3D particles (part 30) */ }
+if (IsoRim.Api.Version >= 47) { /* head decals: IsoRim.HeadDecal, SetHeadDecal, HeadDecalOf (part 31) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1633,6 +1634,48 @@ static float MySize(Thing t) => t.def == MyDefOf.MyFire ? ((MyFire)t).fireSize :
   on the class that declares them). The size delegate is asked every frame per fire and per tick: keep it cheap.
 - **Failing soft:** a size delegate that throws is logged once and ignored from then on (the graphic draws itself). Only
   standard `System.Func`, so code calling these after an `Api.Version >= 46` check never breaks on an older IsoRim.
+
+## Part 31: head decals (version 47)
+
+Apparel can be drawn in 3D as a decal on the figure's head instead of as a hat: IsoRim projects the apparel's own worn
+head sprites (south, east, north; west is the game's mirrored east), coloured as the game colours them (its stuff or dye;
+with a mask, the game's two colours), onto IsoRim's 3D head. Front faces take the south sprite, the sides the east one, the
+back the north one, faces looking up or down (crown, under the chin) whichever side they lean to. Opaque texels cover the
+skin; see-through ones show the head under them, IsoRim's eyes and any face drawn on the head (Facial Animation, Api 21
+face drawers) included, so an eye slit shows the eyes and everything else under the covered part is hidden. Hair and beard
+show or hide by the apparel's own `renderSkipFlags`, as the game draws them; headgear over it keeps drawing as usual.
+For hoods, balaclavas, masks, face paint.
+
+From XML, no code (load-gate it so your mod has no hard dependency, e.g. a LoadFolders.xml folder):
+
+```xml
+<!-- LoadFolders.xml: <li IfModActive="Peren.IsoRim17">Mods/IsoRim</li>; in Mods/IsoRim/Patches: -->
+<Operation Class="PatchOperationAddModExtension">
+  <xpath>Defs/ThingDef[defName="MyBalaclava"]</xpath>
+  <value>
+    <li Class="IsoRim.HeadDecal" />   <!-- optional: <wholeHead>false</wholeHead> -->
+  </value>
+</Operation>
+```
+
+| Member | What it does |
+|---|---|
+| `IsoRim.HeadDecal` (DefModExtension) | Marks the apparel def as a head decal. `wholeHead` (default true): the sprite's outer outline and the shading along it are left out and its fill carried out to the texture's edges, so the decal covers the whole 3D head to its silhouette (the 3D head's own outline stands in); see-through areas enclosed by the sprite (an eye slit) stay see-through with their own rim. False: projected exactly as drawn, outline and all, only where the sprite is opaque (a mask, a painted mark). |
+| `Api.SetHeadDecal(ThingDef apparel, HeadDecal decal)` | The same from code; null stops one set this way (the XML extension still counts). People already drawn pick it up within a couple of seconds. |
+| `Api.HeadDecalOf(ThingDef apparel)` | The settings IsoRim uses for that apparel (code first, then XML), or null. |
+
+- **Sprite layout:** read as the game's head textures are laid out (any size; in 128 px the head is x 41..86 across facing
+  south and north, 50 texels tall), placed up and down by the game's eye line (row 70.6 from the top) on IsoRim's eyes; the
+  east sprite front to back by the male head's eye (column 79.5) on IsoRim's eye, so an eye hole lands on the head's front corner;
+  the flat sides never take the east sprite in front of 20 texels behind that eye (its eye area shows only on the front corner,
+  from the south sprite), so an eye hole reaching back leaves no notch on the side. Draw the sprite on the vanilla head as you would for 2D and it lands right in 3D.
+- **Look:** low-poly like the rest of the figure; the decal faces are lit by the face (stepped, as headgear), drawn with
+  the head, so it follows pose, light, night light, floors and fades. Several decals stack in worn order, each a little
+  further out. The front's diagonal faces take the front sprite, so a slit drawn across the face wraps onto them.
+- **Not drawn:** on a burka-hidden head, a skull, a ghoul's or alien race's own head, a carved statue, or while the head
+  or headgear is hidden (Api 21 `FigureParts.Headgear`). With an `ApparelModelDef` binding the bound model is drawn
+  as well. Without either, IsoRim draws no stand-in hat for the apparel.
+- **Failing soft:** a sprite IsoRim cannot read leaves that side plain (logged once).
 
 ## Part M: model packs (IsoRim.ModelDef)
 

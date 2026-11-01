@@ -110,6 +110,7 @@ namespace IsoRim
             // merged meshes and carried over to a look kept as it was (LookOf).
             public Apparel coatFrom, overCoatFrom, midFrom, shirtWearFrom;
             public List<ApparelDecals.Placed> decals;
+            public List<HeadDecals.Worn> headDecals;   // worn apparel projected onto the head (Api 47, HeadDecals), in worn order; null: none
             public AlienLook alien;     // a race drawn as a 3D figure (Api 25, AlienFigures): its placing, own models, addon cards; null for people
             // Gene parts (Api 35, GeneParts): the models of the person's active genes (null: none), and the head's own tint
             // when a part asks for it (furskin: the face in the fur colour).
@@ -162,7 +163,7 @@ namespace IsoRim
                     && mid == o.mid && shirtWear == o.shirtWear && midColor == o.midColor && shirtWearColor == o.shirtWearColor
                     && overCoat == o.overCoat && overCoatColor == o.overCoatColor
                     && shield == o.shield && shieldColor == o.shieldColor && shieldBinding == o.shieldBinding && bindHides == o.bindHides && flames == o.flames
-                    && GeneParts.Same(genes, o.genes) && geneHeadTint == o.geneHeadTint
+                    && GeneParts.Same(genes, o.genes) && geneHeadTint == o.geneHeadTint && HeadDecals.Same(headDecals, o.headDecals)
                     && (alien == null ? o.alien == null : alien.SameAs(o.alien));
             }
 
@@ -220,9 +221,10 @@ namespace IsoRim
             mergeLocals.Clear();
             mergeTints.Clear();
             mergeRound.Clear();
+            Matrix4x4 headPlace = Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f));
+            bool plainHead = false;   // IsoRim's own head is drawn (head decals go on it, Api 47)
             if (headPart)
             {
-                Matrix4x4 headPlace = Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f));
                 Color skin = dead ? Color.Lerp(look.skin, new Color(0.55f, 0.58f, 0.52f), 0.35f) : look.skin;
                 Color headSkin = look.geneHeadTint == GeneTint.Hair ? (dead ? Color.Lerp(look.hairColor, new Color(0.55f, 0.58f, 0.52f), 0.35f) : look.hairColor) : skin;
                 Model hat = (hide & (int)FigureParts.Headgear) == 0 ? look.hat : null;   // (parts hidden: Api 21)
@@ -243,6 +245,7 @@ namespace IsoRim
                 else
                 {
                     AddPart(head, headPlace, headSkin, true);
+                    plainHead = true;
                     if (!look.faceHidden && !look.faceDecal && (hide & (int)FigureParts.Face) == 0)
                     {
                         AddPart(look.ownFace ?? (look.femaleEyes && faceFemale != null ? faceFemale : face), headPlace, look.ownFace != null ? look.faceTint : Color.white, true);
@@ -356,6 +359,10 @@ namespace IsoRim
             parts = DynamicModels.BuildMerged(mergeModels, mergeLocals, mergeTints, turned, mono,
                 noLegs ? (headPart ? AlienFigures.ChinClip(look) : Attachments.Hips * look.bodyScale.y) : float.NegativeInfinity, SmoothFigures.On,
                 mono.HasValue ? null : mergeRound);
+            if (plainHead && look.headDecals != null && !mono.HasValue && (hide & (int)FigureParts.Headgear) == 0)
+            {
+                HeadDecals.AddParts(parts, look, head, headPlace);   // worn head decals (Api 47), drawn as the head is
+            }
             MergeTicks += System.Diagnostics.Stopwatch.GetTimestamp() - buildStart;
             Merges++;
             look.meshes[key] = parts;
@@ -897,7 +904,7 @@ namespace IsoRim
                 + (pawn.style != null ? HairParts.Beard(pawn.style.beardDef) ?? "none" : "none") + (l.beard != null ? "" : " (not drawn)") + ", body " + (pawn.story.bodyType != null ? pawn.story.bodyType.defName : "?")
                 + ", ownHead " + (l.ownHead != null) + ", ownFace " + (l.ownFace != null) + ", eyes " + (l.eyeLeft != null) + "/" + (l.eyeRight != null)
                 + ", scars " + (l.scars != null) + ", overlay " + (l.skinOverlay != null) + ", barbs " + (l.barbs != null) + ", plating " + (l.plating != null)
-                + ", ownHair " + l.ownHair + ", hat " + (l.hatKind ?? "-") + ", faceHidden " + l.faceHidden + ", headHidden " + l.headHidden + ", skips " + SkipNames(VanillaSkips(pawn)) + ", skin " + l.skin + ", faceTint " + l.faceTint + ", drawn " + Patches.DrawnAsModel(pawn) + AlienFigures.Report(l);
+                + ", ownHair " + l.ownHair + ", hat " + (l.hatKind ?? "-") + ", headDecals " + (l.headDecals != null ? l.headDecals.Count : 0) + ", faceHidden " + l.faceHidden + ", headHidden " + l.headHidden + ", skips " + SkipNames(VanillaSkips(pawn)) + ", skin " + l.skin + ", faceTint " + l.faceTint + ", drawn " + Patches.DrawnAsModel(pawn) + AlienFigures.Report(l);
         }
 
         // The races drawn as figures: people, and creepjoiners (people in all but race).
@@ -1092,6 +1099,7 @@ namespace IsoRim
             {
                 hatKind = null;
                 look.hat = null;
+                look.headDecals = null;
                 look.visor = false;
                 look.mouthWear = null;
                 look.eyeWear = null;
@@ -1588,6 +1596,20 @@ namespace IsoRim
                     string name = a.def.defName ?? "";
                     ApparelModels.Binding bound = ApparelModels.For(a.def);
                     Model boundModel = bound != null ? bound.ModelFor(build) : null;
+                    HeadDecal headDecal = HeadDecals.For(a.def);
+                    if (headDecal != null)
+                    {
+                        // A head decal (Api 47): projected onto the head (People.Merged) instead of a stand-in hat; a model
+                        // of its own from a binding is still drawn in its slot.
+                        if (!CustomLayers.Laying)
+                        {
+                            HeadDecals.Add(look, a, headDecal);
+                        }
+                        if (boundModel == null)
+                        {
+                            continue;
+                        }
+                    }
                     if (boundModel != null)
                     {
                         // Its own model from a binding: in its slot, in its colour (stuff faces: ApparelModels.Tint).

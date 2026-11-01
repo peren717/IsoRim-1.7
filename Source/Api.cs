@@ -92,7 +92,9 @@ namespace IsoRim
         // 44: a weapon's 3D muzzle (Api44.cs): TryGetMuzzle (a held gun's or a turret's muzzle as drawn now, the point IsoRim's own
         // shot flashes start from: Projectiles.ShotMuzzle), StandFleck and StandMote (an effect put there drawn standing in the
         // air at it, Emitters); the built-in Flourish adapter uses them (Compat/FlourishMuzzle.cs).
-        public static int Version => 46;
+        // 47: head decals (Api47.cs, HeadDecals): apparel marked IsoRim.HeadDecal (XML mod extension) or SetHeadDecal is drawn in 3D
+        // as its own worn head sprites projected onto the head (south front, east sides, north back) instead of a stand-in hat; HeadDecalOf.
+        public static int Version => 47;
 
         // ---- glass parts (Version 30)
 

@@ -405,6 +405,43 @@ namespace IsoRim
             return parts;
         }
 
+        // (Api 47) One textured part from triangles laid out corner by corner (HeadDecals): white corners, the material's own
+        // texture and colour. normals (one per corner, or null: lit by the face): shaded smooth as a figure's parts are
+        // (SmoothFigures.Bit; round: left out of stepped light, SmoothFigures.RoundBit). Null when there is nothing to draw.
+        internal static Part TexturedPart(List<Vector3> verts, List<Vector2> uvs, List<Vector3> normals, bool round, Material material)
+        {
+            if (verts == null || verts.Count == 0 || material == null)
+            {
+                return null;
+            }
+            Lists l = new Lists();
+            bool smooth = normals != null && normals.Count == verts.Count;
+            if (smooth)
+            {
+                l.normals = new List<Vector3>(verts.Count);
+                if (round)
+                {
+                    l.round = new List<bool>(verts.Count);
+                }
+            }
+            for (int i = 0; i < verts.Count; i++)
+            {
+                if (l.round != null)
+                {
+                    l.Add(verts[i], White, uvs[i], normals[i], true);
+                }
+                else if (smooth)
+                {
+                    l.Add(verts[i], White, uvs[i], normals[i]);
+                }
+                else
+                {
+                    l.Add(verts[i], White, uvs[i]);
+                }
+            }
+            return new Part { mesh = l.ToMesh(), material = material };
+        }
+
         private static Lists ListsOf(KeyValuePair<List<Vector3>, List<Color32>> corners)
         {
             Lists l = new Lists();
