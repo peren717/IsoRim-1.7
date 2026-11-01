@@ -78,10 +78,10 @@ namespace IsoRim
         public bool cutHover = true;     // walls under the pointer are cut down
         public bool cutRooms = false;    // walls in front of every roofed room are cut down
         public bool cutWholeWall = false;   // stacked floors: a lowered wall is lowered on every shown floor of its column (Cutaway.AddColumns)
-        public bool buildSeeThrough = true; // with a designator in hand, what is near the pointer is drawn see-through (BuildSee)
+        public bool buildSeeThrough = false; // with a designator in hand, what is near the pointer is drawn see-through (BuildSee)
         public float seeStrength = 0.85f;   // BuildSee: share of pixels dropped at the pointer (before: fixed 0.55)
         public float seeRadius = 7f;        // BuildSee: cells to where it ends, full strength to 3 cells less (before: fixed 4.5)
-        public bool mineXray = true;        // MineXray: with the Mine tool on an upper floor, the floor below outlined
+        public bool mineXray = false;       // MineXray: with the Mine tool on an upper floor, the floor below outlined
         public bool mineCrosshair = false;   // MineXray: a crosshair along x and z from the pointer's cell
         public int turn = 0;             // eighth turns of the camera, clockwise
         public bool snap45 = true;       // Q and E turn an eighth (45 degrees) at a time; otherwise a quarter
@@ -220,10 +220,10 @@ namespace IsoRim
             Scribe_Values.Look(ref cutHover, "cutHover", true);
             Scribe_Values.Look(ref cutRooms, "cutRooms", false);
             Scribe_Values.Look(ref cutWholeWall, "cutWholeWall", false);
-            Scribe_Values.Look(ref buildSeeThrough, "buildSeeThrough", true);
+            Scribe_Values.Look(ref buildSeeThrough, "buildSeeThrough", false);
             Scribe_Values.Look(ref seeStrength, "seeStrength", 0.85f);
             Scribe_Values.Look(ref seeRadius, "seeRadius", 7f);
-            Scribe_Values.Look(ref mineXray, "mineXray", true);
+            Scribe_Values.Look(ref mineXray, "mineXray", false);
             Scribe_Values.Look(ref mineCrosshair, "mineCrosshair", false);
             Scribe_Values.Look(ref turn, "turnSteps", 0);
             Scribe_Values.Look(ref snap45, "snap45", true);
