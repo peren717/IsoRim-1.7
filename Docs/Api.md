@@ -61,10 +61,11 @@ if (IsoRim.Api.Version >= 42) { /* AddModelRule: an addon's code names the Model
 if (IsoRim.Api.Version >= 43) { /* ApparelModelDef.shown: when a Shield binding's model shows (Default, Weapon, Always; part 3) */ }
 if (IsoRim.Api.Version >= 44) { /* a weapon's 3D muzzle: TryGetMuzzle, StandFleck, StandMote (part 28) */ }
 if (IsoRim.Api.Version >= 45) { /* posture rules: AddPostureRule, AddProneFacingRule, PostureProne, PostureOf, DrawnPostureOf (part 29) */ }
+if (IsoRim.Api.Version >= 46) { /* burning fires: AddFireLook, AddBurningFire; burning fires drawn as 3D particles (part 30) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1592,6 +1593,45 @@ static IntVec3 MyThreat(Pawn p) => MyMod.ThreatCell(p) ?? IntVec3.Invalid;   // 
 - **Failing soft:** a rule that throws is logged once and passes from then on. Only standard `System.Func` delegates, so
   code calling these after an `Api.Version >= 45` check never breaks on an older IsoRim (create the delegate inside a method
   that only runs after the check).
+
+## Part 30: burning fires (version 46)
+
+IsoRim draws every burning fire (the game's `Fire`: on grass and plants, on top of buildings and items, on pawns) in 3D
+as low-poly particles: flame tongues born at the base that rise, cool from yellow-white through orange to red and shrink away, sparks
+that fly up with the wind and twinkle out, and see-through smoke puffs rising over the flame. The game's own flat smoke and
+micro sparks for these fires are left out while the 3D fire draws; its fire glow and light are kept. Campfires, torches and
+other fire overlays (CompFireOverlay, worn torches) are not changed.
+
+For a mod with a fire of its own colour, or its own fire thing and flicker graphic (not `Fire` / `Graphic_Flicker`):
+
+```csharp
+// IsoRim.Api.Version >= 46; once, at startup (a [StaticConstructorOnStartup] class is fine)
+IsoRim.Api.AddFireLook(MyDefOf.MyFire,
+    new[] { new Color(1f, 0.86f, 1f), new Color(0.8f, 0.44f, 1f), new Color(0.4f, 0.13f, 0.7f) },   // hottest .. coldest
+    new Color(0.92f, 0.74f, 1f),     // sparks
+    new Color(0.44f, 0.40f, 0.50f)); // smoke (darkest; it lightens as it rises)
+IsoRim.Api.AddBurningFire(typeof(MyFireGraphic), typeof(MyFire), new Func<Thing, float>(MySize));
+
+static float MySize(Thing t) => t.def == MyDefOf.MyFire ? ((MyFire)t).fireSize : -1f;   // negative: pass
+```
+
+| Member | What it does |
+|---|---|
+| `Api.AddFireLook(ThingDef fireDef, Color[] flame, Color spark, Color smoke)` | The burning fires of this def in these colours: flame from the hottest (born at the base) to the coldest (dying out at the top), evenly spaced, at least one key. Other defs keep IsoRim's yellow, orange and red. A second call for the same def replaces the first. |
+| `Api.AddBurningFire(Type graphicClass, Type thingClass, Func<Thing, float> fireSize)` | While the 3D view is on, graphicClass's own `DrawWorker` is left out for every thing fireSize gives a size for (the game's fire size, as `Fire.fireSize`: 0.1 .. 1.75), and IsoRim's 3D fire stands in: on the ground or on top of what stands in its cell, or on the pawn that is its `AttachableThing.parent`. A negative size passes (the graphic draws as it does, e.g. a building's fire overlay using the same class). thingClass (optional): while its own `TickInterval` runs for a thing fireSize draws, `FleckMaker.ThrowSmoke` and `ThrowMicroSparks` do nothing (as for the game's fires). False (logged) when a class or method is missing. |
+
+- **Look:** slender flame tongues drawn as additive light (they merge into one glowing mass, white-hot where most
+  overlap; no outline), dying out by shrinking; pieces of one colour are one mesh drawn instanced. Give colours as you want
+  them seen over open ground: IsoRim only takes a little green off them (the ground under them adds it back). Each
+  particle's place, size and colour comes from the game time and the fire's thing ID: it stands still while paused and is
+  the same every run. The light is gentler on fires on pawns and over bright ground (snow, light floors), so they stay
+  fire-coloured. The smoke is soft see-through puffs (lighter as they rise) in the look's smoke colour.
+- **Cost:** a budget of about 6000 pieces a frame over all fires in view (the more fires, the fewer each), fewer for small
+  fires and when zoomed out; smoke on a share of the fires when many burn. Only fires the game draws (in view) cost anything.
+- **What it needs:** your graphic class must declare `DrawWorker` itself, and thingClass `TickInterval` (both are patched
+  on the class that declares them). The size delegate is asked every frame per fire and per tick: keep it cheap.
+- **Failing soft:** a size delegate that throws is logged once and ignored from then on (the graphic draws itself). Only
+  standard `System.Func`, so code calling these after an `Api.Version >= 46` check never breaks on an older IsoRim.
 
 ## Part M: model packs (IsoRim.ModelDef)
 

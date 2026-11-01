@@ -17,6 +17,10 @@ namespace IsoRim
     //   set=<setting>,<value>        an IsoRim setting (bool 0/1, int, float or text, e.g. lookName,Noir)
     //   delay=<frames>               apply this pass that many frames after the clock jump (default 10)
     //   fire=x,z                     a fire in the cell (also on a wall)
+    //   burn3d=0|1                   burning fires flat (the game's sprite) or as 3D particles (default)
+    //   firedef=<Def>,x,z,size       a fire of another def (another mod's, e.g. VGE_Astrofire) in the cell, its fireSize field set
+    //   explosion=x,z,radius         a real bomb explosion there (GenExplosion: its own flat smoke, not a fire's)
+    //   firestats=1                  logs the fire particles and fires drawn in the last frame and the flat motes left out
     //   gas=x,z,<GasType>,<radius>   a gas cloud
     //   snow=<depth>,x0,z0,x1,z1     snow over a rectangle
     //   terrain=<Def>,x0,z0,x1,z1    terrain over a rectangle
@@ -283,14 +287,9 @@ namespace IsoRim
                     break;
                 case "fire":
                 {
-                    // fire=x,z[,size[,shape]]: a fire on the ground (or on what stands there), size 1 by default; shape 0..3
-                    // forces its flame's shape (Effects.BurnFlame).
+                    // fire=x,z[,size]: a fire on the ground (or on what stands there), size 1 by default.
                     Fire fire = (Fire)ThingMaker.MakeThing(ThingDefOf.Fire);
                     fire.fireSize = a.Length > 2 ? F(a[2]) : 1f;
-                    if (a.Length > 3)
-                    {
-                        Effects.ForcedShape[fire.thingIDNumber] = I(a[3]);
-                    }
                     GenSpawn.Spawn(fire, new IntVec3(I(a[0]), 0, I(a[1])), map, Rot4.North);
                     break;
                 }
@@ -310,7 +309,27 @@ namespace IsoRim
                     break;
                 }
                 case "burn3d":
-                    Effects.BurningOn = a[0] == "1";   // burn3d=0: burning fires as the flat sprite (before)
+                    Effects.BurningOn = a[0] != "0";   // burn3d=0: burning fires as the flat sprite (the game's look)
+                    break;
+                case "firedef":
+                {
+                    ThingDef fd = DefDatabase<ThingDef>.GetNamed(a[0]);
+                    Thing ft = ThingMaker.MakeThing(fd);
+                    FieldInfo sf = AccessTools.Field(ft.GetType(), "fireSize");
+                    if (sf != null)
+                    {
+                        sf.SetValue(ft, F(a[3]));
+                    }
+                    GenSpawn.Spawn(ft, new IntVec3(I(a[1]), 0, I(a[2])), map, Rot4.North);
+                    Log.Message("[IsoRim probe] firedef " + a[0] + " (" + ft.GetType().FullName + ") at " + a[1] + "," + a[2] + " size " + a[3] + (sf == null ? " (no fireSize field)" : ""));
+                    break;
+                }
+                case "explosion":
+                    GenExplosion.DoExplosion(new IntVec3(I(a[0]), 0, I(a[1])), map, F(a[2]), DamageDefOf.Bomb, null);
+                    break;
+                case "firestats":
+                    Log.Message("[IsoRim probe] fire particles " + Api.Dev.FireParticlesDrawn + ", fires " + Api.Dev.FiresDrawn + ", flat smoke/sparks left out " + Api.Dev.FireMotesHidden
+                        + ", let through " + Api.Dev.FireMotesPassed + ", ticks " + Find.TickManager.TicksGame + ", paused " + Find.TickManager.Paused);
                     break;
                 case "burn":
                 {

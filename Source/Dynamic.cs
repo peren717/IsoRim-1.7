@@ -51,6 +51,7 @@ namespace IsoRim
             public Material material;
             public bool outline;
             public bool beam;      // (Api 33) a model's beam part: drawn at once, as light (Beams)
+            public bool alone;     // (Api 46) drawn at once, never batched (see-through fire smoke)
         }
 
         private class Lists
@@ -485,6 +486,15 @@ namespace IsoRim
             }
         }
 
+        // Ready-made parts with a whole matrix of their own (drawn space, before the floor shift): the fire particles (FireFx).
+        internal static void SubmitParts(List<Part> parts, Matrix4x4 matrix)
+        {
+            if (parts != null && parts.Count > 0)
+            {
+                Submit(parts, matrix);
+            }
+        }
+
         private static void Submit(List<Part> parts, Matrix4x4 matrix)
         {
             if (FigureScope.Active && FigureScope.Submit(parts, ref matrix))
@@ -526,7 +536,7 @@ namespace IsoRim
                         Beams.PartDraws++;
                         continue;
                     }
-                    if (!PartBatches.Add(p.mesh, matrix, p.material, floor))
+                    if (p.alone || !PartBatches.Add(p.mesh, matrix, p.material, floor))
                     {
                         IsoGlow.DrawLit(p.mesh, matrix, p.material, 0, RoofClip.FloorBlock(floor));   // clipped on its own floor (RoofClip)
                     }
@@ -2646,11 +2656,32 @@ namespace IsoRim
         // ---- burning fires --------------------------------------------------------------------
         // The game draws every fire that burns (the Fire thing: in a cell, burning its grass, plants, building, items or
         // corpse, or attached to a pawn on fire) one way only: its flat flickering sprite, Graphic_Flicker.DrawWorker,
-        // sized by fireSize. In 3D that draw is the campfire's flame instead (Patches.FlickerDraw_Prefix), sized as the
-        // game sizes the sprite: on the ground, on top of what burns in the cell (a wall, a bed, an item; a plant burns from the ground up), or on the body of
-        // the one it burns on, on the side facing the camera. The game still decides when it is drawn (in view, not
-        // fogged, not on a hidden floor); its light, fire glow, sparks and smoke stay the game's. False: draw the sprite.
+        // sized by fireSize. In 3D that draw is a fire of 3D particles instead (Patches.FlickerDraw_Prefix, FireFx), sized as
+        // the game sizes the sprite: on the ground, on top of what burns in the cell (a wall, a bed, an item; a plant burns
+        // from the ground up), or on the body of the one it burns on, on the side facing the camera. The game still decides
+        // when it is drawn (in view, not fogged, not on a hidden floor); its light and fire glow stay the game's, its flat
+        // smoke and micro sparks are left out while this draws (FireMotes: ours rise instead). Other mods' fires with their
+        // own thing and graphic classes come here through Api 46 (BurningFires). False: draw the sprite.
         public static bool BurningFire(Fire fire)
+        {
+            return fire != null && BurningThing(fire, fire.fireSize);
+        }
+
+        // Whether burning fires are drawn as 3D particles now (and so the game's flat smoke and sparks for them are left out).
+        public static bool ParticleFires
+        {
+            get
+            {
+                IsoRimSettings st = IsoRimMod.Settings;
+                return st.effects3D && st.models3D && BurningOn && Find.TickManager != null && !FireFxFailed;
+            }
+        }
+
+        private static bool FireFxFailed;   // the particles could not be made: the game's sprites, smoke and sparks as before
+
+        // Any burning fire thing (a Fire, or another mod's fire through Api 46) of the game's fire size fireSize; its parent
+        // (AttachableThing) is the pawn it burns on.
+        internal static bool BurningThing(Thing fire, float fireSize)
         {
             IsoRimSettings st = IsoRimMod.Settings;
             if (!st.effects3D || !st.models3D || !BurningOn || Find.TickManager == null)
@@ -2658,8 +2689,10 @@ namespace IsoRim
                 return false;
             }
             Load();
-            if (flame == null)
+            FireLook look = FireFx.LookFor(fire.def);
+            if (look == null)
             {
+                FireFxFailed = true;
                 return false;
             }
             if (HiddenByFog(fire))
@@ -2668,12 +2701,10 @@ namespace IsoRim
             }
             try
             {
-                float s = Mathf.Min(fire.fireSize / 1.2f, 1.2f);   // the sprite's size (Graphic_Flicker)
-                float sy = s * BurnTall;
-                float sxz = s * BurnWide;
+                float s = Mathf.Min(fireSize / 1.2f, 1.2f);   // the sprite's size (Graphic_Flicker)
                 Vector3 at = fire.DrawPos;
                 Vector3 foot = new Vector3(at.x, 0f, at.z);
-                Thing on = fire.parent;
+                Thing on = (fire as AttachableThing)?.parent;
                 bool lifted = false;
                 Matrix4x4 wasFloor = DrawHook.floorMatrix;
                 bool wasOnFloor = DrawHook.floor;
@@ -2682,7 +2713,7 @@ namespace IsoRim
                     float top = BurningBase(fire);
                     if (top > 0f)
                     {
-                        foot.y = Mathf.Max(0f, top - 0.2f * FlameHeight * sy);   // the top of it burns
+                        foot.y = Mathf.Max(0f, top - 0.08f * s);   // the top of it burns
                     }
                 }
                 else
@@ -2691,11 +2722,10 @@ namespace IsoRim
                     Pawn p = on as Pawn;
                     bool lying = p == null || p.Dead || p.Downed;
                     float size = p != null ? Mathf.Clamp(p.BodySize, 0.3f, 2f) : 1f;
-                    sy = Mathf.Max(s, MinOnBody) * BurnTall;
-                    sxz = Mathf.Max(s, MinOnBody) * BurnWide;
+                    s = Mathf.Max(s, MinOnBody);
                     float mid = lying ? 0.12f * Mathf.Sqrt(size) : Interaction.PickHeight(p) * 0.45f;
-                    foot.y = Mathf.Max(0f, mid - 0.4f * FlameHeight * sy);
-                    foot -= View3D.GroundForward * (lying ? 0.14f : 0.22f) * Mathf.Sqrt(size);   // in front of the body
+                    foot.y = Mathf.Max(0f, mid - (lying ? 0.1f : 0.3f) * s);
+                    foot -= View3D.GroundForward * (lying ? 0.14f : 0.4f) * Mathf.Sqrt(size);   // in front of the body
                     if (on.Spawned)
                     {
                         lifted = true;   // a pawn on a stair step or a bridge deck: its rise (the fire's own draw has none)
@@ -2705,7 +2735,10 @@ namespace IsoRim
                 }
                 try
                 {
-                    BurnFlame(foot, sy, sxz, fire.thingIDNumber, Find.TickManager.TicksGame / 60f);
+                    Map map = fire.MapHeld;
+                    float wind = map != null && map.windManager != null ? Mathf.Clamp(map.windManager.WindSpeed, 0f, 2f) : 0.5f;
+                    int level = on != null ? 1 : FireFx.LevelFor(map, fire.Position);   // softer on a body (light clothes) and over bright ground
+                    FireFx.Draw(foot, s, fire.thingIDNumber, Find.TickManager.TicksGame / 60f, look, wind, puff, level);
                 }
                 finally
                 {
@@ -2723,111 +2756,12 @@ namespace IsoRim
             return true;
         }
 
-        public static bool BurningOn = true;   // harness: burn3d=0 draws the flat sprite (the look before)
-        public static readonly Dictionary<int, int> ForcedShape = new Dictionary<int, int>();   // harness: fire=x,z,size,shape
+        public static bool BurningOn = true;   // harness: burn3d=0 draws the flat sprite (the game's own look)
 
-        // A burning fire is one of four shapes, so a field of them doesn't repeat: 0 one tall tongue, 1 a fork of two
-        // leaning apart, 2 a low wide lick of four, 3 a cluster leaning one way. Its ID picks the shape (it never changes)
-        // and its turn, size (+-15% across and up) and beat, so neighbours don't pulse together. Each has the yellow
-        // heart a little wider than the campfire's and a little toward the camera, as the game's fire has a yellow centre.
-        private static void BurnFlame(Vector3 foot, float sy, float sxz, int id, float t)
-        {
-            uint h = Mix((uint)id * 2654435761u + 0x3C6EF372u);
-            uint g = Mix(h ^ 0x9E3779B9u);
-            int shape = (int)(h & 3u);
-            int forced;
-            if (ForcedShape.Count > 0 && ForcedShape.TryGetValue(id, out forced))
-            {
-                shape = forced & 3;
-            }
-            float yaw = ((h >> 2) & 1023u) * (360f / 1024f);
-            if (shape == 1 || shape == 3)
-            {
-                // The fork and the lean read only across the view: turned to the screen's sideways, give or take 35 degrees.
-                Vector3 f = View3D.GroundForward;
-                yaw = Mathf.Atan2(f.x, f.z) * Mathf.Rad2Deg + (yaw / 360f - 0.5f) * 70f + ((g >> 20) & 1u) * 180f;
-            }
-            sxz *= 0.85f + 0.30f * (((h >> 12) & 255u) / 255f);
-            sy *= 0.85f + 0.30f * (((h >> 20) & 255u) / 255f);
-            float own = (g & 1023u) * (6.2832f / 1024f);
-            t *= 0.9f + 0.2f * (((g >> 10) & 255u) / 255f);   // its own pace
-            Model m = flame;
-            float b = t * 7f + own;
-            float coreTall = 0.44f, coreWide = 0.22f;
-            switch (shape)
-            {
-                case 0:   // one tall tongue with a small one at its side
-                    Tongue(m, foot, yaw, sy, sxz, 0f, 0f, 0.34f, 1.02f + 0.15f * Mathf.Sin(b) + 0.06f * Mathf.Sin(b * 2.3f),
-                        4f * Mathf.Sin(b * 0.7f), 0f, t * 50f);
-                    Tongue(m, foot, yaw, sy, sxz, 0.14f, 0.02f, 0.24f, 0.48f + 0.09f * Mathf.Sin(b * 1.4f + 2f),
-                        16f + 5f * Mathf.Sin(b * 0.9f), 0.15f, -t * 60f);
-                    coreTall = 0.52f;
-                    break;
-                case 1:   // a fork: two tongues leaning apart
-                    Tongue(m, foot, yaw, sy, sxz, 0.09f, 0f, 0.28f, 0.80f + 0.13f * Mathf.Sin(b) + 0.05f * Mathf.Sin(b * 2.1f),
-                        17f + 5f * Mathf.Sin(b * 0.8f), 0f, t * 50f);
-                    Tongue(m, foot, yaw, sy, sxz, -0.09f, 0f, 0.26f, 0.62f + 0.12f * Mathf.Sin(b * 1.2f + 2.4f),
-                        17f + 5f * Mathf.Sin(b * 0.9f + 1.3f), Mathf.PI, -t * 55f);
-                    break;
-                case 2:   // a low wide lick of four
-                    for (int i = 0; i < 4; i++)
-                    {
-                        float a = i * 1.5708f + 0.4f;
-                        float bi = b * (1f + 0.13f * i) + i * 1.9f;
-                        Tongue(m, foot, yaw, sy, sxz, 0.17f * Mathf.Cos(a), 0.17f * Mathf.Sin(a), 0.25f,
-                            (i % 2 == 0 ? 0.40f : 0.30f) + 0.07f * Mathf.Sin(bi), 12f + 4f * Mathf.Sin(bi * 0.6f), a,
-                            t * 45f * (i % 2 == 0 ? 1f : -1f));
-                    }
-                    coreTall = 0.32f;
-                    coreWide = 0.28f;
-                    break;
-                default:   // a cluster leaning one way, its tongues of three heights
-                {
-                    float lean = 18f + 7f * Mathf.Sin(b * 0.8f);
-                    Tongue(m, foot, yaw, sy, sxz, -0.07f, 0f, 0.29f, 0.74f + 0.12f * Mathf.Sin(b * 1.1f), lean, 0f, t * 50f);
-                    Tongue(m, foot, yaw, sy, sxz, 0.04f, 0.09f, 0.23f, 0.50f + 0.10f * Mathf.Sin(b * 1.3f + 1.7f), lean * 0.8f, 0.3f, -t * 60f);
-                    Tongue(m, foot, yaw, sy, sxz, 0.05f, -0.09f, 0.21f, 0.36f + 0.08f * Mathf.Sin(b * 1.6f + 3.1f), lean * 1.2f, -0.3f, t * 70f);
-                    break;
-                }
-            }
-            if (flameCore != null)
-            {
-                Vector3 at = foot - View3D.GroundForward * (0.05f * sxz);
-                Matrix4x4 local = Matrix4x4.Translate(new Vector3(0f, 0.06f * sy, 0f))
-                    * Matrix4x4.Scale(new Vector3(coreWide * sxz, (coreTall + 0.07f * Mathf.Sin(t * 11f + own)) * sy, coreWide * sxz));
-                DynamicModels.DrawLocal(flameCore, at, yaw + t * 90f, local, Color.white, null);
-            }
-        }
-
-        // One tongue of a burning fire: at (x, z) over the foot, wide and tall as the flame model's share, tipped lean
-        // degrees toward the angle dir (radians) and spun about its own axis.
-        private static void Tongue(Model m, Vector3 foot, float yaw, float sy, float sxz, float x, float z, float wide, float tall,
-            float lean, float dir, float spin)
-        {
-            Matrix4x4 local = Matrix4x4.Translate(new Vector3(x * sxz, FlameBase * sy, z * sxz))
-                * Matrix4x4.Rotate(Quaternion.AngleAxis(lean, new Vector3(Mathf.Sin(dir), 0f, -Mathf.Cos(dir))))
-                * Matrix4x4.Scale(new Vector3(wide * sxz, tall * sy, wide * sxz))
-                * Matrix4x4.Rotate(Quaternion.AngleAxis(spin, Vector3.up));
-            DynamicModels.DrawLocal(m, foot, yaw, local, Color.white, null);
-        }
-
-        private static uint Mix(uint x)
-        {
-            x ^= x >> 16;
-            x *= 0x7feb352du;
-            x ^= x >> 15;
-            x *= 0x846ca68bu;
-            x ^= x >> 16;
-            return x;
-        }
-
-        // The burning fire's flame against the campfire's at the same sprite size.
-        private const float BurnTall = 1.25f;
-        private const float BurnWide = 1.8f;
-        private const float MinOnBody = 0.3f;   // the least sprite size of a fire on someone (smaller hides in the body)
+        private const float MinOnBody = 0.6f;   // the least sprite size of a fire on someone (smaller hides in the body)
 
         // The top of what burns in a fire's cell (not plants, which burn from the ground; not people or other fires).
-        private static float BurningBase(Fire fire)
+        private static float BurningBase(Thing fire)
         {
             Map map = fire.Map;
             if (map == null || !fire.Position.InBounds(map))
@@ -2839,7 +2773,7 @@ namespace IsoRim
             for (int i = 0; i < things.Count; i++)
             {
                 Thing o = things[i];
-                if (o != fire && !(o is Pawn) && !(o is Fire) && !(o is Plant) && !(o is Corpse) && !(o is Filth) && !(o is Mote))
+                if (o != fire && !(o is Pawn) && !(o is AttachableThing) && !(o is Plant) && !(o is Corpse) && !(o is Filth) && !(o is Mote))
                 {
                     h = Mathf.Max(h, Interaction.PickHeight(o));
                 }

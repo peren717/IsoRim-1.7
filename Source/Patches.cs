@@ -431,9 +431,11 @@ namespace IsoRim
             Patch("3D models of buildings drawn every frame", AccessTools.DeclaredMethod(typeof(CompDarklightOverlay), "PostDraw"),
                 prefix: nameof(FireOverlayPostDraw_Prefix), finalizer: nameof(FireOverlayPostDraw_Finalizer));
             // Burning fires (grass, buildings, items, corpses, pawns on fire): the game draws every one with its flat
-            // flickering sprite; in 3D that draw is the campfire's flame (Effects.BurningFire).
+            // flickering sprite; in 3D that draw is a fire of 3D particles (Effects.BurningFire, FireFx), its flat smoke and
+            // micro sparks left out while it draws (FireMotes, Api 46).
             Patch("3D burning fires", AccessTools.DeclaredMethod(typeof(Graphic_Flicker), "DrawWorker"),
                 prefix: nameof(FlickerDraw_Prefix));
+            FireMotes.ApplyCore(harmony);
             // Ritual fires (pyre, effigy, sacrificial flag, burnbong): their live flame is Effects'.
             Patch("3D models of buildings drawn every frame", AccessTools.DeclaredMethod(typeof(CompRitualFireOverlay), "PostDraw"),
                 prefix: nameof(FireOverlayPostDraw_Prefix), finalizer: nameof(FireOverlayPostDraw_Finalizer));
