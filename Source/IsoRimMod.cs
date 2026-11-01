@@ -64,8 +64,8 @@ namespace IsoRim
         public int steppedBands = 3;        // 2 or 3
         public bool rimLight = false;       // a faint light edge on models' silhouettes away from the sun (RimAmount)
         public float rimStrength = 0.5f;    // 0..1
-        public bool ambientOcclusion = false;   // screen-space AO in the 3D view (AmbientOcclusion.cs)
-        public float aoStrength = 0.6f;         // 0..1
+        public bool ambientOcclusion = true;    // screen-space AO in the 3D view (AmbientOcclusion.cs)
+        public float aoStrength = 0.8f;         // 0..1
         public int aoSteps = 0;                 // 0 smooth, 2 or 3 flat levels
         public bool texturedModels = true;
         public bool ruggedRock = true;
@@ -206,8 +206,8 @@ namespace IsoRim
             Scribe_Values.Look(ref steppedBands, "steppedBands", 3);
             Scribe_Values.Look(ref rimLight, "rimLight", false);
             Scribe_Values.Look(ref rimStrength, "rimStrength", 0.5f);
-            Scribe_Values.Look(ref ambientOcclusion, "ambientOcclusion", false);
-            Scribe_Values.Look(ref aoStrength, "aoStrength", 0.6f);
+            Scribe_Values.Look(ref ambientOcclusion, "ambientOcclusion", true);
+            Scribe_Values.Look(ref aoStrength, "aoStrength", 0.8f);
             Scribe_Values.Look(ref aoSteps, "aoSteps", 0);
             Scribe_Values.Look(ref texturedModels, "texturedModels", true);
             Scribe_Values.Look(ref ruggedRock, "ruggedRock", true);
