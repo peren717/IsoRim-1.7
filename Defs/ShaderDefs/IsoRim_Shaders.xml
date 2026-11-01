@@ -466,7 +466,7 @@
     </shaderProgram>
   </ShaderDef>
 
-  <!-- Ambient occlusion (AmbientOcclusion.cs, option, default off): one full-screen pass over the map drawn so far
+  <!-- Ambient occlusion (AmbientOcclusion.cs, option, default on): one full-screen pass over the map drawn so far
        (scene grab IsoRimAO; DepthGrab copies the scene depth at the same grab). Queue 2450: after the opaque 3D
        geometry and the ground shadows (2420), before cut-out cards and sprites (2900), see-through things, the night
        light pass (3099/3100) and the fog lid (3175). -->
@@ -505,6 +505,46 @@
       <sceneGrab>
         <name>IsoRimAOBlur</name>
         <queue>2451</queue>
+      </sceneGrab>
+    </shaderProgram>
+  </ShaderDef>
+
+  <!-- Sun shadows on walls and models (SunShadowsSS.cs, option, default off): half-resolution march toward the sun through
+       the scene depth right after the AO passes, then IsoRimSSSBlur upsamples and darkens (before cards at 2900). -->
+  <ShaderDef>
+    <defName>IsoRimSSS</defName>
+    <shaderProgram>
+      <vertexShaderFileName>IsoRimScreen.vert.glsl</vertexShaderFileName>
+      <fragmentShaderFileName>IsoRimSSS.frag.glsl</fragmentShaderFileName>
+      <useTexture>false</useTexture>
+      <flipTextureST>false</flipTextureST>
+      <blendMode>Opaque</blendMode>
+      <depthTest>false</depthTest>
+      <depthWrite>false</depthWrite>
+      <cullMode>None</cullMode>
+      <renderQueue>2452</renderQueue>
+      <sceneGrab>
+        <name>IsoRimSSS</name>
+        <queue>2452</queue>
+      </sceneGrab>
+    </shaderProgram>
+  </ShaderDef>
+
+  <ShaderDef>
+    <defName>IsoRimSSSBlur</defName>
+    <shaderProgram>
+      <vertexShaderFileName>IsoRimScreen.vert.glsl</vertexShaderFileName>
+      <fragmentShaderFileName>IsoRimSSSBlur.frag.glsl</fragmentShaderFileName>
+      <useTexture>false</useTexture>
+      <flipTextureST>false</flipTextureST>
+      <blendMode>Opaque</blendMode>
+      <depthTest>false</depthTest>
+      <depthWrite>false</depthWrite>
+      <cullMode>None</cullMode>
+      <renderQueue>2453</renderQueue>
+      <sceneGrab>
+        <name>IsoRimSSSBlur</name>
+        <queue>2453</queue>
       </sceneGrab>
     </shaderProgram>
   </ShaderDef>

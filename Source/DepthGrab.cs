@@ -8,7 +8,7 @@ using W = Waylith.Rendering;
 
 namespace IsoRim
 {
-    // Readable scene depth for full-screen passes (internal, used by AmbientOcclusion).
+    // Readable scene depth for full-screen passes (internal, used by AmbientOcclusion and SunShadowsSS).
     //
     // Waylith has no depth grab: a ShaderDef <sceneGrab> copies colour only. This adds the depth half for one grab point
     // (GrabName). A postfix on Waylith.Rendering.SceneGrabTargets.RecordGrab (render thread, between two slices of the
@@ -40,6 +40,8 @@ namespace IsoRim
         // Frames that got a fresh depth copy (harness checks).
         public static int Copies;
         public static int Recreated;
+        public static int Reused;
+        private static bool aoCopied;   // render thread: AO's grab copied the depth, the sun shadows' grab next reuses it
 
         // Harness only (probe key aofail=1): the next grab throws before recording anything (fail-soft test).
         public static volatile bool SimulateFailure;
@@ -116,18 +118,30 @@ namespace IsoRim
         private static void Fail(string what, Exception e)
         {
             Broken = true;
-            Log.Warning("[IsoRim] Ambient occlusion is off for this session: reading the scene depth " + what + (e != null ? ": " + e : "."));
+            Log.Warning("[IsoRim] Ambient occlusion and sun shadows on walls are off for this session: reading the scene depth " + what + (e != null ? ": " + e : "."));
         }
 
         // Render thread.
         public static void RecordGrabPostfix(CommandBuffer cmd, W.SceneGrabPoint point, VkImage sceneImage)
         {
-            if (Broken || depthTex == null || point == null || point.Name != GrabName)
+            if (Broken || depthTex == null || point == null || (point.Name != GrabName && point.Name != SunShadowsSS.GrabName))
             {
                 return;
             }
             try
             {
+                // AO's grab (2450) and the sun shadows' (2452) see the same depth (only full-screen passes without depth
+                // writes run between them): when AO copied this frame, the sun shadows' grab reuses that copy.
+                if (point.Name == GrabName)
+                {
+                    aoCopied = true;
+                }
+                else if (aoCopied)
+                {
+                    aoCopied = false;
+                    Reused++;
+                    return;
+                }
                 if (SimulateFailure)
                 {
                     throw new InvalidOperationException("simulated failure (harness)");

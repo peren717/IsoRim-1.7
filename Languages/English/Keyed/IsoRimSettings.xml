@@ -319,6 +319,9 @@
   <R3D_Settings_AOSteps>  Tones</R3D_Settings_AOSteps>
   <R3D_Settings_AOStepsTip>Smooth, or 2 or 3 flat tones like the stepped light.</R3D_Settings_AOStepsTip>
   <R3D_Settings_AOSmooth>Smooth</R3D_Settings_AOSmooth>
+  <R3D_Settings_SSS>Sun shadows on walls and models</R3D_Settings_SSS>
+  <R3D_Settings_SSSStrength>  Strength</R3D_Settings_SSSStrength>
+  <R3D_Settings_SSSTip>Shadows of walls and things also fall on walls, furniture and figures.</R3D_Settings_SSSTip>
 
   <!-- ==================== Graphics ==================== -->
   <R3D_Settings_Image>Image</R3D_Settings_Image>

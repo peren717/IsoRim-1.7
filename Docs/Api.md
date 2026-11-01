@@ -1753,3 +1753,17 @@ public class PatchOperation_IfIsoRimApi : PatchOperation
   older IsoRim (no change, no error) and the races without the pack (cards). Round 2 added `face` on and off (set live in the
   alien tuning window, probe keys `alientune`, `alientuneset`, `alientunecopy`), cards while lying and crawling, and a trial pack for
   Kiiro Race (HAR, Workshop 2988200143) with `hair` Card, ear `hatLift` and Kiiro's own and vanilla hats.
+
+## Note: screen-space shading (ambient occlusion, sun shadows on walls and models)
+
+Not an Api: two options in the Graphics tab shade the 3D view from the scene depth, and what a mod draws takes part only
+through that depth. Ambient occlusion (default on) and Sun shadows on walls and models (default off, strength 50 to 200%,
+100% = as dark as the game's sun shadows on the ground) read the depth of everything drawn before render queue 2450 (opaque
+meshes that write depth: IsoRim's walls, rock, models, pawns, trees, and your own opaque meshes). Such geometry casts and
+receives sun shadows and AO; cut-out cards and sprites (queue 2900 and later), see-through things and anything without
+depth do neither. The ground (terrain, floors, things flat on it) never receives either: the game's ground shadows,
+IsoRim's tree and ground shadows and other mods' ground shadows stay as they are. The sun direction is the game's shadow
+vector (one cast length per wall height), so a mod moving the game's shadows moves these too. ProjectZ floors hidden above
+the viewed one are not drawn and so cast nothing on the floors below. Where AO and sun shadow meet, the darker of the two
+is used. Both are off for the session (rows greyed) when the engine's scene depth cannot be read; the game draws as
+without them.

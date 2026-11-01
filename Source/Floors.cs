@@ -492,6 +492,27 @@ namespace IsoRim
         // ---- the pointer
 
         // The number of floors above the ground this frame (0 without floors or with the 3D view off).
+        // The height (drawn space, cells) of the floor of the top shown floor (0 without floors): the sun shadows' tallest caster.
+        public static float TopShownHeight
+        {
+            get
+            {
+                if (!On)
+                {
+                    return 0f;
+                }
+                float h = 0f;
+                for (int k = 1; k <= count && k <= MaxFloors; k++)
+                {
+                    if (shown[k])
+                    {
+                        h = Mathf.Max(h, heights[k]);
+                    }
+                }
+                return h;
+            }
+        }
+
         public static int Count
         {
             get { return On ? count : 0; }

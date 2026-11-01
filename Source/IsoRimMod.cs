@@ -67,6 +67,8 @@ namespace IsoRim
         public bool ambientOcclusion = true;    // screen-space AO in the 3D view (AmbientOcclusion.cs)
         public float aoStrength = 0.8f;         // 0..1
         public int aoSteps = 0;                 // 0 smooth, 2 or 3 flat levels
+        public bool screenSunShadows = false;   // sun shadows on walls and models in the 3D view (SunShadowsSS.cs)
+        public float sssStrength = 1f;          // 0.5..2, 1 = as dark as the game's ground shadows
         public bool texturedModels = true;
         public bool ruggedRock = true;
         public bool trees3D = true;
@@ -209,6 +211,8 @@ namespace IsoRim
             Scribe_Values.Look(ref ambientOcclusion, "ambientOcclusion", true);
             Scribe_Values.Look(ref aoStrength, "aoStrength", 0.8f);
             Scribe_Values.Look(ref aoSteps, "aoSteps", 0);
+            Scribe_Values.Look(ref screenSunShadows, "screenSunShadows", false);
+            Scribe_Values.Look(ref sssStrength, "sssStrength", 1f);
             Scribe_Values.Look(ref texturedModels, "texturedModels", true);
             Scribe_Values.Look(ref ruggedRock, "ruggedRock", true);
             Scribe_Values.Look(ref trees3D, "trees3D", true);
@@ -892,6 +896,18 @@ namespace IsoRim
                     level = Mathf.RoundToInt(Slider(l, "R3D_Settings_AOSteps".Translate(), level, 0f, 2f,
                         level == 0 ? "R3D_Settings_AOSmooth".Translate().ToString() : (level + 1).ToString(), "R3D_Settings_AOStepsTip".Translate()));
                     st.aoSteps = level == 0 ? 0 : level + 1;
+                }
+                if (SunShadowsSS.Available)
+                {
+                    Check(l, "R3D_Settings_SSS".Translate(), ref st.screenSunShadows, "R3D_Settings_SSSTip".Translate());
+                    if (st.screenSunShadows)
+                    {
+                        st.sssStrength = Slider(l, "R3D_Settings_SSSStrength".Translate(), st.sssStrength, 0.5f, 2f, (st.sssStrength * 100f).ToString("0") + "%");
+                    }
+                }
+                else
+                {
+                    LockedCheck(l, "R3D_Settings_SSS".Translate(), false, "R3D_Settings_AOUnavailable".Translate());
                 }
             }
             if (r != null)

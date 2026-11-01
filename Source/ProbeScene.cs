@@ -618,6 +618,19 @@ namespace IsoRim
                     AmbientOcclusion.GainOverride = a.Length > 4 ? F(a[4]) : -1f;
                     Log.Message("[IsoRim probe] ao debug " + AmbientOcclusion.Debug + " copies " + DepthGrab.Copies + " images made " + DepthGrab.Recreated + " broken " + DepthGrab.Broken);
                     break;
+                case "sss":
+                    // sss=debug[,strength scale,maxDist,thickness,steps,extraDraws,tallest walls]: -1 keeps the default.
+                    SunShadowsSS.Debug = I(a[0]);
+                    if (a.Length > 1 && F(a[1]) >= 0f) SunShadowsSS.StrengthScale = F(a[1]);
+                    SunShadowsSS.MaxDistOverride = a.Length > 2 ? F(a[2]) : -1f;
+                    SunShadowsSS.ThicknessOverride = a.Length > 3 ? F(a[3]) : -1f;
+                    SunShadowsSS.StepsOverride = a.Length > 4 ? I(a[4]) : -1;
+                    SunShadowsSS.ExtraDraws = a.Length > 5 ? Math.Max(0, I(a[5])) : 0;
+                    SunShadowsSS.TallestOverride = a.Length > 6 ? F(a[6]) : -1f;
+                    Log.Message("[IsoRim probe] sss debug " + SunShadowsSS.Debug + " scale " + SunShadowsSS.StrengthScale + " shadowcol " + MatBases.SunShadow.color
+                        + " cast " + Shader.GetGlobalVector(ShaderPropertyIDs.MapSunLightDirection) + " copies " + DepthGrab.Copies + " reused " + DepthGrab.Reused
+                        + " broken " + DepthGrab.Broken + " " + SunShadowsSS.LastInfo);
+                    break;
                 case "aofail":
                     DepthGrab.SimulateFailure = a[0] == "1";
                     Log.Message("[IsoRim probe] aofail " + a[0] + " broken " + DepthGrab.Broken);

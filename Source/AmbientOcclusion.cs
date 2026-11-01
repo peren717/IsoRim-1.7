@@ -5,7 +5,7 @@ using Verse;
 
 namespace IsoRim
 {
-    // Screen-space ambient occlusion for the 3D view (Model style options, default off). Two full-screen passes:
+    // Screen-space ambient occlusion for the 3D view (Graphics options, default on). Two full-screen passes:
     // IsoRimAO (scene grab at queue 2450) reads the scene depth copied by DepthGrab at the same grab and works out the
     // occlusion of each pixel (creases: wall feet, inside corners, rock crevices, things against walls), kept in the
     // alpha channel; IsoRimAOBlur (grab at 2451) averages it depth-aware, applies strength and steps and darkens the colour.
@@ -35,6 +35,9 @@ namespace IsoRim
         public static float GroundOverride = -1f;  // harness only
         public static float GainOverride = -1f;    // harness only
 
+        // Drawn this frame (SunShadowsSS then takes the darker of AO and its shadow, reading AO's factor from the alpha).
+        public static bool DrawnThisFrame;
+
         private static bool tried;
         private static Material material, blur;
         private static Mesh quad;
@@ -51,6 +54,7 @@ namespace IsoRim
 
         public static void Draw(Camera cam)
         {
+            DrawnThisFrame = false;
             IsoRimSettings st = IsoRimMod.Settings;
             if (!st.ambientOcclusion || cam == null || !WorldRendererUtility.DrawingMap || DepthGrab.Broken)
             {
@@ -87,7 +91,7 @@ namespace IsoRim
                 int steps = st.aoSteps == 2 || st.aoSteps == 3 ? st.aoSteps : 0;
                 float radius = RadiusOverride > 0f ? RadiusOverride : Radius;
                 Vector4 prm = new Vector4(Mathf.Clamp01(st.aoStrength), radius, steps, Debug);
-                Vector4 tune = new Vector4(GainOverride > 0f ? GainOverride : Gain, Bias, 96f, 0f);
+                Vector4 tune = new Vector4(GainOverride > 0f ? GainOverride : Gain, Bias, 96f, SunShadowsSS.WillDraw ? 1f : 0f);
                 for (int k = 0; k < 2; k++)
                 {
                     Material m = k == 0 ? material : blur;
@@ -102,6 +106,7 @@ namespace IsoRim
                     Graphics.DrawMesh(quad, Matrix4x4.identity, material, 0, cam);
                 }
                 Graphics.DrawMesh(quad, Matrix4x4.identity, blur, 0, cam);
+                DrawnThisFrame = true;
             }
             catch (Exception e)
             {

@@ -381,7 +381,9 @@ namespace IsoRim
             if (Active)
             {
                 ApplyCamera(main);
+                SunShadowsSS.Prepare(main);
                 AmbientOcclusion.Draw(main);
+                SunShadowsSS.Draw(main);
                 TiltShift.Draw(main);
                 AntiAlias.Draw(main);
                 Grade.Draw(main);

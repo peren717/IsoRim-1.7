@@ -22,7 +22,7 @@ layout(set = 2, binding = 0) uniform MaterialUniforms
     vec4 _AOProjB;  // @default = vec4(0.0, 0.0, 0.0, 0.0)    m03, m13, perspective (1), ground receives
     vec4 _AOPlane;  // @default = vec4(0.0, 1.0, 0.0, 0.0)    ground plane in camera space: n.xyz, c (n.p + c = 0)
     vec4 _AOParams; // @default = vec4(0.6, 0.45, 0.0, 0.0)   strength, radius (cells), steps (0 smooth, 2, 3), debug
-    vec4 _AOTune;   // @default = vec4(3.0, 0.1, 96.0, 0.0)   gain, angle bias (sine), largest radius (px), unused
+    vec4 _AOTune;   // @default = vec4(3.0, 0.1, 96.0, 0.0)   gain, angle bias (sine), largest radius (px), sun shadows on (1)
 } u;
 
 layout(set = 2, binding = 1) uniform sampler2D _GrabIsoRimAO;
