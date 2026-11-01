@@ -19,6 +19,7 @@ namespace IsoRim
     //   - IncineratorProjectileMotion (incinerator and burner streams): each stream piece moves from its source to its
     //     target as drawn, at the height between.
     // The gameplay side (where it burns) is the addon's (ProjectZ AimFloor). Without floors these change nothing.
+    // MakeMote also hands the motes and flecks of an eater's ingest effecter to IngestBits (at the mouth, in 3D).
     // In the 3D view, a line mote between two ends (MoteDualAttached) is drawn as a strip in 3D from one end to the other
     // (Tilt): between floors any such line, on one floor (and without floors) the lines the game draws overhead (beams,
     // incinerator streams, aim lines), which would otherwise stand up as a card whose slant on screen is not their way on
@@ -70,18 +71,20 @@ namespace IsoRim
 
         private static Vector3 PosOf(TargetInfo t) => t.HasThing ? t.Thing.DrawPos : t.Cell.ToVector3Shifted();
 
-        public static void MakeMote_Prefix(TargetInfo A, TargetInfo B)
+        public static void MakeMote_Prefix(SubEffecter_Sprayer __instance, TargetInfo A, TargetInfo B)
         {
             cross = Floors.On && A.IsValid && B.IsValid && Floors.CrossFloor(PosOf(A), PosOf(B));
             if (cross)
             {
                 Sprays++;
             }
+            IngestBits.Begin(__instance, A, B);   // an eater's food bits or smoke: at its mouth
         }
 
         public static void MakeMote_Finalizer()
         {
             cross = false;
+            IngestBits.End();
         }
 
         // a - b (two points of the two ends): as drawn between floors
@@ -166,6 +169,33 @@ namespace IsoRim
             if (subs != 2 || angles != 1 || lerps != 3)
             {
                 Log.Warning($"[IsoRim] Sprays between floors: SubEffecter_Sprayer.MakeMote changed (swapped {subs}/2 subtractions, {angles}/1 angles, {lerps}/3 lerp steps)");
+            }
+            // Ingest effects from the mouth (IngestBits): each mote made is handed over right after it is created
+            // (this.mote = (Mote)ThingMaker.MakeThing(...)), each fleck as it is created.
+            FieldInfo moteField = AccessTools.Field(typeof(SubEffecter_Sprayer), "mote");
+            MethodInfo createFleck = AccessTools.Method(typeof(FleckManager), nameof(FleckManager.CreateFleck), new[] { typeof(FleckCreationData) });
+            int motes = 0, flecks = 0;
+            for (int i = 0; i < code.Count; i++)
+            {
+                if (code[i].opcode == OpCodes.Stfld && code[i].operand as FieldInfo == moteField && motes == 0)
+                {
+                    code.InsertRange(i + 1, new[]
+                    {
+                        new CodeInstruction(OpCodes.Ldarg_0),
+                        new CodeInstruction(OpCodes.Ldfld, moteField),
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(IngestBits), nameof(IngestBits.OnMote)))
+                    });
+                    motes++;
+                }
+                else if (code[i].Calls(createFleck))
+                {
+                    code[i] = new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(IngestBits), nameof(IngestBits.CreateFleck))).MoveLabelsFrom(code[i]).MoveBlocksFrom(code[i]);
+                    flecks++;
+                }
+            }
+            if (motes != 1 || flecks != 1)
+            {
+                Log.Warning($"[IsoRim] Food bits and smoke at the mouth: SubEffecter_Sprayer.MakeMote changed (found {motes}/1 mote stores, {flecks}/1 fleck creations)");
             }
             return code;
         }

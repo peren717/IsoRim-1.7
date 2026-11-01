@@ -296,6 +296,28 @@ namespace IsoRim
             return true;
         }
 
+        // How high an animal model's mouth is now, cells over its floor: where Draw holds what it carries in its mouth (the
+        // top of the legs, its size, hovering: Api 32). Only standing on its own feet (not lying, flying, attached or
+        // carried). For effects that come from the mouth (IngestBits). False otherwise or without a model.
+        internal static bool MouthHeight(Pawn pawn, out float height)
+        {
+            height = 0f;
+            ModelEntry entry;
+            if (pawn == null || !pawn.Spawned || pawn.Dead || pawn.GetPosture() != PawnPosture.Standing || pawn.def == null
+                || !ModelLibrary.TryGet(pawn.def, out entry) || !entry.def.animal || !entry.HasModel || !Corpses.ShownAsModel(pawn)
+                || Attachments.Any && Attachments.HostOf(pawn) != null || AirborneFactor(pawn) > 0f)
+            {
+                return false;
+            }
+            Vector3 drawLoc = pawn.DrawPos;
+            if (Carried.LiftOf(pawn, ref drawLoc) > 0f)
+            {
+                return false;
+            }
+            height = entry.def.legLength * entry.def.scale * SizeOf(pawn) + Hover.Current(pawn);
+            return true;
+        }
+
         // ---- as a host (Api 13: Attachments, Api.ReadHost)
 
         // Where the animal's model is drawn now, posed as Draw poses it (no drawing). advance: from a draw this frame (its

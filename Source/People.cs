@@ -853,6 +853,86 @@ namespace IsoRim
             return true;
         }
 
+        // Where the mouth is on the figure: between the eyes (person_face, 0.91 to 0.99) and the chin (person_head's bottom,
+        // 0.74), where Facial Animation's mouth lands too (FaceDecal: pixel row ~80, 0.84).
+        private const float MouthY = 0.83f;
+
+        // How high the mouth of the person's figure is now, cells over its floor, posed as Draw poses it: standing, seated
+        // (the seat's lift and the body squashed: Poses.Seated), crouching (Api 45), standing or sitting on a host (Api 13),
+        // lying in a bed (the head's middle over the bed's surface or the person's slot), with its size (life stage, race)
+        // and a race's head placing (Api 25). The figure's step, sway and work strokes are left out. For effects that come
+        // from the mouth (IngestBits). False if it is not drawn as a figure or lies anywhere else (the ground, a couch).
+        internal static bool MouthHeight(Pawn pawn, out float height)
+        {
+            height = 0f;
+            if (pawn == null || !pawn.Spawned || pawn.Dead || pawn.story == null || !FigureRace(pawn) || Hidden(pawn) || !Corpses.ShownAsModel(pawn)
+                || Statues.Colour(pawn).HasValue)
+            {
+                return false;
+            }
+            Look look = LookOf(pawn);
+            if (look == null || look.upper == null || look.lower == null)
+            {
+                return false;
+            }
+            float size = look.size;
+            Vector3 drawLoc = pawn.DrawPos;
+            float lift = Carried.LiftOf(pawn, ref drawLoc);
+            Attachments.Placed att;
+            if (Attached(pawn, look, true, true, false, out att))
+            {
+                if (att.a.pose == AttachPose.Lie)
+                {
+                    return false;
+                }
+                Poses.Seat onHost;
+                bool sits = AttachedSeat(att, out onHost);
+                float feet = sits ? onHost.Lift : Attachments.Feet(att.a.pose, att.at.y, size, Attachments.Hips * look.bodyScale.y);
+                height = feet + MouthOn(look, size, sits ? onHost.Squash : 1f, Matrix4x4.identity);
+                return true;
+            }
+            if (pawn.GetPosture() != PawnPosture.Standing)
+            {
+                Building_Bed bed = pawn.CurrentBed();
+                if (bed == null)
+                {
+                    return false;
+                }
+                bool headOnly = bed.def.building != null && !bed.def.building.bed_showSleeperBody && Poses.SleeperHeight(pawn, bed) > 0.05f;
+                height = Poses.SleeperHeight(pawn, bed) + (headOnly ? BedHeadLift : 0.15f) * size;   // as Draw lays them in it
+                return true;
+            }
+            Poses.Seat seat;
+            if (lift <= 0f && Poses.Seated(pawn, ref drawLoc, out seat))
+            {
+                height = seat.Lift + MouthOn(look, size, seat.Squash, Matrix4x4.identity);
+                return true;
+            }
+            Poses.Crouch crouch;
+            if (lift <= 0f && Poses.Crouched(pawn, out crouch))
+            {
+                if (crouch.Prone)
+                {
+                    return false;
+                }
+                height = MouthOn(look, size, crouch.BodySquash, Poses.CrouchLean(crouch));
+                return true;
+            }
+            height = lift + MouthOn(look, size, 1f, Matrix4x4.identity);
+            return true;
+        }
+
+        // The mouth's height over the figure's feet, placed as Draw places the head (the body squashed under it, posed).
+        private static float MouthOn(Look look, float size, float squash, Matrix4x4 pose)
+        {
+            Matrix4x4 headPlace = pose * Matrix4x4.Scale(new Vector3(size, size, size)) * Matrix4x4.Translate(new Vector3(0f, -(1f - squash) * Poses.BodyTop, 0f));
+            if (look.alien != null)
+            {
+                headPlace = headPlace * look.alien.head;
+            }
+            return headPlace.MultiplyPoint3x4(new Vector3(0f, MouthY, 0f)).y;
+        }
+
         // Attached to a host (Api 13, Attachments): where and how, with the aim as drawn for the figure's own turn (drawing:
         // from Draw this frame). may: the figure could be posed on a host now (alive, not caged or in a vat).
         private static bool Attached(Pawn pawn, Look look, bool may, bool neverAim, bool drawing, out Attachments.Placed att)
