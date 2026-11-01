@@ -67,7 +67,7 @@ namespace IsoRim
         public bool ambientOcclusion = true;    // screen-space AO in the 3D view (AmbientOcclusion.cs)
         public float aoStrength = 0.8f;         // 0..1
         public int aoSteps = 0;                 // 0 smooth, 2 or 3 flat levels
-        public bool screenSunShadows = false;   // sun shadows on walls and models in the 3D view (SunShadowsSS.cs)
+        public bool screenSunShadows = true;    // sun shadows on walls and models in the 3D view (SunShadowsSS.cs)
         public float sssStrength = 1f;          // 0.5..2, 1 = as dark as the game's ground shadows
         public bool texturedModels = true;
         public bool ruggedRock = true;
@@ -211,7 +211,7 @@ namespace IsoRim
             Scribe_Values.Look(ref ambientOcclusion, "ambientOcclusion", true);
             Scribe_Values.Look(ref aoStrength, "aoStrength", 0.8f);
             Scribe_Values.Look(ref aoSteps, "aoSteps", 0);
-            Scribe_Values.Look(ref screenSunShadows, "screenSunShadows", false);
+            Scribe_Values.Look(ref screenSunShadows, "screenSunShadows", true);
             Scribe_Values.Look(ref sssStrength, "sssStrength", 1f);
             Scribe_Values.Look(ref texturedModels, "texturedModels", true);
             Scribe_Values.Look(ref ruggedRock, "ruggedRock", true);

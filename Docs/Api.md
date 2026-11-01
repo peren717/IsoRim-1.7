@@ -1757,7 +1757,7 @@ public class PatchOperation_IfIsoRimApi : PatchOperation
 ## Note: screen-space shading (ambient occlusion, screen-space shadows)
 
 Not an Api: two options in the Graphics tab shade the 3D view from the scene depth, and what a mod draws takes part only
-through that depth. Ambient occlusion (default on) and Screen-space shadows (default off, strength 50 to 200%, 100% = as
+through that depth. Ambient occlusion (default on) and Screen-space shadows (default on, strength 50 to 200%, 100% = as
 dark as the game's sun shadows) read the depth of everything drawn before render queue 2450 (opaque meshes that write
 depth: IsoRim's walls, rock, models, pawns, trees, and your own opaque meshes). Such geometry casts and receives;
 cut-out cards and sprites (queue 2900 and later), see-through things and anything without depth neither cast nor receive

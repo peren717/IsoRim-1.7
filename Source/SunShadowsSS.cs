@@ -5,7 +5,7 @@ using Verse;
 
 namespace IsoRim
 {
-    // Sun shadows on walls and models (Graphics options, default off): screen-space sun shadows on everything above the
+    // Sun shadows on walls and models (Graphics options, default on): screen-space sun shadows on everything above the
     // ground (wall faces, furniture, models, pawns, ProjectZ slabs and what stands on them).
     // Two full-screen passes after the AO passes: IsoRimSSS (scene grab at 2452) marches toward the sun through the scene
     // depth (DepthGrab) at half resolution and keeps the shadow in the alpha channel of one pixel per 2 x 2 block;
