@@ -1,0 +1,40 @@
+# IsoRim remodel3 (2026-11-01): fixed colours sampled from the vanilla 1.7 sprites (ship chunk, biofuel refinery,
+# fabrication bench). Names r3_*; isorim.mtl unchanged.
+newmtl r3_hull
+Kd 0.47 0.48 0.35
+map_Kd IsoRim/Swatches/Metal
+newmtl r3_frame
+Kd 0.42 0.42 0.43
+map_Kd IsoRim/Swatches/Metal
+newmtl r3_frame_dark
+Kd 0.30 0.30 0.31
+map_Kd IsoRim/Swatches/Metal
+newmtl r3_rib
+Kd 0.42 0.27 0.10
+map_Kd IsoRim/Swatches/Metal
+newmtl r3_tank
+Kd 0.62 0.62 0.63
+map_Kd IsoRim/Swatches/Metal
+newmtl r3_tank_dark
+Kd 0.40 0.40 0.41
+map_Kd IsoRim/Swatches/Metal
+newmtl r3_copper
+Kd 0.60 0.40 0.24
+map_Kd IsoRim/Swatches/Metal
+newmtl r3_biomass
+Kd 0.22 0.25 0.09
+newmtl r3_bench
+Kd 0.46 0.46 0.47
+map_Kd IsoRim/Swatches/Metal
+newmtl r3_bench_dark
+Kd 0.38 0.38 0.39
+map_Kd IsoRim/Swatches/Metal
+newmtl r3_machine
+Kd 0.66 0.64 0.62
+map_Kd IsoRim/Swatches/Metal
+newmtl r3_mat
+Kd 0.42 0.36 0.31
+map_Kd IsoRim/Swatches/Fabric
+newmtl r3_brown
+Kd 0.40 0.31 0.22
+map_Kd IsoRim/Swatches/Metal

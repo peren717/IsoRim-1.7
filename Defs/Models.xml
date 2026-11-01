@@ -179,16 +179,18 @@
     <rotation>180</rotation>
   </IsoRim.ModelDef>
 
+  <!-- Sandbags (remodel3, 2026-11-01): linked like R3D_Barricade. sandbags_post (square pile, 4 courses) in every cell,
+       sandbags_arm (built toward north, to the cell edge) once toward each neighbour ModelBaker.Links joins. -->
   <IsoRim.ModelDef>
     <defName>R3D_Sandbags</defName>
     <thingDef>Sandbags</thingDef>
     <models>
-      <li>Models/sandbags_1.obj</li>
-      <li>Models/sandbags_2.obj</li>
-      <li>Models/sandbags_3.obj</li>
+      <li>Models/sandbags_post.obj</li>
+      <li>Models/sandbags_arm.obj</li>
     </models>
+    <builtFor>(1, 1)</builtFor>
     <surfaceHeight>0.52</surfaceHeight>
-    <alongRun>true</alongRun>
+    <linked>true</linked>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -2235,7 +2237,7 @@
     <thingDef>BiofuelRefinery</thingDef>
     <model>Models/biofuel_refinery.obj</model>
     <surfaceHeight>0.00</surfaceHeight>
-    <builtFor>(2, 2)</builtFor>
+    <builtFor>(3, 2)</builtFor>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -2610,6 +2612,7 @@
     <models>
       <li>Models/ship_chunk_1.obj</li>
       <li>Models/ship_chunk_2.obj</li>
+      <li>Models/ship_chunk_3.obj</li>
     </models>
     <surfaceHeight>0.00</surfaceHeight>
     <builtFor>(2, 2)</builtFor>
