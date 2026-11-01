@@ -1578,8 +1578,9 @@ static IntVec3 MyThreat(Pawn p) => MyMod.ThreatCell(p) ?? IntVec3.Invalid;   // 
 
 - **Crouching:** the body squashed down about the feet, leaning forward up to 15 degrees toward its facing (the aim while
   aiming), the head and hands brought down with it. The held weapon, its muzzle (`Api.TryGetMuzzle`, IsoRim's shot flashes
-  and bullets), picking, box selection, the icons over the head and first person all follow. An upright 2D card is
-  squashed about its feet.
+  and bullets), picking, box selection, the icons over the head and first person all follow. Only 3D figures take a
+  posture: a pawn drawn as a 2D card stays exactly as the game draws it (`PostureOf` still reports what the rules say;
+  `DrawnPostureOf` reports nothing for it).
 - **How low:** one fixed crouch wherever the pawn is (in the open, behind sandbags or a low wall, on an upper floor): the
   shoulders, where the gun is held, 0.20 of the figure's height lower (the body squashed to about 0.70), leaning 15
   degrees. The rule's amount scales it (0.5: half as low and half the lean).

@@ -122,9 +122,15 @@ namespace IsoRim
             get { return Mathf.Clamp(IsoRimMod.Settings.aimHeight, 0.3f, 1f); }
         }
 
-        // True if an addon's posture rule poses the pawn now (see above), as drawn this frame (eased).
+        // True if an addon's posture rule poses the pawn now (see above), as drawn this frame (eased). Only 3D figures take a
+        // posture: a pawn drawn as a card stays exactly as the game draws it.
         public static bool Crouched(Pawn pawn, out Crouch crouch)
         {
+            if (!Patches.DrawnAsModel(pawn))
+            {
+                crouch = default(Crouch);
+                return false;
+            }
             return Postures.Of(pawn, out crouch);
         }
 
