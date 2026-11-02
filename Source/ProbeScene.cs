@@ -30,7 +30,13 @@ namespace IsoRim
     //   grow=x0,z0,x1,z1,<0-1>       every plant in the rectangle set to that growth (map mesh redrawn)
     //   leafless=x0,z0,x1,z1         every tree in the rectangle made leafless as by cold (map mesh redrawn)
     //   pollute=x0,z0,x1,z1          the ground polluted over a rectangle (Biotech)
-    //   roof=0|1,x0,z0,x1,z1         built roof off or on over a rectangle
+    //   roof=0|1,x0,z0,x1,z1         built roof off or on over a rectangle (or roof=<RoofDef>,...: that roof, e.g. RoofRockThick)
+    //   roofarea=x0,z0,x1,z1         the build-roof area over a rectangle (colonists build it: run tick= after it)
+    //   roofcount=x0,z0,x1,z1        logs how many cells of the rectangle are roofed
+    //   noroofarea=x0,z0,x1,z1       the no-roof area over a rectangle (auto-roofing leaves it open)
+    //   sshnew=1                     the screen-space shadows' height map texture made again (stale texture checks)
+    //   ssroof=0|1                   roofs in the screen-space shadows' height map (ShadowHeights.Roofs, default 1)
+    //   sshdump=x,z[,x,z...]         logs the screen-space shadows' height map state and texel over those cells
     //   flatroof=<fraction>          the concrete flat roof's thickness, of a wall height (-1: FlatRoofs.Thickness)
     //   active=0|1                   the 3D view off or on
     //   fog=x0,z0,x1,z1              fog of war over a rectangle
@@ -463,7 +469,8 @@ namespace IsoRim
                 }
                 case "roof":
                 {
-                    RoofDef def = a[0] == "0" ? null : RoofDefOf.RoofConstructed;
+                    // roof=0|1|<RoofDef>,x0,z0,x1,z1 (e.g. RoofRockThick)
+                    RoofDef def = a[0] == "0" ? null : a[0] == "1" ? RoofDefOf.RoofConstructed : DefDatabase<RoofDef>.GetNamed(a[0]);
                     foreach (IntVec3 c in Rect(a, 1))
                     {
                         if (c.InBounds(map))
@@ -471,6 +478,60 @@ namespace IsoRim
                             map.roofGrid.SetRoof(c, def);
                         }
                     }
+                    break;
+                }
+                case "roofarea":
+                {
+                    // roofarea=x0,z0,x1,z1[,order]: the build-roof area over a rectangle (colonists build the roofs: run tick= after
+                    // it); order: the first free colonist is also given the game's BuildRoof job for every cell, queued (whatever
+                    // its work settings)
+                    Pawn builder = a.Length > 4 ? map.mapPawns.FreeColonistsSpawned.FirstOrDefault(p => !p.Drafted) : null;
+                    int queued = 0;
+                    foreach (IntVec3 c in Rect(a, 0))
+                    {
+                        if (!c.InBounds(map))
+                        {
+                            continue;
+                        }
+                        map.areaManager.BuildRoof[c] = true;
+                        if (builder != null && !c.Roofed(map))
+                        {
+                            Job job = JobMaker.MakeJob(JobDefOf.BuildRoof, c, c);
+                            if (builder.jobs.TryTakeOrderedJob(job, JobTag.Misc, queued > 0))
+                            {
+                                queued++;
+                            }
+                        }
+                    }
+                    Log.Message("[IsoRim probe] roofarea " + Rect(a, 0) + ": builder " + (builder != null ? builder.LabelShort : "-") + ", jobs " + queued);
+                    break;
+                }
+                case "noroofarea":
+                {
+                    // noroofarea=x0,z0,x1,z1: the no-roof area over a rectangle (the game's auto-roofing leaves it open)
+                    foreach (IntVec3 c in Rect(a, 0))
+                    {
+                        if (c.InBounds(map))
+                        {
+                            map.areaManager.NoRoof[c] = true;
+                            map.areaManager.BuildRoof[c] = false;
+                        }
+                    }
+                    break;
+                }
+                case "roofcount":
+                {
+                    // roofcount=x0,z0,x1,z1: logs how many cells of the rectangle have a roof (after a real roof job)
+                    int n = 0, cells = 0;
+                    foreach (IntVec3 c in Rect(a, 0))
+                    {
+                        cells++;
+                        if (c.InBounds(map) && map.roofGrid.Roofed(c))
+                        {
+                            n++;
+                        }
+                    }
+                    Log.Message("[IsoRim probe] roofcount " + n + " of " + cells + " roofed; " + ShadowHeights.Report(map, new IntVec3(I(a[0]), 0, I(a[1]))));
                     break;
                 }
                 case "active":
@@ -635,7 +696,27 @@ namespace IsoRim
                     // ssshm=0/1: the screen-space shadows' world height map off/on (A/B); logs its build stats.
                     SunShadowsSS.HeightMap = a[0] == "1";
                     Log.Message("[IsoRim probe] ssshm " + SunShadowsSS.HeightMap + " builds " + ShadowHeights.Builds + " last full " + ShadowHeights.LastFullMs.ToString("0.00")
-                        + " ms, cells worked " + ShadowHeights.CellsWorked);
+                        + " ms, cells worked " + ShadowHeights.CellsWorked + ", last marked update " + ShadowHeights.LastDirtyMs.ToString("0.000") + " ms ("
+                        + ShadowHeights.LastDirtyCells + " cells), longest " + ShadowHeights.MaxDirtyMs.ToString("0.000") + " ms");
+                    break;
+                case "ssroof":
+                    // ssroof=0/1: roofs in the screen-space shadows' height map off/on (A/B); the map's height map worked out again.
+                    ShadowHeights.Roofs = a[0] == "1";
+                    ShadowHeights.Rebuilt(map);
+                    Log.Message("[IsoRim probe] ssroof " + ShadowHeights.Roofs);
+                    break;
+                case "sshdump":
+                    // sshdump=x,z[,x,z...]: the height map's state and its spans over those cells (logged).
+                    for (int j = 0; j + 1 < a.Length; j += 2)
+                    {
+                        Log.Message("[IsoRim probe] sshdump " + ShadowHeights.Report(map, new IntVec3(I(a[j]), 0, I(a[j + 1]))) + " | " + SunShadowsSS.LastInfo
+                            + " | live textures made " + LiveTexture.Created + ", in place " + LiveTexture.InPlace + ", fallbacks " + LiveTexture.Fallbacks);
+                    }
+                    break;
+                case "sshnew":
+                    // sshnew=1: the height map's texture made again from its cells on the next draw (stale texture checks).
+                    ShadowHeights.NewTexture(map);
+                    Log.Message("[IsoRim probe] sshnew");
                     break;
                 case "aofail":
                     DepthGrab.SimulateFailure = a[0] == "1";
@@ -836,6 +917,7 @@ namespace IsoRim
                     {
                         tp.Drawer.tweener.ResetTweenedPosToRoot();   // paused game: the drawn position follows the ticks
                     }
+                    lastTicks = Find.TickManager.TicksGame;   // several tick= on one line are no clock jump (no next pass)
                     break;
                 }
                 case "unpower":

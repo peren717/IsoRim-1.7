@@ -37,7 +37,7 @@ namespace IsoRim
         public static float ThicknessOverride = -1f;
         public static int StepsOverride = -1;
         public static float TallestOverride = -1f;
-        public static int Debug;                   // 1 shadow factor, 2 classes, 3 N.L, 4 raw samples, 5 normals
+        public static int Debug;                   // 1 shadow factor, 2 classes, 3 N.L, 4 raw samples, 5 normals, 6 raw shadow, 7 height map only
         public static int ExtraDraws;
         public static string LastInfo = "";
 
@@ -161,7 +161,8 @@ namespace IsoRim
                 material.SetVector(world0Id, w0);
                 material.SetVector(worldXId, wx);
                 material.SetVector(worldZId, wz);
-                LastInfo = "sunW " + sunW.ToString("F3") + " tallest " + tallest.ToString("F2") + " strength " + strength.ToString("F2") + " ao " + AmbientOcclusion.DrawnThisFrame;
+                LastInfo = "sunW " + sunW.ToString("F3") + " tallest " + tallest.ToString("F2") + " strength " + strength.ToString("F2") + " ao " + AmbientOcclusion.DrawnThisFrame
+                    + " hm " + (hm != null) + " frame " + Time.frameCount;
                 for (int k = 0; k < 2; k++)
                 {
                     Material m = k == 0 ? material : blur;

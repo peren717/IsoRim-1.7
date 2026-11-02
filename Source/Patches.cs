@@ -2928,7 +2928,7 @@ namespace IsoRim
         public static void SetRoof_Postfix(RoofGrid __instance, IntVec3 __0)
         {
             IsoRimSettings st = IsoRimMod.Settings;
-            if (!View3D.Active || (!st.cutRooms && !st.showRoofs) || Current.ProgramState != ProgramState.Playing)
+            if (Current.ProgramState != ProgramState.Playing)
             {
                 return;
             }
@@ -2939,6 +2939,11 @@ namespace IsoRim
                 {
                     if (maps[i].roofGrid == __instance)
                     {
+                        ShadowHeights.RoofChanged(maps[i], __0);   // the screen-space shadows' height map (roofs shown or not)
+                        if (!View3D.Active || (!st.cutRooms && !st.showRoofs))
+                        {
+                            break;
+                        }
                         if (st.cutRooms && ShaderCut.On)
                         {
                             IsoCellMap.Dirty(maps[i], CellRect.CenteredOn(__0, WallBoxes.RockReach + 1));   // (shader cut-away)

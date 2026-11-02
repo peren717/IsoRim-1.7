@@ -953,7 +953,8 @@ namespace IsoRim
 
         // 0: no lid here. 1: a built roof (or a wall under the edge of one). 2: a natural rock roof over open ground.
         // 3 (ShipRoofs.Kind): a built roof over a gravship, or a wall standing on Substructure under its edge (Gravship.cs).
-        private static int LidKind(Map map, IntVec3 c)
+        // honourCut false: as if nothing were cut away (the screen-space shadows' height map, ShadowHeights: open roofs cast).
+        internal static int LidKind(Map map, IntVec3 c, bool honourCut = true)
         {
             if (!c.InBounds(map))
             {
@@ -966,7 +967,7 @@ namespace IsoRim
                 // The cut-away never opens it (the slab is drawn whatever the cut-away does to this floor's roofs).
                 return FloorLid;
             }
-            if (!CutTags.Enabled && Cutaway.RoofOpen(map, c))
+            if (honourCut && !CutTags.Enabled && Cutaway.RoofOpen(map, c))
             {
                 return 0;
             }
@@ -1078,7 +1079,7 @@ namespace IsoRim
             return m;
         }
 
-        private const int MaxLevel = 4;          // a roof rises for at most this many cells in from its edge
+        internal const int MaxLevel = 4;         // a roof rises for at most this many cells in from its edge
         public const int Reach = MaxLevel + 2;   // how far a change to one roof cell can alter the roof around it
         public const float Pitch = 0.55f;        // how much it rises per cell, in cells
 

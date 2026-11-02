@@ -37,7 +37,7 @@ layout(set = 2, binding = 0) uniform MaterialUniforms
 
 layout(set = 2, binding = 1) uniform sampler2D _GrabIsoRimSSS;
 layout(set = 2, binding = 2) uniform sampler2D _IsoSceneDepth;
-layout(set = 2, binding = 3) uniform sampler2D _IsoShadowHeights;   // ShadowHeights.cs: per ground cell two solid spans, 1/8 cell
+layout(set = 2, binding = 3) uniform sampler2D _IsoShadowHeights;   // ShadowHeights.cs: per ground cell two solid spans, 1/8 cell; rows stored north first (as _IsoCellTex)
 
 const float GroundEps = 0.03;
 const float Lit = 0.98;   // alpha of a fully lit receiver (1 = no receiver)
@@ -145,7 +145,7 @@ bool InHeightMap(vec3 Q)
     {
         return false;
     }
-    vec4 s = texelFetch(_IsoShadowHeights, ivec2(int(x), int(z)), 0) * (255.0 / 8.0);
+    vec4 s = texelFetch(_IsoShadowHeights, ivec2(int(x), int(u._SSWorldZ.w) - 1 - int(z)), 0) * (255.0 / 8.0);
     return (y >= s.x && y <= s.y) || (y >= s.z && y <= s.w);
 }
 
@@ -172,6 +172,17 @@ void main()
     if (debug == 2)
     {
         outColor = ground ? vec4(0.15, 0.6, 0.15, 1.0) : vec4(0.6, 0.6, 0.6, 1.0);
+        return;
+    }
+    if (debug == 8 || debug == 9)
+    {
+        // the height map texel under the pixel: red = top of span 1, green = top of span 2 (/ 4 cells), blue = outside the map
+        vec3 d = P - u._SSWorld0.xyz;
+        float x = dot(d, u._SSWorldX.xyz), z = dot(d, u._SSWorldZ.xyz);
+        bool inMap = x >= 0.0 && z >= 0.0 && x < u._SSWorldX.w && z < u._SSWorldZ.w;
+        vec4 s = inMap ? texelFetch(_IsoShadowHeights, ivec2(int(x), int(u._SSWorldZ.w) - 1 - int(z)), 0) * (255.0 / 8.0) : vec4(0.0);
+        vec2 ts = vec2(textureSize(_IsoShadowHeights, 0));
+        outColor = debug == 8 ? vec4(s.y > 0.01 ? 1.0 : 0.0, s.w > 0.01 ? 1.0 : 0.0, inMap ? 0.0 : 1.0, 1.0) : vec4(s.y / 4.0, ts.x / 255.0, ts.y / 255.0, 1.0);
         return;
     }
 
@@ -222,7 +233,7 @@ void main()
         float tPrev = t0;
         for (int i = 0; i < 64; i++)
         {
-            if (i >= steps)
+            if (i >= steps || debug == 7)   // debug 7: the world height map's shadow only (as 6)
             {
                 break;
             }
@@ -287,7 +298,7 @@ void main()
         }
         shadow *= facing;
     }
-    if (debug == 6)
+    if (debug == 6 || debug == 7)
     {
         outColor = vec4(vec3(1.0 - shadow), 1.0);
         return;

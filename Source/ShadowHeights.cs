@@ -20,15 +20,29 @@ namespace IsoRim
     // span is 255, 0. Cells are marked when IsoCellMap marks them (blocks rebuilt, buildings spawned or gone, a floor's
     // cells changed, rows of upper floors moved down to their ground cell) and worked out again before the next draw;
     // the whole map after a rebuild. Owned per map.
+    //
+    // Roofs (the game's RoofDefs; a ProjectZ floor above is its slab, above): every cell the roofs layer would put a lid
+    // over (SectionLayer_IsoRimRoofs.LidKind, as if nothing were cut away: open, cut-away and hidden roofs still cast, so a
+    // room keeps its shade whatever the view shows) gets a span at the lid's drawn height over the floor the cell is on (the
+    // wall tops: View3D.WallHeight over the floor's height): a built roof from the wall tops up to its slope over the
+    // cell's middle (Rise + Pitch per cell in from its edge, as the corner levels; the flat style: FlatRoofs.Depth), at
+    // least RoofDepth thick; a ship roof a RoofDepth slab at the wall tops; a rock roof a RoofDepth slab under the rock tops,
+    // a thick one (overhead mountain) half a wall height or more. The lid kinds of the map's cells (all rows) are kept and
+    // marked unknown round every marked rectangle; a roof set or removed marks the cells its slopes reach
+    // (SectionLayer_IsoRimRoofs.Reach, RoofChanged).
     public sealed class ShadowHeights
     {
         public const float Unit = 8f;   // steps per cell
         public const float SlabDepth = 0.5f;   // a slab counts this deep under its floor (drawn: Floors.SlabThickness), so the
                                                // march's 0.5-cell steps cannot pass through it; the room below shades its ceiling anyway
+        public const float RoofDepth = SlabDepth;   // the thinnest a roof span is, for the same reason
         private static readonly Dictionary<Map, ShadowHeights> maps = new Dictionary<Map, ShadowHeights>();
 
-        public static int Builds, CellsWorked;      // harness
+        public static bool Roofs = true;            // harness A/B (probe key ssroof=0/1)
+        public static int Builds, CellsWorked, Uploads;   // harness
         public static double LastFullMs;            // harness: the last full build
+        public static double LastDirtyMs, MaxDirtyMs;   // harness: the last / longest update of marked cells
+        public static int LastDirtyCells;           // harness
 
         public readonly Map map;
         private readonly int width, rows;
@@ -40,14 +54,18 @@ namespace IsoRim
         private int groundRows;
         private float[] heights;
         private int[] shifts;
+        private readonly sbyte[] kinds;   // lid kind per map cell (every row), -1 not known yet
+        private readonly int mapRows;
 
         private ShadowHeights(Map map)
         {
             this.map = map;
             width = map.Size.x;
             rows = Floors.DrawnRows(map);
+            mapRows = map.Size.z;
             cells = new Color32[width * rows];
             dirty = new bool[width * rows];
+            kinds = new sbyte[width * mapRows];
         }
 
         public int Width { get { return width; } }
@@ -98,6 +116,16 @@ namespace IsoRim
             }
         }
 
+        // Harness (probe sshnew=1): the texture made again from the current cells on the next draw.
+        public static void NewTexture(Map map)
+        {
+            ShadowHeights s;
+            if (map != null && maps.TryGetValue(map, out s))
+            {
+                s.Destroy();
+            }
+        }
+
         // From IsoCellMap.Dirty: cells of the map (any row) whose blocks or floors may have changed.
         public static void Dirty(Map map, CellRect rect)
         {
@@ -107,6 +135,14 @@ namespace IsoRim
                 return;
             }
 
+            // lid kinds round the rectangle: a wall carries the edge of a roof beside it
+            for (int z = Math.Max(rect.minZ - 1, 0); z <= Math.Min(rect.maxZ + 1, s.mapRows - 1); z++)
+            {
+                for (int x = Math.Max(rect.minX - 1, 0); x <= Math.Min(rect.maxX + 1, s.width - 1); x++)
+                {
+                    s.kinds[z * s.width + x] = -1;
+                }
+            }
             for (int z = rect.minZ; z <= rect.maxZ; z++)
             {
                 int zg = s.GroundRowOf(z);
@@ -123,6 +159,15 @@ namespace IsoRim
                         s.dirtyList.Add(i);
                     }
                 }
+            }
+        }
+
+        // A roof was set or removed in a cell (Patches.SetRoof_Postfix, any row): the cells its slopes reach.
+        public static void RoofChanged(Map map, IntVec3 c)
+        {
+            if (map != null && maps.ContainsKey(map))
+            {
+                Dirty(map, CellRect.CenteredOn(c, SectionLayer_IsoRimRoofs.Reach));
             }
         }
 
@@ -162,6 +207,10 @@ namespace IsoRim
                 Stopwatch w = Stopwatch.StartNew();
                 all = false;
                 Floors.Bands(map, out groundRows, out heights, out shifts);
+                for (int i = 0; i < kinds.Length; i++)
+                {
+                    kinds[i] = -1;
+                }
                 for (int i = 0; i < cells.Length; i++)
                 {
                     Work(i);
@@ -177,12 +226,16 @@ namespace IsoRim
             }
             else if (dirtyList.Count > 0)
             {
+                Stopwatch w = Stopwatch.StartNew();
                 foreach (int i in dirtyList)
                 {
                     dirty[i] = false;
                     Work(i);
                 }
+                LastDirtyCells = dirtyList.Count;
                 dirtyList.Clear();
+                LastDirtyMs = w.Elapsed.TotalMilliseconds;
+                MaxDirtyMs = Math.Max(MaxDirtyMs, LastDirtyMs);
             }
             if (changed || tex == null)
             {
@@ -191,6 +244,7 @@ namespace IsoRim
                     tex = new LiveTexture(width, rows, "IsoRim_ShadowHeights", FilterMode.Point);
                 }
                 tex.Upload(cells);
+                Uploads++;
                 changed = false;
             }
             return tex.Use();
@@ -208,6 +262,12 @@ namespace IsoRim
             {
                 spans.Add(new Vector2(0f, h0));
             }
+            bool roofs = Roofs;
+            float wall = View3D.WallHeight;
+            if (roofs)
+            {
+                AddRoof(c, 0f, wall);
+            }
             for (int k = 1; heights != null && k < heights.Length; k++)
             {
                 IntVec3 up = new IntVec3(c.x, 0, c.z + shifts[k]);
@@ -224,6 +284,10 @@ namespace IsoRim
                 if (bk > 0f)
                 {
                     spans.Add(new Vector2(hk, hk + bk));
+                }
+                if (roofs)
+                {
+                    AddRoof(up, hk, wall);
                 }
             }
             Color32 v = new Color32(255, 0, 255, 0);
@@ -262,6 +326,94 @@ namespace IsoRim
                 cells[i] = v;
                 changed = true;
             }
+        }
+
+        // Harness (probe sshdump): the state of a map's height map and its texel over a cell (any row), as last worked out.
+        public static string Report(Map map, IntVec3 c)
+        {
+            ShadowHeights s;
+            if (map == null || !maps.TryGetValue(map, out s))
+            {
+                return "no height map for this map";
+            }
+            int zg = s.GroundRowOf(c.z);
+            string texel = "-";
+            if (zg >= 0 && zg < s.rows && c.x >= 0 && c.x < s.width)
+            {
+                Color32 v = s.cells[zg * s.width + c.x];
+                texel = (v.r / Unit).ToString("0.00") + ".." + (v.g / Unit).ToString("0.00") + ", " + (v.b / Unit).ToString("0.00") + ".." + (v.a / Unit).ToString("0.00");
+            }
+            return "cell " + c + " ground row " + zg + ": " + texel + " | all " + s.all + ", marked " + s.dirtyList.Count + ", rows " + s.rows + ", ground rows "
+                + s.groundRows + ", floors " + (s.heights != null ? s.heights.Length - 1 : -1) + ", texture " + (s.tex != null && s.tex.Ready) + ", builds " + Builds
+                + ", roofs " + Roofs;
+        }
+
+        // The roof over a cell of a floor whose floor is at height floorH (see the class comment).
+        private void AddRoof(IntVec3 c, float floorH, float wall)
+        {
+            int kind = KindAt(c.x, c.z);
+            float top;
+            float depth = RoofDepth;
+            if (kind == 1)
+            {
+                top = floorH + wall + SectionLayer_IsoRimRoofs.Rise + (SectionLayer_IsoRimRoofs.Flat ? FlatRoofs.Depth
+                    : SectionLayer_IsoRimRoofs.Pitch * Mathf.Clamp(LevelAt(c.x, c.z) - 0.5f, 0f, SectionLayer_IsoRimRoofs.MaxLevel));
+                spans.Add(new Vector2(Mathf.Min(floorH + wall, top - depth), top));
+                return;
+            }
+            if (kind == ShipRoofs.Kind)
+            {
+                top = floorH + wall + 0.1f;
+            }
+            else if (kind == 2)
+            {
+                top = floorH + wall;
+                RoofDef roof = map.roofGrid.RoofAt(c);
+                if (roof != null && roof.isThickRoof)
+                {
+                    depth = Mathf.Max(depth, 0.5f * wall);
+                }
+            }
+            else
+            {
+                return;   // none, or a floor above (its slab is in already)
+            }
+            spans.Add(new Vector2(top - depth, top));
+        }
+
+        // The lid kind of a map cell (any row), kept until its cells are marked.
+        private int KindAt(int x, int z)
+        {
+            if (x < 0 || z < 0 || x >= width || z >= mapRows)
+            {
+                return 0;
+            }
+            int i = z * width + x;
+            sbyte k = kinds[i];
+            if (k < 0)
+            {
+                k = (sbyte)SectionLayer_IsoRimRoofs.LidKind(map, new IntVec3(x, 0, z), false);
+                kinds[i] = k;
+            }
+            return k;
+        }
+
+        // How many cells in from its edge a built-roof cell is (1 at the edge, at most MaxLevel + 1), as the roofs layer
+        // works it out (the cells of other floors are other rows: a floor's roof ends at its own rows' edge, as drawn).
+        private int LevelAt(int x, int z)
+        {
+            int max = SectionLayer_IsoRimRoofs.MaxLevel;
+            for (int r = 1; r <= max; r++)
+            {
+                for (int k = -r; k <= r; k++)
+                {
+                    if (KindAt(x + k, z - r) != 1 || KindAt(x + k, z + r) != 1 || KindAt(x - r, z + k) != 1 || KindAt(x + r, z + k) != 1)
+                    {
+                        return r;
+                    }
+                }
+            }
+            return max + 1;
         }
 
         private static byte Lo(float h)
