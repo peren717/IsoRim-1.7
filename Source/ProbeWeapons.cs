@@ -24,6 +24,7 @@ namespace IsoRim
     //                              game's own job (no work giver)
     //   weaponsizes=1              logs every weapon with a 3D model: its fit to its sprite (WeaponModels.Hold) and its length
     //                              held by an adult figure against lying on the ground (by reflection: builds without it too)
+    //   artsweep=1                 (Api 50) logs every weapon with its own bound model: whether its art is its own and who supplies it
     //   beamcheck=1                logs FloorSprays' counters (sprays, beams between floors, streams, lines on one floor,
     //                              strips drawn) and every line mote between two ends on the map
     public static partial class Probe
@@ -126,10 +127,117 @@ namespace IsoRim
             return hi > lo;
         }
 
+        // artcheck (uniqueweap survey, 2026-11-02): which mod supplies a texture path as ContentFinder resolves it (last loaded
+        // mod with a loose file first, as ContentFinder.Get), else "resources" (Core's built-in) or "bundle" (a DLC's or mod's
+        // asset bundle).
+        private static string ArtOwner(string path)
+        {
+            if (path.NullOrEmpty())
+            {
+                return "-";
+            }
+            System.Collections.Generic.List<ModContentPack> mods = LoadedModManager.RunningModsListForReading;
+            for (int i = mods.Count - 1; i >= 0; i--)
+            {
+                ModContentHolder<Texture2D> h = mods[i].GetContentHolder<Texture2D>();
+                if (h != null && h.contentList.ContainsKey(path))
+                {
+                    return "loose:" + mods[i].PackageId;
+                }
+            }
+            if (Resources.Load<Texture2D>(GenFilePaths.ContentPath<Texture2D>() + path) != null)
+            {
+                return "resources";
+            }
+            return ContentFinder<Texture2D>.TryFindAssetInModBundles(path) != null ? "bundle" : "missing";
+        }
+
+        private static string ArtLine(Thing t)
+        {
+            Graphic g = t.Graphic;
+            Graphic inner = g is Graphic_RandomRotated rr ? rr.SubGraphic : g;   // weapons: the game wraps their graphic (onGroundRandomRotateAngle)
+            Graphic sub = inner is Graphic_Random gr ? gr.SubGraphicFor(t) : inner;
+            Material mat = g != null ? g.MatSingleFor(t) : null;
+            ModelEntry entry;
+            bool bound = ModelLibrary.TryGet(t.def, out entry) && entry.HasModel;
+            CompUniqueWeapon uw = t.TryGetComp<CompUniqueWeapon>();
+            return t.def.defName + " id " + t.thingIDNumber + " graphic " + (g != null ? g.GetType().Name : "-") + " path " + (inner != null ? inner.path : "-")
+                + " sub " + (sub != null ? sub.path : "-") + " owner " + ArtOwner(sub != null ? sub.path : null)
+                + " defTexPath " + (t.def.graphicData != null ? t.def.graphicData.texPath : "-") + " defMod " + (t.def.modContentPack != null ? t.def.modContentPack.PackageId : "-")
+                + " tex " + (mat != null && mat.mainTexture != null ? mat.mainTexture.name : "-") + " shader " + (mat != null ? mat.shader.name : "-")
+                + " mask " + (mat != null && mat.HasProperty("_MaskTex") && mat.GetTexture("_MaskTex") != null ? mat.GetTexture("_MaskTex").name : "-")
+                + " drawColor " + t.DrawColor + " traits " + (uw != null ? string.Join("+", uw.TraitsListForReading.Select(x => x.defName)) : "-")
+                + " style " + (t.StyleDef != null ? t.StyleDef.defName : "-")
+                + " bound " + bound + " how " + (ModelLibrary.HowBound(t.def) ?? "-") + " uses3D " + WeaponModels.Uses(t.def) + " form " + Forms.For(t.def).form
+                + " thingModel " + (WeaponModels.ModelOf(t) != null ? WeaponModels.ModelOf(t).id.ToString() : "-") + " thingForm " + Forms.For(t).form
+                + " artOwn " + (entry != null ? WeaponModels.ArtIsOwn(t.def, entry).ToString() : "-") + " anyArt " + (entry != null && entry.def.anyArt)
+                + " byGraphic " + (entry != null && entry.byGraphic != null ? (GraphicModels.For(t, entry) != null ? GraphicModels.For(t, entry).path : "nomatch") : "-");
+        }
+
         private static bool WeaponKey(string key, string[] a, Map map)
         {
             switch (key)
             {
+                case "artcheck":
+                {
+                    // artcheck=1: every weapon on the ground and every pawn's primary: its graphic, the sprite variant it draws
+                    // and which mod supplies that texture, its colour and traits, and how IsoRim binds/draws it.
+                    foreach (Thing t in map.listerThings.ThingsInGroup(ThingRequestGroup.Weapon))
+                    {
+                        Log.Message("[IsoRim probe] artcheck ground " + t.Position + " " + ArtLine(t));
+                    }
+                    foreach (Pawn p in map.mapPawns.AllPawnsSpawned)
+                    {
+                        if (p.equipment != null && p.equipment.Primary != null)
+                        {
+                            Log.Message("[IsoRim probe] artcheck held " + p.Position + " " + ArtLine(p.equipment.Primary));
+                        }
+                    }
+                    foreach (Building_OutfitStand s in map.listerThings.AllThings.OfType<Building_OutfitStand>().ToList())
+                    {
+                        if (s.HeldWeapon != null)
+                        {
+                            Log.Message("[IsoRim probe] artcheck stand " + s.Position + " " + ArtLine(s.HeldWeapon) + " heldSprite " + GroundGear.HeldSprite(s.HeldWeapon));
+                        }
+                    }
+                    return true;
+                }
+                case "artsweep":
+                {
+                    // artsweep=1 (Api 50): every weapon def with a model bound to it by name (or graphicPath): whether its art is
+                    // its own (WeaponModels.ArtIsOwn) and which mod supplies each of its sprite paths.
+                    int flipped = 0, bound = 0;
+                    foreach (ThingDef def in DefDatabase<ThingDef>.AllDefsListForReading)
+                    {
+                        ModelEntry entry;
+                        if (def.IsApparel || !GroundGear.IsGear(def) || !ModelLibrary.TryGet(def, out entry))
+                        {
+                            continue;
+                        }
+                        string how = ModelLibrary.HowBound(def);
+                        if (!ModelLibrary.BoundByName(how) && !(how != null && how.StartsWith("graphicPath:")))
+                        {
+                            continue;
+                        }
+                        bound++;
+                        bool own = WeaponModels.ArtIsOwn(def, entry);
+                        string by = "";
+                        foreach (string path in WeaponModels.ArtPaths(def))
+                        {
+                            ModContentPack m = WeaponModels.ArtOwner(path);
+                            by += " " + path + "=" + (m != null ? m.PackageId : "none");
+                        }
+                        if (!own && !entry.def.anyArt)
+                        {
+                            flipped++;
+                        }
+                        Log.Message("[IsoRim probe] artsweep " + def.defName + " mod " + (def.modContentPack != null ? def.modContentPack.PackageId : "-") + " model "
+                            + entry.def.defName + " (" + (entry.def.modContentPack != null ? entry.def.modContentPack.PackageId : "-") + ") own " + own + " anyArt "
+                            + entry.def.anyArt + " uses3D " + WeaponModels.Uses(def) + " art" + by);
+                    }
+                    Log.Message("[IsoRim probe] artsweep total: " + bound + " weapons with their own model, " + flipped + " drawn as their sprite (art not their own, no anyArt)");
+                    return true;
+                }
                 case "cast":
                 {
                     Pawn p = PawnAt(map, I(a[0]), I(a[1]));

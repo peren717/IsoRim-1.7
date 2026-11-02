@@ -16,6 +16,11 @@ namespace IsoRim
     //   - while the model stands in, the thing's own sprite drawn every frame by a custom DrawAt (Graphic.Draw of
     //     thing.Graphic) is left out (Patches.GraphicDraw_Prefix -> SkipsSprite); what it draws besides (items, comps,
     //     overlays from other graphics) is kept.
+    // (Api 50) The path matched is that of the sprite the thing really shows (Matched): a Graphic_RandomRotated (the game's
+    // wrapper turning a weapon on the ground; its own path is empty) is unwrapped, and of a Graphic_Random the variant this
+    // thing draws is matched first (Graphic_Random.SubGraphicFor: its folder's path plus its own name, a unique weapon's
+    // .../UniqueAssaultRifleB), then its folder's path. A weapon so bound shows the entry's model where its sprite matches
+    // (WeaponModels.ModelOf), else its def's model, else its sprite.
     public static class GraphicModels
     {
         public sealed class Entry
@@ -34,6 +39,8 @@ namespace IsoRim
         // Per ModelEntry: Graphic object -> index of the first matching entry per facing (-1 none, MinValue not looked up yet);
         // graphics are pooled by the game, so it stays small.
         private static readonly Dictionary<ModelEntry, Dictionary<Graphic, int[]>> lookup = new Dictionary<ModelEntry, Dictionary<Graphic, int[]>>();
+        // (Api 50) A Graphic_Random's variant -> that Graphic_Random's (folder) path, normalised: matched after the variant's.
+        private static readonly Dictionary<Graphic, string> folders = new Dictionary<Graphic, string>();
 
         internal static Entry[] Load(ModelDef md)
         {
@@ -109,7 +116,40 @@ namespace IsoRim
             }
         }
 
-        // Index of the first entry of e matching graphic g on a thing facing rot; -1 for none.
+        // (Api 50) The graphic whose path the entries match for thing t drawn with g: a Graphic_RandomRotated unwrapped, of a
+        // Graphic_Random the variant t draws (its folder noted, matched after it).
+        public static Graphic Matched(Graphic g, Thing t)
+        {
+            Graphic_RandomRotated rr = g as Graphic_RandomRotated;
+            if (rr != null && rr.SubGraphic != null)
+            {
+                g = rr.SubGraphic;
+            }
+            Graphic_Random random = g as Graphic_Random;
+            if (random != null && random.SubGraphicsCount > 0)
+            {
+                Graphic sub = random.SubGraphicFor(t);
+                if (sub != null && sub != g)
+                {
+                    if (!folders.ContainsKey(sub))
+                    {
+                        folders[sub] = Normalise(random.path);
+                    }
+                    return sub;
+                }
+            }
+            return g;
+        }
+
+        // The graphic the entries match for the thing now (Matched of its Graphic), or null.
+        private static Graphic MatchedOf(Thing t)
+        {
+            Graphic g = GraphicOf(t);
+            return g != null ? Matched(g, t) : null;
+        }
+
+        // Index of the first entry of e matching graphic g on a thing facing rot; -1 for none. A thing's graphic goes through
+        // Matched first; a Graphic_Random's variant is matched by its own path, then by its folder's (Api 50).
         public static int IndexFor(ModelEntry e, Graphic g, Rot4 rot)
         {
             if (e == null || e.byGraphic == null || g == null)
@@ -134,14 +174,23 @@ namespace IsoRim
                 return byFacing[f];
             }
             int idx = -1;
-            string path = Normalise(g.path);
-            for (int i = 0; i < e.byGraphic.Length; i++)
+            string folder;
+            folders.TryGetValue(g, out folder);
+            for (int pass = 0; pass < 2 && idx < 0; pass++)
             {
-                Entry b = e.byGraphic[i];
-                if ((b.facing < 0 || b.facing == f) && (b.prefix ? path.StartsWith(b.path, StringComparison.Ordinal) : path == b.path))
+                string path = pass == 0 ? Normalise(g.path) : folder;
+                if (path == null)
                 {
-                    idx = i;
                     break;
+                }
+                for (int i = 0; i < e.byGraphic.Length; i++)
+                {
+                    Entry b = e.byGraphic[i];
+                    if ((b.facing < 0 || b.facing == f) && (b.prefix ? path.StartsWith(b.path, StringComparison.Ordinal) : path == b.path))
+                    {
+                        idx = i;
+                        break;
+                    }
                 }
             }
             byFacing[f] = idx;
@@ -155,14 +204,14 @@ namespace IsoRim
             {
                 return null;
             }
-            int i = IndexFor(e, GraphicOf(t), t.Rotation);
+            int i = IndexFor(e, MatchedOf(t), t.Rotation);
             return i >= 0 ? e.byGraphic[i] : null;
         }
 
         // StateModels.Choose: the model to build the real thing with; normal if no entry matches. Noted for Track.
         internal static Model Choose(Thing t, ModelEntry e, Model normal)
         {
-            int i = IndexFor(e, GraphicOf(t), t.Rotation);
+            int i = IndexFor(e, MatchedOf(t), t.Rotation);
             baked[t.thingIDNumber] = i;
             defs.Add(t.def);
             return i >= 0 ? e.byGraphic[i].model : normal;
@@ -173,7 +222,7 @@ namespace IsoRim
         {
             if (e.byGraphic != null && t != null)
             {
-                Graphic g = GraphicOf(t);
+                Graphic g = MatchedOf(t);
                 int i = IndexFor(e, g, t.Rotation);
                 if (i >= 0)
                 {
@@ -199,7 +248,7 @@ namespace IsoRim
             {
                 return;
             }
-            int now = IndexFor(f.model, GraphicOf(t), t.Rotation);
+            int now = IndexFor(f.model, MatchedOf(t), t.Rotation);
             if (now == was)
             {
                 return;

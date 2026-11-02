@@ -97,7 +97,10 @@ namespace IsoRim
         // 48: selection rings (Api48.cs, SelectionRings): AddSelectionRingRule (colour, radius scale, picture, hide per pawn),
         // the IsoRim.SelectionRing XML mod extension on a race, SelectionRingOf.
         // 49: animal models in the vanilla colour (ModelDef.tintFromGraphic: textured materials times the pawn's current graphic colour).
-        public static int Version => 49;
+        // 50: weapons keep their model only while their art is their own (WeaponModels.ArtIsOwn: every sprite path from an official
+        // pack, the weapon's mod or the ModelDef's mod; else their sprite), ModelDef.anyArt to keep it anyway; byGraphic matches a
+        // weapon's sprite (Graphic_RandomRotated unwrapped, a Graphic_Random's variant path, then its folder), per thing (Forms.For(Thing)).
+        public static int Version => 50;
 
         // ---- glass parts (Version 30)
 

@@ -124,7 +124,7 @@ namespace IsoRim
                     rotation = Quaternion.AngleAxis(Find.TickManager.TicksGame % period / period * 360f, Vector3.up);
                 }
                 ModelEntry thrown;
-                if (Thrown(p.EquipmentDef) && WeaponModels.Uses(p.EquipmentDef, out thrown))
+                if (Thrown(p.EquipmentDef) && WeaponModels.Uses(p.EquipmentDef, out thrown) && thrown.HasModel)
                 {
                     // A thrown weapon with its own model (WeaponModels): the model flies, at its size on the ground.
                     Color tint = p.EquipmentDef.graphicData != null ? p.EquipmentDef.graphicData.color : Color.white;

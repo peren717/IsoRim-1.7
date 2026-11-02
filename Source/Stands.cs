@@ -184,7 +184,7 @@ namespace IsoRim
 
             bool flip = aim > 200f && aim < 340f;
             float angle = flip ? aim - 270f - weapon.def.equippedAngleOffset : aim - 90f + weapon.def.equippedAngleOffset;
-            if (GroundGear.HeldSprite(weapon.def) && SpriteSolids.DrawUpright(weapon, centre, angle, flip, size))
+            if (GroundGear.HeldSprite(weapon) && SpriteSolids.DrawUpright(weapon, centre, angle, flip, size))
             {
                 return true;   // its sprite made solid, as a 3D colonist holds it
             }

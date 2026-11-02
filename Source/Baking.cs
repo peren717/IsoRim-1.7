@@ -47,6 +47,7 @@ namespace IsoRim
             if (cacheStamp != View3D.Stamp)
             {
                 cache.Clear();
+                unmodelled.Clear();
                 cacheStamp = View3D.Stamp;
             }
             ThingForm f;
@@ -58,7 +59,30 @@ namespace IsoRim
             return f;
         }
 
-        private static ThingForm Compute(ThingDef def)
+        // (Api 50) Weapons whose bound model covers only some of their sprites (ModelDef.byGraphic and no model of its own):
+        // the form each has where its sprite no entry matches (the form without a model: its sprite made solid).
+        private static readonly Dictionary<ThingDef, ThingForm> unmodelled = new Dictionary<ThingDef, ThingForm>();
+
+        // The form of this very thing: its def's (For(def)), except a weapon whose model covers only some of its sprites
+        // (byGraphic entries, no model of its own): one whose sprite no entry matches takes the form it has without a model.
+        public static ThingForm For(Thing t)
+        {
+            ThingForm f = For(t != null ? t.def : null);
+            if (f.form != Form3D.Model || f.model == null || f.model.HasModel || t.def.category != ThingCategory.Item
+                || WeaponModels.ModelOf(t) != null)
+            {
+                return f;
+            }
+            ThingForm u;
+            if (!unmodelled.TryGetValue(t.def, out u))
+            {
+                u = Compute(t.def, true);
+                unmodelled[t.def] = u;
+            }
+            return u;
+        }
+
+        private static ThingForm Compute(ThingDef def, bool noWeaponModel = false)
         {
             IsoRimSettings st = IsoRimMod.Settings;
             ThingForm f = new ThingForm();
@@ -93,7 +117,7 @@ namespace IsoRim
             }
             // (A landed drop pod is an item to the game, but a bound one is drawn as its pod model: ActiveTransporter defs.)
             bool podModel = listed && entry.HasModel && st.models3D && typeof(ActiveTransporter).IsAssignableFrom(def.thingClass);
-            if (def.category == ThingCategory.Item && WeaponModels.Uses(def))
+            if (!noWeaponModel && def.category == ThingCategory.Item && WeaponModels.Uses(def))
             {
                 // A weapon with a 3D model lies as its model (WeaponModels), with or without the game's art.
                 f.form = Form3D.Model;
@@ -275,7 +299,7 @@ namespace IsoRim
             {
                 return 0f;
             }
-            ThingForm f = For(t.def);
+            ThingForm f = For(t);
             float h = f.form == Form3D.Flat ? 0f : f.form == Form3D.Model ? SurfaceOf(t, f) : f.height;
             if (f.form == Form3D.Block)
             {
@@ -2364,7 +2388,7 @@ namespace IsoRim
                 center.x += (Hashing.Unit(id, 13, 3) - 0.5f) * def.scatter;
                 center.z += (Hashing.Unit(id, 17, 4) - 0.5f) * def.scatter;
             }
-            if ((def.overArt || (thing.def.category == ThingCategory.Item && WeaponModels.Uses(thing.def))) && thing.MultipleItemsPerCellDrawn())
+            if ((def.overArt || (thing.def.category == ThingCategory.Item && WeaponModels.Uses(thing))) && thing.MultipleItemsPerCellDrawn())
             {
                 fit *= 0.8f;   // as the game draws several items in one cell (a shelf) at 0.8 size
             }

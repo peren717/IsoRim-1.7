@@ -1736,7 +1736,7 @@ namespace IsoRim
                     return true;
                 }
 
-                ThingForm form = Forms.For(__0.def);
+                ThingForm form = Forms.For(__0);   // (Api 50) per thing: a weapon modelled only for some sprites
                 bool item = __0.def.category == ThingCategory.Item;
                 float resting = item ? Forms.BaseUnder(__0, true) : 0f;
 
@@ -2858,7 +2858,7 @@ namespace IsoRim
             {
                 return true;   // its 3D model where its sprite would be (WeaponModels)
             }
-            if (GroundGear.HeldSprite(weapon.def) && SpriteSolids.DrawHeld(weapon, position, aim))
+            if (GroundGear.HeldSprite(weapon) && SpriteSolids.DrawHeld(weapon, position, aim))
             {
                 return true;
             }

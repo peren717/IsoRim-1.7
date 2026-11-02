@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using HarmonyLib;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -38,7 +39,9 @@ namespace IsoRim
             }
         }
 
-        // Whether this weapon def shows its model (On, a real weapon as GroundGear files them, a model bound to it).
+        // Whether this weapon def shows its model (On, a real weapon as GroundGear files them, a model bound to it, its art its
+        // own: ArtIsOwn). With byGraphic entries (Api 39/50) and no model of its own, only the things whose sprite an entry
+        // matches show one: ask per thing (Uses(Thing), ModelOf).
         public static bool Uses(ThingDef def)
         {
             ModelEntry entry;
@@ -52,21 +55,191 @@ namespace IsoRim
             {
                 return false;
             }
-            if (!ModelLibrary.TryGet(def, out entry) || !entry.HasModel || entry.def.flat)
+            if (!ModelLibrary.TryGet(def, out entry) || (!entry.HasModel && entry.byGraphic == null) || entry.def.flat)
             {
                 return false;
             }
             // Its own model: bound to this very weapon (by name or a model rule, Api 42; or its art, Api 16), not a stand-in for
             // its category or name.
             string how = ModelLibrary.HowBound(def);
-            return ModelLibrary.BoundByName(how) || (how != null && how.StartsWith("graphicPath:"));
+            if (!ModelLibrary.BoundByName(how) && !(how != null && how.StartsWith("graphicPath:")))
+            {
+                return false;
+            }
+            return entry.def.anyArt || ArtIsOwn(def, entry);   // (Api 50)
         }
 
-        // The model this weapon shows (its style or appearance), or null.
+        // (Api 50) Whether this very weapon shows a model (ModelOf).
+        public static bool Uses(Thing weapon)
+        {
+            return ModelOf(weapon) != null;
+        }
+
+        // The model this weapon shows, or null: the byGraphic entry its sprite matches (Api 39; a weapon's sprite variant, Api
+        // 50), else its def's model (its style or appearance).
         public static Model ModelOf(Thing weapon)
         {
             ModelEntry entry;
-            return weapon != null && Uses(weapon.def, out entry) ? entry.Pick(weapon) : null;
+            if (weapon == null || !Uses(weapon.def, out entry))
+            {
+                return null;
+            }
+            if (entry.byGraphic != null)
+            {
+                GraphicModels.Entry b = GraphicModels.For(weapon, entry);
+                if (b != null)
+                {
+                    return b.model;
+                }
+            }
+            return entry.Pick(weapon);
+        }
+
+        // ------------------------------------------------------------------ whose art (Api 50)
+
+        // A model is made for the weapon's own sprite. A texture pack that redraws the weapon (a texture of the same path, which
+        // the game takes from the last-loaded mod that has one; a patched graphicData.texPath; one more variant in its
+        // Graphic_Random folder, which gathers every mod's files) leaves the model showing the old gun. So a weapon keeps its
+        // model only while every sprite it can draw (ArtPaths) comes from an official pack (Core, the DLCs), the weapon's own
+        // mod or the mod of the ModelDef bound to it (ArtOwner: a loose texture, Core's built-in resources, a mod's asset
+        // bundle as that mod); else it draws its own sprite everywhere, as a weapon without a model. ModelDef.anyArt keeps
+        // the model whatever the art. Worked out once per def and binding, on the main thread (the game's content lookups
+        // need it); asked off it before that, the model is kept for that call.
+        private static readonly Dictionary<ThingDef, KeyValuePair<ModelEntry, bool>> ownArt = new Dictionary<ThingDef, KeyValuePair<ModelEntry, bool>>();
+        private static readonly AccessTools.FieldRef<Graphic_Collection, Graphic[]> collectionSubs =
+            AccessTools.FieldRefAccess<Graphic_Collection, Graphic[]>("subGraphics");
+        private static readonly string[] Facings = { "_north", "_east", "_south", "_west" };
+
+        public static bool ArtIsOwn(ThingDef def, ModelEntry entry)
+        {
+            KeyValuePair<ModelEntry, bool> known;
+            if (ownArt.TryGetValue(def, out known) && known.Key == entry)
+            {
+                return known.Value;
+            }
+            if (!UnityData.IsInMainThread)
+            {
+                return true;
+            }
+            bool own = true;
+            try
+            {
+                ModContentPack modelMod = entry != null && entry.def != null ? entry.def.modContentPack : null;
+                foreach (string path in ArtPaths(def))
+                {
+                    ModContentPack by = ArtOwner(path);
+                    if (by != null && !by.IsOfficialMod && by != def.modContentPack && by != modelMod)
+                    {
+                        own = false;
+                        ModLog.Note("[IsoRim] " + def.defName + " draws its sprite, not its model: its art '" + path + "' comes from "
+                            + by.PackageIdPlayerFacing + " (ModelDef.anyArt keeps the model).");
+                        break;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                own = true;
+                Log.ErrorOnce("[IsoRim] Checking whose art a weapon has failed: " + e, 93611531);
+            }
+            ownArt[def] = new KeyValuePair<ModelEntry, bool>(entry, own);
+            return own;
+        }
+
+        // Every texture path the def's graphic can draw: the game's Graphic_RandomRotated (a weapon's turn on the ground)
+        // unwrapped, each sprite of a collection (Graphic_Random's variants), each facing of a Graphic_Multi that exists.
+        public static List<string> ArtPaths(ThingDef def)
+        {
+            List<string> paths = new List<string>();
+            Graphic g = def.graphicData != null ? def.graphicData.Graphic : def.graphic;
+            if (g is Graphic_RandomRotated rr)
+            {
+                g = rr.SubGraphic;
+            }
+            if (g is Graphic_Collection c)
+            {
+                Graphic[] subs = collectionSubs(c);
+                if (subs != null)
+                {
+                    for (int i = 0; i < subs.Length; i++)
+                    {
+                        AddPaths(subs[i], paths);
+                    }
+                }
+            }
+            else
+            {
+                AddPaths(g, paths);
+            }
+            return paths;
+        }
+
+        private static void AddPaths(Graphic g, List<string> paths)
+        {
+            if (g == null || g.path.NullOrEmpty())
+            {
+                return;
+            }
+            if (g is Graphic_Multi)
+            {
+                for (int i = 0; i < Facings.Length; i++)
+                {
+                    if (ArtOwner(g.path + Facings[i]) != null)
+                    {
+                        paths.Add(g.path + Facings[i]);
+                    }
+                }
+                return;
+            }
+            paths.Add(g.path);
+        }
+
+        // The mod the game takes this texture from (as ContentFinder.Get looks: loose files of the last-loaded mod first, then
+        // Core's built-in resources, then the mods' asset bundles, last-loaded first); null if none has it.
+        public static ModContentPack ArtOwner(string path)
+        {
+            List<ModContentPack> mods = LoadedModManager.RunningModsListForReading;
+            for (int i = mods.Count - 1; i >= 0; i--)
+            {
+                ModContentHolder<Texture2D> h = mods[i].GetContentHolder<Texture2D>();
+                if (h != null && h.contentList.ContainsKey(path))
+                {
+                    return mods[i];
+                }
+            }
+            if (Resources.Load<Texture2D>(GenFilePaths.ContentPath<Texture2D>() + path) != null)
+            {
+                for (int i = 0; i < mods.Count; i++)
+                {
+                    if (mods[i].IsCoreMod)
+                    {
+                        return mods[i];
+                    }
+                }
+            }
+            string data = System.IO.Path.Combine("Assets", "Data");
+            for (int i = mods.Count - 1; i >= 0; i--)
+            {
+                ModContentPack mod = mods[i];
+                if (mod.assetBundles == null || mod.assetBundles.loadedAssetBundles.NullOrEmpty())
+                {
+                    continue;
+                }
+                string byFolder = System.IO.Path.Combine(System.IO.Path.Combine(System.IO.Path.Combine(data, mod.FolderName), GenFilePaths.ContentPath<Texture2D>()), path);
+                string byId = mod.IsOfficialMod ? null
+                    : System.IO.Path.Combine(System.IO.Path.Combine(System.IO.Path.Combine(data, mod.PackageIdPlayerFacing), GenFilePaths.ContentPath<Texture2D>()), path);
+                foreach (AssetBundle bundle in mod.assetBundles.loadedAssetBundles)
+                {
+                    foreach (string ext in ModAssetBundlesHandler.TextureExtensions)
+                    {
+                        if (bundle.LoadAsset<Texture2D>(byFolder + ext) != null || (byId != null && bundle.LoadAsset<Texture2D>(byId + ext) != null))
+                        {
+                            return mod;
+                        }
+                    }
+                }
+            }
+            return null;
         }
 
         // The model laid into the sprite slab's space (SpriteSolids: x along the sprite, y up it, z its thickness; the unit square

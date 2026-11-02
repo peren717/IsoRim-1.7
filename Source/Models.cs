@@ -396,6 +396,10 @@ namespace IsoRim
         // the tint out of Kd (Kd = the sprite's lit white). Every pose Animals.Draw draws (standing, asleep, downed, dead,
         // carried); the outline keeps its own colour. Off (default): the model's own colours, as before. Opt-in, per model.
         public bool tintFromGraphic = false;
+        // (Api 50) Weapons: use this model whatever art the weapon has. Off (default): a weapon whose sprite another mod
+        // supplies (a texture pack's same-named texture, a patched texPath, one more variant in its folder) draws that sprite
+        // instead of the model (WeaponModels.ArtIsOwn). On: for a pack that binds models to retextured weapons on purpose.
+        public bool anyArt = false;
 
         // Mechanoids (Mechs.cs). thingDef is the mech's race; model is the body (everything that does not move),
         // facing north, standing on the ground; mechParts are the pieces that move, each built in the same space

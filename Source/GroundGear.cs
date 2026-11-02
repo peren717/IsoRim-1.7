@@ -65,6 +65,12 @@ namespace IsoRim
             return !WeaponModels.Uses(def);
         }
 
+        // (Api 50) The same for this very weapon (a byGraphic model may cover only some of its sprites: WeaponModels.ModelOf).
+        public static bool HeldSprite(Thing weapon)
+        {
+            return !WeaponModels.Uses(weapon);
+        }
+
         // A weapon as GroundGear files them (IsGear, not apparel): its look follows "Weapons as 3D models" only.
         public static bool IsWeapon(ThingDef def)
         {

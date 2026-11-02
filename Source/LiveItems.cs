@@ -84,7 +84,7 @@ namespace IsoRim
         // nothing to show), the game's own sprite of it is drawn lying at that height (else false, nothing drawn).
         public static bool Draw(Thing t, Vector3 bottom, float yaw, float scale, bool flat)
         {
-            ThingForm form = Forms.For(t.def);
+            ThingForm form = Forms.For(t);
             bool done = false;
             switch (form.form)
             {
