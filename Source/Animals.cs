@@ -218,6 +218,9 @@ namespace IsoRim
             // rotation turns the body model only (one built facing south); its hips and legs are given facing north.
             Matrix4x4 bodyTurn = def.rotation != 0f ? Matrix4x4.Rotate(Quaternion.AngleAxis(def.rotation, Vector3.up)) : Matrix4x4.identity;
             FigureScope.Root(position, yaw);   // (Api.DrawFigure: placed elsewhere)
+            // Selected: its selection ring round the body model as posed (SelectionRings), on the ground or the bed or deck it lies on.
+            SelectionRings.NoteBox(pawn, position, yaw, ground - lift - flight, bodyPose * sized * bodyTurn,
+                new Vector3(body.minX, 0f, body.minZ), new Vector3(body.maxX, body.maxY, body.maxZ));
             // body, legs and wings lit by smooth normals while the setting is on (SmoothFigures; mechanoids stay flat)
             bool partWas = DynamicModels.AnimalPart;
             DynamicModels.AnimalPart = pawn.RaceProps == null || !pawn.RaceProps.IsMechanoid;

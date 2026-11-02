@@ -20,7 +20,7 @@ namespace IsoRim
     public static class Overhead
     {
         public const float Gap = 0.2f;             // between the head's top and an icon's middle, in cells
-        private const float LyingTop = 0.38f;      // a lying (downed, sleeping on the ground) figure's top
+        internal const float LyingTop = 0.38f;     // a lying (downed, sleeping on the ground) figure's top (also PawnLabels)
         private const float BedTop = 0.55f;        // a figure lying in a bed
 
         // Where the middle of an icon over this pawn stands, in cells above its floor.

@@ -3,7 +3,7 @@
 Model packs (XML and .obj files, no code), the dev-mode model binder and the coverage report: see [ModelPacks.md](ModelPacks.md).
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`, `WallShapeRule`, `WallShape`, `HeadDecal`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`, `WallShapeRule`, `WallShape`, `HeadDecal`, `SelectionRing`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
 in any update, even when it is public: do not patch or reflect into it, ask for an Api member instead. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -63,6 +63,7 @@ if (IsoRim.Api.Version >= 44) { /* a weapon's 3D muzzle: TryGetMuzzle, StandFlec
 if (IsoRim.Api.Version >= 45) { /* posture rules: AddPostureRule, AddProneFacingRule, PostureProne, PostureOf, DrawnPostureOf (part 29) */ }
 if (IsoRim.Api.Version >= 46) { /* burning fires: AddFireLook, AddBurningFire; burning fires drawn as 3D particles (part 30) */ }
 if (IsoRim.Api.Version >= 47) { /* head decals: IsoRim.HeadDecal, SetHeadDecal, HeadDecalOf (part 31) */ }
+if (IsoRim.Api.Version >= 48) { /* selection rings: AddSelectionRingRule, IsoRim.SelectionRing, SelectionRingOf (part 32) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
@@ -1676,6 +1677,66 @@ From XML, no code (load-gate it so your mod has no hard dependency, e.g. a LoadF
   or headgear is hidden (Api 21 `FigureParts.Headgear`). With an `ApparelModelDef` binding the bound model is drawn
   as well. Without either, IsoRim draws no stand-in hat for the apparel.
 - **Failing soft:** a sprite IsoRim cannot read leaves that side plain (logged once).
+
+## Part 32: selection rings (version 48)
+
+In the 3D view a selected pawn is marked by a flat ring on the ground round its body instead of the game's corner brackets
+(the player's option "Selection rings", on by default; buildings and items keep the brackets). By default the ring takes
+the game's name colour (`PawnNameColorUtility.PawnNameColorOf`, so mods that change name colours carry over; the colony's
+own grey is drawn green, a prisoner's pale orange more saturated), and its radius is fitted every frame to the body as
+posed (standing, lying, downed, crawling, carried, crouching by Api 45; 2D cards too), on the ground or the bed surface.
+
+For a mod that wants its own ring per pawn (a faction colour, a boss's bigger ring, a shape of its own, no ring):
+
+```csharp
+// IsoRim.Api.Version >= 48; once, at startup (a [StaticConstructorOnStartup] class is fine)
+static readonly IsoRim.SelectionRing BossRing = new IsoRim.SelectionRing { color = new Color(1f, 0.3f, 0.9f), radiusScale = 1.5f };
+static readonly IsoRim.SelectionRing NoRing = new IsoRim.SelectionRing { hide = true };
+
+IsoRim.Api.AddSelectionRingRule(new Func<Pawn, IsoRim.SelectionRing>(MyRing));
+
+static IsoRim.SelectionRing MyRing(Pawn p)
+{
+    if (MyMod.IsBoss(p)) return BossRing;
+    if (MyMod.IsDecoy(p)) return NoRing;
+    return null;                       // pass: the XML extension's or IsoRim's default
+}
+```
+
+From XML, no code, on a race or animal ThingDef (load-gate it so your mod has no hard dependency):
+
+```xml
+<!-- LoadFolders.xml: <li IfModActive="Peren.IsoRim17">Mods/IsoRim</li>; in Mods/IsoRim/Patches: -->
+<Operation Class="PatchOperationAddModExtension">
+  <xpath>Defs/ThingDef[defName="MyRace"]</xpath>
+  <value>
+    <li Class="IsoRim.SelectionRing">
+      <color>(0.3, 0.6, 1)</color>              <!-- optional -->
+      <radiusScale>1.2</radiusScale>            <!-- optional -->
+      <texPath>MyMod/UI/MyRing</texPath>        <!-- optional: a picture of your own -->
+      <!-- <hide>true</hide> -->
+    </li>
+  </value>
+</Operation>
+```
+
+| Member | What it does |
+|---|---|
+| `IsoRim.SelectionRing` (DefModExtension) | A ring look; every field optional. `color` (null: unset), `radiusScale` (times the fitted radius; 1 or 0: unset), `hide` (no ring), `texPath` (XML: a texture path) or `texture` (code: a `Texture2D`). |
+| `Api.AddSelectionRingRule(Func<Pawn, SelectionRing> rule)` | Asked every frame for each selected pawn a ring is drawn for (main thread). Null passes. Rules are asked in the order they were added; the first look that is not null wins. |
+| `Api.SelectionRingOf(Pawn, out Color color, out float radius)` | The ring as drawn now: colour and radius (cells, to the middle of the band; with a picture, half the square it fills). True when a ring is drawn for the pawn (3D view and option on, on the shown map, selected, not hidden). For a pawn not selected: the colour and radius it would get (the radius from its position and body size). |
+
+- **Which wins:** field by field, a code rule's look over the XML extension on the pawn's race, over IsoRim's default.
+  `hide` from any source hides the ring.
+- **Pictures:** any shape, drawn flat on the ground, centred on the ring's centre, filling a square two radii across,
+  tinted by the colour (white texels take it as it is; alpha is kept). IsoRim's own ring stays about five pixels wide at
+  any zoom; a picture scales with the ring.
+- **Look:** unlit (readable at night), no animation; walls, roofs and the pawn's own body hide it as they hide what is on
+  the ground; on stacked floors it lies on the pawn's floor.
+- **Cost:** only selected pawns are asked; keep the rule cheap and return shared `SelectionRing` objects.
+- **Failing soft:** a rule that throws is logged once and passes from then on; a `texPath` with no texture is logged
+  once and the built-in ring is drawn. Only standard `System.Func`, so code calling these after an `Api.Version >= 48`
+  check never breaks on an older IsoRim.
 
 ## Part M: model packs (IsoRim.ModelDef)
 

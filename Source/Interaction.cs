@@ -82,7 +82,7 @@ namespace IsoRim
         private static Matrix4x4 rectLift = Matrix4x4.identity;   // Rect raised off the ground (a block designator's drag)
 
         // How thick lines on the ground are, so they stay about two pixels wide at any zoom.
-        private static float LineWidth
+        internal static float LineWidth
         {
             get
             {

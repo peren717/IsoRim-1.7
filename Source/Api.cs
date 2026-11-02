@@ -94,7 +94,9 @@ namespace IsoRim
         // air at it, Emitters); the built-in Flourish adapter uses them (Compat/FlourishMuzzle.cs).
         // 47: head decals (Api47.cs, HeadDecals): apparel marked IsoRim.HeadDecal (XML mod extension) or SetHeadDecal is drawn in 3D
         // as its own worn head sprites projected onto the head (south front, east sides, north back) instead of a stand-in hat; HeadDecalOf.
-        public static int Version => 47;
+        // 48: selection rings (Api48.cs, SelectionRings): AddSelectionRingRule (colour, radius scale, picture, hide per pawn),
+        // the IsoRim.SelectionRing XML mod extension on a race, SelectionRingOf.
+        public static int Version => 48;
 
         // ---- glass parts (Version 30)
 

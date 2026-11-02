@@ -1512,6 +1512,18 @@ namespace IsoRim
         // which is "below" only while north is up. __1 is that distance (negative).
         public static bool LabelDrawPosFor_Prefix(Thing __0, float __1, ref Vector2 __result)
         {
+            if (PawnLabels.Above(__0, __1))
+            {
+                try
+                {
+                    __result = PawnLabels.AboveHead((Pawn)__0);   // a pawn's name label: over its head (option on)
+                    return false;
+                }
+                catch (Exception e)
+                {
+                    Log.ErrorOnce("[IsoRim] Placing a name label over a head failed: " + e, 93619492);
+                }
+            }
             Vector3 lift = Floors.DrawnOffset(__0);   // on an upper floor (Floors)
             Attachments.Placed attached;
             if (Attachments.Any && __0 is Pawn && Attachments.Place(__0, false, null, out attached))
@@ -1568,7 +1580,8 @@ namespace IsoRim
         }
 
         // The same for names over people and animals. The player's own colonists always keep theirs.
-        public static bool DrawPawnLabel_Prefix(Pawn __0, ref float __2)
+        // In the 3D view the label is drawn on IsoRim's plate (PawnLabels.DrawLabel).
+        public static bool DrawPawnLabel_Prefix(Pawn __0, Vector2 __1, ref float __2, float __3, Dictionary<string, string> __4, GameFont __5, bool __7)
         {
             if (__0 != null && __0 == FirstPerson.Pawn)
             {
@@ -1582,17 +1595,25 @@ namespace IsoRim
             {
                 return false;   // behind the camera: it would show mirrored up in the sky
             }
-            if (__0.IsColonist)
+            if (!__0.IsColonist)
             {
-                return true;
+                float a = View3D.LabelAlpha(View3D.LabelPos(__0));
+                if (a <= 0.01f)
+                {
+                    return false;
+                }
+                __2 *= a;
             }
-            float a = View3D.LabelAlpha(View3D.LabelPos(__0));
-            if (a <= 0.01f)
+            try
             {
+                PawnLabels.DrawLabel(__0, __1, __2, __3, __4, __5, __7);
                 return false;
             }
-            __2 *= a;
-            return true;
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Drawing a pawn's name label failed: " + e, 93619491);
+                return true;
+            }
         }
 
         public static bool DrawWorldOverlay_Prefix(Map __0, Material __1, int __3)
@@ -2035,6 +2056,7 @@ namespace IsoRim
                         Building holder = pawn.Dead ? null : Glass.HolderOf(pawn);
                         // A flat sprite lies on the top of the bedding, not under the pillow and blanket (Poses).
                         float bedTop = Poses.FlatLyingHeight((Building)bed ?? holder, pawn);   // on their slot (Api 28)
+                        SelectionRings.NoteCard(pawn, __0, Mathf.Max(0f, bedTop), SelectionRings.CardLength(pawn));   // its selection ring, round the lying card
                         Building_GibbetCage gibbet = pawn.Dead ? People.GibbetOf(pawn) : null;
                         if (gibbet != null)
                         {
@@ -2107,6 +2129,11 @@ namespace IsoRim
                 if (Statues.ground > 0f)
                 {
                     DrawHook.xform = View3D.LiftMatrix(Statues.ground) * DrawHook.xform;   // a statue's subject, on its 3D base
+                }
+                if (pawn != null)
+                {
+                    // its selection ring round the card's feet (an animal's by the length of its card, a person's by body size)
+                    SelectionRings.NoteCard(pawn, feet, 0f, pawn.RaceProps.Humanlike ? 0f : SelectionRings.CardLength(pawn));
                 }
                 DrawHook.active = true;
                 pawnUpright = true;
@@ -2315,12 +2342,26 @@ namespace IsoRim
         public static bool DrawSelectionBracketFor_Prefix(object __0)
         {
             Thing t = __0 as Thing;
-            if (!View3D.Ready || t == null || !t.Spawned || t.Map != Find.CurrentMap)
+            if (!View3D.Ready || t == null)
             {
                 return true;
             }
             try
             {
+                Pawn pawn = t as Pawn;
+                if (pawn != null && IsoRimMod.Settings.selectionRings)
+                {
+                    // A selected pawn: its selection ring (SelectionRings), also while carried or held on this map.
+                    Thing outer = pawn.SpawnedParentOrMe;
+                    if (outer != null && outer.Map == Find.CurrentMap && SelectionRings.Draw(pawn))
+                    {
+                        return false;
+                    }
+                }
+                if (!t.Spawned || t.Map != Find.CurrentMap)
+                {
+                    return true;
+                }
                 Interaction.Bracket(t);
                 return false;
             }

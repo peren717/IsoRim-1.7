@@ -57,6 +57,8 @@
   <R3D_Settings_WeatherSizeTip>How big the drops and flakes look on screen. They no longer grow as the camera zooms in.</R3D_Settings_WeatherSizeTip>
   <R3D_Settings_ThingLabels>Item labels</R3D_Settings_ThingLabels>
   <R3D_Settings_ThingLabelsTip>Labels on things lying on the map (stack counts, quality). Names over people are not affected.</R3D_Settings_ThingLabelsTip>
+  <R3D_Settings_LabelsAboveHeads>Labels above heads</R3D_Settings_LabelsAboveHeads>
+  <R3D_Settings_LabelsAboveHeadsTip>Pawn names over the head instead of at the feet.</R3D_Settings_LabelsAboveHeadsTip>
   <R3D_Settings_Perspective>Perspective</R3D_Settings_Perspective>
   <R3D_Settings_PerspectiveTip>A real perspective camera: far things get smaller, as in Rim3D. Off: the flat (orthographic) view.</R3D_Settings_PerspectiveTip>
   <R3D_Settings_Fov>Field of view</R3D_Settings_Fov>
@@ -267,6 +269,8 @@
   <R3D_Settings_AimTip>Where a ranged weapon's butt rests while aiming.</R3D_Settings_AimTip>
   <R3D_Settings_WorkAnimations>Work animations with tools</R3D_Settings_WorkAnimations>
   <R3D_Settings_WorkAnimationsTip>Axes, pickaxes, hammers, scythes, hoes and brooms while colonists work.</R3D_Settings_WorkAnimationsTip>
+  <R3D_Settings_SelectionRings>Selection rings</R3D_Settings_SelectionRings>
+  <R3D_Settings_SelectionRingsTip>A coloured ring on the ground under selected pawns.</R3D_Settings_SelectionRingsTip>
   <R3D_Settings_Ghosts3D>Blueprints show the finished build</R3D_Settings_Ghosts3D>
   <R3D_Settings_Ghosts3DTip>Blueprints, frames and the placement preview as see-through 3D models.</R3D_Settings_Ghosts3DTip>
   <R3D_Settings_Damage3D>Damage marks on buildings</R3D_Settings_Damage3D>

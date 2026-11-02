@@ -57,6 +57,8 @@
   <R3D_Settings_WeatherSizeTip>雨滴和雪花在屏幕上的大小。镜头拉近时不再变大。</R3D_Settings_WeatherSizeTip>
   <R3D_Settings_ThingLabels>物品标签</R3D_Settings_ThingLabels>
   <R3D_Settings_ThingLabelsTip>地图上物品的标签（堆叠数量、品质）。人物头上的名字不受影响。</R3D_Settings_ThingLabelsTip>
+  <R3D_Settings_LabelsAboveHeads>标签显示在头顶</R3D_Settings_LabelsAboveHeads>
+  <R3D_Settings_LabelsAboveHeadsTip>角色名字显示在头顶，而不是脚下。</R3D_Settings_LabelsAboveHeadsTip>
   <R3D_Settings_Perspective>透视镜头</R3D_Settings_Perspective>
   <R3D_Settings_PerspectiveTip>真正的透视镜头：远处的东西变小，类似 Rim3D。关闭：平面（正交）视图。</R3D_Settings_PerspectiveTip>
   <R3D_Settings_Fov>视野</R3D_Settings_Fov>
@@ -267,6 +269,8 @@
   <R3D_Settings_AimTip>瞄准时远程武器枪托的位置。</R3D_Settings_AimTip>
   <R3D_Settings_WorkAnimations>使用工具的工作动画</R3D_Settings_WorkAnimations>
   <R3D_Settings_WorkAnimationsTip>殖民者工作时的斧头、镐、锤子、镰刀、锄头和扫帚。</R3D_Settings_WorkAnimationsTip>
+  <R3D_Settings_SelectionRings>选中圈</R3D_Settings_SelectionRings>
+  <R3D_Settings_SelectionRingsTip>选中的角色脚下显示彩色圆圈。</R3D_Settings_SelectionRingsTip>
   <R3D_Settings_Ghosts3D>蓝图显示建成后的样子</R3D_Settings_Ghosts3D>
   <R3D_Settings_Ghosts3DTip>蓝图、建造框架和放置预览显示为半透明 3D 模型。</R3D_Settings_Ghosts3DTip>
   <R3D_Settings_Damage3D>建筑上的损伤痕迹</R3D_Settings_Damage3D>

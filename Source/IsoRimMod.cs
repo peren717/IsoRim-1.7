@@ -58,6 +58,8 @@ namespace IsoRim
         public bool mapEdge3D = true;
         public float itemThickness = 1f;
         public bool workAnimations = true;
+        public bool selectionRings = true;   // a ring on the ground under selected pawns in 3D (SelectionRings); off: brackets
+        public bool labelsAboveHeads = true; // pawn name labels over the head in 3D (PawnLabels); off: at the feet as the game puts them
         public bool damage3D = true;
         public bool outlines = true;
         public bool steppedLight = true;    // sun light on models in a few flat bands (Shaders/IsoRimSolid.frag.glsl SteppedAmount)
@@ -202,6 +204,8 @@ namespace IsoRim
             Scribe_Values.Look(ref mapEdge3D, "mapEdge3D", true);
             Scribe_Values.Look(ref itemThickness, "itemThickness", 1f);
             Scribe_Values.Look(ref workAnimations, "workAnimations", true);
+            Scribe_Values.Look(ref selectionRings, "selectionRings", true);
+            Scribe_Values.Look(ref labelsAboveHeads, "labelsAboveHeads", true);
             Scribe_Values.Look(ref damage3D, "damage3D", true);
             Scribe_Values.Look(ref outlines, "outlines", true);
             Scribe_Values.Look(ref steppedLight, "steppedLight", true);
@@ -765,6 +769,7 @@ namespace IsoRim
                     st.weatherSize = Slider(l, "R3D_Settings_WeatherSize".Translate(), st.weatherSize, 0.25f, 3f, "×" + st.weatherSize.ToString("0.00"), "R3D_Settings_WeatherSizeTip".Translate());
                 }
                 Check(l, "R3D_Settings_ThingLabels".Translate(), ref st.thingLabels, "R3D_Settings_ThingLabelsTip".Translate());
+                Check(l, "R3D_Settings_LabelsAboveHeads".Translate(), ref st.labelsAboveHeads, "R3D_Settings_LabelsAboveHeadsTip".Translate());
                 Check(l, "R3D_Settings_Perspective".Translate(), ref st.perspective, "R3D_Settings_PerspectiveTip".Translate());
                 if (st.perspective)
                 {
@@ -1193,6 +1198,7 @@ namespace IsoRim
                     st.aimReach = Slider(r, "R3D_Settings_AimReach".Translate(), st.aimReach, -0.2f, 0.4f, st.aimReach.ToString("+0.00;-0.00;0"), "R3D_Settings_AimTip".Translate());
                 }
                 Check(r, "R3D_Settings_WorkAnimations".Translate(), ref st.workAnimations, "R3D_Settings_WorkAnimationsTip".Translate());
+                Check(r, "R3D_Settings_SelectionRings".Translate(), ref st.selectionRings, "R3D_Settings_SelectionRingsTip".Translate());
                 Check(r, "R3D_Settings_Ghosts3D".Translate(), ref st.ghosts3D, "R3D_Settings_Ghosts3DTip".Translate());
                 Check(r, "R3D_Settings_Damage3D".Translate(), ref st.damage3D);
                 Check(r, "R3D_Settings_Effects3D".Translate(), ref st.effects3D);

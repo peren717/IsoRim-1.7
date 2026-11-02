@@ -681,6 +681,9 @@ namespace IsoRim
             {
                 headPlace = headPlace * look.alien.head;   // a race's head placing (Api 25): everything on the head follows
             }
+            // Selected: where its selection ring goes (SelectionRings), round the body as posed; on the ground (a seat's feet are
+            // on the floor; carried or in mid-jump: under them), or the bed or holder it lies on.
+            SelectionRings.NotePerson(pawn, look, at, yaw, seated && !attached ? 0f : ground, bodyPlace, headPlace);
 
             // The whole figure is two ready-made meshes (body and head), each a single draw, put
             // together once for this look and the way it is facing.

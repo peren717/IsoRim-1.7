@@ -246,6 +246,9 @@ namespace IsoRim
             Matrix4x4 whole = pose * sized;
             Vector3 at = new Vector3(drawLoc.x, lift, drawLoc.z);
             FigureScope.Root(at, yaw);   // (Api.DrawFigure: placed elsewhere)
+            // Selected: its selection ring round the mech as posed (SelectionRings), on the ground or the platform it lies on.
+            SelectionRings.NoteBox(pawn, at, yaw, platform != null ? lift : 0f, whole,
+                new Vector3(rig.minX, 0f, rig.minZ), new Vector3(rig.maxX, rig.height, rig.maxZ));
 
             Faction faction = pawn.Faction;
             Color mark;
