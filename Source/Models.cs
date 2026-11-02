@@ -373,6 +373,12 @@ namespace IsoRim
         // Textured faces (map_Kd) lit by the same smooth normals as the rest of the body while the smooth-animals setting is
         // on (SmoothFigures; DynamicModels.Build). Off (default): textured faces are lit per face, as before. Opt-in, per model.
         public bool smoothTextured = false;
+        // Body animations other mods give the animal's sprite (BodyAnims: mods patching PawnRenderer.GetBodyPos / BodyAngle,
+        // Yayo's Animation for one) put on the whole animal while it stands or walks: the shift as a move along the camera's
+        // right and up, the sprite's turn as a lean (facing east or west: nose down or up; south or north: a roll to the side).
+        // For legless models (blobs that glide or hop: hop and the mod's sway add up). Off (default): the model keeps only its
+        // own animation, with or without such a mod. Opt-in, per model.
+        public bool bodyAnims = false;
 
         // Mechanoids (Mechs.cs). thingDef is the mech's race; model is the body (everything that does not move),
         // facing north, standing on the ground; mechParts are the pieces that move, each built in the same space

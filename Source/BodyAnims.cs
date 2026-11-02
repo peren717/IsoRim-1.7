@@ -9,6 +9,7 @@ namespace IsoRim
 {
     // Body animations other mods give the game's pawn sprite, mapped onto a standing 3D figure (2026-10-17).
     // A crawling figure (Crawl) gets them too, as its sprite lies on the ground: over the ground and about the vertical (ReadCrawl).
+    // 3D animals only when their model opts in (ModelDef.bodyAnims, 2026-11-01: legless blobs; AnimalSway); others keep their own gait.
     //
     // Such mods (Yayo's Animation, for one) patch PawnRenderer.GetBodyPos and PawnRenderer.BodyAngle, which the game uses to
     // place and turn the sprite. For a standing pawn the game's own answers are fixed: the drawn position unchanged and no
@@ -139,6 +140,43 @@ namespace IsoRim
                 * Matrix4x4.Translate(new Vector3(0f, -middle, 0f));
             Quaternion facing = Quaternion.AngleAxis(yaw, Vector3.up);
             return Matrix4x4.Rotate(Quaternion.Inverse(facing)) * Matrix4x4.Translate(move) * Matrix4x4.Rotate(facing) * lean * pose;
+        }
+
+        // The same for a 3D animal whose model opts in (ModelDef.bodyAnims; Animals.Draw, standing or walking): the whole animal
+        // (pose space: before its turn by yaw, already sized) moved and leaned as the sprite shows it. The shift goes on as it is,
+        // in cells: such mods move an animal's sprite by map cells whatever its size, and the model stands at the sprite's size.
+        // The turn: facing east or west the sprite pitches (nose down for a forward lean, ForwardLean), facing south or north it
+        // tilts sideways (a roll toward the animal's left for a forward lean), about the middle of its trunk (pivot, height).
+        // apply false (the model has not opted in): nothing (harness: only noted). False, sway identity, when there is nothing.
+        public static bool AnimalSway(Pawn pawn, Vector3 drawLoc, float yaw, float pivot, bool apply, out Matrix4x4 sway)
+        {
+            sway = Matrix4x4.identity;
+            if (!Active || (!apply && !Probe.On))
+            {
+                return false;
+            }
+            Vector3 shift;
+            float turn;
+            if (!Read(pawn, drawLoc, out shift, out turn))
+            {
+                return false;
+            }
+            Rot4 facing = Facing(pawn);
+            float lean = ForwardLean(facing, turn);
+            bool pitch = facing.IsHorizontal;
+            if (Probe.On)
+            {
+                Probe.SwaySample(pawn, shift, turn, lean, pitch, apply);   // (harness: swaycheck)
+            }
+            if (!apply || (shift.sqrMagnitude < 1e-8f && Mathf.Abs(turn) < 0.01f))
+            {
+                return false;
+            }
+            Vector3 right = Quaternion.AngleAxis(View3D.Yaw, Vector3.up) * Vector3.right;
+            Vector3 move = Quaternion.Inverse(Quaternion.AngleAxis(yaw, Vector3.up)) * (right * shift.x + Vector3.up * shift.z);
+            Quaternion tilt = Quaternion.AngleAxis(lean, pitch ? Vector3.right : Vector3.forward);
+            sway = Matrix4x4.Translate(move + new Vector3(0f, pivot, 0f)) * Matrix4x4.Rotate(tilt) * Matrix4x4.Translate(new Vector3(0f, -pivot, 0f));
+            return true;
         }
 
         // The facing other mods give a standing pawn's sprite (PawnRenderer.ParallelGetPreRenderResults' rotOverride, set in

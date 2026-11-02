@@ -221,6 +221,18 @@ namespace IsoRim
                 legPose = up * legPose;
             }
 
+            // (ModelDef.bodyAnims) another mod's body animation of the sprite, on the whole animal while it stands or walks on its own
+            // (not lying, attached, carried or in the air); none without such a mod (BodyAnims.Active).
+            if (BodyAnims.Active && !lying && !attached && air <= 0f && lift <= 0f && flight <= 0f)
+            {
+                Matrix4x4 sway;
+                if (BodyAnims.AnimalSway(pawn, drawLoc, yaw, def.bodyCentre * size, def.bodyAnims, out sway))
+                {
+                    bodyPose = sway * bodyPose;
+                    legPose = sway * legPose;
+                }
+            }
+
             // rotation turns the body model only (one built facing south); its hips and legs are given facing north.
             Matrix4x4 bodyTurn = def.rotation != 0f ? Matrix4x4.Rotate(Quaternion.AngleAxis(def.rotation, Vector3.up)) : Matrix4x4.identity;
             FigureScope.Root(position, yaw);   // (Api.DrawFigure: placed elsewhere)
