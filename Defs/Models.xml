@@ -4393,81 +4393,62 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Cat</defName>
     <thingDef>Cat</thingDef>
-    <model>Models/animal_cat.obj</model>
+    <model>Models/animal_cat_blob.obj</model>
+    <!-- blob cat (2026-11-02): legs fused into the body, glides; tail up with the tip hooked back; eyes and nose in its
+         texture (Cat.png); vanilla colour (tintFromGraphic). animal_cat(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_cat_leg.obj</legModel>
-    <legs>
-      <li>(-0.049, 0.191, 0.139)</li>
-      <li>(0.049, 0.191, 0.139)</li>
-      <li>(-0.049, 0.191, -0.153)</li>
-      <li>(0.049, 0.191, -0.153)</li>
-    </legs>
-    <legLength>0.191</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.46</stride>
-    <bodyCentre>0.237</bodyCentre>
-    <bodyHalfWidth>0.080</bodyHalfWidth>
-    <bodyHalfLength>0.287</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.188</bodyCentre>
+    <bodyHalfWidth>0.085</bodyHalfWidth>
+    <bodyHalfLength>0.36</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Husky</defName>
     <thingDef>Husky</thingDef>
-    <model>Models/animal_husky.obj</model>
+    <model>Models/animal_husky_blob.obj</model>
+    <!-- blob husky (2026-11-02): legs fused into the body, glides; curled tail; grey saddle, white face mask and blue eyes
+         painted in its texture (Husky.png). No tintFromGraphic: vanilla tints only the mask area (CutoutComplex), so the
+         grey is baked in. animal_husky(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_husky_leg.obj</legModel>
-    <legs>
-      <li>(-0.078, 0.342, 0.204)</li>
-      <li>(0.078, 0.342, 0.204)</li>
-      <li>(-0.078, 0.342, -0.224)</li>
-      <li>(0.078, 0.342, -0.224)</li>
-    </legs>
-    <legLength>0.342</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.82</stride>
-    <bodyCentre>0.418</bodyCentre>
-    <bodyHalfWidth>0.125</bodyHalfWidth>
-    <bodyHalfLength>0.422</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <bodyCentre>0.333</bodyCentre>
+    <bodyHalfWidth>0.175</bodyHalfWidth>
+    <bodyHalfLength>0.59</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_LabradorRetriever</defName>
     <thingDef>LabradorRetriever</thingDef>
-    <model>Models/animal_labrador.obj</model>
+    <model>Models/animal_labrador_blob.obj</model>
+    <!-- blob labrador (2026-11-02): legs fused into the body, glides; floppy ears, thin tail; eyes, nose and smile in its
+         texture (Labrador.png); vanilla colour (tintFromGraphic). animal_labrador(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_labrador_leg.obj</legModel>
-    <legs>
-      <li>(-0.080, 0.333, 0.204)</li>
-      <li>(0.080, 0.333, 0.204)</li>
-      <li>(-0.080, 0.333, -0.224)</li>
-      <li>(0.080, 0.333, -0.224)</li>
-    </legs>
-    <legLength>0.333</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.80</stride>
-    <bodyCentre>0.410</bodyCentre>
-    <bodyHalfWidth>0.129</bodyHalfWidth>
-    <bodyHalfLength>0.422</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.30</bodyCentre>
+    <bodyHalfWidth>0.16</bodyHalfWidth>
+    <bodyHalfLength>0.60</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_YorkshireTerrier</defName>
     <thingDef>YorkshireTerrier</thingDef>
-    <model>Models/animal_yorkie.obj</model>
+    <model>Models/animal_yorkie_blob.obj</model>
+    <!-- blob yorkshire terrier (2026-11-02): legs fused into the body, glides; steel-grey saddle over tan, eyes and nose in
+         its texture (YorkshireTerrier.png); tintFromGraphic (the vanilla graphic is untinted white, so no recolour).
+         animal_yorkie(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_yorkie_leg.obj</legModel>
-    <legs>
-      <li>(-0.058, 0.132, 0.122)</li>
-      <li>(0.058, 0.132, 0.122)</li>
-      <li>(-0.058, 0.132, -0.134)</li>
-      <li>(0.058, 0.132, -0.134)</li>
-    </legs>
-    <legLength>0.132</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.35</stride>
-    <bodyCentre>0.184</bodyCentre>
-    <bodyHalfWidth>0.093</bodyHalfWidth>
-    <bodyHalfLength>0.251</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.21</bodyCentre>
+    <bodyHalfWidth>0.112</bodyHalfWidth>
+    <bodyHalfLength>0.30</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
