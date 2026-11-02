@@ -199,6 +199,12 @@ namespace IsoRim
                 drawLegs = air < LegsTuckAt;
                 gait = 0f;
             }
+            else if (def.hop)
+            {
+                // Legless: hopping along (sitting still while it stands).
+                float hopLift;
+                bodyPose = Hop(def, size, phase, gait, out hopLift);
+            }
             else
             {
                 // A slight rise and fall with each step.
@@ -223,7 +229,9 @@ namespace IsoRim
                 new Vector3(body.minX, 0f, body.minZ), new Vector3(body.maxX, body.maxY, body.maxZ));
             // body, legs and wings lit by smooth normals while the setting is on (SmoothFigures; mechanoids stay flat)
             bool partWas = DynamicModels.AnimalPart;
+            bool texWas = DynamicModels.SmoothTextured;
             DynamicModels.AnimalPart = pawn.RaceProps == null || !pawn.RaceProps.IsMechanoid;
+            DynamicModels.SmoothTextured = def.smoothTextured;
             try
             {
                 DynamicModels.DrawLocal(body, position, yaw, bodyPose * sized * bodyTurn, Color.white, null);
@@ -287,6 +295,7 @@ namespace IsoRim
             finally
             {
                 DynamicModels.AnimalPart = partWas;
+                DynamicModels.SmoothTextured = texWas;
             }
 
             if (!lying && pawn.carryTracker != null && pawn.carryTracker.CarriedThing != null)
@@ -378,7 +387,13 @@ namespace IsoRim
             }
             else
             {
-                rise = flight > 0f || (!dead && AirborneFactor(pawn) > 0f) ? 0f : Mathf.Abs(Mathf.Sin(phase)) * 0.05f * def.legLength * size * gait;
+                float hopLift = 0f;
+                if (def.hop)
+                {
+                    Hop(def, size, phase, gait, out hopLift);
+                }
+                rise = flight > 0f || (!dead && AirborneFactor(pawn) > 0f) ? 0f
+                    : def.hop ? hopLift : Mathf.Abs(Mathf.Sin(phase)) * 0.05f * def.legLength * size * gait;
                 if (flight <= 0f && lift <= 0f)
                 {
                     rise += Hover.Lift(pawn, def, size, true, false);   // (Api 32) hovering, as its Draw last placed it
@@ -395,6 +410,38 @@ namespace IsoRim
             h.backAt = new Vector3(mid.x * size, 0f, mid.z * size);
             h.top = TopHeight(def, body) * size + rise;
             return true;
+        }
+
+        // How far a hopping body (ModelDef.hop) leans nose up as it rises and nose down as it falls, degrees.
+        private const float HopTilt = 10f;
+
+        // (ModelDef.hop) The body's pose in its hop: one hop per stride (phase 0..2pi; the ends of each hop on the ground),
+        // lifted in an arc, stretched upward at take-off and squashed on landing about the ground under it (volume kept),
+        // pitched about the middle of its trunk; all scaled by gait (0, standing: sitting still). lift: the height of the arc
+        // (HostPose). size: ModelDef.scale times the pawn's size, as Draw sizes it.
+        internal static Matrix4x4 Hop(ModelDef def, float size, float phase, float gait, out float lift)
+        {
+            lift = 0f;
+            float g = Mathf.Clamp01(gait);
+            if (g <= 0.001f)
+            {
+                return Matrix4x4.identity;
+            }
+            const float Ground = 0.1f;   // the share of a hop at each end with the body on the ground
+            float t = Mathf.Repeat(phase / (2f * Mathf.PI), 1f);
+            bool air = t > Ground && t < 1f - Ground;
+            float u = Mathf.InverseLerp(Ground, 1f - Ground, t);
+            lift = air ? Mathf.Sin(Mathf.PI * u) * def.hopHeight * size * g : 0f;
+            float land = Mathf.Max(0f, 1f - Mathf.Min(t, 1f - t) / 0.12f);    // squashed round the landing (t = 0)
+            float push = Mathf.Max(0f, 1f - Mathf.Abs(t - 0.17f) / 0.10f);   // stretched as it takes off
+            float sy = Mathf.Max(0.5f, 1f + (push - land) * def.hopSquash * g);
+            float sxz = 1f / Mathf.Sqrt(sy);
+            float pitch = air ? Mathf.Cos(Mathf.PI * u) * HopTilt * g : 0f;   // nose up rising, down falling
+            float c = def.bodyCentre * size;
+            return Matrix4x4.Translate(new Vector3(0f, lift + c, 0f))
+                * Matrix4x4.Rotate(Quaternion.AngleAxis(-pitch, Vector3.right))
+                * Matrix4x4.Translate(new Vector3(0f, -c, 0f))
+                * Matrix4x4.Scale(new Vector3(sxz, sy, sxz));
         }
 
         private struct Back

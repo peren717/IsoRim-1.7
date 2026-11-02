@@ -472,6 +472,9 @@ namespace IsoRim
         // The same for the parts of an animal (Animals.Draw: not a mechanoid), by the animals' setting.
         internal static bool AnimalPart;
 
+        // While set (Animals.Draw: ModelDef.smoothTextured), smooth meshes light their textured faces by the smooth normals too.
+        internal static bool SmoothTextured;
+
         private static int partStampSeen;   // SmoothFigures.PartStamp the cached meshes are for
 
         // While set, DrawLocal draws each model as a see-through placement ghost in GhostColour instead (Doors.Ghost).
@@ -614,7 +617,8 @@ namespace IsoRim
                     Forget();
                 }
             }
-            long key = ((long)m.id << 34) | ((long)(smooth ? 1 : 0) << 29) | ((long)(ThroughRoof ? 1 : 0) << 28) | ((long)(textured ? 1 : 0) << 27) | ((long)R3DTextures.SwatchIndex(swatch) << 24)
+            bool smoothTex = smooth && textured && SmoothTextured;
+            long key = ((long)m.id << 34) | ((long)(smoothTex ? 1 : 0) << 30) | ((long)(smooth ? 1 : 0) << 29) | ((long)(ThroughRoof ? 1 : 0) << 28) | ((long)(textured ? 1 : 0) << 27) | ((long)R3DTextures.SwatchIndex(swatch) << 24)
                 | (uint)((t.r << 16) | (t.g << 8) | t.b);
 
             List<Part> parts;
@@ -626,7 +630,7 @@ namespace IsoRim
             cache[key] = parts;
             try
             {
-                Build(m, tint, swatch, textured, parts, smooth);
+                Build(m, tint, swatch, textured, parts, smooth, smoothTex);
             }
             catch (Exception e)
             {
@@ -639,7 +643,10 @@ namespace IsoRim
         // The same three layers ModelBaker writes: a plain solid copy (lit; glowing faces unlit),
         // an enlarged inside-out copy for the outline, and the textured faces (lit like ModelBaker's,
         // texture colour * TextureLift; glowing ones unlit).
-        private static void Build(Model m, Color tint, string swatch, bool textured, List<Part> parts, bool smooth)
+        // smoothTex (ModelDef.smoothTextured, with smooth): the textured faces (not those with corners of their own colour) carry
+        // the smooth normals as mesh normals and SmoothFigures.Bit in their tags (Lists.ToMesh), lifted along them; the
+        // textured shader (IsoRimTex.vert.glsl -> IsoRimSolid.frag.glsl, in vColor) lights them by them. Other models: unchanged.
+        private static void Build(Model m, Color tint, string swatch, bool textured, List<Part> parts, bool smooth, bool smoothTex = false)
         {
             Material solidMat = R3DMaterials.Solid;
             Material litMat = R3DMaterials.LitModel;
@@ -657,7 +664,7 @@ namespace IsoRim
             Vector3[] sn = smooth ? SmoothFigures.NormalsOf(m) : null;
             if (sn != null)
             {
-                solid.normals = new List<Vector3>();   // (textured faces stay lit by the face)
+                solid.normals = new List<Vector3>();   // (textured faces stay lit by the face, unless smoothTex)
             }
 
             int n = m.positions.Length;
@@ -691,6 +698,10 @@ namespace IsoRim
                         {
                             texturedLists[slot] = new Lists();
                             texturedLists[slot].material = tmat;
+                            if (smoothTex && sn != null && !own)
+                            {
+                                texturedLists[slot].normals = new List<Vector3>();
+                            }
                         }
                     }
                     tl = texturedLists[slot];
@@ -720,7 +731,17 @@ namespace IsoRim
                     }
                     if (tl != null)
                     {
-                        tl.Add(m.positions[k] + m.normals[i] * ModelBaker.FaceLift, own ? R3DMaterials.Shaded(c, 1f) : White, m.uvs[k]);
+                        if (tl.normals != null)
+                        {
+                            // smoothTex: lifted along the corner's smooth normal (shared by the faces meeting there: no seams
+                            // between them, as a lift along each face's own normal leaves); lit by it (IsoRimTex.vert.glsl)
+                            Vector3 sm = PlaceNormal(Matrix4x4.identity, sn, k);
+                            tl.Add(m.positions[k] + sm * ModelBaker.FaceLift, White, m.uvs[k], sm);
+                        }
+                        else
+                        {
+                            tl.Add(m.positions[k] + m.normals[i] * ModelBaker.FaceLift, own ? R3DMaterials.Shaded(c, 1f) : White, m.uvs[k]);
+                        }
                     }
                 }
             }

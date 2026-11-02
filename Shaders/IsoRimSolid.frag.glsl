@@ -25,6 +25,9 @@
 // Smooth shading on people (Source\SmoothFigures.cs): faces of a person's figure may carry a smooth normal per corner, from
 // IsoRim.vert.glsl in vUv (x + 1024, y) and vColor.a (z), true space. Such a fragment is lit by that normal, interpolated
 // and not snapped, turned to the side of the face it is on; its alpha is the material's.
+// Smooth textured faces (USE_TEXTURE; ModelDef.smoothTextured, IsoRimTex.vert.glsl): vColor.a > 3 marks them; vColor.rgb is
+// then the smooth normal (true space) and vColor.a - 4 the corner's alpha; their colour is white * _Color * texture. They
+// are lit like the untextured smooth faces. Every other textured face (vColor.a <= 1) is drawn as before.
 
 layout(location = 0) in vec4 vColor;
 layout(location = 1) in vec2 vUv;
@@ -378,6 +381,16 @@ void main()
         sunAmountWidth = fwidth(dot(sn, uMaterial._IsoSun.xyz)) / max(0.2, uMaterial._IsoSun.y);
     }
 #endif
+#ifdef USE_TEXTURE
+    bool smoothTex = vColor.a > 3.0;
+    if (uMaterial._IsoToon.x > 1.5)
+    {
+        vec3 sn = vColor.rgb * inversesqrt(max(1e-12, dot(vColor.rgb, vColor.rgb)));
+        if (dot(sn, faceNormal) < 0.0)
+            sn = -sn;
+        sunAmountWidth = fwidth(dot(sn, uMaterial._IsoSun.xyz)) / max(0.2, uMaterial._IsoSun.y);   // used for smoothTex only
+    }
+#endif
     if (FadeDrop())
         discard;
 
@@ -392,7 +405,11 @@ void main()
     if (tagged > 3.0 && RoofHides(vPosLocal, vNormal.yz, tagged < 4.5))
         discard;
 
+#ifdef USE_TEXTURE
+    vec4 color = smoothTex ? vec4(1.0, 1.0, 1.0, vColor.a - 4.0) * uMaterial._Color : vColor * uMaterial._Color;
+#else
     vec4 color = vColor * uMaterial._Color;
+#endif
 #ifndef USE_TEXTURE
     bool smooth = vUv.x > 512.0;
     if (smooth)
@@ -456,6 +473,14 @@ void main()
                 n = -n;
         }
         else
+#else
+        if (smoothTex)
+        {
+            n = normalize(vColor.rgb);
+            if (dot(n, faceNormal) < 0.0)
+                n = -n;
+        }
+        else
 #endif
         {
 #if QUANTIZE
@@ -478,7 +503,7 @@ void main()
 #ifndef USE_TEXTURE
                 t = SteppedAmount(t, toon.x, smooth ? sunAmountWidth : 0.0);
 #else
-                t = SteppedAmount(t, toon.x, 0.0);
+                t = SteppedAmount(t, toon.x, smoothTex ? sunAmountWidth : 0.0);
 #endif
             }
             shade = 0.5 + 0.5 * t;
@@ -487,7 +512,7 @@ void main()
 #ifndef USE_TEXTURE
                 vec3 rn = smooth ? n : faceNormal;
 #else
-                vec3 rn = faceNormal;
+                vec3 rn = smoothTex ? n : faceNormal;
 #endif
                 // Light of the sky colour: none at night; the game's light then scales it like the rest of the face.
                 rim = uMaterial._IsoSky.rgb * (toon.y * RimAmount(rn, L));

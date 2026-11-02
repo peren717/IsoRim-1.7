@@ -363,6 +363,16 @@ namespace IsoRim
         public float bodyHalfWidth = 0.2f;  // half the width of the trunk; where it rests when on its side
         public float bodyHalfLength = 0.4f; // half the length of the animal, for the shading under it
         public float backHeight = -1f;      // top of the back at the trunk middle, model units (Api 13 anchor Back); -1 measures it
+        // Hopping (Animals.cs, Animals.Hop), for legless animals (a blob bunny): while it moves the body travels in hop arcs,
+        // one hop per stride, hopHeight cells high (times its size and how far into its stride it is: gait), stretched
+        // upward by hopSquash at take-off and squashed by it on landing (volume kept), nose up as it rises and down as it
+        // falls. Standing still it sits; asleep, downed, dead and carried it uses the usual animal poses. No legs needed.
+        public bool hop = false;
+        public float hopHeight = 0.12f;
+        public float hopSquash = 0.14f;
+        // Textured faces (map_Kd) lit by the same smooth normals as the rest of the body while the smooth-animals setting is
+        // on (SmoothFigures; DynamicModels.Build). Off (default): textured faces are lit per face, as before. Opt-in, per model.
+        public bool smoothTextured = false;
 
         // Mechanoids (Mechs.cs). thingDef is the mech's race; model is the body (everything that does not move),
         // facing north, standing on the ground; mechParts are the pieces that move, each built in the same space

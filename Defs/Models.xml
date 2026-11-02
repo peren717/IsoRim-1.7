@@ -4712,40 +4712,28 @@
     <defName>R3D_Animal_Hare</defName>
     <thingDef>Hare</thingDef>
     <model>Models/animal_hare.obj</model>
+    <!-- legless blob bunny (2026-11-01): hops; eyes are a dot in its texture (Textures/IsoRim/Animals/Bunny.png x Kd) -->
     <animal>true</animal>
-    <legModel>Models/animal_hare_leg.obj</legModel>
-    <legs>
-      <li>(-0.060, 0.108, 0.126)</li>
-      <li>(0.060, 0.108, 0.126)</li>
-      <li>(-0.060, 0.108, -0.139)</li>
-      <li>(0.060, 0.108, -0.139)</li>
-    </legs>
-    <legLength>0.108</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.35</stride>
-    <bodyCentre>0.160</bodyCentre>
-    <bodyHalfWidth>0.097</bodyHalfWidth>
-    <bodyHalfLength>0.261</bodyHalfLength>
+    <hop>true</hop>
+    <stride>1.1</stride>
+    <smoothTextured>true</smoothTextured>
+    <bodyCentre>0.168</bodyCentre>
+    <bodyHalfWidth>0.147</bodyHalfWidth>
+    <bodyHalfLength>0.25</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Snowhare</defName>
     <thingDef>Snowhare</thingDef>
     <model>Models/animal_snowhare.obj</model>
+    <!-- legless blob bunny (2026-11-01): hops; eyes are a dot in its texture (Textures/IsoRim/Animals/Bunny.png x Kd) -->
     <animal>true</animal>
-    <legModel>Models/animal_snowhare_leg.obj</legModel>
-    <legs>
-      <li>(-0.060, 0.108, 0.126)</li>
-      <li>(0.060, 0.108, 0.126)</li>
-      <li>(-0.060, 0.108, -0.139)</li>
-      <li>(0.060, 0.108, -0.139)</li>
-    </legs>
-    <legLength>0.108</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.35</stride>
-    <bodyCentre>0.160</bodyCentre>
-    <bodyHalfWidth>0.097</bodyHalfWidth>
-    <bodyHalfLength>0.261</bodyHalfLength>
+    <hop>true</hop>
+    <stride>1.1</stride>
+    <smoothTextured>true</smoothTextured>
+    <bodyCentre>0.168</bodyCentre>
+    <bodyHalfWidth>0.147</bodyHalfWidth>
+    <bodyHalfLength>0.25</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>

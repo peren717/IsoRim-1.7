@@ -5,6 +5,12 @@
 // DrawMeshInstanced: the same textured part of many doors, animals or people at once, PartBatches),
 // which takes each copy's matrix from _InstanceTransforms (binding 4, also declared in
 // IsoRimSolid.frag.glsl, where the engine reads the material layout from).
+//
+// Smooth textured faces (opt-in per model: ModelDef.smoothTextured, built by DynamicModels.Build): texture coordinate 1 z
+// carries flag 131072 (SmoothFigures.Bit, which no other textured mesh carries) and the mesh normal is a smooth normal.
+// It is turned into true (unsquashed) space as IsoRim.vert.glsl does for untextured smooth figures and handed to
+// IsoRimSolid.frag.glsl in vColor: rgb = the normal, a = 4 + the corner's alpha (the faces are white: the material colour
+// and the texture give their colour). vUv stays the texture coordinate. Every other textured mesh is drawn as before.
 
 layout(location = 0) in vec3 inPosition; // @vertex Position required
 layout(location = 1) in vec3 inNormal;   // @vertex Normal optional @default = vec4(0.0, 1.0, 0.0, 0.0)
@@ -200,4 +206,18 @@ void main()
     bool see = (int(inUv1.z + 0.5) & 32768) != 0;
     float clipCode = (int(inUv1.z + 0.5) & 65536) != 0 ? 5.0 : 4.0;
     vNormal = roofClip ? vec3(see ? clipCode + 10.0 : clipCode, roofOwner) : (see ? vec3(10.0, 0.0, 0.0) : inNormal);
+
+    float squash = uMaterial._IsoView.w;
+    if ((int(inUv1.z + 0.5) & 131072) != 0 && squash > 0.0)
+    {
+        // Smooth textured faces (see the top): the normal by the inverse transpose of the placing in true space.
+        mat3 t = mat3(model);
+        t[0].y *= squash;
+        t[1].y *= squash;
+        t[2].y *= squash;
+        vec3 nt = mat3(cross(t[1], t[2]), cross(t[2], t[0]), cross(t[0], t[1])) * inNormal;
+        float len = length(nt);
+        nt = len > 1e-12 ? nt / len : vec3(0.0, 1.0, 0.0);
+        vColor = vec4(nt, 4.0 + inColor.a);
+    }
 }
