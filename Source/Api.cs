@@ -96,7 +96,8 @@ namespace IsoRim
         // as its own worn head sprites projected onto the head (south front, east sides, north back) instead of a stand-in hat; HeadDecalOf.
         // 48: selection rings (Api48.cs, SelectionRings): AddSelectionRingRule (colour, radius scale, picture, hide per pawn),
         // the IsoRim.SelectionRing XML mod extension on a race, SelectionRingOf.
-        public static int Version => 48;
+        // 49: animal models in the vanilla colour (ModelDef.tintFromGraphic: textured materials times the pawn's current graphic colour).
+        public static int Version => 49;
 
         // ---- glass parts (Version 30)
 

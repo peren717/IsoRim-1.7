@@ -244,9 +244,12 @@ namespace IsoRim
             bool texWas = DynamicModels.SmoothTextured;
             DynamicModels.AnimalPart = pawn.RaceProps == null || !pawn.RaceProps.IsMechanoid;
             DynamicModels.SmoothTextured = def.smoothTextured;
+            bool tintWas = DynamicModels.TintTextured;
+            Color tint = def.tintFromGraphic ? GraphicColour(pawn) : Color.white;   // (Api 49) the vanilla colour
+            DynamicModels.TintTextured = def.tintFromGraphic;
             try
             {
-                DynamicModels.DrawLocal(body, position, yaw, bodyPose * sized * bodyTurn, Color.white, null);
+                DynamicModels.DrawLocal(body, position, yaw, bodyPose * sized * bodyTurn, tint, null);
                 WoundMarks.DrawAnimal(pawn, body, position, yaw, bodyPose * sized, bodyTurn, size);   // the game's wounds on the body
                 if (ground - flight <= 0f)
                 {
@@ -295,7 +298,7 @@ namespace IsoRim
                             Quaternion turn = Quaternion.AngleAxis(splay, Vector3.forward) * Quaternion.AngleAxis(swing, Vector3.right);
                             local = legPose * sized * Matrix4x4.Translate(hip) * Matrix4x4.Rotate(turn) * drop;
                         }
-                        DynamicModels.DrawLocal(Corpses.Body(pawn, legModel), position, yaw, local, Color.white, null);
+                        DynamicModels.DrawLocal(Corpses.Body(pawn, legModel), position, yaw, local, tint, null);
                     }
                 }
 
@@ -308,6 +311,7 @@ namespace IsoRim
             {
                 DynamicModels.AnimalPart = partWas;
                 DynamicModels.SmoothTextured = texWas;
+                DynamicModels.TintTextured = tintWas;
             }
 
             if (!lying && pawn.carryTracker != null && pawn.carryTracker.CarriedThing != null)
@@ -671,6 +675,27 @@ namespace IsoRim
             }
             drawLoc.z -= 0.6f * f;   // Pawn_DrawTracker.FlyingOffset
             return FlightHeight * f;
+        }
+
+        // (Api 49, ModelDef.tintFromGraphic) The colour of the graphic the game draws the pawn's body with now
+        // (PawnRenderer.BodyGraphic: its kind's life stage, her femaleGraphicData, other mods' changes); white without one.
+        internal static Color GraphicColour(Pawn pawn)
+        {
+            try
+            {
+                Graphic g = pawn.Drawer != null && pawn.Drawer.renderer != null ? pawn.Drawer.renderer.BodyGraphic : null;
+                if (g != null)
+                {
+                    Color c = g.Color;
+                    c.a = 1f;
+                    return c;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Reading an animal's graphic colour failed: " + e, 93621949);
+            }
+            return Color.white;
         }
 
         // Young animals are smaller. The game's own measure of body size shrinks much faster

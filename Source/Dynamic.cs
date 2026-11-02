@@ -475,6 +475,10 @@ namespace IsoRim
         // While set (Animals.Draw: ModelDef.smoothTextured), smooth meshes light their textured faces by the smooth normals too.
         internal static bool SmoothTextured;
 
+        // While set (Animals.Draw: ModelDef.tintFromGraphic, Api 49), every textured material and the plain copy under it take
+        // the tint (not only "stuff" ones); the outline keeps its own colour. The tint is used unrounded (few colours).
+        internal static bool TintTextured;
+
         private static int partStampSeen;   // SmoothFigures.PartStamp the cached meshes are for
 
         // While set, DrawLocal draws each model as a see-through placement ghost in GhostColour instead (Doors.Ghost).
@@ -597,9 +601,12 @@ namespace IsoRim
             // Colours are rounded a little, so that people's clothes and drifting smoke, which
             // come in endless shades, share ready-made meshes instead of each needing its own.
             Color32 t = tint;
-            t.r = (byte)(t.r & 0xF8);
-            t.g = (byte)(t.g & 0xF8);
-            t.b = (byte)(t.b & 0xF8);
+            if (!TintTextured)
+            {
+                t.r = (byte)(t.r & 0xF8);
+                t.g = (byte)(t.g & 0xF8);
+                t.b = (byte)(t.b & 0xF8);
+            }
             t.a = 255;
             tint = t;
             if (cache.Count > 6000)
@@ -618,7 +625,7 @@ namespace IsoRim
                 }
             }
             bool smoothTex = smooth && textured && SmoothTextured;
-            long key = ((long)m.id << 34) | ((long)(smoothTex ? 1 : 0) << 30) | ((long)(smooth ? 1 : 0) << 29) | ((long)(ThroughRoof ? 1 : 0) << 28) | ((long)(textured ? 1 : 0) << 27) | ((long)R3DTextures.SwatchIndex(swatch) << 24)
+            long key = ((long)m.id << 34) | ((long)(TintTextured ? 1 : 0) << 31) | ((long)(smoothTex ? 1 : 0) << 30) | ((long)(smooth ? 1 : 0) << 29) | ((long)(ThroughRoof ? 1 : 0) << 28) | ((long)(textured ? 1 : 0) << 27) | ((long)R3DTextures.SwatchIndex(swatch) << 24)
                 | (uint)((t.r << 16) | (t.g << 8) | t.b);
 
             List<Part> parts;
@@ -686,7 +693,7 @@ namespace IsoRim
                         if (!own)
                         {
                             c = mm.color * ModelBaker.TextureLift;
-                            if (mm.tinted)
+                            if (mm.tinted || TintTextured)
                             {
                                 c *= tint;
                             }
@@ -712,9 +719,15 @@ namespace IsoRim
                 {
                     Vector3 hull = m.hull != null ? m.hull[k] : Vector3.zero;
                     Color c = m.colors[k];
+                    Color line = c;   // the outline's colour (TintTextured leaves it untinted)
                     if (m.tinted[k])
                     {
                         c *= tint;
+                        line = c;
+                    }
+                    else if (TintTextured && mm != null && mm.texture != null && !own)
+                    {
+                        c *= tint;   // the plain copy of a tinted textured face (what shows with textured models off)
                     }
                     Vector3 at = tl != null ? m.positions[k] - hull * ModelBaker.Inset : m.positions[k];
                     if (into.normals != null)
@@ -727,7 +740,7 @@ namespace IsoRim
                     }
                     if (m.hull != null && (m.noOutline == null || !m.noOutline[k]))
                     {
-                        outline.Add(m.positions[k] + hull, R3DMaterials.Shaded(c, ModelBaker.OutlineShade), Vector2.zero);
+                        outline.Add(m.positions[k] + hull, R3DMaterials.Shaded(line, ModelBaker.OutlineShade), Vector2.zero);
                     }
                     if (tl != null)
                     {

@@ -379,6 +379,12 @@ namespace IsoRim
         // For legless models (blobs that glide or hop: hop and the mod's sway add up). Off (default): the model keeps only its
         // own animation, with or without such a mod. Opt-in, per model.
         public bool bodyAnims = false;
+        // (Api 49) The animal's vanilla colour on the model: its textured materials (and their plain under-copy) are multiplied
+        // by the colour of the graphic the game draws this pawn with now (PawnRenderer.BodyGraphic: the kind's life stage, her
+        // femaleGraphicData, any other mod's change), so one model gives a white hen, a brown rooster and a yellow chick. Keep
+        // the tint out of Kd (Kd = the sprite's lit white). Every pose Animals.Draw draws (standing, asleep, downed, dead,
+        // carried); the outline keeps its own colour. Off (default): the model's own colours, as before. Opt-in, per model.
+        public bool tintFromGraphic = false;
 
         // Mechanoids (Mechs.cs). thingDef is the mech's race; model is the body (everything that does not move),
         // facing north, standing on the ground; mechParts are the pieces that move, each built in the same space

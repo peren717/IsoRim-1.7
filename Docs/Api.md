@@ -64,6 +64,7 @@ if (IsoRim.Api.Version >= 45) { /* posture rules: AddPostureRule, AddProneFacing
 if (IsoRim.Api.Version >= 46) { /* burning fires: AddFireLook, AddBurningFire; burning fires drawn as 3D particles (part 30) */ }
 if (IsoRim.Api.Version >= 47) { /* head decals: IsoRim.HeadDecal, SetHeadDecal, HeadDecalOf (part 31) */ }
 if (IsoRim.Api.Version >= 48) { /* selection rings: AddSelectionRingRule, IsoRim.SelectionRing, SelectionRingOf (part 32) */ }
+if (IsoRim.Api.Version >= 49) { /* ModelDef tintFromGraphic: animal models in the vanilla graphic colour (part 33) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
@@ -1737,6 +1738,31 @@ From XML, no code, on a race or animal ThingDef (load-gate it so your mod has no
 - **Failing soft:** a rule that throws is logged once and passes from then on; a `texPath` with no texture is logged
   once and the built-in ring is drawn. Only standard `System.Func`, so code calling these after an `Api.Version >= 48`
   check never breaks on an older IsoRim.
+
+## Part 33: animal models in the vanilla colour (version 49)
+
+An animal binding can take its colour from the game instead of from its own materials, so one model covers every colour
+the game gives the animal (white hen, brown rooster, yellow chick; grey cow, darker bull; sow and boar):
+
+```xml
+<IsoRim.ModelDef>
+  <defName>MyPack_Animal_Hen</defName>
+  <thingDef>MyHen</thingDef>
+  <model>Models/my_hen.obj</model>
+  <animal>true</animal>
+  <tintFromGraphic>true</tintFromGraphic>   <!-- IsoRim.Api.Version >= 49 -->
+</IsoRim.ModelDef>
+```
+
+- **What is tinted:** every textured material of the model (`map_Kd`), and the plain copy under it (what shows with
+  textured models off), times the colour of the graphic the game draws the pawn's body with now
+  (`PawnRenderer.BodyGraphic.Color`): the kind's life stage, `femaleGraphicData` for a female, and any other mod's change
+  to that graphic. Plain-colour materials keep their own colour. The outline keeps its own colour.
+- **Authoring:** paint the texture in the sprite's own colours (its white as white) and leave the tint out of `Kd`
+  (IsoRim's farm animals use `Kd 0.96`, the vanilla sprite's lit white).
+- **Where:** every pose the 3D animal is drawn in (standing, walking, asleep, downed, dead, carried, on a shelf). A
+  rotting corpse is darkened on top as before; a dried one is drawn as the game's sprite. 2D cards are not affected.
+- **Cost:** reading the colour per draw; the ready-made meshes are kept per colour.
 
 ## Part M: model packs (IsoRim.ModelDef)
 

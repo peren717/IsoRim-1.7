@@ -4099,19 +4099,16 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Chicken</defName>
     <thingDef>Chicken</thingDef>
-    <model>Models/animal_chicken.obj</model>
+    <model>Models/animal_chicken_blob.obj</model>
+    <!-- blob chicken (2026-11-02): legs fused into the body, glides; eye in its texture (Textures/IsoRim/Animals/Chicken.png);
+         hen, rooster, cockerel, pullet and chick in the vanilla colours (tintFromGraphic). animal_chicken(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_chicken_leg.obj</legModel>
-    <legs>
-      <li>(-0.059, 0.149, -0.013)</li>
-      <li>(0.059, 0.149, -0.013)</li>
-    </legs>
-    <legLength>0.149</legLength>
-    <legSwing>30</legSwing>
-    <stride>0.36</stride>
-    <bodyCentre>0.203</bodyCentre>
-    <bodyHalfWidth>0.096</bodyHalfWidth>
-    <bodyHalfLength>0.198</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.214</bodyCentre>
+    <bodyHalfWidth>0.149</bodyHalfWidth>
+    <bodyHalfLength>0.26</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4171,41 +4168,32 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Cow</defName>
     <thingDef>Cow</thingDef>
-    <model>Models/animal_cow.obj</model>
+    <model>Models/animal_bull_blob.obj</model>
+    <femaleModel>Models/animal_cow_blob.obj</femaleModel>
+    <!-- blob cow (2026-11-02): legs fused into the body, glides; bull with horns, cow with udder (femaleModel); eyes and
+         nostrils in the textures (Bull.png, Cow.png); vanilla colours (tintFromGraphic). animal_cow(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_cow_leg.obj</legModel>
-    <legs>
-      <li>(-0.174, 0.500, 0.348)</li>
-      <li>(0.174, 0.500, 0.348)</li>
-      <li>(-0.174, 0.500, -0.383)</li>
-      <li>(0.174, 0.500, -0.383)</li>
-    </legs>
-    <legLength>0.500</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.20</stride>
-    <bodyCentre>0.665</bodyCentre>
-    <bodyHalfWidth>0.280</bodyHalfWidth>
-    <bodyHalfLength>0.719</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.468</bodyCentre>
+    <bodyHalfWidth>0.32</bodyHalfWidth>
+    <bodyHalfLength>1.0</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Pig</defName>
     <thingDef>Pig</thingDef>
-    <model>Models/animal_pig.obj</model>
+    <model>Models/animal_pig_blob.obj</model>
+    <!-- blob pig (2026-11-02): legs fused into the body, glides; eyes, nostrils and smile in its texture (Pig.png); sow and
+         boar in the vanilla colours (tintFromGraphic). animal_pig(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_pig_leg.obj</legModel>
-    <legs>
-      <li>(-0.131, 0.255, 0.240)</li>
-      <li>(0.131, 0.255, 0.240)</li>
-      <li>(-0.131, 0.255, -0.264)</li>
-      <li>(0.131, 0.255, -0.264)</li>
-    </legs>
-    <legLength>0.255</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.61</stride>
-    <bodyCentre>0.369</bodyCentre>
-    <bodyHalfWidth>0.212</bodyHalfWidth>
-    <bodyHalfLength>0.496</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.384</bodyCentre>
+    <bodyHalfWidth>0.30</bodyHalfWidth>
+    <bodyHalfLength>0.62</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
