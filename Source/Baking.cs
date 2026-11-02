@@ -181,7 +181,7 @@ namespace IsoRim
                         f.height = setHeight > 0f ? setHeight : fill * View3D.WallHeight;
                         if (setHeight <= 0f && WallBoxes.LowWallKind(def, fill))
                         {
-                            // a low wall to shoot over (an embrasure): its top never above a standing person's chin
+                            // a low wall to shoot over (an embrasure): its top never above a standing person's muzzle
                             f.height = Mathf.Min(f.height, WallBoxes.LowWallTop);
                         }
                         if (tops != null)
@@ -1676,10 +1676,11 @@ namespace IsoRim
         }
 
         // The top of a low wall linked as walls (an embrasure, a shooting wall: fill under 0.9) drawn from its fill, in cells: a
-        // bit under the chin of a standing adult figure (People: head top 1.12, head middle 0.98), so a person behind it shows
-        // the head; one whose fill makes it lower stays lower. Figures do not follow the wall height option, so this is in cells,
-        // not a share of the wall height. A ModelDef height or a shaped wall top sets its own height instead (Forms.Compute).
-        public const float LowWallTop = 0.76f;
+        // little under the muzzle of a figure popping up to fire over it (CE pack: 0.656; standing 0.724; People: head top 1.12,
+        // head middle 0.98), so a gun held over it clears it and a person behind it shows the head; one whose fill makes it lower
+        // stays lower. Figures do not follow the wall height option, so this is in cells, not a share of the wall height. A
+        // ModelDef height or a shaped wall top sets its own height instead (Forms.Compute).
+        public const float LowWallTop = 0.65f;
 
         internal static bool LowWallKind(ThingDef def, float fill)
         {
