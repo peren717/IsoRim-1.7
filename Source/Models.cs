@@ -370,6 +370,17 @@ namespace IsoRim
         public bool hop = false;
         public float hopHeight = 0.12f;
         public float hopSquash = 0.14f;
+        // Waddling (Animals.cs, Animals.Waddle), for legless animals that glide (blobs; not with hop): while it walks the body
+        // rolls from side to side about its forward axis and rises a little at each step, as the people's figures do; still
+        // while it stands, and only on its own feet (asleep, downed, dead, carried, attached and flying keep the usual poses).
+        // Sized by the trunk's height (h = 2 x bodyCentre x its size, cells): the roll is waddleSway degrees times
+        // sqrt(0.5 / h) (kept within 0.6..1.4: a chick rolls more, a muffalo less), the rise waddleBob times h times the same
+        // factor; one sway left and right per waddleStride cells walked (times its size), or with 0 (default) 1.6 x h (kept
+        // within 0.5..2.2 cells: a big animal sways slower, a small one quicker). Stacks with bodyAnims. No legs needed.
+        public bool waddle = false;
+        public float waddleSway = 9f;
+        public float waddleBob = 0.06f;
+        public float waddleStride = 0f;
         // Textured faces (map_Kd) lit by the same smooth normals as the rest of the body while the smooth-animals setting is
         // on (SmoothFigures; DynamicModels.Build). Off (default): textured faces are lit per face, as before. Opt-in, per model.
         public bool smoothTextured = false;

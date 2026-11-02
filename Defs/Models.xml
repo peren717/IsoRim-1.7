@@ -4105,6 +4105,7 @@
     <animal>true</animal>
     <smoothTextured>true</smoothTextured>
     <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
     <tintFromGraphic>true</tintFromGraphic>
     <bodyCentre>0.214</bodyCentre>
     <bodyHalfWidth>0.149</bodyHalfWidth>
@@ -4175,6 +4176,7 @@
     <animal>true</animal>
     <smoothTextured>true</smoothTextured>
     <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
     <tintFromGraphic>true</tintFromGraphic>
     <bodyCentre>0.468</bodyCentre>
     <bodyHalfWidth>0.32</bodyHalfWidth>
@@ -4190,6 +4192,7 @@
     <animal>true</animal>
     <smoothTextured>true</smoothTextured>
     <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
     <tintFromGraphic>true</tintFromGraphic>
     <bodyCentre>0.384</bodyCentre>
     <bodyHalfWidth>0.30</bodyHalfWidth>
@@ -4324,6 +4327,7 @@
          (Textures/IsoRim/Animals/Muffalo.png x Kd). animal_muffalo_leg.obj is kept, unused. -->
     <animal>true</animal>
     <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
     <smoothTextured>true</smoothTextured>
     <bodyCentre>0.55</bodyCentre>
     <bodyHalfWidth>0.54</bodyHalfWidth>
@@ -4399,6 +4403,7 @@
     <animal>true</animal>
     <smoothTextured>true</smoothTextured>
     <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
     <tintFromGraphic>true</tintFromGraphic>
     <bodyCentre>0.188</bodyCentre>
     <bodyHalfWidth>0.085</bodyHalfWidth>
@@ -4415,6 +4420,7 @@
     <animal>true</animal>
     <smoothTextured>true</smoothTextured>
     <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
     <bodyCentre>0.333</bodyCentre>
     <bodyHalfWidth>0.175</bodyHalfWidth>
     <bodyHalfLength>0.59</bodyHalfLength>
@@ -4429,6 +4435,7 @@
     <animal>true</animal>
     <smoothTextured>true</smoothTextured>
     <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
     <tintFromGraphic>true</tintFromGraphic>
     <bodyCentre>0.30</bodyCentre>
     <bodyHalfWidth>0.16</bodyHalfWidth>
@@ -4445,6 +4452,7 @@
     <animal>true</animal>
     <smoothTextured>true</smoothTextured>
     <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
     <tintFromGraphic>true</tintFromGraphic>
     <bodyCentre>0.21</bodyCentre>
     <bodyHalfWidth>0.112</bodyHalfWidth>

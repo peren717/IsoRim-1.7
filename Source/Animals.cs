@@ -133,7 +133,7 @@ namespace IsoRim
             }
             else
             {
-                State st = Advance(pawn, drawLoc, lying, def.stride * size);
+                State st = Advance(pawn, drawLoc, lying, StrideOf(def, size));
                 yaw = st.yaw;
                 phase = st.phase;
                 gait = st.gait;
@@ -204,6 +204,12 @@ namespace IsoRim
                 // Legless: hopping along (sitting still while it stands).
                 float hopLift;
                 bodyPose = Hop(def, size, phase, gait, out hopLift);
+            }
+            else if (Waddles(def) && lift <= 0f && flight <= 0f)
+            {
+                // Legless, gliding: a waddle in step (not while carried).
+                float waddleBob;
+                bodyPose = Waddle(def, size, phase, gait, out waddleBob);
             }
             else
             {
@@ -376,7 +382,7 @@ namespace IsoRim
             State st;
             if (!dead && advance)
             {
-                st = Advance(pawn, drawLoc, lying, def.stride * size);
+                st = Advance(pawn, drawLoc, lying, StrideOf(def, size));
                 yaw = st.yaw;
                 phase = st.phase;
                 gait = st.gait;
@@ -408,8 +414,12 @@ namespace IsoRim
                 {
                     Hop(def, size, phase, gait, out hopLift);
                 }
+                else if (Waddles(def) && lift <= 0f)
+                {
+                    Waddle(def, size, phase, gait, out hopLift);   // (ModelDef.waddle) its step's rise
+                }
                 rise = flight > 0f || (!dead && AirborneFactor(pawn) > 0f) ? 0f
-                    : def.hop ? hopLift : Mathf.Abs(Mathf.Sin(phase)) * 0.05f * def.legLength * size * gait;
+                    : def.hop || Waddles(def) && lift <= 0f ? hopLift : Mathf.Abs(Mathf.Sin(phase)) * 0.05f * def.legLength * size * gait;
                 if (flight <= 0f && lift <= 0f)
                 {
                     rise += Hover.Lift(pawn, def, size, true, false);   // (Api 32) hovering, as its Draw last placed it
@@ -458,6 +468,46 @@ namespace IsoRim
                 * Matrix4x4.Rotate(Quaternion.AngleAxis(-pitch, Vector3.right))
                 * Matrix4x4.Translate(new Vector3(0f, -c, 0f))
                 * Matrix4x4.Scale(new Vector3(sxz, sy, sxz));
+        }
+
+        // (ModelDef.waddle) For a gliding legless body only (waddle without hop).
+        private static bool Waddles(ModelDef def)
+        {
+            return def.waddle && !def.hop;
+        }
+
+        // The trunk's height in cells (ModelDef.waddle sizing): twice its middle's height, times its size.
+        private static float WaddleHeight(ModelDef def, float size)
+        {
+            return Mathf.Max(0.05f, 2f * def.bodyCentre * size);
+        }
+
+        // Cells walked for one full swing (Advance): ModelDef.stride times its size, or a waddler's sway.
+        private static float StrideOf(ModelDef def, float size)
+        {
+            if (!Waddles(def))
+            {
+                return def.stride * size;
+            }
+            return def.waddleStride > 0f ? def.waddleStride * size : Mathf.Clamp(1.6f * WaddleHeight(def, size), 0.5f, 2.2f);
+        }
+
+        // (ModelDef.waddle) The body's pose in its waddle: rolled to one side and the other about its forward axis (one sway
+        // per stride) and raised a little at each step, as People's figures; scaled by gait (0, standing: still). bob: the
+        // rise (HostPose). size: ModelDef.scale times the pawn's size, as Draw sizes it.
+        internal static Matrix4x4 Waddle(ModelDef def, float size, float phase, float gait, out float bob)
+        {
+            bob = 0f;
+            float g = Mathf.Clamp01(gait);
+            if (g <= 0.001f)
+            {
+                return Matrix4x4.identity;
+            }
+            float h = WaddleHeight(def, size);
+            float k = Mathf.Clamp(Mathf.Sqrt(0.5f / h), 0.6f, 1.4f);
+            bob = Mathf.Abs(Mathf.Sin(phase)) * def.waddleBob * h * k * g;
+            float sway = Mathf.Sin(phase) * def.waddleSway * k * g;
+            return Matrix4x4.Translate(new Vector3(0f, bob, 0f)) * Matrix4x4.Rotate(Quaternion.AngleAxis(sway, Vector3.forward));
         }
 
         private struct Back
