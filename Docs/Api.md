@@ -9,6 +9,43 @@ your mod.
 
 `Api.Dev` is for addons' own dev tests: its members can change or go without notice and are outside the version promise.
 
+## Adding to the Api
+
+Rules for anyone adding Api to IsoRim through a pull request.
+
+**When to add**
+
+1. Propose first: in a PR or issue, say what is needed, who uses it and roughly how it is called. Write code once both sides agree.
+2. Generic mechanisms only. A feature's logic stays in the addon or sub-mod; nothing here is written for one mod alone.
+3. If the existing Api can do it, don't add more.
+
+**Shape**
+
+4. Add, don't change: released members, fields, settings and save keys stay, and old callers keep compiling and running. If something really must change, keep the old one and mark it obsolete.
+5. Every addition raises `Api.Version`, and this file says which version added it. Callers check `Api.Version`.
+6. Don't claim a version number in a PR: it is set in order at merge.
+
+**No effect when unused**
+
+7. Nothing registered: no patches applied, or the hook returns on its first line.
+8. Hot paths (every frame, every model, every face) allocate nothing and use no closures.
+9. Nothing registered: nothing is written to saves, and what players see does not change.
+
+**Failure stays with the caller**
+
+10. A callback that throws or returns something unusable: one warning, that registration is switched off, and the thing is drawn as it was before.
+11. Throw only for the caller's own mistakes at registration, such as a null argument or a duplicate name.
+12. Anything looked up by name in the game or another mod is checked at load. If it no longer matches, that part goes off; the view must not break.
+13. Save data is written only when there is something to save, and a save loads fine with the sub-mod gone.
+14. Main thread only, unless the member says otherwise.
+
+**What a PR brings**
+
+15. A part in this file: purpose, an example, limits.
+16. Before and after shots of the same scene and camera, and for rendering changes frame times too.
+17. A test in the harness with a fake caller, including deliberate failures, or a clear note of how it was tested.
+18. No built DLL in the PR: it is rebuilt from source at merge. Match the style and comment density of the files around it.
+
 ## Versioning
 
 `Api.Version` goes up whenever members are added. Check it before you use newer members:
