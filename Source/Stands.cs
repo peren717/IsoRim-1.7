@@ -238,6 +238,8 @@ namespace IsoRim
             for (int i = 0; i < things.Count; i++)
             {
                 version = version * 31 + things[i].thingIDNumber;
+                ThingStyleDef style = things[i].StyleDef;
+                version = version * 31 + (style != null ? style.shortHash : 0);   // (Api 56: ApparelModelDef.byStyle)
             }
             Outfit outfit;
             if (outfits.TryGetValue(stand.thingIDNumber, out outfit) && outfit.version == version && outfit.made)

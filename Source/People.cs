@@ -1192,7 +1192,7 @@ namespace IsoRim
             ulong skip = VanillaSkips(pawn, parms);
             if (look.hat != null && look.bindShows != 0)
             {
-                // (Api 54) The state of a bound hat shows these whatever the game's rules say of the item (an open visor).
+                // (Api 54, 56) The state or style of a bound hat shows these whatever the game's rules say of the item (an open visor, eye holes).
                 if ((look.bindShows & ApparelModels.HideHair) != 0)
                 {
                     skip &= ~(ulong)RenderSkipFlagDefOf.Hair;
@@ -1700,7 +1700,10 @@ namespace IsoRim
                     string name = a.def.defName ?? "";
                     ApparelModels.Binding bound = ApparelModels.For(a.def);
                     ApparelStateModel boundState = bound != null ? bound.StateOf(a) : null;   // (Api 54)
-                    Model boundModel = bound != null ? bound.ModelOf(boundState) ?? bound.ModelFor(build) : null;
+                    Model stateModel = bound != null ? bound.ModelOf(boundState) : null;
+                    ApparelStyleModel boundStyle = stateModel == null && bound != null ? bound.StyleOf(a) : null;   // (Api 56)
+                    Model styleModel = boundStyle != null ? bound.ModelOf(boundStyle) : null;
+                    Model boundModel = stateModel ?? styleModel ?? (bound != null ? bound.ModelFor(build) : null);
                     HeadDecal headDecal = HeadDecals.For(a.def);
                     if (headDecal != null)
                     {
@@ -1724,10 +1727,10 @@ namespace IsoRim
                             case ApparelModels.Slot.Head:
                                 if (OnLayer(props, "Overhead") || hatKind == null)
                                 {
-                                    hatKind = "bound:" + bound.def.defName + (boundState != null ? ":" + boundState.state : "");
+                                    hatKind = "bound:" + bound.def.defName + (boundState != null ? ":" + boundState.state : "") + (styleModel != null ? ":" + boundStyle.style : "");
                                     hatBound = bound;
                                     hatBoundModel = boundModel;
-                                    hatBoundShows = boundState != null ? ApparelModels.ShowsOf(boundState) : 0;
+                                    hatBoundShows = boundState != null ? ApparelModels.ShowsOf(boundState) : (styleModel != null ? ApparelModels.ShowsOf(boundStyle) : 0);
                                     look.hatColor = tint;
                                 }
                                 continue;
@@ -2168,7 +2171,7 @@ namespace IsoRim
                 bool rigid;
                 Vector3 anchor;
                 Matrix4x4 place = WornGear.Place(b.gear, look, out rigid, out anchor);
-                look.gear.Add(b.ModelFor(build));
+                look.gear.Add(b.ModelOf(beltBound[i], build));
                 look.gearPlace.Add(place);
                 look.gearTint.Add(ApparelModels.Tint(b, beltBound[i]));
                 look.gearRigid.Add(rigid);

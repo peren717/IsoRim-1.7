@@ -108,7 +108,9 @@ namespace IsoRim
         // 54: held weapons and worn states (Api54.cs): CatchWeaponDraws, ModelDef.holdAsBuilt, carryStand, carryLean, bakedItem, one model per
         // weapon however many pictures the game draws of it, model decals on held weapons, ApparelModelDef.byState (with shows).
         // 55: bodies in the air: ModelDef.effectHeight, effectRadius, cardState, spinAlways (EffectLift.cs).
-        public static int Version => 55;
+        // 56: ApparelModelDef.byStyle (with shows): other worn models by the item's ThingStyleDef, picked in People.Dress as byState is (so on
+        // outfit stands and on the ground too); a binding may have byStyle only, its other items keep IsoRim's own look.
+        public static int Version => 56;
 
         // ---- glass parts (Version 30)
 

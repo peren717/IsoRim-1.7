@@ -107,10 +107,11 @@ if (IsoRim.Api.Version >= 51) { /* ApparelModelDef.fitLift: over-the-shell garme
 if (IsoRim.Api.Version >= 52) { /* shapes without a model: ModelDef.shape, boxFaces, topInset, raisedOutline; stuff_round materials (part 36) */ }
 if (IsoRim.Api.Version >= 53) { /* model decals: ModelDecal, AddModelDecals, RemoveModelDecals, RefreshModelDecals (part 37) */ }
 if (IsoRim.Api.Version >= 54) { /* held weapons and worn states: CatchWeaponDraws, ModelDef holdAsBuilt, carryStand, carryLean, bakedItem, decals on held weapons, ApparelModelDef.byState (part 38) */ }
+if (IsoRim.Api.Version >= 56) { /* worn styles: ApparelModelDef.byStyle with shows (part 40) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -2056,6 +2057,35 @@ round the body and not onto the ground under it.
   disrupted or embraced.
 
 Version gate: packs using these fields gate on Api 55.
+## Part 40: apparel by style (version 56)
+
+An item of a style (Ideology's `ThingStyleDef`, as a morbid or totemic helmet) has its own worn picture, so its figure can have its own model. `ApparelModelDef.byStyle` is the same list as `ModelDef.byStyle`, and an entry can name `shows` as a `byState` entry does:
+
+```xml
+<IsoRim.ApparelModelDef>
+  <defName>R3DApparel_MyHelmet</defName>
+  <apparel>MyMod_Apparel_Helmet</apparel>
+  <slot>Head</slot>
+  <model>Models/my_helmet.obj</model>   <!-- optional with byStyle: without it, items of no listed style keep IsoRim's own look -->
+  <byStyle>   <!-- IsoRim.Api.Version >= 56 -->
+    <li>
+      <style>Morbid_MyHelmet</style>
+      <model>Models/my_helmet_morbid.obj</model>
+      <shows><li>Face</li></shows>   <!-- Head slot: Hair, Beard, Face shown with this model whatever the game's rules hide under the item -->
+    </li>
+  </byStyle>
+</IsoRim.ApparelModelDef>
+```
+
+- **Everywhere the item shows:** the model is picked when the look is worked out, so it holds for a wearer, an outfit stand and an item on the ground, where the item shows as the binding's model does. The binding's other fields (`slot`, `hides`, `visor`, `offset`, `rotation`, `scale`, `spriteColour`) apply to it.
+- **Order:** a `byState` model comes first, then `byStyle`, then the binding's usual model. Only the entry whose model is drawn counts for `shows`.
+- **`shows`:** for a model with real openings (eye holes, a face window). The model must leave them open: the head and eyes are drawn where they always are.
+- **No entry:** an item of another style, or of none, looks as it would without `byStyle`. A binding with `byStyle` alone is the way to give style models to an item IsoRim draws with a shape of its own.
+
+Limits:
+- **One per style:** only Body bindings have models per build, which `byStyle` does not.
+- **Failing soft:** a style model that cannot be loaded is reported once and the item shows as if it had no entry. A style that is not loaded (no Ideology) is never matched, quietly. An entry with no style or model is a config error.
+- **Nothing used:** with no `byStyle` nothing changes, and nothing is saved.
 
 ## Part M: model packs (IsoRim.ModelDef)
 

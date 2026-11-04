@@ -83,6 +83,12 @@ namespace IsoRim
         /// person's look is worked out). A state with no entry, or none: model as usual.</summary>
         public List<ApparelStateModel> byState;
 
+        /// <summary>Api 56: other models for items of a style (Ideology's ThingStyleDef), the same list as ModelDef.byStyle:
+        /// &lt;li&gt;&lt;style&gt;Morbid_MarineHelmet&lt;/style&gt;&lt;model&gt;Models/x.obj&lt;/model&gt;&lt;/li&gt;. A state's model (byState) comes
+        /// first. A style with no entry, or none: as if byStyle were not there. A binding may have byStyle and no model: items of
+        /// no listed style keep IsoRim's own look. An entry may name shows, as a byState entry.</summary>
+        public List<ApparelStyleModel> byStyle;
+
         /// <summary>Api 25: only for these races (ThingDef defNames). For a race, a binding naming it wins over one without races;
         /// a binding with races is not used for anyone else.</summary>
         public List<string> aliens;
@@ -100,7 +106,7 @@ namespace IsoRim
             {
                 yield return "no apparel";
             }
-            if (model.NullOrEmpty() && (bodyModels == null || !bodyModels.Any) && alienBodyModels.NullOrEmpty())
+            if (model.NullOrEmpty() && (bodyModels == null || !bodyModels.Any) && alienBodyModels.NullOrEmpty() && byStyle.NullOrEmpty())
             {
                 yield return "no model";
             }
@@ -123,6 +129,26 @@ namespace IsoRim
                     if (s == null || s.state.NullOrEmpty() || s.model.NullOrEmpty())
                     {
                         yield return "byState entry without state or model";
+                    }
+                    else if (s.shows != null)
+                    {
+                        foreach (string h in s.shows)
+                        {
+                            if (h != "Hair" && h != "Beard" && h != "Face")
+                            {
+                                yield return "unknown shows entry " + h + " (Hair, Beard, Face)";
+                            }
+                        }
+                    }
+                }
+            }
+            if (byStyle != null)
+            {
+                foreach (ApparelStyleModel s in byStyle)
+                {
+                    if (s == null || s.style.NullOrEmpty() || s.model.NullOrEmpty())
+                    {
+                        yield return "byStyle entry without style or model";
                     }
                     else if (s.shows != null)
                     {
@@ -164,6 +190,16 @@ namespace IsoRim
         public string model;
 
         /// <summary>Head: shown in this state even where the game's rules hide it under the item (Hair, Beard, Face): an open visor.</summary>
+        public List<string> shows;
+    }
+
+    /// <summary>A binding's model for one style (Api 56, ApparelModelDef.byStyle).</summary>
+    public class ApparelStyleModel
+    {
+        public string style;    // a ThingStyleDef defName
+        public string model;
+
+        /// <summary>Head: shown with this model even where the game's rules hide it under the item (Hair, Beard, Face): a mask with real eye holes.</summary>
         public List<string> shows;
     }
 
@@ -210,7 +246,17 @@ namespace IsoRim
         // (Api 54) ApparelStateModel.shows as those bits.
         internal static int ShowsOf(ApparelStateModel state)
         {
-            List<string> s = state.shows;
+            return ShowsOf(state.shows);
+        }
+
+        // (Api 56) ApparelStyleModel.shows as those bits.
+        internal static int ShowsOf(ApparelStyleModel style)
+        {
+            return ShowsOf(style.shows);
+        }
+
+        private static int ShowsOf(List<string> s)
+        {
             return s == null ? 0 : (s.Contains("Hair") ? HideHair : 0) | (s.Contains("Beard") ? HideBeard : 0) | (s.Contains("Face") ? HideFace : 0);
         }
 
@@ -259,15 +305,53 @@ namespace IsoRim
             // That entry's model.
             public Model ModelOf(ApparelStateModel state)
             {
-                Model m;
-                if (broken || state == null || state.model.NullOrEmpty())
+                return state != null ? Loaded(state.model) : null;
+            }
+
+            // (Api 56) The byStyle entry for this item's style, or null: its usual model.
+            public ApparelStyleModel StyleOf(Apparel item)
+            {
+                if (def.byStyle == null)
                 {
                     return null;
                 }
-                if (!byBuild.TryGetValue(state.model, out m))
+                ThingStyleDef style = item.StyleDef;
+                if (style != null)
                 {
-                    m = Load(state.model);
-                    byBuild[state.model] = m;
+                    for (int i = 0; i < def.byStyle.Count; i++)
+                    {
+                        if (def.byStyle[i].style == style.defName)
+                        {
+                            return def.byStyle[i];
+                        }
+                    }
+                }
+                return null;
+            }
+
+            // That entry's model; null if its file could not be loaded (the item then shows as if it had no entry).
+            public Model ModelOf(ApparelStyleModel style)
+            {
+                return style != null ? Loaded(style.model) : null;
+            }
+
+            // The model this very item shows on this build: its state's, its style's, or the binding's.
+            public Model ModelOf(Apparel item, string build)
+            {
+                return ModelOf(StateOf(item)) ?? ModelOf(StyleOf(item)) ?? ModelFor(build);
+            }
+
+            private Model Loaded(string path)
+            {
+                Model m;
+                if (broken || path.NullOrEmpty())
+                {
+                    return null;
+                }
+                if (!byBuild.TryGetValue(path, out m))
+                {
+                    m = Load(path);
+                    byBuild[path] = m;
                 }
                 return m;
             }
