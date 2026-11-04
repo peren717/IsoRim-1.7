@@ -3,7 +3,7 @@
 Model packs (XML and .obj files, no code), the dev-mode model binder and the coverage report: see [ModelPacks.md](ModelPacks.md).
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`, `WallShapeRule`, `WallShape`, `HeadDecal`, `SelectionRing`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`, `WallShapeRule`, `WallShape`, `HeadDecal`, `SelectionRing`, `ModelDecal`, `ModelDecalProvider`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
 in any update, even when it is public: do not patch or reflect into it, ask for an Api member instead. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -104,10 +104,11 @@ if (IsoRim.Api.Version >= 48) { /* selection rings: AddSelectionRingRule, IsoRim
 if (IsoRim.Api.Version >= 49) { /* ModelDef tintFromGraphic: animal models in the vanilla graphic colour (part 33) */ }
 if (IsoRim.Api.Version >= 50) { /* weapon art check, ModelDef.anyArt; byGraphic matches weapon sprite variants (part 34) */ }
 if (IsoRim.Api.Version >= 51) { /* ApparelModelDef.fitLift: over-the-shell garments rest on what is worn under them (part 35) */ }
+if (IsoRim.Api.Version >= 53) { /* model decals: ModelDecal, AddModelDecals, RemoveModelDecals, RefreshModelDecals (part 37) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1914,6 +1915,58 @@ dev-mode binder (and any pack) can give a thing a look without an `.obj`. Fields
 
 Version gate: packs using these fields gate on Api 52; older versions must leave the thing alone. Models in
 `Models/Templates/` are free to reference from a pack, but copy them: the binder's export does.
+
+## Part 37: model decals (version 53)
+
+A mod can print pictures on one part of a thing's 3D model, different for each thing: a heraldic banner, a shop sign, a painting.
+Register a provider for a def and a part (the OBJ material's name). IsoRim asks it when it builds that thing's model and paints the
+decals into a small texture for the part, one per different look. The part's faces are written with it as part of the model, so
+the picture is lit, shaded, clipped under roofs, hidden and faded with its floor and see-through while building as the model
+is, with or without textured models, and costs nothing per frame. The OBJ needs no texture coordinates.
+
+| Member | What it does |
+|---|---|
+| `Api.AddModelDecals(ThingDef def, string part, ModelDecalProvider provider)` | Registers a provider. Twice does nothing. A null argument throws. Call at startup. |
+| `Api.RemoveModelDecals(ThingDef def, string part, ModelDecalProvider provider)` | Removes it. Things already built keep their look until they are next built. |
+| `Api.RefreshModelDecals(Thing thing)` | The thing's decals have changed: its model is built again soon, and the providers asked. Does nothing for a def nobody registered. |
+| `delegate void ModelDecalProvider(Thing thing, List<ModelDecal> decals)` | Add zero or more decals (IsoRim clears and reuses the list). None: the part stays as the model has it. Asked when the model is built, not every frame, on the main thread. |
+| `decal.texture` | The picture, tinted by `colour`. |
+| `decal.mask`, `decal.colour`, `decal.colourTwo` | The game's mask, as CutoutComplex uses it: red takes `colour`, green `colourTwo`, black neither. A mask without a texture is a plain two-colour picture, where the mask is red or green. |
+| `decal.spread` | With a mask and no texture: the two colours cover the whole rectangle, what the mask leaves black taking the nearest of them. For a pattern whose outline is not quite the part's. |
+| `decal.side` | `DecalSide.Front`: the faces the model turns to its south, and its edges, top and bottom. `DecalSide.Back`: those turned to its north, seen from behind. |
+| `decal.centre`, `decal.size` | Place and size in model units: x to the right as the viewer of that side sees it (0 is the model's origin), y the height over its base. A front and a back decal with the same numbers read the same; neither is mirrored. |
+| `decal.source` | The part of the texture and mask used, texture coordinates (0 to 1, y up). Default: all of it. |
+
+Decals are painted in the order added, each over the one before, over the part's own colour.
+
+```csharp
+// A guild's sign, in its faction's colour, on both sides of a board.
+static Texture2D emblem;
+
+[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+static void Register()                               // after an Api.Version >= 53 check
+{
+    emblem = ContentFinder<Texture2D>.Get("MyMod/Emblem");
+    IsoRim.Api.AddModelDecals(ThingDef.Named("MyMod_Sign"), "board", new IsoRim.ModelDecalProvider(Sign));
+}
+
+static void Sign(Thing sign, List<IsoRim.ModelDecal> decals)
+{
+    Color c = sign.Faction != null ? sign.Faction.Color : Color.white;
+    foreach (IsoRim.DecalSide side in new[] { IsoRim.DecalSide.Front, IsoRim.DecalSide.Back })
+        decals.Add(new IsoRim.ModelDecal { texture = emblem, colour = c, side = side, centre = new Vector2(0f, 1.2f), size = new Vector2(0.6f, 0.6f) });
+}
+// when the faction changes: IsoRim.Api.RefreshModelDecals(sign);
+```
+
+Limits:
+- **What is drawn:** the part's faces take the picture at about 192 texels a model unit (at most 512 a side), edges taking the picture's nearest texels. Only models built into the map (buildings, also those the game draws every frame): not moving models, items lying as clothes, or ghosts.
+- **Looks:** at most 64 different ones. A look nothing is built with any more is painted over when a new one needs its place. With all 64 in use a new look stays plain until one is free (one warning).
+- **Failing soft:** a provider that throws, a null decal, a decal with no picture or a bad place, size or source, a texture whose pixels cannot be read, or a part no model of the def has: one warning, that registration is switched off, and the part stays plain.
+- **No registration:** nothing runs and nothing changes. Nothing is saved.
+- **Types:** `ModelDecal` and the provider only exist from version 53: keep them in code that runs after a version check, and create the delegate with `new IsoRim.ModelDecalProvider(Method)`, as in part 4.
+
+The VFE Medieval 2 pack's `Heraldry.cs` uses it to print the heraldry of the 2D banner (VE Framework's dynamic graphics) on the 3D standing banner.
 
 ## Part M: model packs (IsoRim.ModelDef)
 

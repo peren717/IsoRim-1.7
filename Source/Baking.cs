@@ -2960,6 +2960,8 @@ namespace IsoRim
 
             bool textured = st.texturedModels && m.materials != null && m.uvs != null && m.material != null;
             string swatch = textured ? R3DTextures.ModelSwatch(thing) : null;
+            // (Api 53) Parts another mod prints decals on: their faces are written as textured faces with that look, textured models or not.
+            ModelDecals.Look[] decalLooks = ModelDecals.Count > 0 ? ModelDecals.For(thing, m) : null;
             // (Api 24) "sheet" parts also take the thing's second colour (a bed's sheets by owner type: R3DTextures.SheetTint).
             Color sheetTint = R3DTextures.HasSheet(m) ? R3DTextures.SheetTint(thing) : Color.white;
             // Reused from one model to the next: thousands of plants are written in a row.
@@ -3049,7 +3051,17 @@ namespace IsoRim
                 // Find (once per material) where this triangle's textured face goes.
                 LayerSubMesh tm = null;
                 bool own = textured && m.OwnColour(i);   // its corners carry the colour (Model.OwnColour)
-                if (textured && mm != null && mm.texture != null)
+                ModelDecals.Look decal = decalLooks != null ? decalLooks[mi] : null;
+                if (decal != null)
+                {
+                    own = false;
+                    tm = MeshWriter.Sub(layer, decal.material);
+                    if (tm != null && tm.verts.Count + 3 > MeshWriter.MaxVerts)
+                    {
+                        tm = null;
+                    }
+                }
+                else if (textured && mm != null && mm.texture != null)
                 {
                     int slot = own ? m.materials.Length + mi : mi;
                     if (!looked[slot])
@@ -3094,16 +3106,19 @@ namespace IsoRim
                         c *= sheetTint;
                     }
 
-                    // 1. plain copy, pulled in a hair when a textured face will sit over it
-                    Vector3 inside = tm != null ? m.positions[k] - hull * Inset : m.positions[k];
-                    Vector3 p = turn * (Vector3.Scale(lay * inside + layLift, scale) + offset);
-                    pm.tris.Add(pm.verts.Count);
-                    pm.verts.Add(new Vector3(center.x + p.x, baseY + Mathf.Max(Floor, p.y) / squash, center.z + p.z));
-                    pm.colors.Add(R3DMaterials.Shaded(c, 1f));
-                    pm.uvs.Add(default);
-                    if (tagged)
+                    // 1. plain copy, pulled in a hair when a textured face will sit over it (a decal's face stands in for it, Api 53)
+                    if (decal == null || tm == null)
                     {
-                        CutTags.Stamp(pm, triTag);
+                        Vector3 inside = tm != null ? m.positions[k] - hull * Inset : m.positions[k];
+                        Vector3 p = turn * (Vector3.Scale(lay * inside + layLift, scale) + offset);
+                        pm.tris.Add(pm.verts.Count);
+                        pm.verts.Add(new Vector3(center.x + p.x, baseY + Mathf.Max(Floor, p.y) / squash, center.z + p.z));
+                        pm.colors.Add(R3DMaterials.Shaded(c, 1f));
+                        pm.uvs.Add(default);
+                        if (tagged)
+                        {
+                            CutTags.Stamp(pm, triTag);
+                        }
                     }
                     if (smoothFace)
                     {
@@ -3131,8 +3146,8 @@ namespace IsoRim
                     // 3. textured face
                     if (tm != null)
                     {
-                        Vector3 q = turn * (Vector3.Scale(lay * (m.positions[k] + m.normals[i] * FaceLift) + layLift, scale) + offset);
-                        Vector2 uv = m.uvs[k];
+                        Vector3 q = turn * (Vector3.Scale(lay * (decal != null ? m.positions[k] : m.positions[k] + m.normals[i] * FaceLift) + layLift, scale) + offset);
+                        Vector2 uv = decal != null ? ModelDecals.Uv(decal, m.positions[k], m.normals[i]) : m.uvs[k];
                         tm.tris.Add(tm.verts.Count);
                         tm.verts.Add(new Vector3(center.x + q.x, baseY + Mathf.Max(Floor, q.y) / squash, center.z + q.z));
                         tm.colors.Add(own ? R3DMaterials.Shaded(c, 1f) : White);
