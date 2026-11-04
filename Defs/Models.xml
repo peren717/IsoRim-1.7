@@ -9645,6 +9645,61 @@
     <builtFor>(5, 5)</builtFor>
   </IsoRim.ModelDef>
 
+  <!-- Unnatural darkness pillar: printed into the map mesh (MapMeshAndRealTime draws nothing else). -->
+  <IsoRim.ModelDef>
+    <defName>R3D_Noctolith</defName>
+    <thingDef>Noctolith</thingDef>
+    <model>Models/noctolith.obj</model>
+    <surfaceHeight>0.00</surfaceHeight>
+    <builtFor>(2, 2)</builtFor>
+  </IsoRim.ModelDef>
+
+  <!-- Gray statues: one model per sprite, in sprite order (GrayStatueA..E); both defs show the same five. -->
+  <IsoRim.ModelDef>
+    <defName>R3D_GrayStatueDeadlifeDust</defName>
+    <thingDef>GrayStatueDeadlifeDust</thingDef>
+    <models>
+      <li>Models/gray_statue_a.obj</li>
+      <li>Models/gray_statue_b.obj</li>
+      <li>Models/gray_statue_c.obj</li>
+      <li>Models/gray_statue_d.obj</li>
+      <li>Models/gray_statue_e.obj</li>
+    </models>
+    <surfaceHeight>0.00</surfaceHeight>
+    <builtFor>(1, 1)</builtFor>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_GrayStatueTeleporter</defName>
+    <thingDef>GrayStatueTeleporter</thingDef>
+    <models>
+      <li>Models/gray_statue_a.obj</li>
+      <li>Models/gray_statue_b.obj</li>
+      <li>Models/gray_statue_c.obj</li>
+      <li>Models/gray_statue_d.obj</li>
+      <li>Models/gray_statue_e.obj</li>
+    </models>
+    <surfaceHeight>0.00</surfaceHeight>
+    <builtFor>(1, 1)</builtFor>
+  </IsoRim.ModelDef>
+
+  <!-- Void node: the solid orb, baked; its dust turns round it; the game's effects go round it (EffectLift, Api 55); when it
+       is disrupted or embraced the game's own sprite takes over on a card, where its shader dissolves it. -->
+  <IsoRim.ModelDef>
+    <defName>R3D_VoidNode</defName>
+    <thingDef>VoidNode</thingDef>
+    <model>Models/void_node.obj</model>
+    <spinModel>Models/void_node_dust.obj</spinModel>
+    <spinSpeed>9</spinSpeed>
+    <spinAlways>true</spinAlways>
+    <effectHeight>3.6</effectHeight>
+    <effectRadius>3.3</effectRadius>
+    <cardState>closing</cardState>
+    <surfaceHeight>0.00</surfaceHeight>
+    <builtFor>(7, 7)</builtFor>
+    <groundShadow>false</groundShadow>
+  </IsoRim.ModelDef>
+
   <!-- Twisted archotech supports: built facing north (horn arching north); the game spawns them turned toward the void
        node and IsoRim's yaw follows Thing.Rotation. -->
   <IsoRim.ModelDef>

@@ -1,0 +1,15 @@
+# Anomaly set (make_anomalyset.py). stuff_round_*: smooth light, no texture; on these stuffless things colour = Kd.
+newmtl as_noct_dark
+Kd 0.185 0.175 0.180
+newmtl as_noct_mid
+Kd 0.290 0.275 0.280
+newmtl as_noct_blade
+Kd 0.440 0.405 0.405
+newmtl stuff_round_as_statue
+Kd 0.470 0.500 0.540
+newmtl stuff_round_as_statue_foot
+Kd 0.400 0.430 0.470
+newmtl stuff_round_as_void
+Kd 0.170 0.160 0.165
+newmtl glow_as_dust
+Kd 0.620 0.600 0.620

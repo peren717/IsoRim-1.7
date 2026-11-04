@@ -106,7 +106,11 @@ namespace IsoRim
                 was = now;
             }
             lastTick[t.thingIDNumber] = now;
-            bool on = Turning(t);
+            if (EffectLift.ShowsCard(t))
+            {
+                return;   // (Api 55) stood down with the model
+            }
+            bool on = def.spinAlways || Turning(t);
             if (now > was && on)
             {
                 angle = Mathf.Repeat(angle + Mathf.Min(now - was, 60) / 60f * def.spinSpeed, 360f);

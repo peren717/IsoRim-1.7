@@ -210,6 +210,13 @@ namespace IsoRim
         public string spinModel;
         public float spinSpeed = 90f;       // degrees a second at normal game speed
         public string spinMote;             // the game's flat mote for that part (Mote_LightBall), left out in 3D
+        public bool spinAlways;             // (Api 55) it turns whatever the power does (the void node's dust)
+        // (Api 55, EffectLift.cs) A body hanging in the air round a point effectHeight up (the void node's orb), effectRadius across:
+        // what the thing's effecters draw over things goes round it instead of lying on the ground. cardState: while the thing
+        // is in that state (Api.AddModelState) the model stands down for the game's own sprite, on a card facing the camera there.
+        public float effectHeight = 0f;
+        public float effectRadius = 0f;
+        public string cardState;
         public string litMaterial;          // a material of spinModel that lights up while the part turns (the lightball's
                                             // lenses, party_lens): unlit, in litColors, one colour per separate piece in turn
         public List<Color> litColors;

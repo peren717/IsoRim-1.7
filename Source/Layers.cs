@@ -725,7 +725,8 @@ namespace IsoRim
         public static bool Handles(Thing t)
         {
             return t != null && t.def != null && t.def.drawerType == DrawerType.RealtimeOnly && t.Spawned && View3D.Active
-                && !(t is Pawn) && (Forms.For(t.def).form == Form3D.Model || Forms.For(t.def).shape == ModelShape.Card);
+                && !(t is Pawn) && (Forms.For(t.def).form == Form3D.Model || Forms.For(t.def).shape == ModelShape.Card)
+                && !EffectLift.ShowsCard(t);
         }
 
         // True while the model stands in for this thing's body sprite.

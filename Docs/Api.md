@@ -2027,6 +2027,36 @@ Limits:
 
 The VFE Medieval 2 pack's `Heraldry.cs` and `OpenHelmet.cs` use all of this.
 
+## Part 39: bodies in the air (version 55)
+
+Plain data, no call: for a thing whose model hangs in the air round a point (a floating orb), so that the game's effects go
+round the body and not onto the ground under it.
+
+```xml
+<IsoRim.ModelDef>
+  <thingDef>MyOrb</thingDef>
+  <model>Models/my_orb.obj</model>
+  <effectHeight>3.6</effectHeight>   <!-- the body's centre, cells above the ground -->
+  <effectRadius>3.3</effectRadius>   <!-- its radius -->
+  <cardState>closing</cardState>     <!-- optional, a state from Api.AddModelState -->
+  <spinModel>Models/my_orb_dust.obj</spinModel>
+  <spinAlways>true</spinAlways>      <!-- the spin part turns whatever the power does -->
+</IsoRim.ModelDef>
+```
+
+- **Which effects:** what the thing's own effecters make (`Effecter.EffectTick`, `Trigger`, with the thing as a target) and motes over
+  its cells, at altitude `MoteOverheadLow` and up. Lower ones stay on the ground.
+- **Where:** a fleck that orbits or starts outside `effectRadius` lies flat at `effectHeight`, passing behind and in front of the body. Other
+  flecks and motes stand on a card in front of the body, facing the camera, keeping their place round the centre as the game lays
+  them out from above.
+- **`cardState`:** while `Api.AddModelState` names this state, the baked model and the spin part stand down and the game's own sprite
+  is drawn on a card facing the camera at `effectHeight`, so a sprite with its own shader animation (a dissolve) shows. For things
+  drawn every frame (`RealtimeOnly`). The block is rebuilt when the state changes, which takes a frame or two.
+- 3D off or models off: the game's own drawing. Vanilla's void node uses all of this; its state `closing` runs from the moment it is
+  disrupted or embraced.
+
+Version gate: packs using these fields gate on Api 55.
+
 ## Part M: model packs (IsoRim.ModelDef)
 
 A model pack is an XML-only mod (or a mod with a small DLL) that adds `IsoRim.ModelDef`s binding OBJ models to other
@@ -2061,6 +2091,7 @@ mods' things.
 | `byGraphic` (39) | A model by the sprite the game draws the thing with **now**: its runtime `Thing.Graphic.path`, which a mod's own `Graphic` override may change (a conveyor piece showing a turn, a merger or a splitter; a hopper lit for input or output). `<li><path>Things/Building/Belts/BeltTurnLeft_north</path><model>Models/belt_turn_left.obj</model><yaw>90</yaw></li>`; `<prefix>true</prefix>` matches every path starting with `path` (case-insensitive, `` = `/`). `<facing>North</facing>` (or East, South, West) limits an entry to things facing that way, for a one-direction sprite whose look also depends on the thing's facing (a splitter's sprite names its two outputs, not the side that feeds it). The first matching entry wins; no match: `model` and the other rules. Facing follows the game: the model of a `Graphic_Multi` sprite turns with the thing's facing, any other graphic (`Graphic_Single`) is drawn north-up as the sprite is; `yaw` (degrees, clockwise from above) is added either way; a `Graphic_Multi` model also takes `rotation`, `rotationByFacing` and `ignoreRotation` as any model does, any other graphic only `rotation`. Checked each frame the game draws the thing (a dictionary lookup per graphic) and the block rebuilt only when the matching entry changes; with `prefix`, a path that only changes after the prefix does not rebuild. While such a thing's model stands in, its own sprite drawn every frame by a custom `DrawAt` (`Graphic.Draw` of `thing.Graphic`) is left out; what that `DrawAt` draws besides (carried items, comps, other graphics) is kept. Items drawn by it are lifted to the thing's `surfaceHeight` as before. Version 50: weapons too, matched by the sprite variant they show (part 34). |
 | `anyArt` (50) | Weapons: the model is kept whatever art the weapon has (part 34); default false: a weapon whose sprite another mod supplies draws that sprite. |
 | `holdAsBuilt`, `carryStand`, `carryLean`, `bakedItem` (54) | Weapons: held as built, carried standing in front of the figure, an item with a drawing of its own baked as its model (part 38). |
+| `effectHeight`, `effectRadius`, `cardState`, `spinAlways` (55) | A body in the air: the thing's effects go round it, the game's sprite on a card in a state, a spin part that always turns (part 39). |
 | `wallTop` (11), `cutaway` (20), `backHeight` (13), wing fields (14), `doorLeafModel`, `doorLeafGather` (18), `crownTop`, `doorLeafRise` (6) | See their parts. |
 
 The numbers in brackets are the Api version a field needs; fields without one are there from version 2.

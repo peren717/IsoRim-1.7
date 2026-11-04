@@ -556,6 +556,18 @@ namespace IsoRim
                 prefix: nameof(SprayerTick_Prefix), finalizer: nameof(SprayerTick_Finalizer));
             Patch("steam from 3D nozzles", AccessTools.Method(typeof(FleckMaker), nameof(FleckMaker.ThrowAirPuffUp)), prefix: nameof(AirPuff_Prefix));
             Patch("smoke from 3D nozzles", AccessTools.Method(typeof(FleckStatic), "Draw", new[] { typeof(float), typeof(DrawBatch) }), prefix: nameof(FleckDraw_Prefix), finalizer: nameof(FleckDraw_Finalizer));
+            try
+            {
+                HarmonyMethod ePre = new HarmonyMethod(typeof(EffectLift), nameof(EffectLift.Effecter_Prefix));
+                HarmonyMethod eFin = new HarmonyMethod(typeof(EffectLift), nameof(EffectLift.Effecter_Finalizer));
+                harmony.Patch(AccessTools.Method(typeof(Effecter), nameof(Effecter.EffectTick)), prefix: ePre, finalizer: eFin);
+                harmony.Patch(AccessTools.Method(typeof(Effecter), nameof(Effecter.Trigger)), prefix: ePre, finalizer: eFin);
+                harmony.Patch(AccessTools.Method(typeof(FleckManager), nameof(FleckManager.CreateFleck)), prefix: new HarmonyMethod(typeof(EffectLift), nameof(EffectLift.CreateFleck_Prefix)));
+            }
+            catch (Exception e)
+            {
+                Log.Error("[IsoRim] Patching effects round a body failed: " + e);
+            }
             // Icons thrown from a pawn's cell (downed "!", sleep Zs, hearts ...) over the 3D figure's head (Overhead).
             Patch("icons over 3D figures' heads", AccessTools.Method(typeof(FleckManager), nameof(FleckManager.CreateFleck), new[] { typeof(FleckCreationData) }), prefix: nameof(OverheadFleck_Prefix));
             // A turret's flash a mod throws by hand at the turret's cell: at its 3D gun's barrel end (Projectiles.TurretFlash).
@@ -3780,7 +3792,31 @@ namespace IsoRim
             {
                 Log.ErrorOnce("[IsoRim] Checking whether a building was emptied failed: " + e, 93611211);
             }
+            // (Api 55) A body in the air that has stood down: the game's sprite on a card at that point (EffectLift).
+            float cardHeight;
+            Vector3 cardPivot;
+            if (EffectLift.Card(__instance, out cardHeight, out cardPivot))
+            {
+                BeginBillboard(ref __state, cardHeight, false, Vector3.zero);
+                if (__state.changed)
+                {
+                    DrawHook.hasPivot = true;
+                    DrawHook.billboardPivot = cardPivot;
+                }
+                return;
+            }
             Mote mote = __instance as Mote;
+            // (Api 55) A mote of an effect round a body in the air: in front of it, facing the camera (EffectLift).
+            if (mote != null && EffectLift.MoteCard(mote, out cardHeight, out cardPivot))
+            {
+                BeginBillboard(ref __state, cardHeight, false, Vector3.zero);
+                if (__state.changed)
+                {
+                    DrawHook.hasPivot = true;
+                    DrawHook.billboardPivot = cardPivot;
+                }
+                return;
+            }
             // (Api 44) A mote a mod put at a point in the air (a flash at a gun's muzzle: Api.StandMote): standing up facing
             // the camera at that height, or lying flat at it (a line along a shot).
             float standHeight;

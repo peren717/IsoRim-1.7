@@ -32,6 +32,9 @@ namespace IsoRim
             public int until;   // game tick after which the puff has certainly faded
             public bool onFloor;
             public Matrix4x4 floor;   // what it rises from is on an upper floor: that floor's matrix (Floors.ExtraMatrix)
+            public byte round;        // (Api 55, EffectLift) 1: flat at height; 2: on a card in front of a body of radius, round centre
+            public Vector3 centre;
+            public float radius;
         }
 
         private static readonly Dictionary<Vector3, Puff> puffs = new Dictionary<Vector3, Puff>();
@@ -148,12 +151,24 @@ namespace IsoRim
             puffs[Key(spawn)] = new Puff { height = height, rise = rise, until = Find.TickManager.TicksGame + lifeTicks, floor = floor, onFloor = floor != Matrix4x4.identity };
         }
 
+        // (Api 55) A fleck of a thing's effecter, about to be created at spawn, drawn round a body at centre, height up: flat at that
+        // height, or on a card in front of it (EffectLift). Called while the game ticks.
+        public static void RaiseRound(Vector3 spawn, Vector3 centre, float height, float radius, bool flat, FleckDef fleck)
+        {
+            Sweep();
+            int lifeTicks = Mathf.CeilToInt((fleck.solidTime + fleck.fadeInTime + fleck.fadeOutTime) * 60f) + 120;
+            puffs[Key(spawn)] = new Puff { height = height, until = Find.TickManager.TicksGame + lifeTicks, round = (byte)(flat ? 1 : 2), centre = centre, radius = radius };
+        }
+
         // The game draws puffs on worker threads, so the puff being drawn is noted per thread and
         // its quad stood up in Patches.DrawBatch_Prefix (Stand), not through DrawHook's shared state.
         [ThreadStatic] private static bool standing;
         [ThreadStatic] private static float standHeight;
         [ThreadStatic] private static bool standOnFloor;
         [ThreadStatic] private static Matrix4x4 standFloor;
+        [ThreadStatic] private static byte standRound;
+        [ThreadStatic] private static Vector3 standCentre;
+        [ThreadStatic] private static float standRadius;
 
         public static bool On
         {
@@ -177,6 +192,9 @@ namespace IsoRim
             standHeight = p.height + p.rise * fleck.ageSecs;
             standOnFloor = p.onFloor;
             standFloor = p.floor;
+            standRound = p.round;
+            standCentre = p.centre;
+            standRadius = p.radius;
             return true;
         }
 
@@ -190,8 +208,23 @@ namespace IsoRim
         public static Matrix4x4 Stand(Matrix4x4 matrix)
         {
             Vector3 p = matrix.GetColumn(3);
-            Matrix4x4 local = Matrix4x4.Translate(-p) * matrix;
             float s = View3D.Squash;
+            if (standRound == 1)
+            {
+                return View3D.LiftMatrix(standHeight) * matrix;
+            }
+            if (standRound == 2)
+            {
+                // Keeps its offset from the centre as laid out from above, on a card in front of the body.
+                float a = View3D.Pitch * Mathf.Deg2Rad;
+                Vector3 at = standCentre + Quaternion.Euler(0f, View3D.Yaw, 0f) * Vector3.back * (standRadius * Mathf.Cos(a));
+                float h = standHeight + standRadius * Mathf.Sin(a);
+                return Matrix4x4.Translate(new Vector3(at.x, p.y + h / s, at.z))
+                    * Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f))
+                    * Matrix4x4.Rotate(Quaternion.Euler(View3D.Pitch - 90f, View3D.Yaw, 0f))
+                    * Matrix4x4.Translate(-new Vector3(standCentre.x, p.y, standCentre.z)) * matrix;
+            }
+            Matrix4x4 local = Matrix4x4.Translate(-p) * matrix;
             Matrix4x4 stood = Matrix4x4.Translate(new Vector3(p.x, p.y + standHeight / s, p.z))
                 * Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f))
                 * Matrix4x4.Rotate(Quaternion.Euler(View3D.Pitch - 90f, View3D.Yaw, 0f))
