@@ -110,7 +110,8 @@ namespace IsoRim
         // 55: bodies in the air: ModelDef.effectHeight, effectRadius, cardState, spinAlways (EffectLift.cs).
         // 56: ApparelModelDef.byStyle (with shows): other worn models by the item's ThingStyleDef, picked in People.Dress as byState is (so on
         // outfit stands and on the ground too); a binding may have byStyle only, its other items keep IsoRim's own look.
-        public static int Version => 56;
+        // 57: ApparelStyleModel.bodyModels: a byStyle entry of a Body binding has a model per body type, picked as the binding's bodyModels.
+        public static int Version => 57;
 
         // ---- glass parts (Version 30)
 

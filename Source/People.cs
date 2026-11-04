@@ -1702,7 +1702,7 @@ namespace IsoRim
                     ApparelStateModel boundState = bound != null ? bound.StateOf(a) : null;   // (Api 54)
                     Model stateModel = bound != null ? bound.ModelOf(boundState) : null;
                     ApparelStyleModel boundStyle = stateModel == null && bound != null ? bound.StyleOf(a) : null;   // (Api 56)
-                    Model styleModel = boundStyle != null ? bound.ModelOf(boundStyle) : null;
+                    Model styleModel = boundStyle != null ? bound.ModelOf(boundStyle, build) : null;
                     Model boundModel = stateModel ?? styleModel ?? (bound != null ? bound.ModelFor(build) : null);
                     HeadDecal headDecal = HeadDecals.For(a.def);
                     if (headDecal != null)
@@ -2537,8 +2537,9 @@ namespace IsoRim
         // together (Together). Before all that, shoulders narrower than what is under them are widened to it (ShoulderSpread),
         // and side corners leave sideways and never part front to back (Close), so the strap ends cover pauldron tips and the
         // sides stay as closed as made. Points outside stay where they are, and so do hidden corners inside the bare figure. The
-        // normals turn with the faces (Turned); decals print from the shape as made (MadeShape). Kept per shape and clothes
-        // under it, as FitOver.
+        // normals turn with the faces (Turned); decals print from the shape as made (MadeShape). What is measured is the bulk
+        // of the clothes (Bulk): the tips of spikes on them don't count, so the cloth rests on the coat and they poke through.
+        // Kept per shape and clothes under it, as FitOver.
         private const int LiftRings = 36;        // rings up to 0.72 cells out
         private const float LiftRing = 0.02f;
         private const float LiftUpBias = 3f;     // a face turned straight up goes up while that is up to 1 + 3 times the way out
@@ -2568,10 +2569,12 @@ namespace IsoRim
             }
             float[] reach = new float[OverRows * OverSectors];
             float[] top = new float[LiftRings * OverSectors];
+            Model[] bulk = new Model[under.Length];
             for (int i = 0; i < under.Length; i++)
             {
-                MaxReach(reach, Reach(under[i]));
-                MaxReach(top, Top(under[i]));
+                bulk[i] = Bulk(under[i]);
+                MaxReach(reach, Reach(bulk[i]));
+                MaxReach(top, Top(bulk[i]));
             }
             reach = Rounded(reach, OverRows, 1);
             top = Rounded(top, LiftRings, 2);
@@ -2637,8 +2640,8 @@ namespace IsoRim
             // Shoulders wider than the garment (pauldrons): the garment's upper part is first widened across to them, in
             // proportion from the neck out, so the strap ends reach over the tips; what follows lays it on their curve.
             float spreadTop = look.upper != null ? look.upper.maxY : 0f;
-            float spreadRight = ShoulderSpread(under, corner, hidden, 1f, spreadTop);
-            float spreadLeft = ShoulderSpread(under, corner, hidden, -1f, spreadTop);
+            float spreadRight = ShoulderSpread(bulk, corner, hidden, 1f, spreadTop);
+            float spreadLeft = ShoulderSpread(bulk, corner, hidden, -1f, spreadTop);
             for (int u = 0; u < m; u++)
             {
                 if (!hidden[u])
@@ -2950,6 +2953,103 @@ namespace IsoRim
                 return new Vector3(0f, up, 0f);
             }
             return sideways ? new Vector3(Mathf.Sign(p.x) * outward, 0f, 0f) : new Vector3(p.x / r * outward, 0f, p.z / r * outward);
+        }
+
+        // A model as cloth resting on it feels it (FitLift): the tip of a spike, a corner standing further out of the ring of
+        // corners round it than LiftTip and than LiftTipRatio times that ring's width, is laid back into the ring's middle. A
+        // cloth has nothing to rest on there: measured with the tips, it would stretch out to them. The same model when it has
+        // no tips, so what has none fits as before. Only measured, never drawn.
+        private const float LiftTip = 0.12f;
+        private const float LiftTipRatio = 1.6f;
+        private static readonly Dictionary<int, Model> overBulk = new Dictionary<int, Model>();
+
+        private static Model Bulk(Model m)
+        {
+            if (m == null)
+            {
+                return null;
+            }
+            Model bulk;
+            if (overBulk.TryGetValue(m.id, out bulk))
+            {
+                return bulk;
+            }
+            Vector3[] p = m.positions;
+            int[] weld = new int[p.Length];
+            Dictionary<Vector3Int, int> at = new Dictionary<Vector3Int, int>();
+            List<Vector3> corner = new List<Vector3>();
+            for (int v = 0; v < p.Length; v++)
+            {
+                Vector3Int q = new Vector3Int(Mathf.RoundToInt(p[v].x * 10000f), Mathf.RoundToInt(p[v].y * 10000f), Mathf.RoundToInt(p[v].z * 10000f));
+                int u;
+                if (!at.TryGetValue(q, out u))
+                {
+                    u = corner.Count;
+                    at[q] = u;
+                    corner.Add(p[v]);
+                }
+                weld[v] = u;
+            }
+            HashSet<int>[] ring = new HashSet<int>[corner.Count];
+            for (int u = 0; u < ring.Length; u++)
+            {
+                ring[u] = new HashSet<int>();
+            }
+            for (int t = 0; t + 2 < p.Length; t += 3)
+            {
+                for (int k = 0; k < 3; k++)
+                {
+                    int a = weld[t + k], b = weld[t + (k + 1) % 3];
+                    if (a != b)
+                    {
+                        ring[a].Add(b);
+                        ring[b].Add(a);
+                    }
+                }
+            }
+            Dictionary<int, Vector3> laid = new Dictionary<int, Vector3>();
+            for (int u = 0; u < ring.Length; u++)
+            {
+                if (ring[u].Count < 3)
+                {
+                    continue;
+                }
+                Vector3 middle = Vector3.zero;
+                foreach (int w in ring[u])
+                {
+                    middle += corner[w];
+                }
+                middle /= ring[u].Count;
+                float width = 0f;
+                foreach (int w in ring[u])
+                {
+                    width += (corner[w] - middle).magnitude;
+                }
+                width /= ring[u].Count;
+                float stands = (corner[u] - middle).magnitude;
+                if (stands > LiftTip && stands > LiftTipRatio * width)
+                {
+                    laid[u] = middle;
+                }
+            }
+            bulk = m;
+            if (laid.Count > 0)
+            {
+                Vector3[] pos = (Vector3[])p.Clone();
+                for (int v = 0; v < pos.Length; v++)
+                {
+                    Vector3 to;
+                    if (laid.TryGetValue(weld[v], out to))
+                    {
+                        pos[v] = to;
+                    }
+                }
+                bulk = new Model();
+                bulk.positions = pos;
+                bulk.id = ObjLoader.NewId();
+            }
+            overBulk[m.id] = bulk;
+            return bulk;
         }
 
         // How high a model's top is per ring round the figure's middle line and direction (FitLift): its faces sampled as

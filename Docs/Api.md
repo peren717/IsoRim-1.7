@@ -108,10 +108,11 @@ if (IsoRim.Api.Version >= 52) { /* shapes without a model: ModelDef.shape, boxFa
 if (IsoRim.Api.Version >= 53) { /* model decals: ModelDecal, AddModelDecals, RemoveModelDecals, RefreshModelDecals (part 37) */ }
 if (IsoRim.Api.Version >= 54) { /* held weapons and worn states: CatchWeaponDraws, ModelDef holdAsBuilt, carryStand, carryLean, bakedItem, decals on held weapons, ApparelModelDef.byState (part 38) */ }
 if (IsoRim.Api.Version >= 56) { /* worn styles: ApparelModelDef.byStyle with shows (part 40) */ }
+if (IsoRim.Api.Version >= 57) { /* worn styles per body type: bodyModels in a byStyle entry (part 40) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -1871,7 +1872,9 @@ is under it instead:
 - **What is measured:** everything worn under it (shirt shapes, middle shapes, leg armour, a vest under the coat, the coat
   or armour), round the figure's middle line in 24 directions: how far out it reaches per height step (0.04), and how high
   its top is per ring (0.02 cells apart). Both are rounded off: each bin takes the largest value nearby, then the mean of
-  those, so the result never drops below the real shape.
+  those, so the result never drops below the real shape. The tips of spikes don't count: a corner standing out of the
+  ring of corners round it by more than 0.12 cells and more than 1.6 times that ring's width is measured as lying in the
+  ring's middle, so the cloth rests on the coat and the spikes poke through it. Clothes without such corners measure as made.
 - **Wide shoulders:** when what is under it reaches further across at shoulder height than the garment (pauldrons), the
   garment's upper part is first widened to it, in proportion from the neck out and fading out down the chest, so the
   strap ends reach over the tips. Flanks and hem keep their width.
@@ -2083,9 +2086,37 @@ An item of a style (Ideology's `ThingStyleDef`, as a morbid or totemic helmet) h
 - **No entry:** an item of another style, or of none, looks as it would without `byStyle`. A binding with `byStyle` alone is the way to give style models to an item IsoRim draws with a shape of its own.
 
 Limits:
-- **One per style:** only Body bindings have models per build, which `byStyle` does not.
+- **Per body type:** from version 57, see below. On version 56 an entry has one model for every build.
 - **Failing soft:** a style model that cannot be loaded is reported once and the item shows as if it had no entry. A style that is not loaded (no Ideology) is never matched, quietly. An entry with no style or model is a config error.
 - **Nothing used:** with no `byStyle` nothing changes, and nothing is saved.
+
+From version 57 a `byStyle` entry of a Body binding can have a model per body type, the same `bodyModels` as the binding's own:
+
+```xml
+<IsoRim.ApparelModelDef>
+  <defName>R3DApparel_MyCoat</defName>
+  <apparel>MyMod_Apparel_Coat</apparel>
+  <slot>Body</slot>
+  <under>FrontPlate</under>   <!-- the binding's other fields apply to its style models -->
+  <byStyle>
+    <li>
+      <style>Spikecore_MyCoat</style>
+      <bodyModels>   <!-- IsoRim.Api.Version >= 57 -->
+        <male>Models/person_male_mycoat_spikecore.obj</male>
+        <female>Models/person_female_mycoat_spikecore.obj</female>
+        <thin>Models/person_thin_mycoat_spikecore.obj</thin>
+        <fat>Models/person_fat_mycoat_spikecore.obj</fat>
+        <hulk>Models/person_hulk_mycoat_spikecore.obj</hulk>
+      </bodyModels>
+    </li>
+  </byStyle>
+</IsoRim.ApparelModelDef>
+```
+
+- **Which file:** the build's own, as the binding's `bodyModels` picks it; `model` in the entry is for builds without one. A build with neither shows as if the entry were not there.
+- **Unset:** an entry with `model` alone is as on version 56, on every build.
+- **Slots:** Body only; `bodyModels` on another slot is a config error. `shows` is unchanged, for the Head slot.
+- **Version gate:** gate on Api 57 (`bodyModels` in an entry is an XML error on an older IsoRim).
 
 ## Part M: model packs (IsoRim.ModelDef)
 

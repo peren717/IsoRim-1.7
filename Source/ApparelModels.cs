@@ -146,9 +146,13 @@ namespace IsoRim
             {
                 foreach (ApparelStyleModel s in byStyle)
                 {
-                    if (s == null || s.style.NullOrEmpty() || s.model.NullOrEmpty())
+                    if (s == null || s.style.NullOrEmpty() || (s.model.NullOrEmpty() && (s.bodyModels == null || !s.bodyModels.Any)))
                     {
                         yield return "byStyle entry without style or model";
+                    }
+                    else if (s.bodyModels != null && ApparelModels.SlotOf(slot) != ApparelModels.Slot.Body)
+                    {
+                        yield return "byStyle entry with bodyModels on a binding that is not slot Body";
                     }
                     else if (s.shows != null)
                     {
@@ -198,6 +202,9 @@ namespace IsoRim
     {
         public string style;    // a ThingStyleDef defName
         public string model;
+
+        /// <summary>Api 57, Body: a model per body type, as ApparelModelDef.bodyModels; model is for builds without one. Unset: model for every build.</summary>
+        public ApparelBodyModels bodyModels;
 
         /// <summary>Head: shown with this model even where the game's rules hide it under the item (Hair, Beard, Face): a mask with real eye holes.</summary>
         public List<string> shows;
@@ -329,16 +336,23 @@ namespace IsoRim
                 return null;
             }
 
-            // That entry's model; null if its file could not be loaded (the item then shows as if it had no entry).
-            public Model ModelOf(ApparelStyleModel style)
+            // That entry's model on this build; null if it has none or its file could not be loaded (the item then shows as if it had no entry).
+            public Model ModelOf(ApparelStyleModel style, string build)
             {
-                return style != null ? Loaded(style.model) : null;
+                return style != null ? Loaded(BuildPath(style.bodyModels, style.model, build)) : null;
+            }
+
+            // Body: the build's own file of these, else the fallback. Every per-build pick goes through here (the binding's, Api 57 a style's).
+            private string BuildPath(ApparelBodyModels models, string fallback, string build)
+            {
+                string path = slot == Slot.Body && models != null ? models.For(build) : null;
+                return path.NullOrEmpty() ? fallback : path;
             }
 
             // The model this very item shows on this build: its state's, its style's, or the binding's.
             public Model ModelOf(Apparel item, string build)
             {
-                return ModelOf(StateOf(item)) ?? ModelOf(StyleOf(item)) ?? ModelFor(build);
+                return ModelOf(StateOf(item)) ?? ModelOf(StyleOf(item), build) ?? ModelFor(build);
             }
 
             private Model Loaded(string path)
@@ -366,11 +380,7 @@ namespace IsoRim
                 string path = slot == Slot.Body ? AlienBodyPath(def) : null;
                 if (path.NullOrEmpty())
                 {
-                    path = slot == Slot.Body && def.bodyModels != null ? def.bodyModels.For(build) : null;
-                }
-                if (path.NullOrEmpty())
-                {
-                    path = def.model;
+                    path = BuildPath(def.bodyModels, def.model, build);
                 }
                 if (path.NullOrEmpty())
                 {
