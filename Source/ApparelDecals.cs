@@ -314,6 +314,23 @@ namespace IsoRim
             }
         }
 
+        // The outward normal of face i of a garment as made (before People.FitLift), oriented as Build orients its faces.
+        private static Vector3 MadeNormal(Vector3[] m, Vector3[] normals, int i)
+        {
+            Vector3 a = m[i], b = m[i + 1], c = m[i + 2];
+            Vector3 n = Vector3.Cross(b - a, c - a);
+            if (n.sqrMagnitude < 1e-14f)
+            {
+                return Vector3.zero;
+            }
+            Vector3 vn = normals != null ? normals[i] + normals[i + 1] + normals[i + 2] : Vector3.zero;
+            if (vn.sqrMagnitude > 1e-8f ? Vector3.Dot(n, vn) < 0f : Vector3.Dot(n, (a + b + c) / 3f - new Vector3(0f, (a.y + b.y + c.y) / 3f, 0f)) < 0f)
+            {
+                n = -n;
+            }
+            return n.normalized;
+        }
+
         private static Mesh Build(Model g, People.Look look, BodyTypeDef type, DecalSide side, Vector2 centre, Vector2 size, bool wrap, float lift)
         {
             // Sprite -> body frame (body-scaled) -> garment model space (before the body scale). The back is the north sprite,
@@ -330,6 +347,19 @@ namespace IsoRim
             List<V> poly = new List<V>(8);
             List<V> next = new List<V>(8);
             Vector3[] p = g.positions;
+            // Where the picture is printed from: for one fitted by People.FitLift (Api 51), its height on the garment as made (a
+            // lifted neckline or strap keeps the cloth's own print instead of reaching past the picture's top) and its width as
+            // fitted (as every other garment: the symbol keeps its size across), held inside the width it has as made (cloth widened
+            // past it, over pauldrons, takes the print's edge instead of running off the picture); else its own positions.
+            Model madeFrom = People.MadeShape(g);
+            Vector3[] made = madeFrom != null && madeFrom.positions.Length == p.Length ? madeFrom.positions : p;
+            float madeLeft = float.MaxValue, madeRight = float.MinValue;
+            for (int i = 0; made != p && i < made.Length; i++)
+            {
+                float x = toSprite.MultiplyPoint3x4(made[i]).x;
+                madeLeft = Mathf.Min(madeLeft, x);
+                madeRight = Mathf.Max(madeRight, x);
+            }
             // Each face's outward normal, and per corner position the faces' normals summed (by area): the decal stands out
             // along that smoothed normal, so neighbouring faces meet at the same lifted corners (no cracks between them).
             Vector3[] faceNormal = new Vector3[p.Length / 3];
@@ -362,7 +392,8 @@ namespace IsoRim
                 {
                     continue;
                 }
-                if (wrap ? (side == DecalSide.Front ? n.z < 0f : n.z >= 0f) : n.z * sign < Facing)
+                Vector3 facing = made == p ? n : MadeNormal(made, madeFrom.normals, i);
+                if (wrap ? (side == DecalSide.Front ? facing.z < 0f : facing.z >= 0f) : facing.z * sign < Facing)
                 {
                     continue;   // only what faces the decal's side
                 }
@@ -375,6 +406,11 @@ namespace IsoRim
                         vnormal = n;   // a corner shared with faces turned the other way (a knife edge): its own face's
                     }
                     Vector3 sp = toSprite.MultiplyPoint3x4(p[k]);
+                    if (made != p)
+                    {
+                        sp.y = toSprite.MultiplyPoint3x4(made[k]).y;
+                        sp.x = Mathf.Clamp(sp.x, madeLeft, madeRight);
+                    }
                     poly.Add(new V { p = p[k], n = vnormal, s = new Vector2(sp.x, sp.y) });
                 }
                 Clip(poly, next, 0, lo.x, true);

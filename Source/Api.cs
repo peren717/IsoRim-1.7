@@ -100,7 +100,10 @@ namespace IsoRim
         // 50: weapons keep their model only while their art is their own (WeaponModels.ArtIsOwn: every sprite path from an official
         // pack, the weapon's mod or the ModelDef's mod; else their sprite), ModelDef.anyArt to keep it anyway; byGraphic matches a
         // weapon's sprite (Graphic_RandomRotated unwrapped, a Graphic_Random's variant path, then its folder), per thing (Forms.For(Thing)).
-        public static int Version => 50;
+        // 51: ApparelModelDef.fitLift (People.FitLift): an over-the-shell garment fitted as cloth resting on what is worn under it,
+        // its parts inside leaving up over the clothes' top (per ring and direction) or out past their reach, rounded fields, the
+        // moves smoothed over its mesh; garments without it keep FitOver unchanged.
+        public static int Version => 51;
 
         // ---- glass parts (Version 30)
 

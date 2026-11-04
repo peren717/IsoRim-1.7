@@ -74,6 +74,11 @@ namespace IsoRim
         /// colour). spriteColour: the mean colour of its worn sprite instead (for items whose colour is painted into it).</summary>
         public bool spriteColour;
 
+        /// <summary>Api 51, Body on a layer the game draws over Shell (tabards, mantles): fitted as cloth resting on what is worn
+        /// under it (People.FitLift): its parts inside the clothes and armour under it leave by the shorter way, its top surfaces
+        /// upward over collars and pauldrons, its sides outward, smoothed. Default false: pushed out sideways only (People.FitOver).</summary>
+        public bool fitLift;
+
         /// <summary>Api 25: only for these races (ThingDef defNames). For a race, a binding naming it wins over one without races;
         /// a binding with races is not used for anyone else.</summary>
         public List<string> aliens;

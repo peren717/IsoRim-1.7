@@ -1658,6 +1658,7 @@ namespace IsoRim
             // coat or armour, as the game draws it.
             Model overModel = null;
             Color overColour = Color.white;
+            bool overLift = false;   // its binding's fitLift (Api 51): FitLift instead of FitOver
             // The items behind the coat (bound or IsoRim's own shape), shell armour, flak vest, over-coat, middle and on-skin
             // shapes (ApparelDecals).
             Apparel coatFrom = null, shellArmourFrom = null, vestFrom = null, overFrom = null, midFrom = null, skinFrom = null;
@@ -1748,6 +1749,7 @@ namespace IsoRim
                                     overModel = boundModel;
                                     overColour = tint;
                                     overFrom = a;
+                                    overLift = bound.def.fitLift;
                                     if (legsB)
                                     {
                                         look.lowerColor = tint;
@@ -1920,6 +1922,7 @@ namespace IsoRim
                             overModel = Part("person_" + build + "_" + mid.file);
                             overColour = a.DrawColor;
                             overFrom = a;
+                            overLift = false;
                             continue;
                         }
                         else
@@ -2103,7 +2106,7 @@ namespace IsoRim
             if (overModel != null)
             {
                 // Over everything the game draws under it: fitted out over what reaches further than the bare figure.
-                look.overCoat = FitOver(overModel, look);
+                look.overCoat = overLift ? FitLift(overModel, look) : FitOver(overModel, look);
                 look.overCoatColor = overColour;
                 look.overCoatFrom = overFrom;
             }
@@ -2493,6 +2496,534 @@ namespace IsoRim
             float lo = Mathf.Lerp(push[y0 * OverSectors + s0], push[y0 * OverSectors + s1], ts);
             float hi = Mathf.Lerp(push[y1 * OverSectors + s0], push[y1 * OverSectors + s1], ts);
             return Mathf.Lerp(lo, hi, ty);
+        }
+
+        // Api 51 (ApparelModelDef.fitLift): an over-the-shell shape fitted as cloth resting on what is worn under it, instead of
+        // FitOver's sideways push. What is worn under it (shirtWear, mid, legArmour, underCoat, coat) is measured twice, both
+        // round the figure's middle line: how far out it reaches per height bin and direction (Reach, as FitOver), and how
+        // high its top is per ring (LiftRing apart) and direction (Top). Both fields are rounded (Rounded: the largest value
+        // nearby, then the mean of that nearby, so never below the true value: corners round off, nothing is let in). A
+        // point is inside the clothes under it when it is both closer to the middle line than their reach at its height and
+        // lower than their top at its ring; such a point leaves by the shorter way, up over their top or out past their
+        // reach, plus OverGap; a face turned up (shoulder straps, the neckline) prefers up (LiftUpBias). Then the moves are
+        // smoothed over the garment's own mesh (its corners welded; LiftPasses), each pass followed by the same exit test,
+        // so no corner is left inside, then by the test between corners (ClearFaces) and the two sides of the sheet moved
+        // together (Together). Before all that, shoulders narrower than what is under them are widened to it (ShoulderSpread),
+        // and side corners leave sideways and never part front to back (Close), so the strap ends cover pauldron tips and the
+        // sides stay as closed as made. Points outside stay where they are, and so do hidden corners inside the bare figure. The
+        // normals turn with the faces (Turned); decals print from the shape as made (MadeShape). Kept per shape and clothes
+        // under it, as FitOver.
+        private const int LiftRings = 36;        // rings up to 0.72 cells out
+        private const float LiftRing = 0.02f;
+        private const float LiftUpBias = 3f;     // a face turned straight up goes up while that is up to 1 + 3 times the way out
+        private const int LiftPasses = 4;
+        private static readonly Dictionary<int, float[]> overTop = new Dictionary<int, float[]>();
+        private static readonly Dictionary<string, Model> overLifted = new Dictionary<string, Model>();
+
+        internal static Model FitLift(Model over, Look look)
+        {
+            Model[] under = { look.shirtWear, look.mid, look.legArmour, look.underCoat, look.coat };
+            string key = over.id.ToString();
+            bool any = false;
+            for (int i = 0; i < under.Length; i++)
+            {
+                key += "," + (under[i] != null ? under[i].id : 0);
+                any |= under[i] != null;
+            }
+            if (!any)
+            {
+                return over;
+            }
+            key += "," + (look.upper != null ? look.upper.id : 0) + "," + (look.lower != null ? look.lower.id : 0);
+            Model fitted;
+            if (overLifted.TryGetValue(key, out fitted))
+            {
+                return fitted;
+            }
+            float[] reach = new float[OverRows * OverSectors];
+            float[] top = new float[LiftRings * OverSectors];
+            for (int i = 0; i < under.Length; i++)
+            {
+                MaxReach(reach, Reach(under[i]));
+                MaxReach(top, Top(under[i]));
+            }
+            reach = Rounded(reach, OverRows, 1);
+            top = Rounded(top, LiftRings, 2);
+
+            // The garment's corners welded (the model repeats a corner per face), each with its mean normal's upward part.
+            int n = over.positions.Length;
+            int[] weld = new int[n];
+            Dictionary<Vector3Int, int> at = new Dictionary<Vector3Int, int>();
+            List<Vector3> corner = new List<Vector3>();
+            List<float> upward = new List<float>();
+            List<int> shared = new List<int>();
+            for (int v = 0; v < n; v++)
+            {
+                Vector3 p = over.positions[v];
+                Vector3Int q = new Vector3Int(Mathf.RoundToInt(p.x * 10000f), Mathf.RoundToInt(p.y * 10000f), Mathf.RoundToInt(p.z * 10000f));
+                int u;
+                if (!at.TryGetValue(q, out u))
+                {
+                    u = corner.Count;
+                    at[q] = u;
+                    corner.Add(p);
+                    upward.Add(0f);
+                    shared.Add(0);
+                }
+                weld[v] = u;
+                upward[u] += over.normals != null && v < over.normals.Length ? over.normals[v].y : 0f;
+                shared[u]++;
+            }
+            // Corners inside the bare figure (a garment's hidden inner faces, such as a cap closing its bottom round the
+            // body) stay where they are and take no part in the fit: they are never seen, and moving them out by the
+            // nearest way would drag the faces round them anywhere.
+            float[] bare = new float[OverRows * OverSectors];
+            MaxReach(bare, Reach(look.upper));
+            MaxReach(bare, Reach(look.lower));
+            int m = corner.Count;
+            bool[] hidden = new bool[m];
+            // Corners on the garment's sides (further out across than front to back: the strap ends over the shoulders, the
+            // side edges down the flanks) leave sideways only and never spread front to back (Close): pushed out from the
+            // middle line, the front and back panels' edges would part there and show what is under them through the gap.
+            bool[] side = new bool[m];
+            HashSet<int>[] next = new HashSet<int>[m];
+            for (int u = 0; u < m; u++)
+            {
+                next[u] = new HashSet<int>();
+                upward[u] = Mathf.InverseLerp(0.2f, 0.7f, upward[u] / shared[u]);
+                Vector3 c = corner[u];
+                hidden[u] = Mathf.Sqrt(c.x * c.x + c.z * c.z) < Sample(bare, c.y, Mathf.Atan2(c.z, c.x)) - LiftHidden;
+                side[u] = !hidden[u] && Mathf.Abs(c.x) > Mathf.Abs(c.z) && Mathf.Abs(c.x) > LiftSideMin;
+            }
+            for (int t = 0; t + 2 < n; t += 3)
+            {
+                for (int k = 0; k < 3; k++)
+                {
+                    int a = weld[t + k], b = weld[t + (k + 1) % 3];
+                    if (a != b && !hidden[a] && !hidden[b])
+                    {
+                        next[a].Add(b);
+                        next[b].Add(a);
+                    }
+                }
+            }
+
+            // Shoulders wider than the garment (pauldrons): the garment's upper part is first widened across to them, in
+            // proportion from the neck out, so the strap ends reach over the tips; what follows lays it on their curve.
+            float spreadTop = look.upper != null ? look.upper.maxY : 0f;
+            float spreadRight = ShoulderSpread(under, corner, hidden, 1f, spreadTop);
+            float spreadLeft = ShoulderSpread(under, corner, hidden, -1f, spreadTop);
+            for (int u = 0; u < m; u++)
+            {
+                if (!hidden[u])
+                {
+                    corner[u] = Spread(corner[u], spreadRight, spreadLeft, spreadTop);
+                }
+            }
+
+            Vector3[] move = new Vector3[m];
+            bool moves = spreadRight > 1f || spreadLeft > 1f;
+            for (int u = 0; u < m; u++)
+            {
+                move[u] = hidden[u] ? Vector3.zero : Exit(corner[u], reach, top, upward[u], side[u]);
+                moves |= move[u] != Vector3.zero;
+            }
+            if (!moves)
+            {
+                overLifted[key] = over;
+                return over;
+            }
+            Vector3[] eased = new Vector3[m];
+            for (int pass = 0; pass < LiftPasses; pass++)
+            {
+                for (int u = 0; u < m; u++)
+                {
+                    Vector3 sum = Vector3.zero;
+                    foreach (int w in next[u])
+                    {
+                        sum += move[w];
+                    }
+                    eased[u] = next[u].Count > 0 ? 0.5f * move[u] + 0.5f * sum / next[u].Count : move[u];
+                }
+                for (int u = 0; u < m; u++)
+                {
+                    move[u] = hidden[u] ? Vector3.zero : eased[u] + Exit(corner[u] + eased[u], reach, top, upward[u], side[u]);
+                }
+                ClearFaces(corner, move, weld, reach, top, upward, hidden);
+                Together(corner, move, hidden);
+                Close(corner, move, side, reach, top, upward);
+            }
+            for (int pass = 0; pass < 3 && ClearFaces(corner, move, weld, reach, top, upward, hidden); pass++)
+            {
+                Together(corner, move, hidden);
+                Close(corner, move, side, reach, top, upward);
+            }
+
+            Vector3[] pos = new Vector3[n];
+            float minX = float.MaxValue, maxX = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue, maxY = 0f;
+            for (int v = 0; v < n; v++)
+            {
+                Vector3 p = corner[weld[v]] + move[weld[v]];
+                pos[v] = p;
+                minX = Mathf.Min(minX, p.x);
+                maxX = Mathf.Max(maxX, p.x);
+                minZ = Mathf.Min(minZ, p.z);
+                maxZ = Mathf.Max(maxZ, p.z);
+                maxY = Mathf.Max(maxY, p.y);
+            }
+            fitted = new Model();
+            fitted.positions = pos;
+            fitted.normals = Turned(over, pos, weld);
+            fitted.colors = over.colors;
+            fitted.tinted = over.tinted;
+            fitted.uvs = over.uvs;
+            fitted.material = over.material;
+            fitted.materials = over.materials;
+            fitted.hull = over.hull;
+            fitted.noOutline = over.noOutline;
+            fitted.ownColor = over.ownColor;
+            fitted.maxY = maxY;
+            fitted.minX = minX;
+            fitted.maxX = maxX;
+            fitted.minZ = minZ;
+            fitted.maxZ = maxZ;
+            fitted.halfDepth = Mathf.Max(maxZ, -minZ);
+            fitted.id = ObjLoader.NewId();
+            ApparelModels.MoveFlames(over, fitted, p =>
+            {
+                Vector3 q = Spread(p, spreadRight, spreadLeft, spreadTop);
+                return q + Exit(q, reach, top, 0f, false);
+            });
+            liftedFrom[fitted.id] = over;
+            overLifted[key] = fitted;
+            return fitted;
+        }
+
+        // The model a FitLift model was made from (before the fit), for prints that move with the cloth (ApparelDecals); null for
+        // every other model.
+        private static readonly Dictionary<int, Model> liftedFrom = new Dictionary<int, Model>();
+
+        internal static Model MadeShape(Model m)
+        {
+            Model made;
+            return m != null && liftedFrom.Count > 0 && liftedFrom.TryGetValue(m.id, out made) ? made : null;
+        }
+
+        // A fitted model's normals: each corner's turned as its faces turned (the faces round the corner that share its normal,
+        // by area), so the light and the outline follow the new slope and smooth parts stay smooth.
+        private static Vector3[] Turned(Model over, Vector3[] pos, int[] weld)
+        {
+            Vector3[] normals = over.normals;
+            if (normals == null || normals.Length != pos.Length)
+            {
+                return normals;
+            }
+            Dictionary<long, Vector3> was = new Dictionary<long, Vector3>(), now = new Dictionary<long, Vector3>();
+            long[] group = new long[pos.Length];
+            Vector3[] p = over.positions;
+            for (int t = 0; t + 2 < pos.Length; t += 3)
+            {
+                Vector3 a = Vector3.Cross(p[t + 1] - p[t], p[t + 2] - p[t]);
+                Vector3 b = Vector3.Cross(pos[t + 1] - pos[t], pos[t + 2] - pos[t]);
+                for (int k = t; k < t + 3; k++)
+                {
+                    Vector3 n = normals[k];
+                    group[k] = ((long)weld[k] << 30) ^ ((long)(Mathf.RoundToInt(n.x * 50f) + 64) << 14) ^ ((long)(Mathf.RoundToInt(n.y * 50f) + 64) << 7) ^ (long)(Mathf.RoundToInt(n.z * 50f) + 64);
+                    Vector3 s;
+                    was.TryGetValue(group[k], out s);
+                    was[group[k]] = s + a;
+                    now.TryGetValue(group[k], out s);
+                    now[group[k]] = s + b;
+                }
+            }
+            Vector3[] turned = new Vector3[pos.Length];
+            for (int v = 0; v < pos.Length; v++)
+            {
+                Vector3 a = was[group[v]], b = now[group[v]];
+                turned[v] = a.sqrMagnitude > 1e-12f && b.sqrMagnitude > 1e-12f ? Quaternion.FromToRotation(a, b) * normals[v] : normals[v];
+            }
+            return turned;
+        }
+
+        // Points between the corners (along each edge and at each face's middle) that are still inside the clothes under the
+        // garment: the corners of that edge or face all move by that point's way out, so a face cannot cut through a collar
+        // or a chest plate between corners that are clear (FitLift). True if anything moved.
+        private static readonly float[] edgeSteps = { 0.25f, 0.5f, 0.75f };
+
+        private static bool ClearFaces(List<Vector3> corner, Vector3[] move, int[] weld, float[] reach, float[] top, List<float> upward, bool[] hidden)
+        {
+            bool moved = false;
+            Vector3[] add = new Vector3[move.Length];
+            for (int t = 0; t + 2 < weld.Length; t += 3)
+            {
+                int a = weld[t], b = weld[t + 1], c = weld[t + 2];
+                if (hidden[a] || hidden[b] || hidden[c])
+                {
+                    continue;
+                }
+                Vector3 pa = corner[a] + move[a], pb = corner[b] + move[b], pc = corner[c] + move[c];
+                float up = Mathf.Max(upward[a], Mathf.Max(upward[b], upward[c]));
+                Vector3 e = Exit((pa + pb + pc) / 3f, reach, top, up, false);
+                if (e != Vector3.zero)
+                {
+                    Widen(ref add[a], e);
+                    Widen(ref add[b], e);
+                    Widen(ref add[c], e);
+                }
+                for (int k = 0; k < 3; k++)
+                {
+                    int u = weld[t + k], w = weld[t + (k + 1) % 3];
+                    for (int s = 0; s < edgeSteps.Length; s++)
+                    {
+                        e = Exit(Vector3.Lerp(corner[u] + move[u], corner[w] + move[w], edgeSteps[s]), reach, top, Mathf.Max(upward[u], upward[w]), false);
+                        if (e != Vector3.zero)
+                        {
+                            Widen(ref add[u], e);
+                            Widen(ref add[w], e);
+                        }
+                    }
+                }
+            }
+            for (int u = 0; u < move.Length; u++)
+            {
+                if (add[u] != Vector3.zero)
+                {
+                    move[u] += add[u];
+                    moved = true;
+                }
+            }
+            return moved;
+        }
+
+        // Corners closer than LiftShell (the two sides of a cloth sheet with thickness, a hem's fold) all take the largest move
+        // among them, so the inner side, which sits deeper in the clothes under it and has further to go, never pokes out
+        // through the outer one (FitLift).
+        private const float LiftShell = 0.03f;
+        private const float LiftHidden = 0.01f;   // a corner this far inside the bare figure is hidden (FitLift)
+
+        private static void Together(List<Vector3> corner, Vector3[] move, bool[] hidden)
+        {
+            Vector3[] was = (Vector3[])move.Clone();
+            for (int u = 0; u < corner.Count; u++)
+            {
+                for (int w = 0; w < corner.Count; w++)
+                {
+                    if (w != u && !hidden[u] && !hidden[w] && (corner[u] - corner[w]).sqrMagnitude < LiftShell * LiftShell)
+                    {
+                        Widen(ref move[u], was[w]);
+                    }
+                }
+            }
+        }
+
+        // The larger of two moves per axis, never turning an axis round (a front corner never takes the back's way out).
+        private static void Widen(ref Vector3 into, Vector3 e)
+        {
+            into.x = Wider(into.x, e.x);
+            into.y = Wider(into.y, e.y);
+            into.z = Wider(into.z, e.z);
+        }
+
+        private static float Wider(float a, float b)
+        {
+            return a == 0f || a * b > 0f ? (Mathf.Abs(b) > Mathf.Abs(a) ? b : a) : a;
+        }
+
+        // The garment's shoulders widened to what is worn under it (FitLift): side is 1 or -1 (the sign of x). How much the
+        // part beyond LiftNeck is widened so that the garment reaches past the clothes under it at shoulder height; 1 for
+        // not at all. The band starts LiftSpreadLow under the top of the bare upper body.
+        private const float LiftNeck = 0.1f;
+        private const float LiftSpreadLow = 0.32f;
+        private const float LiftSpreadHigh = 0.14f;
+
+        private static float ShoulderSpread(Model[] under, List<Vector3> corner, bool[] hidden, float side, float bodyTop)
+        {
+            float low = bodyTop - LiftSpreadLow, wide = 0f, own = 0f;
+            for (int i = 0; i < under.Length; i++)
+            {
+                Vector3[] p = under[i] != null ? under[i].positions : null;
+                for (int v = 0; p != null && v < p.Length; v++)
+                {
+                    if (p[v].y >= low)
+                    {
+                        wide = Mathf.Max(wide, p[v].x * side);
+                    }
+                }
+            }
+            for (int u = 0; u < corner.Count; u++)
+            {
+                if (!hidden[u] && corner[u].y >= low)
+                {
+                    own = Mathf.Max(own, corner[u].x * side);
+                }
+            }
+            wide += OverGap;
+            return wide > own && own > LiftNeck ? (wide - LiftNeck) / (own - LiftNeck) : 1f;
+        }
+
+        // A point of the garment widened by ShoulderSpread, in full from LiftSpreadHigh under the body's top, fading out
+        // down to LiftSpreadLow, so the flanks and the hem keep their width.
+        private static Vector3 Spread(Vector3 p, float right, float left, float bodyTop)
+        {
+            float k = p.x > 0f ? right : left;
+            float x = Mathf.Abs(p.x);
+            if (k <= 1f || x <= LiftNeck)
+            {
+                return p;
+            }
+            float w = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(bodyTop - LiftSpreadLow, bodyTop - LiftSpreadHigh, p.y));
+            p.x += Mathf.Sign(p.x) * (LiftNeck + (x - LiftNeck) * k - x) * w;
+            return p;
+        }
+
+        // Side corners (FitLift): their front-to-back offset kept at most as made (moves that spread it are cut back), then
+        // cleared again by the sideways or upward way out.
+        private const float LiftSideMin = 0.05f;
+
+        private static void Close(List<Vector3> corner, Vector3[] move, bool[] side, float[] reach, float[] top, List<float> upward)
+        {
+            for (int u = 0; u < move.Length; u++)
+            {
+                if (!side[u])
+                {
+                    continue;
+                }
+                float made = corner[u].z;
+                float z = made + move[u].z;
+                if (Mathf.Abs(z) > Mathf.Abs(made) || z * made < 0f)
+                {
+                    move[u].z = 0f;
+                }
+                move[u] += Exit(corner[u] + move[u], reach, top, upward[u], true);
+            }
+        }
+
+        // How a point inside the clothes under an over-shell garment leaves them (FitLift): zero when it is outside.
+        // sideways: out along x only (a side corner), keeping its front-to-back place.
+        private static Vector3 Exit(Vector3 p, float[] reach, float[] top, float upward, bool sideways)
+        {
+            float r = Mathf.Sqrt(p.x * p.x + p.z * p.z);
+            float angle = Mathf.Atan2(p.z, p.x);
+            float clear = Sample(reach, p.y, angle) + OverGap;
+            float outward = clear - r;
+            float up = SampleRing(top, r, angle) + OverGap - p.y;
+            if (outward <= 0f || up <= 0f)
+            {
+                return Vector3.zero;
+            }
+            if (sideways && Mathf.Abs(p.x) > 1e-4f && clear > Mathf.Abs(p.z))
+            {
+                outward = Mathf.Sqrt(clear * clear - p.z * p.z) - Mathf.Abs(p.x);
+            }
+            else
+            {
+                sideways = false;
+            }
+            if (up <= outward * (1f + LiftUpBias * upward) || r <= 1e-4f)
+            {
+                return new Vector3(0f, up, 0f);
+            }
+            return sideways ? new Vector3(Mathf.Sign(p.x) * outward, 0f, 0f) : new Vector3(p.x / r * outward, 0f, p.z / r * outward);
+        }
+
+        // How high a model's top is per ring round the figure's middle line and direction (FitLift): its faces sampled as
+        // in Reach. Null for none.
+        private static float[] Top(Model m)
+        {
+            if (m == null)
+            {
+                return null;
+            }
+            float[] top;
+            if (overTop.TryGetValue(m.id, out top))
+            {
+                return top;
+            }
+            top = new float[LiftRings * OverSectors];
+            Vector3[] p = m.positions;
+            for (int t = 0; t + 2 < p.Length; t += 3)
+            {
+                Vector3 a = p[t], b = p[t + 1], c = p[t + 2];
+                float edge = Mathf.Max((b - a).magnitude, Mathf.Max((c - b).magnitude, (a - c).magnitude));
+                int k = Mathf.Clamp(Mathf.CeilToInt(edge / (LiftRing * 0.5f)), 1, 96);
+                for (int i = 0; i <= k; i++)
+                {
+                    for (int j = 0; i + j <= k; j++)
+                    {
+                        Vector3 q = a + (b - a) * ((float)i / k) + (c - a) * ((float)j / k);
+                        int ring = Mathf.FloorToInt(Mathf.Sqrt(q.x * q.x + q.z * q.z) / LiftRing);
+                        if (ring >= LiftRings)
+                        {
+                            continue;
+                        }
+                        int at = ring * OverSectors + Sector(Mathf.Atan2(q.z, q.x));
+                        top[at] = Mathf.Max(top[at], q.y);
+                    }
+                }
+            }
+            overTop[m.id] = top;
+            return top;
+        }
+
+        // The top at a distance and direction, blended between the rings' and sectors' middles.
+        private static float SampleRing(float[] top, float r, float angle)
+        {
+            float fr = Mathf.Clamp(r / LiftRing - 0.5f, 0f, LiftRings - 1);
+            int r0 = (int)fr;
+            int r1 = Mathf.Min(r0 + 1, LiftRings - 1);
+            float tr = fr - r0;
+            float fs = (angle + Mathf.PI) / (2f * Mathf.PI) * OverSectors - 0.5f;
+            int s0 = Mathf.FloorToInt(fs);
+            float ts = fs - s0;
+            s0 = ((s0 % OverSectors) + OverSectors) % OverSectors;
+            int s1 = (s0 + 1) % OverSectors;
+            float lo = Mathf.Lerp(top[r0 * OverSectors + s0], top[r0 * OverSectors + s1], ts);
+            float hi = Mathf.Lerp(top[r1 * OverSectors + s0], top[r1 * OverSectors + s1], ts);
+            return Mathf.Lerp(lo, hi, tr);
+        }
+
+        // A rows x OverSectors field rounded off without going below it anywhere: each bin takes the largest value within
+        // `rows` bins up or down and one sector either way, then the mean of those within the same reach (every bin in a
+        // bin's mean window has that bin in its own largest-value window, so the mean is at least the bin's own value).
+        private static float[] Rounded(float[] f, int rows, int rowReach)
+        {
+            float[] big = new float[f.Length];
+            float[] mean = new float[f.Length];
+            for (int y = 0; y < rows; y++)
+            {
+                for (int s = 0; s < OverSectors; s++)
+                {
+                    float b = 0f;
+                    for (int dy = -rowReach; dy <= rowReach; dy++)
+                    {
+                        int yy = Mathf.Clamp(y + dy, 0, rows - 1);
+                        for (int ds = -1; ds <= 1; ds++)
+                        {
+                            b = Mathf.Max(b, f[yy * OverSectors + (s + ds + OverSectors) % OverSectors]);
+                        }
+                    }
+                    big[y * OverSectors + s] = b;
+                }
+            }
+            for (int y = 0; y < rows; y++)
+            {
+                for (int s = 0; s < OverSectors; s++)
+                {
+                    float sum = 0f;
+                    int count = 0;
+                    for (int dy = -rowReach; dy <= rowReach; dy++)
+                    {
+                        int yy = Mathf.Clamp(y + dy, 0, rows - 1);
+                        for (int ds = -1; ds <= 1; ds++)
+                        {
+                            sum += big[yy * OverSectors + (s + ds + OverSectors) % OverSectors];
+                            count++;
+                        }
+                    }
+                    mean[y * OverSectors + s] = sum / count;
+                }
+            }
+            return mean;
         }
 
         // A part drawn with no outline at all (marks every vertex once; the part is shared).

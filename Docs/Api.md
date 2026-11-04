@@ -66,6 +66,7 @@ if (IsoRim.Api.Version >= 47) { /* head decals: IsoRim.HeadDecal, SetHeadDecal, 
 if (IsoRim.Api.Version >= 48) { /* selection rings: AddSelectionRingRule, IsoRim.SelectionRing, SelectionRingOf (part 32) */ }
 if (IsoRim.Api.Version >= 49) { /* ModelDef tintFromGraphic: animal models in the vanilla graphic colour (part 33) */ }
 if (IsoRim.Api.Version >= 50) { /* weapon art check, ModelDef.anyArt; byGraphic matches weapon sprite variants (part 34) */ }
+if (IsoRim.Api.Version >= 51) { /* ApparelModelDef.fitLift: over-the-shell garments rest on what is worn under them (part 35) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
@@ -240,6 +241,7 @@ older IsoRim adds these defs through a patch operation of its own that checks `I
 | `alwaysShown` | Shield: shown whenever the person stands (default: see below). The same as `shown` `Always`. |
 | `shown` | Api 43, Shield: when the model shows: `Default` (see below), `Weapon` (exactly while the game shows the person's weapon, whatever the apparel's class draws itself) or `Always` (whenever the person stands, as `alwaysShown`). |
 | `spriteColour` | Colour the `stuff` faces with the mean of the worn sprite instead of the item's colour. |
+| `fitLift` | Api 51, Body on a layer drawn over Shell: fitted as cloth resting on what is worn under it (up over collars and pauldrons, out past the sides, smoothed) instead of pushed out sideways (part 35). Default false. |
 
 Colours are as for other IsoRim models: faces under a material whose name starts with `stuff` take the item's colour (its
 stuff, its dye or the colour its mod gives it, as the game tints the sprite); the others keep their own `Kd`. Faces under a
@@ -1807,6 +1809,45 @@ entry can model one variant of a weapon with random sprites (Odyssey's unique we
 - One model per variant for all of them: `<models>` A..E in the variants' order (each weapon picks `thingIDNumber % n`,
   as the game's `Graphic_Random`).
 - Unique weapons are not bound by IsoRim itself (version 50): they draw their own variant in their unique colour.
+
+## Part 35: over-the-shell garments resting on what is under them (version 51)
+
+A Body binding on a layer the game draws over Shell (VE Framework's tabards and mantles, part 3) is made on the bare build
+and pushed out sideways over whatever is worn under it. Over bulky armour that leaves a flat, square shoulder line, and
+high collars and pauldron tops show through the shoulder straps. A binding can ask to be fitted as cloth resting on what
+is under it instead:
+
+```xml
+<IsoRim.ApparelModelDef>
+  <defName>MyPack_Tabard</defName>
+  <apparel>MyTabard</apparel>
+  <slot>Body</slot>
+  <model>Models/my_male_tabard.obj</model>
+  <fitLift>true</fitLift>   <!-- IsoRim.Api.Version >= 51 -->
+</IsoRim.ApparelModelDef>
+```
+
+- **What is measured:** everything worn under it (shirt shapes, middle shapes, leg armour, a vest under the coat, the coat
+  or armour), round the figure's middle line in 24 directions: how far out it reaches per height step (0.04), and how high
+  its top is per ring (0.02 cells apart). Both are rounded off: each bin takes the largest value nearby, then the mean of
+  those, so the result never drops below the real shape.
+- **Wide shoulders:** when what is under it reaches further across at shoulder height than the garment (pauldrons), the
+  garment's upper part is first widened to it, in proportion from the neck out and fading out down the chest, so the
+  strap ends reach over the tips. Flanks and hem keep their width.
+- **How it moves:** a part of the garment that is both inside that reach and under that top leaves by the shorter way, up
+  over the top or out past the reach, plus a small gap; faces turned up (shoulder straps, the neckline) prefer up, so they
+  rise over collars and follow the pauldrons' curve down the shoulder. Parts already outside stay. The moves are then
+  smoothed over the garment's own mesh a few times, each pass checking again that nothing is left inside, also between
+  the corners (along the edges and in the faces' middles). Corners closer than 0.03 (the two sides of a sheet with
+  thickness) move together, so an inner side never pokes through the outer one; model a garment's thickness under that.
+  Corners inside the bare figure (hidden inner faces, such as a cap closing a garment's bottom) stay where they are.
+  Corners on the garment's sides leave sideways only and never part front to back, so the side openings stay as made.
+- **Normals and prints:** the normals turn with the faces. Apparel decals (part 4, heraldry) are printed at the height they have
+  on the garment as made and the width they have as fitted, held inside the garment's width as made, so a lifted
+  strap keeps its own print and cloth widened over pauldrons takes the print's edge.
+- **Cost:** worked out once per garment and combination of clothes under it, as the plain fit; nothing per frame.
+- Default false: the binding keeps the plain sideways push, unchanged. IsoRim's own over-the-shell shapes are not
+  affected. A pack that must load on an older IsoRim adds the field by a version-gated patch (part M).
 
 ## Part M: model packs (IsoRim.ModelDef)
 
