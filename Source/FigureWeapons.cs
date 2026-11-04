@@ -43,6 +43,7 @@ namespace IsoRim
         private const float Tilt = 35f;             // the carried weapon's turn about the figure's up: muzzle forward
         private const float MaxPitch = 70f;
         private const bool Guard = true;
+        internal const float CarryClear = 0.13f;    // ModelDef.carryStand: the least the weapon stands ahead of the chest
 
         private struct Caught
         {
@@ -145,6 +146,70 @@ namespace IsoRim
             Graphics.DrawMesh(mesh, matrix, material, layer);
         }
 
+        // (Api 54) A draw another mod's method makes straight to Unity (Api.CatchWeaponDraws): caught while a figure's weapon that
+        // shows a 3D model is drawn; anything else goes on to Unity as that mod wrote it.
+        public static void DrawOrCatchWeapon(Mesh mesh, Matrix4x4 matrix, Material material, int layer)
+        {
+            if (Capturing && drawingWeapon != null && IsoRimMod.Settings.heldWeapons3D && WeaponModels.ModelOf(drawingWeapon) != null)
+            {
+                Note(mesh, matrix, material);
+                return;
+            }
+            Graphics.DrawMesh(mesh, matrix, material, layer);
+        }
+
+        public static IEnumerable<CodeInstruction> CatchWeaponDraws_Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            MethodInfo to = AccessTools.Method(typeof(FigureWeapons), nameof(DrawOrCatchWeapon));
+            foreach (CodeInstruction ci in instructions)
+            {
+                if ((ci.opcode == OpCodes.Call || ci.opcode == OpCodes.Callvirt) && ci.operand as MethodInfo == drawMesh4)
+                {
+                    ci.opcode = OpCodes.Call;
+                    ci.operand = to;
+                }
+                yield return ci;
+            }
+        }
+
+        private static readonly HashSet<MethodBase> catching = new HashSet<MethodBase>();
+        private static Harmony catchHarmony;
+
+        // Api.CatchWeaponDraws: false (one warning) if the method makes no such draw or cannot be patched.
+        internal static bool CatchDrawsOf(MethodBase method)
+        {
+            if (method == null)
+            {
+                throw new ArgumentNullException(nameof(method));
+            }
+            if (catching.Contains(method))
+            {
+                return true;
+            }
+            try
+            {
+                bool draws = false;
+                foreach (KeyValuePair<OpCode, object> instruction in PatchProcessor.ReadMethodBody(method))
+                {
+                    draws |= instruction.Value as MethodInfo == drawMesh4;
+                }
+                if (!draws)
+                {
+                    Log.Warning("[IsoRim] CatchWeaponDraws: " + method.DeclaringType + "." + method.Name + " makes no Graphics.DrawMesh(mesh, matrix, material, layer) call.");
+                    return false;
+                }
+                catchHarmony = catchHarmony ?? new Harmony("isorim.api54");
+                catchHarmony.Patch(method, transpiler: new HarmonyMethod(typeof(FigureWeapons), nameof(CatchWeaponDraws_Transpiler)));
+                catching.Add(method);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Log.Warning("[IsoRim] CatchWeaponDraws: " + method.DeclaringType + "." + method.Name + " could not be patched: " + e.Message);
+                return false;
+            }
+        }
+
         private static readonly MethodInfo drawMesh4 = AccessTools.Method(typeof(Graphics), nameof(Graphics.DrawMesh),
             new[] { typeof(Mesh), typeof(Matrix4x4), typeof(Material), typeof(int) });
 
@@ -224,9 +289,14 @@ namespace IsoRim
             Vector3 origin = new Vector3(drawLoc.x, 0f, drawLoc.z);
             bool weapons = IsoRimMod.Settings.heldWeapons3D;
             bool models = WeaponModels.On;   // the new hold (models, the shoulder); off: as before
+            Thing modelled = null;           // (Api 54) a weapon drawn in several pictures shows one model
             for (int i = 0; i < caught.Count; i++)
             {
                 Caught c = caught[i];
+                if (c.weapon != null && c.weapon == modelled)
+                {
+                    continue;
+                }
                 // The game's drawing about the pawn's middle, flat (its drawing layers' heights dropped).
                 Matrix4x4 m = Matrix4x4.Translate(-origin) * c.matrix;
                 m.m13 = 0f;
@@ -252,11 +322,24 @@ namespace IsoRim
                 }
                 else if (c.carried)
                 {
-                    Matrix4x4 slab = placed * local * OnChest(m, flipped, front, side);
-                    bool asModel = DrawPiece(c, slab, models);
+                    bool stood = models && CarriedStanding(pawn, c.weapon, placed * local, front);
+                    bool asModel = stood || DrawPiece(c, placed * local * OnChest(m, flipped, front, side), models);
+                    if (asModel)
+                    {
+                        modelled = c.weapon;
+                    }
                     if (report != null)
                     {
                         report += "carried " + c.weapon.def.defName + (flipped ? " (flipped)" : "") + " angle " + Angle(m).ToString("0") + (asModel ? " model" : "") + "; ";
+                    }
+                }
+                else if (models && !measure && !c.weapon.def.IsRangedWeapon && CarriedStanding(pawn, c.weapon, placed * local, front))
+                {
+                    // (Api 54, carryStand) a melee swing keeps it standing: the figure's lunge is the swing
+                    modelled = c.weapon;
+                    if (report != null)
+                    {
+                        report += "swung " + c.weapon.def.defName + " standing; ";
                     }
                 }
                 else
@@ -315,6 +398,7 @@ namespace IsoRim
                     }
                     if (model != null)
                     {
+                        modelled = c.weapon;
                         Projectiles.FigureTipAt(pawn, c.weapon, world.MultiplyPoint3x4(hold.tip), world.MultiplyPoint3x4(Vector3.zero));
                     }
                     else
@@ -366,6 +450,26 @@ namespace IsoRim
                 * Matrix4x4.Scale(new Vector3(Picture, Picture, Picture)) * PictureToFront * m * SlabToPlane(flipped);
         }
 
+        // (Api 54, ModelDef.carryStand) The model standing up in front of the figure. figure: drawn space, the figure's own (x its
+        // right, y up, z forward, its pose and size in); front how far its chest reaches. pawn null: an outfit stand. False: no
+        // model, or none that carries so.
+        private static bool CarriedStanding(Pawn pawn, Thing weapon, Matrix4x4 figure, float front)
+        {
+            Model model = WeaponModels.ModelOf(weapon);
+            ModelEntry entry;
+            if (model == null || !ModelLibrary.TryGet(weapon.def, out entry) || entry.def.carryStand.y < 0f)
+            {
+                return false;
+            }
+            Vector3 stand = entry.def.carryStand;
+            float lean = pawn != null && pawn.pather != null && pawn.pather.Moving ? entry.def.carryLean : 0f;
+            Matrix4x4 at = figure * Matrix4x4.Translate(new Vector3(stand.x, HandY, Mathf.Max(stand.z, front + CarryClear)))
+                * Matrix4x4.Rotate(Quaternion.AngleAxis(lean, Vector3.right)) * Matrix4x4.Translate(new Vector3(0f, stand.y - HandY, 0f))
+                * Matrix4x4.Rotate(Quaternion.AngleAxis(180f, Vector3.up)) * Matrix4x4.Scale(new Vector3(Picture, Picture, Picture));
+            WeaponModels.DrawAt(weapon, model, at);
+            return true;
+        }
+
         // The weapon's piece drawn at slab (SpriteSolids' slab matrix, drawn space before the floor shift): its 3D model through
         // its hold frame (models: the setting), else its sprite made solid. True if the model was drawn.
         private static bool DrawPiece(Caught c, Matrix4x4 slab, bool models)
@@ -386,7 +490,7 @@ namespace IsoRim
         {
             Model model = WeaponModels.ModelOf(c.weapon);
             Graphic g = model != null ? c.weapon.Graphic : null;
-            WeaponModels.Hold hold = g != null ? WeaponModels.HoldOf(model, c.material, g.drawSize, c.weapon.def.equippedAngleOffset) : null;
+            WeaponModels.Hold hold = g != null ? WeaponModels.HoldOf(model, c.material, g.drawSize, c.weapon.def.equippedAngleOffset, WeaponModels.AsBuilt(c.weapon)) : null;
             return hold != null && Projectiles.Thrown(c.weapon.def) ? WeaponModels.AtGroundSize(hold, model, c.weapon.def, Picture) : hold;
         }
 
@@ -633,10 +737,11 @@ namespace IsoRim
             Matrix4x4 placed = Matrix4x4.Translate(new Vector3(ground.x, ground.y / s, ground.z)) * Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f))
                 * Matrix4x4.Rotate(Quaternion.AngleAxis(yaw, Vector3.up));
             bool any = false;
+            Thing modelled = null;
             for (int i = 0; i < caught.Count; i++)
             {
                 Caught c = caught[i];
-                if (c.weapon == null)
+                if (c.weapon == null || c.weapon == modelled)
                 {
                     continue;
                 }
@@ -644,7 +749,10 @@ namespace IsoRim
                 m.m13 = 0f;
                 Vector3 normal = Vector3.Cross(m.GetColumn(2), m.GetColumn(0)).normalized;
                 m.SetColumn(1, new Vector4(normal.x, normal.y, normal.z, 0f));
-                DrawPiece(c, placed * local * OnChest(m, c.mesh == MeshPool.plane10Flip, front, side), true);
+                if (CarriedStanding(null, c.weapon, placed * local, front) || DrawPiece(c, placed * local * OnChest(m, c.mesh == MeshPool.plane10Flip, front, side), true))
+                {
+                    modelled = c.weapon;
+                }
                 any = true;
             }
             caught.Clear();

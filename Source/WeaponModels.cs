@@ -261,7 +261,7 @@ namespace IsoRim
         // The sprite's butt (no model): its back end along the art's front, slab space; per material.
         private static readonly Dictionary<int, Vector3> butts = new Dictionary<int, Vector3>();
 
-        public static Hold HoldOf(Model m, Material mat, Vector2 drawSize, float angleOffset)
+        public static Hold HoldOf(Model m, Material mat, Vector2 drawSize, float angleOffset, bool asBuilt = false)
         {
             if (m == null || mat == null || mat.mainTexture == null || m.positions == null || m.positions.Length < 3)
             {
@@ -275,7 +275,7 @@ namespace IsoRim
             }
             try
             {
-                h = Fit(m, mat, drawSize, angleOffset);
+                h = asBuilt ? Built(m, mat, drawSize, angleOffset) : Fit(m, mat, drawSize, angleOffset);
             }
             catch (Exception e)
             {
@@ -428,7 +428,28 @@ namespace IsoRim
             {
                 world = world * Matrix4x4.Scale(new Vector3(1f, 1f, -1f));   // (a mirrored placing: its far side out, still solid)
             }
-            DynamicModels.DrawMatrix(m, world, R3DTextures.ModelTint(weapon), R3DTextures.ModelSwatch(weapon));
+            DrawAt(weapon, m, world);
+        }
+
+        // The weapon's model at a matrix of its own (drawn space, before the floor shift), with its decals if it has any (Api 54).
+        internal static void DrawAt(Thing weapon, Model m, Matrix4x4 world)
+        {
+            Color tint = R3DTextures.ModelTint(weapon);
+            string swatch = R3DTextures.ModelSwatch(weapon);
+            List<DynamicModels.Part> withDecals = ModelDecals.Count > 0 ? ModelDecals.HeldParts(weapon, m, tint, swatch) : null;
+            if (withDecals != null)
+            {
+                DynamicModels.SubmitParts(withDecals, world);
+                return;
+            }
+            DynamicModels.DrawMatrix(m, world, tint, swatch);
+        }
+
+        // (Api 54, ModelDef.holdAsBuilt) Whether this weapon's model is held as built.
+        public static bool AsBuilt(Thing weapon)
+        {
+            ModelEntry entry;
+            return weapon != null && ModelLibrary.TryGet(weapon.def, out entry) && entry.def.holdAsBuilt;
         }
 
         // A weapon held level in a mech's mount or a stand of old (Patches.HeldWeapon3D): its model where SpriteSolids.DrawHeld
@@ -438,7 +459,7 @@ namespace IsoRim
             Model m = ModelOf(weapon);
             Graphic g = weapon.Graphic;
             Material mat = g != null ? g.MatSingleFor(weapon) : null;
-            Hold h = m != null && mat != null ? HoldOf(m, mat, g.drawSize, weapon.def.equippedAngleOffset) : null;
+            Hold h = m != null && mat != null ? HoldOf(m, mat, g.drawSize, weapon.def.equippedAngleOffset, AsBuilt(weapon)) : null;
             if (h == null)
             {
                 return false;
@@ -547,6 +568,31 @@ namespace IsoRim
             Vector3 d3 = Quaternion.AngleAxis(-angleOffset, Vector3.up) * Vector3.right;
             Vector2 d = new Vector2(d3.x * drawSize.x, d3.z * drawSize.y);
             return d.sqrMagnitude > 1e-8f ? d.normalized : Vector2.right;
+        }
+
+        // (Api 54, ModelDef.holdAsBuilt) The hold of a model that needs no fitting: one unit to the cell, not turned, its middle on
+        // the middle of the sprite's opaque part.
+        private static Hold Built(Model m, Material mat, Vector2 drawSize, float angleOffset)
+        {
+            Vector3 lo = m.positions[0], hi = m.positions[0];
+            for (int i = 1; i < m.positions.Length; i++)
+            {
+                lo = Vector3.Min(lo, m.positions[i]);
+                hi = Vector3.Max(hi, m.positions[i]);
+            }
+            Vector3 ext = hi - lo, mid = (lo + hi) * 0.5f;
+            Rect box = SpriteBox(mat);
+            Matrix4x4 place = Matrix4x4.Translate(new Vector3(box.center.x * drawSize.x, box.center.y * drawSize.y, 0f)) * Matrix4x4.Translate(-mid);
+            Matrix4x4 unit = Matrix4x4.Scale(new Vector3(1f / drawSize.x, 1f / drawSize.y, 1f));
+            Vector2 front = ArtFront(drawSize, angleOffset);
+            Hold h = new Hold();
+            h.slab = unit * place;
+            h.spriteLength = Mathf.Max(box.width * drawSize.x, box.height * drawSize.y);
+            h.modelLength = Mathf.Max(ext.x, Mathf.Max(ext.y, ext.z));
+            h.turn = "as built";
+            h.tip = unit.MultiplyPoint3x4(Extreme(m, place, front, true));
+            h.butt = unit.MultiplyPoint3x4(Extreme(m, place, front, false));
+            return h;
         }
 
         private static Hold Fit(Model m, Material mat, Vector2 drawSize, float angleOffset)

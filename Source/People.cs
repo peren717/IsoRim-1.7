@@ -104,6 +104,7 @@ namespace IsoRim
             public Color shieldColor = Color.white;
             public ApparelModels.Binding shieldBinding;
             public int bindHides;
+            public int bindShows;   // (Api 54) what a bound hat's state shows under it (ApparelStateModel.shows)
             public bool flames;
             // Which worn apparel each body garment shows (Dress; null: none), for the apparel decals (ApparelDecals, Api 10),
             // and the decals worked out for this look (null: none). Not part of SameAs: decals are drawn apart from the
@@ -162,7 +163,7 @@ namespace IsoRim
                     && mouthColor == o.mouthColor && eyeColor == o.eyeColor && neckColor == o.neckColor
                     && mid == o.mid && shirtWear == o.shirtWear && midColor == o.midColor && shirtWearColor == o.shirtWearColor
                     && overCoat == o.overCoat && overCoatColor == o.overCoatColor
-                    && shield == o.shield && shieldColor == o.shieldColor && shieldBinding == o.shieldBinding && bindHides == o.bindHides && flames == o.flames
+                    && shield == o.shield && shieldColor == o.shieldColor && shieldBinding == o.shieldBinding && bindHides == o.bindHides && bindShows == o.bindShows && flames == o.flames
                     && GeneParts.Same(genes, o.genes) && geneHeadTint == o.geneHeadTint && HeadDecals.Same(headDecals, o.headDecals)
                     && (alien == null ? o.alien == null : alien.SameAs(o.alien));
             }
@@ -1189,6 +1190,22 @@ namespace IsoRim
                 look.neckWear = null;
             }
             ulong skip = VanillaSkips(pawn, parms);
+            if (look.hat != null && look.bindShows != 0)
+            {
+                // (Api 54) The state of a bound hat shows these whatever the game's rules say of the item (an open visor).
+                if ((look.bindShows & ApparelModels.HideHair) != 0)
+                {
+                    skip &= ~(ulong)RenderSkipFlagDefOf.Hair;
+                }
+                if ((look.bindShows & ApparelModels.HideBeard) != 0)
+                {
+                    skip &= ~(ulong)RenderSkipFlagDefOf.Beard;
+                }
+                if ((look.bindShows & ApparelModels.HideFace) != 0)
+                {
+                    skip &= ~(ulong)RenderSkipFlagDefOf.Eyes;
+                }
+            }
             // A garment that hides the whole head (skip flag Head: the burka): no head, a closed covering in its colour.
             Apparel hidesHead = (skip & RenderSkipFlagDefOf.Head) != 0 ? HeadHider(pawn) : null;
             if (hidesHead != null)
@@ -1205,6 +1222,7 @@ namespace IsoRim
             if (look.hat == null)
             {
                 look.bindHides = 0;   // a bound hat hides only while it is drawn
+                look.bindShows = 0;
             }
             look.hatKind = hatKind;
             look.hairShown = !Skips(skip, RenderSkipFlagDefOf.Hair) || HairUnderHat(pawn, skip);
@@ -1649,6 +1667,8 @@ namespace IsoRim
             // Apparel bound to a model of its own (ApparelModelDef, ApparelModels): the bound hat, coat, middle and on-skin
             // shapes (null: none, or IsoRim's own), and bound belt gear.
             ApparelModels.Binding hatBound = null;
+            int hatBoundShows = 0;
+            look.bindShows = 0;
             Model hatBoundModel = null;
             Model coatBoundModel = null;
             Model midBoundModel = null;
@@ -1679,7 +1699,8 @@ namespace IsoRim
                     }
                     string name = a.def.defName ?? "";
                     ApparelModels.Binding bound = ApparelModels.For(a.def);
-                    Model boundModel = bound != null ? bound.ModelFor(build) : null;
+                    ApparelStateModel boundState = bound != null ? bound.StateOf(a) : null;   // (Api 54)
+                    Model boundModel = bound != null ? bound.ModelOf(boundState) ?? bound.ModelFor(build) : null;
                     HeadDecal headDecal = HeadDecals.For(a.def);
                     if (headDecal != null)
                     {
@@ -1703,9 +1724,10 @@ namespace IsoRim
                             case ApparelModels.Slot.Head:
                                 if (OnLayer(props, "Overhead") || hatKind == null)
                                 {
-                                    hatKind = "bound:" + bound.def.defName;
+                                    hatKind = "bound:" + bound.def.defName + (boundState != null ? ":" + boundState.state : "");
                                     hatBound = bound;
                                     hatBoundModel = boundModel;
+                                    hatBoundShows = boundState != null ? ApparelModels.ShowsOf(boundState) : 0;
                                     look.hatColor = tint;
                                 }
                                 continue;
@@ -2097,6 +2119,7 @@ namespace IsoRim
                 look.hat = hatBoundModel;
                 look.visor = hatBound.def.visor;
                 look.bindHides = hatBound.hides;
+                look.bindShows = hatBoundShows;
             }
             else if (hatKind != null)
             {

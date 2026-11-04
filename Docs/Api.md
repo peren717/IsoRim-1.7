@@ -104,7 +104,9 @@ if (IsoRim.Api.Version >= 48) { /* selection rings: AddSelectionRingRule, IsoRim
 if (IsoRim.Api.Version >= 49) { /* ModelDef tintFromGraphic: animal models in the vanilla graphic colour (part 33) */ }
 if (IsoRim.Api.Version >= 50) { /* weapon art check, ModelDef.anyArt; byGraphic matches weapon sprite variants (part 34) */ }
 if (IsoRim.Api.Version >= 51) { /* ApparelModelDef.fitLift: over-the-shell garments rest on what is worn under them (part 35) */ }
+if (IsoRim.Api.Version >= 52) { /* shapes without a model: ModelDef.shape, boxFaces, topInset, raisedOutline; stuff_round materials (part 36) */ }
 if (IsoRim.Api.Version >= 53) { /* model decals: ModelDecal, AddModelDecals, RemoveModelDecals, RefreshModelDecals (part 37) */ }
+if (IsoRim.Api.Version >= 54) { /* held weapons and worn states: CatchWeaponDraws, ModelDef holdAsBuilt, carryStand, carryLean, bakedItem, decals on held weapons, ApparelModelDef.byState (part 38) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
@@ -1960,6 +1962,7 @@ static void Sign(Thing sign, List<IsoRim.ModelDecal> decals)
 ```
 
 Limits:
+- **Held weapons:** from version 54 the decals also show on a weapon in hand (part 38).
 - **What is drawn:** the part's faces take the picture at about 192 texels a model unit (at most 512 a side), edges taking the picture's nearest texels. Only models built into the map (buildings, also those the game draws every frame): not moving models, items lying as clothes, or ghosts.
 - **Looks:** at most 64 different ones. A look nothing is built with any more is painted over when a new one needs its place. With all 64 in use a new look stays plain until one is free (one warning).
 - **Failing soft:** a provider that throws, a null decal, a decal with no picture or a bad place, size or source, a texture whose pixels cannot be read, or a part no model of the def has: one warning, that registration is switched off, and the part stays plain.
@@ -1967,6 +1970,62 @@ Limits:
 - **Types:** `ModelDecal` and the provider only exist from version 53: keep them in code that runs after a version check, and create the delegate with `new IsoRim.ModelDecalProvider(Method)`, as in part 4.
 
 The VFE Medieval 2 pack's `Heraldry.cs` uses it to print the heraldry of the 2D banner (VE Framework's dynamic graphics) on the 3D standing banner.
+
+## Part 38: held weapons and worn states (version 54)
+
+Four small things for a weapon that draws itself, or that a sprite fit gets wrong, and for clothes that change with what the wearer does. First use: the VFE Medieval 2 pack's heraldic standard and heavy plate helmet.
+
+**A weapon a mod draws itself.** IsoRim's figures take their weapon from the game's own drawing. A mod that draws a weapon in a Harmony prefix of its own, straight to `Graphics.DrawMesh`, is not seen: the weapon stays a flat sprite on the ground under the figure.
+
+| Member | What it does |
+|---|---|
+| `bool Api.CatchWeaponDraws(MethodBase method)` | While a figure's weapon that shows a 3D model is drawn, the `Graphics.DrawMesh(mesh, matrix, material, layer)` calls of that method count as the game's own. All its other draws go to Unity as before, so a weapon with no model (or with weapon models switched off) is unchanged. Twice does nothing. False, with one warning, if the method makes no such call or cannot be patched. Null throws. Call at startup. |
+
+A weapon the game (or that method) draws in several pictures shows one model, from the first picture.
+
+**ModelDef fields** (weapons):
+
+| Field | What it does |
+|---|---|
+| `holdAsBuilt` | The model is held as built: one unit to the cell, not turned, its middle on the middle of the sprite, instead of being fitted to the sprite's outline (part 34). For a sprite whose outline misleads the fit (a banner on a pole is a T: the fit reads it as tilted) or a model longer than its sprite. |
+| `carryStand` | `(x, y, z)`: carried standing up in front of the figure, in its facing direction, instead of the game's picture on its chest: `x` to its right, `y` the height of the model's origin over its feet, `z` ahead of its middle (figure units), at least 0.13 ahead of its chest. The model's south side (+z in the OBJ) faces forward, its top up, its size the sprite's in hand. It turns with the figure, not with the camera. A melee swing keeps it standing. Unset: as the game draws it. |
+| `carryLean` | With `carryStand`: degrees forward about the hands while the person walks. |
+| `bakedItem` | An item the game draws every frame with a `DrawAt` of its own: on the ground it is baked as its model all the same, resting on a shelf as other items. The mod that owns the drawing leaves it out while `Api.ModelStandsIn(thing)` is true. |
+
+**Decals on held weapons.** The model decals of part 37 also show on a weapon in hand and on an outfit stand. The provider is asked once for that thing (not every frame) and again after `Api.RefreshModelDecals(thing)`, which now also works for a thing that is not spawned. Call it when the weapon is equipped or dropped if its decals depend on the bearer.
+
+**Worn states.** `ApparelModelDef.byState` gives an item other models for the states another mod names with `Api.AddModelState` (the same state functions as `ModelDef.byState`; the thing asked about is the worn item, `apparel.Wearer` its wearer):
+
+```xml
+<byState>
+  <li>
+    <state>open</state>
+    <model>Models/my_helmet_open.obj</model>
+    <shows><li>Face</li></shows>   <!-- Head slot: Hair, Beard, Face shown in this state whatever the game's rules hide under the item -->
+  </li>
+</byState>
+```
+
+The state is asked when the person's look is worked out (every 90 frames or so). For a change at once call `Api.RefreshApparelDecals(pawn)`, which works the look out again next time it is drawn. A state with no entry, or none: the binding's usual model. On the ground and on an outfit stand an item has no wearer: name no state there and it shows its usual model.
+
+```csharp
+[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+static void Register()                               // after an Api.Version >= 54 check
+{
+    IsoRim.Api.CatchWeaponDraws(AccessTools.Method("TheirMod.DrawPatch:Prefix"));
+    IsoRim.Api.AddModelState(new Func<Thing, string>(t => t is Apparel a && a.Wearer != null && !a.Wearer.Drafted ? "open" : null));
+}
+```
+
+Limits:
+- **Only that overload:** `CatchWeaponDraws` takes `Graphics.DrawMesh(Mesh, Matrix4x4, Material, int)`, the call the game's own weapon drawing uses.
+- **A figure only:** a pawn drawn as a card is drawn as before.
+- **`carryStand` height:** nothing keeps a tall model under a ceiling; like any moving model it is clipped at the roof or floor over the person.
+- **`byState` models are one per state:** `shows` applies to the Head slot, and only Body bindings have models per build, which `byState` does not.
+- **Failing soft:** decals fail as in part 37. A state function that throws is logged once and left out for that call. A `byState` entry with no state or model is a config error.
+- **Nothing used:** with no `CatchWeaponDraws` call nothing is patched, unset fields change nothing, and nothing is saved.
+
+The VFE Medieval 2 pack's `Heraldry.cs` and `OpenHelmet.cs` use all of this.
 
 ## Part M: model packs (IsoRim.ModelDef)
 
@@ -2001,6 +2060,7 @@ mods' things.
 | `femaleLegModel`, `femaleWingModel` (38) | Animals: her own leg and wing models; unset, she uses `legModel` / `wingModel`. The hips (`legs`), hinges (`wings`), `legLength` and the other animal fields are shared, so build her body on the same hips and hinges. |
 | `byGraphic` (39) | A model by the sprite the game draws the thing with **now**: its runtime `Thing.Graphic.path`, which a mod's own `Graphic` override may change (a conveyor piece showing a turn, a merger or a splitter; a hopper lit for input or output). `<li><path>Things/Building/Belts/BeltTurnLeft_north</path><model>Models/belt_turn_left.obj</model><yaw>90</yaw></li>`; `<prefix>true</prefix>` matches every path starting with `path` (case-insensitive, `` = `/`). `<facing>North</facing>` (or East, South, West) limits an entry to things facing that way, for a one-direction sprite whose look also depends on the thing's facing (a splitter's sprite names its two outputs, not the side that feeds it). The first matching entry wins; no match: `model` and the other rules. Facing follows the game: the model of a `Graphic_Multi` sprite turns with the thing's facing, any other graphic (`Graphic_Single`) is drawn north-up as the sprite is; `yaw` (degrees, clockwise from above) is added either way; a `Graphic_Multi` model also takes `rotation`, `rotationByFacing` and `ignoreRotation` as any model does, any other graphic only `rotation`. Checked each frame the game draws the thing (a dictionary lookup per graphic) and the block rebuilt only when the matching entry changes; with `prefix`, a path that only changes after the prefix does not rebuild. While such a thing's model stands in, its own sprite drawn every frame by a custom `DrawAt` (`Graphic.Draw` of `thing.Graphic`) is left out; what that `DrawAt` draws besides (carried items, comps, other graphics) is kept. Items drawn by it are lifted to the thing's `surfaceHeight` as before. Version 50: weapons too, matched by the sprite variant they show (part 34). |
 | `anyArt` (50) | Weapons: the model is kept whatever art the weapon has (part 34); default false: a weapon whose sprite another mod supplies draws that sprite. |
+| `holdAsBuilt`, `carryStand`, `carryLean`, `bakedItem` (54) | Weapons: held as built, carried standing in front of the figure, an item with a drawing of its own baked as its model (part 38). |
 | `wallTop` (11), `cutaway` (20), `backHeight` (13), wing fields (14), `doorLeafModel`, `doorLeafGather` (18), `crownTop`, `doorLeafRise` (6) | See their parts. |
 
 The numbers in brackets are the Api version a field needs; fields without one are there from version 2.

@@ -125,6 +125,7 @@ Common fields:
 | `topInset` | 0 | (Api 52) `Box`: how far in the top is drawn from the sides, in cells (a tapered top) |
 | `raisedOutline` | 0 | (Api 52) With no model and no shape: how bold an outline the raised sprite gets; 0 none |
 | `byAppearance`, `byState`, `byStyle` | | Other models by stuff look (Planks, Bricks ...), by an addon's state (Api 6), by Ideology style |
+| `holdAsBuilt`, `carryStand`, `carryLean`, `bakedItem` | | Weapons: held as built, carried standing in front of the figure, an item with its own drawing baked as its model (Api 54, Docs/Api.md part 38) |
 | `aged` | 0 | Api 15: drawn old and rusty |
 | `immatureModels`, `immatureHide` | | Api 24, plants: the young stage, drawn while the plant is not yet harvestable (as the game's `immatureGraphic`, growth up to `harvestMinGrowth`). `immatureModels`: own models, one per variant of `models` (same order). `immatureHide`: material names left out of the young stage, e.g. the produce; with no `immatureModels` the young stage is the mature model without them. `growthScale` still shrinks it |
 | `geneDef`, `geneAnchor`, `geneTint`, `geneBuilds`, `geneTuck`, `geneHidesHair`, `geneTintsHead` | | Api 35: a gene part on 3D people instead of a thing; see "Gene parts" below |

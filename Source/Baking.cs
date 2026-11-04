@@ -122,7 +122,8 @@ namespace IsoRim
             // same form as any other item below, and are drawn so every frame (LiveItems).
             if (def.drawerType == DrawerType.RealtimeOnly && !LiveItems.Is(def))
             {
-                if (def.category != ThingCategory.Building || def.IsFrame || def.IsBlueprint || !listed || entry.def.flat
+                bool bakedItem = !noWeaponModel && listed && entry.def.bakedItem && def.category == ThingCategory.Item && WeaponModels.Uses(def);   // (Api 54)
+                if ((def.category != ThingCategory.Building && !bakedItem) || def.IsFrame || def.IsBlueprint || !listed || entry.def.flat
                     || entry.def.animal || !entry.HasModel || !st.models3D || typeof(Building_Door).IsAssignableFrom(def.thingClass))
                 {
                     return f;

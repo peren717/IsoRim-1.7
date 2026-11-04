@@ -405,6 +405,20 @@ namespace IsoRim
         // supplies (a texture pack's same-named texture, a patched texPath, one more variant in its folder) draws that sprite
         // instead of the model (WeaponModels.ArtIsOwn). On: for a pack that binds models to retextured weapons on purpose.
         public bool anyArt = false;
+        // (Api 54) Weapons: the model is held as built, one model unit to the cell, its x and y the sprite's, its middle on the
+        // sprite's, instead of being fitted to the sprite's outline (WeaponModels.Fit): for a sprite whose outline misleads the
+        // fit (a banner on a pole: a T) or a model longer than its sprite. Off (default): fitted. Opt-in, per model.
+        public bool holdAsBuilt = false;
+        // (Api 54) Weapons: carried standing up in front of the figure instead of the game's picture on its chest: x to the
+        // figure's right, y the height of the model's origin over its feet, z ahead of its middle (figure units), at least
+        // FigureWeapons.CarryClear ahead of its chest; the model's front (+z in the OBJ) forward, its top up, as large as the
+        // sprite in hand, in a melee swing too (the figure's lunge is the swing). y < 0: off (default).
+        public Vector3 carryStand = new Vector3(0f, -1f, 0f);
+        public float carryLean = 0f;        // (Api 54) with carryStand: degrees forward about the hands while the person walks
+        // (Api 54) A weapon the game draws every frame with a drawing of its own (a Thing.DrawAt override, drawerType RealtimeOnly):
+        // on the ground it is baked as its model all the same; the mod that owns the drawing leaves it out while Api.ModelStandsIn
+        // says so. Off (default): such an item stays as it draws itself.
+        public bool bakedItem = false;
 
         // Mechanoids (Mechs.cs). thingDef is the mech's race; model is the body (everything that does not move),
         // facing north, standing on the ground; mechParts are the pieces that move, each built in the same space

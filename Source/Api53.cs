@@ -60,8 +60,8 @@ namespace IsoRim
         /// <summary>(Version 53) Removes it. Things already built keep their look until they are next built.</summary>
         public static void RemoveModelDecals(ThingDef def, string part, ModelDecalProvider provider) => ModelDecals.Remove(def, part, provider);
 
-        /// <summary>(Version 53) The thing's decals have changed: its model is built again soon, and the providers asked. Does nothing
-        /// for things no provider is registered for.</summary>
+        /// <summary>(Version 53) The thing's decals have changed: its model is built again soon, and the providers asked (version 54:
+        /// a held weapon's too, the next time it is drawn). Does nothing for things no provider is registered for.</summary>
         public static void RefreshModelDecals(Thing thing) => ModelDecals.Refresh(thing);
 
         public static partial class Dev
@@ -123,6 +123,18 @@ namespace IsoRim
         private static readonly Dictionary<long, Vector4> boxes = new Dictionary<long, Vector4>();
         private static readonly List<ModelDecal> scratch = new List<ModelDecal>();
         private static readonly List<long> gone = new List<long>();
+
+        // (Api 54) A held weapon: drawn every frame through DynamicModels, so what ModelBaker.Write does once per build is kept here
+        // per thing and asked for again only when Refresh forgets it, its model or colour changes.
+        private sealed class Held
+        {
+            public Model model;
+            public Color32 tint;
+            public List<DynamicModels.Part> parts;   // null: nothing printed on it now
+        }
+
+        private static readonly Dictionary<int, Held> heldLooks = new Dictionary<int, Held>();
+        private static readonly List<int> heldGone = new List<int>();
         private static Look[] forModel = new Look[8];
         private static int stamp, painted, retaken, switchedOff;
         private static bool fullWarned;
@@ -184,7 +196,12 @@ namespace IsoRim
 
         internal static void Refresh(Thing t)
         {
-            if (t == null || !t.Spawned || !byDef.ContainsKey(t.def) || !View3D.Ready)
+            if (t == null || !byDef.ContainsKey(t.def))
+            {
+                return;
+            }
+            ForgetHeld(t.thingIDNumber);
+            if (!t.Spawned || !View3D.Ready)
             {
                 return;
             }
@@ -195,6 +212,63 @@ namespace IsoRim
             else
             {
                 t.DirtyMapMesh(t.Map);
+            }
+        }
+
+        private static void ForgetHeld(int id)
+        {
+            if (heldLooks.TryGetValue(id, out Held h))
+            {
+                if (h.parts != null)
+                {
+                    for (int i = 0; i < h.parts.Count; i++)
+                    {
+                        DynamicModels.Retire(h.parts[i].mesh);
+                    }
+                }
+                heldLooks.Remove(id);
+            }
+        }
+
+        // (Api 54) The meshes of a weapon in hand with its decals, or null: none (draw it plain). One dictionary lookup a frame.
+        internal static List<DynamicModels.Part> HeldParts(Thing t, Model m, Color tint, string swatch)
+        {
+            if (!byDef.ContainsKey(t.def))
+            {
+                return null;
+            }
+            Color32 tint32 = tint;
+            if (heldLooks.TryGetValue(t.thingIDNumber, out Held h))
+            {
+                if (h.model == m && h.tint.r == tint32.r && h.tint.g == tint32.g && h.tint.b == tint32.b)
+                {
+                    return h.parts;
+                }
+                ForgetHeld(t.thingIDNumber);
+            }
+            if (heldLooks.Count > 256)
+            {
+                PruneHeld();
+            }
+            Look[] looked = For(t, m);
+            h = new Held { model = m, tint = tint32, parts = looked != null ? DynamicModels.PartsWithDecals(m, tint, swatch, looked) : null };
+            heldLooks[t.thingIDNumber] = h;
+            return h.parts;
+        }
+
+        private static void PruneHeld()
+        {
+            heldGone.Clear();
+            foreach (KeyValuePair<long, Holder> e in held)
+            {
+                if (e.Value.thing.Destroyed)
+                {
+                    heldGone.Add(e.Value.thing.thingIDNumber);
+                }
+            }
+            for (int i = 0; i < heldGone.Count; i++)
+            {
+                ForgetHeld(heldGone[i]);
             }
         }
 
@@ -466,7 +540,8 @@ namespace IsoRim
             gone.Clear();
             foreach (KeyValuePair<long, Holder> e in held)
             {
-                if (!e.Value.thing.Spawned || e.Value.thing.Map == null || !Find.Maps.Contains(e.Value.thing.Map))
+                Thing t = e.Value.thing;
+                if (t.Destroyed || (!t.Spawned && !heldLooks.ContainsKey(t.thingIDNumber)) || (t.Spawned && (t.Map == null || !Find.Maps.Contains(t.Map))))
                 {
                     gone.Add(e.Key);
                 }
@@ -710,7 +785,7 @@ namespace IsoRim
             {
                 used += l.users > 0 ? 1 : 0;
             }
-            return "registrations " + Count + ", looks " + looks.Count + " of " + MaxLooks + ", in use " + used + ", painted " + painted + ", taken over " + retaken + ", switched off " + switchedOff
+            return "registrations " + Count + ", held " + heldLooks.Count + ", looks " + looks.Count + " of " + MaxLooks + ", in use " + used + ", painted " + painted + ", taken over " + retaken + ", switched off " + switchedOff
                 + ", holders " + held.Count;
         }
 

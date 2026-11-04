@@ -592,6 +592,29 @@ namespace IsoRim
             }
         }
 
+        // (Api 54) The meshes of a model with parts printed with decal looks: one thing's own, kept by ModelDecals.HeldParts (their
+        // looks are a thing's, so they are not shared through the cache); given back to Retire when that thing's look changes.
+        internal static List<Part> PartsWithDecals(Model m, Color tint, string swatch, ModelDecals.Look[] looks)
+        {
+            List<Part> parts = new List<Part>();
+            bool textured = IsoRimMod.Settings.texturedModels && m.materials != null && m.uvs != null && m.material != null;
+            Color32 t = tint;
+            t.r = (byte)(t.r & 0xF8);
+            t.g = (byte)(t.g & 0xF8);
+            t.b = (byte)(t.b & 0xF8);
+            t.a = 255;
+            try
+            {
+                Build(m, t, swatch, textured, parts, false, false, looks);
+            }
+            catch (Exception e)
+            {
+                parts.Clear();
+                Log.ErrorOnce("[IsoRim] Preparing a model with decals for drawing failed: " + e, 93611541);
+            }
+            return parts;
+        }
+
         // The ready-made meshes of a model in one colour. They carry no shading (the shader lights
         // them), so they serve every light and every way the model is turned.
         private static List<Part> PartsFor(Model m, Color tint, string swatch)
@@ -653,7 +676,8 @@ namespace IsoRim
         // smoothTex (ModelDef.smoothTextured, with smooth): the textured faces (not those with corners of their own colour) carry
         // the smooth normals as mesh normals and SmoothFigures.Bit in their tags (Lists.ToMesh), lifted along them; the
         // textured shader (IsoRimTex.vert.glsl -> IsoRimSolid.frag.glsl, in vColor) lights them by them. Other models: unchanged.
-        private static void Build(Model m, Color tint, string swatch, bool textured, List<Part> parts, bool smooth, bool smoothTex = false)
+        // (Api 54) looks: by material, the decal look its faces are written with (ModelDecals), as ModelBaker.Write does; null: none.
+        private static void Build(Model m, Color tint, string swatch, bool textured, List<Part> parts, bool smooth, bool smoothTex = false, ModelDecals.Look[] looks = null)
         {
             Material solidMat = R3DMaterials.Solid;
             Material litMat = R3DMaterials.LitModel;
@@ -669,6 +693,7 @@ namespace IsoRim
             Lists[] texturedLists = textured ? new Lists[slots] : null;
             bool[] looked = textured ? new bool[slots] : null;
             Vector3[] sn = smooth ? SmoothFigures.NormalsOf(m) : null;
+            Lists[] decalLists = looks != null ? new Lists[looks.Length] : null;
             if (sn != null)
             {
                 solid.normals = new List<Vector3>();   // (textured faces stay lit by the face, unless smoothTex)
@@ -680,6 +705,27 @@ namespace IsoRim
                 int mi = m.material != null ? m.material[i] : 0;
                 ModelMaterial mm = m.materials != null ? m.materials[mi] : null;
                 bool glow = mm != null && mm.glow;   // a flame is as bright on every side
+
+                ModelDecals.Look decal = looks != null && mi < looks.Length ? looks[mi] : null;
+                if (decal != null)
+                {
+                    // (Api 54) printed faces in place of the plain ones (no plain copy under them), outlined as the rest
+                    Lists dl = decalLists[mi] ?? (decalLists[mi] = new Lists { material = decal.material });
+                    for (int k = i; k < i + 3; k++)
+                    {
+                        dl.Add(m.positions[k], White, ModelDecals.Uv(decal, m.positions[k], m.normals[i]));
+                        if (m.hull != null && (m.noOutline == null || !m.noOutline[k]))
+                        {
+                            Color line = m.colors[k];
+                            if (m.tinted[k])
+                            {
+                                line *= tint;
+                            }
+                            outline.Add(m.positions[k] + m.hull[k], R3DMaterials.Shaded(line, ModelBaker.OutlineShade), Vector2.zero);
+                        }
+                    }
+                    continue;
+                }
 
                 Lists tl = null;
                 bool own = textured && m.OwnColour(i);   // its corners carry the colour (Model.OwnColour)
@@ -763,6 +809,16 @@ namespace IsoRim
             AddPart(parts, glowing, solidMat, false);
             AddPart(parts, outline, R3DMaterials.OutlineMoving, true);
             AddBeams(parts, new List<Model> { m }, null, false);
+            if (decalLists != null)
+            {
+                for (int i = 0; i < decalLists.Length; i++)
+                {
+                    if (decalLists[i] != null)
+                    {
+                        AddPart(parts, decalLists[i], decalLists[i].material, false);
+                    }
+                }
+            }
             if (texturedLists != null)
             {
                 for (int i = 0; i < texturedLists.Length; i++)

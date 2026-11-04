@@ -79,6 +79,10 @@ namespace IsoRim
         /// upward over collars and pauldrons, its sides outward, smoothed. Default false: pushed out sideways only (People.FitOver).</summary>
         public bool fitLift;
 
+        /// <summary>Api 54: other models for the states another mod names (Api.AddModelState, asked with the worn item when the
+        /// person's look is worked out). A state with no entry, or none: model as usual.</summary>
+        public List<ApparelStateModel> byState;
+
         /// <summary>Api 25: only for these races (ThingDef defNames). For a race, a binding naming it wins over one without races;
         /// a binding with races is not used for anyone else.</summary>
         public List<string> aliens;
@@ -112,6 +116,26 @@ namespace IsoRim
             {
                 yield return "unknown mount " + mount + " (belt, hip, pack)";
             }
+            if (byState != null)
+            {
+                foreach (ApparelStateModel s in byState)
+                {
+                    if (s == null || s.state.NullOrEmpty() || s.model.NullOrEmpty())
+                    {
+                        yield return "byState entry without state or model";
+                    }
+                    else if (s.shows != null)
+                    {
+                        foreach (string h in s.shows)
+                        {
+                            if (h != "Hair" && h != "Beard" && h != "Face")
+                            {
+                                yield return "unknown shows entry " + h + " (Hair, Beard, Face)";
+                            }
+                        }
+                    }
+                }
+            }
             if (hides != null)
             {
                 foreach (string h in hides)
@@ -131,6 +155,16 @@ namespace IsoRim
         Default,
         Weapon,
         Always,
+    }
+
+    /// <summary>A binding's model in one state (Api 54, ApparelModelDef.byState).</summary>
+    public class ApparelStateModel
+    {
+        public string state;
+        public string model;
+
+        /// <summary>Head: shown in this state even where the game's rules hide it under the item (Hair, Beard, Face): an open visor.</summary>
+        public List<string> shows;
     }
 
     /// <summary>A Body binding's model for one race body type (Api 25, ApparelModelDef.alienBodyModels).</summary>
@@ -173,6 +207,13 @@ namespace IsoRim
 
         internal const int HideHair = 1, HideBeard = 2, HideFace = 4;
 
+        // (Api 54) ApparelStateModel.shows as those bits.
+        internal static int ShowsOf(ApparelStateModel state)
+        {
+            List<string> s = state.shows;
+            return s == null ? 0 : (s.Contains("Hair") ? HideHair : 0) | (s.Contains("Beard") ? HideBeard : 0) | (s.Contains("Face") ? HideFace : 0);
+        }
+
         // One flame of a model (its flame* faces, one per separate piece): foot (bottom middle), height and width, model space.
         internal struct Flame
         {
@@ -193,6 +234,43 @@ namespace IsoRim
             public bool broken;
             private string root;
             private readonly Dictionary<string, Model> byBuild = new Dictionary<string, Model>();
+
+            // (Api 54) The byState entry for the state this worn item is in, or null: its usual model.
+            public ApparelStateModel StateOf(Apparel item)
+            {
+                if (def.byState == null)
+                {
+                    return null;
+                }
+                string state = StateModels.StateOf(item);
+                if (state != null)
+                {
+                    for (int i = 0; i < def.byState.Count; i++)
+                    {
+                        if (def.byState[i].state == state)
+                        {
+                            return def.byState[i];
+                        }
+                    }
+                }
+                return null;
+            }
+
+            // That entry's model.
+            public Model ModelOf(ApparelStateModel state)
+            {
+                Model m;
+                if (broken || state == null || state.model.NullOrEmpty())
+                {
+                    return null;
+                }
+                if (!byBuild.TryGetValue(state.model, out m))
+                {
+                    m = Load(state.model);
+                    byBuild[state.model] = m;
+                }
+                return m;
+            }
 
             // The model for this build (Body: its own if it has one), flames taken out; null if it could not be loaded.
             public Model ModelFor(string build)

@@ -105,7 +105,9 @@ namespace IsoRim
         // moves smoothed over its mesh; garments without it keep FitOver unchanged.
         // 53: model decals (ModelDecals, Api53.cs): AddModelDecals, RemoveModelDecals, RefreshModelDecals, ModelDecal: pictures painted into a
         // part of a thing's model when it is built.
-        public static int Version => 53;
+        // 54: held weapons and worn states (Api54.cs): CatchWeaponDraws, ModelDef.holdAsBuilt, carryStand, carryLean, bakedItem, one model per
+        // weapon however many pictures the game draws of it, model decals on held weapons, ApparelModelDef.byState (with shows).
+        public static int Version => 54;
 
         // ---- glass parts (Version 30)
 

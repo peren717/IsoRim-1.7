@@ -845,7 +845,7 @@ namespace IsoRim
                                     baked[t.thingIDNumber] = lit;
                                 }
                             }
-                            else if (ModelBaker.Bake(this, t, Forms.For(t.def).model, 0f))
+                            else if (ModelBaker.Bake(this, t, Forms.For(t.def).model, t.def.category == ThingCategory.Item ? Forms.BaseUnder(t, true) : 0f))   // (Api 54: bakedItem, on a shelf)
                             {
                                 Building_Bookcase bookcase = t as Building_Bookcase;
                                 if (bookcase != null)
