@@ -53,6 +53,7 @@ namespace IsoRim
             public Thing weapon;   // null: not a weapon (a worn extra)
             public bool carried;
             public Recoil recoil;  // the recoil in this drawing (Shoulder takes it apart from other mods' motion)
+            public bool own;       // (Api 54) drawn by a mod's own method (CatchWeaponDraws): it placed it, not kept clear of the body
         }
 
         // The recoil in the weapon picture being drawn (2026-10-31, headrecoil): the game's EquipmentUtility.Recoil as it gave
@@ -87,7 +88,7 @@ namespace IsoRim
                 return;
             }
             caught.Add(new Caught { mesh = mesh, matrix = matrix, material = material, weapon = drawingWeapon, carried = carryPath,
-                recoil = drawingWeapon != null ? recoilNow : default(Recoil) });
+                recoil = drawingWeapon != null ? recoilNow : default(Recoil), own = catchingOwn });
         }
 
         // Patches.DrawEquipmentAiming_Prefix / _Finalizer: the game is drawing this weapon (null when done). (The prefix runs
@@ -146,17 +147,22 @@ namespace IsoRim
             Graphics.DrawMesh(mesh, matrix, material, layer);
         }
 
-        // (Api 54) A draw another mod's method makes straight to Unity (Api.CatchWeaponDraws): caught while a figure's weapon that
-        // shows a 3D model is drawn; anything else goes on to Unity as that mod wrote it.
+        // (Api 54) A draw another mod's method makes straight to Unity (Api.CatchWeaponDraws): caught while a figure's weapon is
+        // drawn (with a model or as its sprite made solid, as the game's own draw is); anything else goes on to Unity as that mod
+        // wrote it: a pawn drawn as a card, the 2D view.
         public static void DrawOrCatchWeapon(Mesh mesh, Matrix4x4 matrix, Material material, int layer)
         {
-            if (Capturing && drawingWeapon != null && IsoRimMod.Settings.heldWeapons3D && WeaponModels.ModelOf(drawingWeapon) != null)
+            if (Capturing && drawingWeapon != null)
             {
+                catchingOwn = true;
                 Note(mesh, matrix, material);
+                catchingOwn = false;
                 return;
             }
             Graphics.DrawMesh(mesh, matrix, material, layer);
         }
+
+        private static bool catchingOwn;
 
         public static IEnumerable<CodeInstruction> CatchWeaponDraws_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
@@ -290,6 +296,10 @@ namespace IsoRim
             bool weapons = IsoRimMod.Settings.heldWeapons3D;
             bool models = WeaponModels.On;   // the new hold (models, the shoulder); off: as before
             Thing modelled = null;           // (Api 54) a weapon drawn in several pictures shows one model
+            Thing pictured = null;           // or as its sprites, one over the other, moved clear of the body as one
+            int layer = 0;
+            Vector3 sharedClear = Vector3.zero;
+            float sharedNeed = 0f;
             for (int i = 0; i < caught.Count; i++)
             {
                 Caught c = caught[i];
@@ -297,6 +307,8 @@ namespace IsoRim
                 {
                     continue;
                 }
+                layer = c.weapon != null && c.weapon == pictured ? layer + 1 : 0;
+                pictured = c.weapon;
                 // The game's drawing about the pawn's middle, flat (its drawing layers' heights dropped).
                 Matrix4x4 m = Matrix4x4.Translate(-origin) * c.matrix;
                 m.m13 = 0f;
@@ -323,7 +335,7 @@ namespace IsoRim
                 else if (c.carried)
                 {
                     bool stood = models && CarriedStanding(pawn, c.weapon, placed * local, front);
-                    bool asModel = stood || DrawPiece(c, placed * local * OnChest(m, flipped, front, side), models);
+                    bool asModel = stood || DrawPiece(c, placed * local * OnChest(m, flipped, front, side) * Over(layer), models);
                     if (asModel)
                     {
                         modelled = c.weapon;
@@ -385,8 +397,14 @@ namespace IsoRim
                     }
                     // Kept out of the body: moved along the aim until its box clears the body (Clearance).
                     float need;
-                    Vector3 clear = Clearance(c, world, hold, model, figure, dir, front, side, out need);
-                    if (Guard && need > 0f)
+                    Vector3 clear = sharedClear;
+                    need = sharedNeed;
+                    if (layer == 0)
+                    {
+                        clear = sharedClear = Clearance(c, world, hold, model, figure, dir, front, side, out need);
+                        sharedNeed = need;
+                    }
+                    if (Guard && need > 0f && !c.own)
                     {
                         world = Matrix4x4.Translate(clear) * world;
                     }
@@ -394,7 +412,7 @@ namespace IsoRim
                     bool asModel = false;
                     if (!measure)
                     {
-                        asModel = DrawPiece(c, Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f)) * world, models);
+                        asModel = DrawPiece(c, Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f)) * world * Over(layer), models);
                     }
                     if (model != null)
                     {
@@ -448,6 +466,13 @@ namespace IsoRim
                 * Matrix4x4.Translate(new Vector3(side * 0.8f, 0f, 0f)) * Matrix4x4.Rotate(Quaternion.AngleAxis(Tilt, Vector3.up))
                 * Matrix4x4.Translate(new Vector3(-side * 0.8f, 0f, 0f))
                 * Matrix4x4.Scale(new Vector3(Picture, Picture, Picture)) * PictureToFront * m * SlabToPlane(flipped);
+        }
+
+        // (Api 54) A sprite slab over the pictures of the same weapon before it: a little thicker, so that its faces show on both
+        // sides instead of fighting theirs (a banner's field and its symbol). The first picture, as ever.
+        private static Matrix4x4 Over(int layer)
+        {
+            return layer == 0 ? Matrix4x4.identity : Matrix4x4.Scale(new Vector3(1f, 1f, 1f + 0.3f * layer));
         }
 
         // (Api 54, ModelDef.carryStand) The model standing up in front of the figure. figure: drawn space, the figure's own (x its
@@ -738,6 +763,8 @@ namespace IsoRim
                 * Matrix4x4.Rotate(Quaternion.AngleAxis(yaw, Vector3.up));
             bool any = false;
             Thing modelled = null;
+            Thing pictured = null;
+            int layer = 0;
             for (int i = 0; i < caught.Count; i++)
             {
                 Caught c = caught[i];
@@ -745,11 +772,13 @@ namespace IsoRim
                 {
                     continue;
                 }
+                layer = c.weapon == pictured ? layer + 1 : 0;
+                pictured = c.weapon;
                 Matrix4x4 m = c.matrix;
                 m.m13 = 0f;
                 Vector3 normal = Vector3.Cross(m.GetColumn(2), m.GetColumn(0)).normalized;
                 m.SetColumn(1, new Vector4(normal.x, normal.y, normal.z, 0f));
-                if (CarriedStanding(null, c.weapon, placed * local, front) || DrawPiece(c, placed * local * OnChest(m, c.mesh == MeshPool.plane10Flip, front, side), true))
+                if (CarriedStanding(null, c.weapon, placed * local, front) || DrawPiece(c, placed * local * OnChest(m, c.mesh == MeshPool.plane10Flip, front, side) * Over(layer), true))
                 {
                     modelled = c.weapon;
                 }

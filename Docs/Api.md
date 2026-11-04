@@ -1979,9 +1979,9 @@ Four small things for a weapon that draws itself, or that a sprite fit gets wron
 
 | Member | What it does |
 |---|---|
-| `bool Api.CatchWeaponDraws(MethodBase method)` | While a figure's weapon that shows a 3D model is drawn, the `Graphics.DrawMesh(mesh, matrix, material, layer)` calls of that method count as the game's own. All its other draws go to Unity as before, so a weapon with no model (or with weapon models switched off) is unchanged. Twice does nothing. False, with one warning, if the method makes no such call or cannot be patched. Null throws. Call at startup. |
+| `bool Api.CatchWeaponDraws(MethodBase method)` | While a figure's weapon is drawn, the `Graphics.DrawMesh(mesh, matrix, material, layer)` calls of that method count as the game's own: the weapon shows its model, or with no model (or weapon models switched off) its sprites made solid at the hand, as any weapon. All its other draws go to Unity as before: a pawn drawn as a card, the 2D view. Twice does nothing. False, with one warning, if the method makes no such call or cannot be patched. Null throws. Call at startup. |
 
-A weapon the game (or that method) draws in several pictures shows one model, from the first picture.
+A weapon the game (or that method) draws in several pictures shows one model, from the first picture, or as its sprites, one over the other.
 
 **ModelDef fields** (weapons):
 
@@ -1990,7 +1990,7 @@ A weapon the game (or that method) draws in several pictures shows one model, fr
 | `holdAsBuilt` | The model is held as built: one unit to the cell, not turned, its middle on the middle of the sprite, instead of being fitted to the sprite's outline (part 34). For a sprite whose outline misleads the fit (a banner on a pole is a T: the fit reads it as tilted) or a model longer than its sprite. |
 | `carryStand` | `(x, y, z)`: carried standing up in front of the figure, in its facing direction, instead of the game's picture on its chest: `x` to its right, `y` the height of the model's origin over its feet, `z` ahead of its middle (figure units), at least 0.13 ahead of its chest. The model's south side (+z in the OBJ) faces forward, its top up, its size the sprite's in hand. It turns with the figure, not with the camera. A melee swing keeps it standing. Unset: as the game draws it. |
 | `carryLean` | With `carryStand`: degrees forward about the hands while the person walks. |
-| `bakedItem` | An item the game draws every frame with a `DrawAt` of its own: on the ground it is baked as its model all the same, resting on a shelf as other items. The mod that owns the drawing leaves it out while `Api.ModelStandsIn(thing)` is true. |
+| `bakedItem` | An item the game draws every frame with a `DrawAt` of its own: on the ground it is baked as its model all the same, resting on a shelf as other items. Its block is built again whenever it comes, goes or moves. The mod that owns the drawing leaves it out while `Api.ModelStandsIn(thing)` is true, which it is only where the model is baked now: ask every frame, and draw the sprite otherwise. Meant for a few items: each one rebuilds its block when it comes or goes. |
 
 **Decals on held weapons.** The model decals of part 37 also show on a weapon in hand and on an outfit stand. The provider is asked once for that thing (not every frame) and again after `Api.RefreshModelDecals(thing)`, which now also works for a thing that is not spawned. Call it when the weapon is equipped or dropped if its decals depend on the bearer.
 

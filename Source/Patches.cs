@@ -2194,11 +2194,19 @@ namespace IsoRim
         public static void SpawnSetup_Postfix(Thing __instance)
         {
             NoteShapeChange(__instance, __instance != null ? __instance.Map : null);
+            if (__instance != null && __instance.def != null)
+            {
+                SectionLayer_IsoRimBodies.ItemCame(__instance);
+            }
         }
 
         public static void DeSpawn_Prefix(Thing __instance)
         {
             NoteShapeChange(__instance, __instance != null ? __instance.MapHeld : null);
+            if (__instance != null && __instance.def != null)
+            {
+                SectionLayer_IsoRimBodies.ItemGoes(__instance);
+            }
         }
 
         public static void MineDesignation_Postfix(DesignationManager __instance, Designation newDes)

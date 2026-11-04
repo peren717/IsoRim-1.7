@@ -701,6 +701,17 @@ namespace IsoRim
         // Things whose model is in a built mesh now, with whether its flames were left in.
         private static readonly Dictionary<int, bool> baked = new Dictionary<int, bool>();
 
+        // (ModelDef.bakedItem) Items are not buildings: the game moves them about and redraws no map mesh for things it draws
+        // every frame, and a building never comes back elsewhere. Where each one is baked, so that it stands in only there.
+        private struct Spot
+        {
+            public Map map;
+            public IntVec3 cell;
+            public Rot4 rot;
+        }
+
+        private static readonly Dictionary<int, Spot> itemSpots = new Dictionary<int, Spot>();
+
         public SectionLayer_IsoRimBodies(Section section) : base(section)
         {
             MapSections.SetChangeFlags(this, "Things", "Buildings", "FogOfWar");
@@ -720,7 +731,60 @@ namespace IsoRim
         // True while the model stands in for this thing's body sprite.
         public static bool StandsIn(Thing t)
         {
-            return View3D.Ready && Handles(t) && baked.ContainsKey(t.thingIDNumber);
+            if (!View3D.Ready || !Handles(t) || !baked.ContainsKey(t.thingIDNumber))
+            {
+                return false;
+            }
+            if (t.def.category != ThingCategory.Item)
+            {
+                return true;
+            }
+            // Moved or turned without leaving the map (a Position set by a mod): both blocks again; its sprite shows until then.
+            Spot was;
+            if (itemSpots.TryGetValue(t.thingIDNumber, out was) && was.map == t.Map && was.cell == t.Position && was.rot == t.Rotation)
+            {
+                return true;
+            }
+            if (was.map != null)
+            {
+                MapSections.QueueAround(was.map, was.cell, 0, typeof(SectionLayer_IsoRimBodies), true);
+            }
+            MapSections.QueueAround(t.Map, t.Position, 0, typeof(SectionLayer_IsoRimBodies), true);
+            baked.Remove(t.thingIDNumber);
+            itemSpots.Remove(t.thingIDNumber);
+            return false;
+        }
+
+        // An item this layer bakes (ModelDef.bakedItem). Items the game prints into the map mesh, and those LiveItems draws, are not.
+        private static bool BakedItem(Thing t)
+        {
+            return t.def.drawerType == DrawerType.RealtimeOnly && t.def.category == ThingCategory.Item && Forms.For(t.def).form == Form3D.Model && !LiveItems.Is(t.def);
+        }
+
+        // Patches.SpawnSetup_Postfix: every way an item comes onto the map (dropped, set down, placed by a mod, a load). Its block is
+        // built again; its sprite shows until then (StandsIn). One field read for other things.
+        internal static void ItemCame(Thing t)
+        {
+            if (t.def.drawerType == DrawerType.RealtimeOnly && BakedItem(t) && View3D.Active && Current.ProgramState == ProgramState.Playing)
+            {
+                MapSections.QueueAround(t.Map, t.Position, 0, typeof(SectionLayer_IsoRimBodies), true);
+            }
+        }
+
+        // Patches.DeSpawn_Prefix: every way it goes (picked up, equipped, destroyed, a map closing). Forgotten at once, so that it
+        // is not taken for baked where it turns up next, and its block is built again without it.
+        internal static void ItemGoes(Thing t)
+        {
+            if (t.def.drawerType != DrawerType.RealtimeOnly || t.def.category != ThingCategory.Item)
+            {
+                return;
+            }
+            bool was = baked.Remove(t.thingIDNumber);
+            itemSpots.Remove(t.thingIDNumber);
+            if (was && Current.ProgramState == ProgramState.Playing)
+            {
+                MapSections.QueueAround(t.Map, t.Position, 0, typeof(SectionLayer_IsoRimBodies), true);
+            }
         }
 
         // Flames and embers burn while there is fuel, as the game's own fire overlay does.
@@ -853,6 +917,10 @@ namespace IsoRim
                                     Bookcases.Print(this, bookcase, Forms.For(t.def).model);
                                 }
                                 baked[t.thingIDNumber] = lit;
+                                if (t.def.category == ThingCategory.Item)
+                                {
+                                    itemSpots[t.thingIDNumber] = new Spot { map = map, cell = t.Position, rot = t.Rotation };
+                                }
                             }
                         }
                         finally
