@@ -134,7 +134,7 @@ namespace IsoRim
         private static readonly string[] Own =
         {
             "IsoRimSolid", "IsoRimSolidTex", "IsoRimOutline", "IsoRimGhost", "IsoRimBlend", "IsoRimLitMark", "IsoRimLitMarkTex",
-            "IsoRimLitMarkCard", "IsoRimCardPlant", "IsoRimCardSnow", "IsoRimFog", "IsoRimFadeCutout", "IsoRimFadeCutoutComplex",
+            "IsoRimLitMarkCard", "IsoRimCardPlant", "IsoRimCardSnow", "IsoRimCardSprite", "IsoRimFog", "IsoRimFadeCutout", "IsoRimFadeCutoutComplex",
             "IsoRimFadeTerrainHard", "IsoRimFadeTerrainFade", "IsoRimFadeTerrainFadeRough", "IsoRimAdd",
         };
 

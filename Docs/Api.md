@@ -1886,6 +1886,35 @@ is under it instead:
 - Default false: the binding keeps the plain sideways push, unchanged. IsoRim's own over-the-shell shapes are not
   affected. A pack that must load on an older IsoRim adds the field by a version-gated patch (part M).
 
+## Part 36: shapes without a model (version 52)
+
+Plain data, no call: a `IsoRim.ModelDef` with no model file can ask for a shape made from the thing's own sprite, so the
+dev-mode binder (and any pack) can give a thing a look without an `.obj`. Fields, all in `ModelPacks.md`, "Shapes without a model":
+`shape` (`None`, `Card`, `Box`), `boxFaces` (list of `BoxFace`: `side`, `look`, `mirror`), `topInset`, `raisedOutline`.
+
+```xml
+<IsoRim.ModelDef>
+  <defName>R3D_MyPack_Tower</defName>
+  <thingDef>MyTower</thingDef>
+  <shape>Card</shape>
+  <scale>1.2</scale>
+</IsoRim.ModelDef>
+```
+
+- A `Box` is an ordinary generated model: `Forms.For` says `Model`, and outline, ground shading, ghosts, selection, rotation and
+  fitted heights behave as a model's. Its sprites are written after the model.
+- A `Card` has form `Extruded` with the card's height. It is baked like a plant card, on the new `IsoRimCardSprite` shader, which keeps
+  CutoutComplex masks and both colours, and is clipped under roofs, in fog and on faded floors. Things drawn every frame are baked by
+  `SectionLayer_IsoRimBodies`, the body sprite held back as for a model. Its blueprint stays the game's flat sprite.
+- With `shape` unset, a def with no model keeps the automatic raised sprite as before; `offset` and `groundShadow` now apply to it, and
+  `raisedOutline` adds an outline. Items with a `height` and no model are raised to it, whatever their kind.
+- A material whose name starts with `stuff_round` and has no texture (new, for round models) is tinted like `stuff` and baked with
+  smooth normals and no light steps. Other baked faces are lit per face as before, so a round model on plain `stuff` shows flat bands.
+  On an older IsoRim such faces are plain tinted faces.
+
+Version gate: packs using these fields gate on Api 52; older versions must leave the thing alone. Models in
+`Models/Templates/` are free to reference from a pack, but copy them: the binder's export does.
+
 ## Part M: model packs (IsoRim.ModelDef)
 
 A model pack is an XML-only mod (or a mod with a small DLL) that adds `IsoRim.ModelDef`s binding OBJ models to other

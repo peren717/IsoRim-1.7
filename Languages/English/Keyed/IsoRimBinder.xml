@@ -67,4 +67,54 @@
   <R3D_Coverage_ground>ground shape</R3D_Coverage_ground>
   <R3D_Coverage_model>model</R3D_Coverage_model>
   <R3D_Coverage_door>3D door</R3D_Coverage_door>
+  <R3D_Binder_Shape>Shape</R3D_Binder_Shape>
+  <R3D_Binder_ShapeModel>Model</R3D_Binder_ShapeModel>
+  <R3D_Binder_ShapeRaised>Raised</R3D_Binder_ShapeRaised>
+  <R3D_Binder_ShapeCard>Card</R3D_Binder_ShapeCard>
+  <R3D_Binder_ShapeBox>Box</R3D_Binder_ShapeBox>
+  <R3D_Binder_Height>Height</R3D_Binder_Height>
+  <R3D_Binder_TopInset>Top inset</R3D_Binder_TopInset>
+  <R3D_Binder_Faces>Faces</R3D_Binder_Faces>
+  <R3D_Binder_FaceTop>Top</R3D_Binder_FaceTop>
+  <R3D_Binder_FaceNorth>North</R3D_Binder_FaceNorth>
+  <R3D_Binder_FaceEast>East</R3D_Binder_FaceEast>
+  <R3D_Binder_FaceSouth>South</R3D_Binder_FaceSouth>
+  <R3D_Binder_FaceWest>West</R3D_Binder_FaceWest>
+  <R3D_Binder_FaceTagTop>T</R3D_Binder_FaceTagTop>
+  <R3D_Binder_FaceTagNorth>N</R3D_Binder_FaceTagNorth>
+  <R3D_Binder_FaceTagEast>E</R3D_Binder_FaceTagEast>
+  <R3D_Binder_FaceTagSouth>S</R3D_Binder_FaceTagSouth>
+  <R3D_Binder_FaceTagWest>W</R3D_Binder_FaceTagWest>
+  <R3D_Binder_FaceModeSprite>Sprite</R3D_Binder_FaceModeSprite>
+  <R3D_Binder_FaceModeSpriteNorth>North sprite</R3D_Binder_FaceModeSpriteNorth>
+  <R3D_Binder_FaceModeSpriteEast>East sprite</R3D_Binder_FaceModeSpriteEast>
+  <R3D_Binder_FaceModeSpriteSouth>South sprite</R3D_Binder_FaceModeSpriteSouth>
+  <R3D_Binder_FaceModeSpriteWest>West sprite</R3D_Binder_FaceModeSpriteWest>
+  <R3D_Binder_FaceModeMeanColour>Mean colour</R3D_Binder_FaceModeMeanColour>
+  <R3D_Binder_FaceModeNone>None</R3D_Binder_FaceModeNone>
+  <R3D_Binder_FaceMirror>Mirror</R3D_Binder_FaceMirror>
+  <R3D_Binder_FaceAllSides>Apply to sides</R3D_Binder_FaceAllSides>
+  <R3D_Binder_SpriteTint>Sprite colour</R3D_Binder_SpriteTint>
+  <R3D_Binder_Templates>Templates</R3D_Binder_Templates>
+  <R3D_Binder_Template_slab>Slab</R3D_Binder_Template_slab>
+  <R3D_Binder_Template_cylinder>Cylinder</R3D_Binder_Template_cylinder>
+  <R3D_Binder_Template_cone>Cone</R3D_Binder_Template_cone>
+  <R3D_Binder_Template_dome>Dome</R3D_Binder_Template_dome>
+  <R3D_Binder_Template_sphere>Sphere</R3D_Binder_Template_sphere>
+  <R3D_Binder_Template_pyramid>Pyramid</R3D_Binder_Template_pyramid>
+  <R3D_Binder_Template_wedge>Wedge</R3D_Binder_Template_wedge>
+  <R3D_Binder_Template_table>Table</R3D_Binder_Template_table>
+  <R3D_Binder_Template_shelf>Shelf</R3D_Binder_Template_shelf>
+  <R3D_Binder_Template_cabinet>Cabinet</R3D_Binder_Template_cabinet>
+  <R3D_Binder_Template_crate>Crate</R3D_Binder_Template_crate>
+  <R3D_Binder_Template_barrel>Barrel</R3D_Binder_Template_barrel>
+  <R3D_Binder_Template_pillar>Pillar</R3D_Binder_Template_pillar>
+  <R3D_Binder_Template_lamp>Lamp</R3D_Binder_Template_lamp>
+  <R3D_Binder_Template_machine>Machine</R3D_Binder_Template_machine>
+  <R3D_Binder_Template_vat>Vat</R3D_Binder_Template_vat>
+  <R3D_Binder_Template_tank>Tank</R3D_Binder_Template_tank>
+  <R3D_Binder_Template_console>Console</R3D_Binder_Template_console>
+  <R3D_Binder_Template_pipe>Pipe</R3D_Binder_Template_pipe>
+  <R3D_Binder_Template_stool>Stool</R3D_Binder_Template_stool>
+  <R3D_Binder_FaceModeEdge>Edge</R3D_Binder_FaceModeEdge>
 </LanguageData>

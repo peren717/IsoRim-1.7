@@ -714,7 +714,7 @@ namespace IsoRim
         public static bool Handles(Thing t)
         {
             return t != null && t.def != null && t.def.drawerType == DrawerType.RealtimeOnly && t.Spawned && View3D.Active
-                && !(t is Pawn) && Forms.For(t.def).form == Form3D.Model;
+                && !(t is Pawn) && (Forms.For(t.def).form == Form3D.Model || Forms.For(t.def).shape == ModelShape.Card);
         }
 
         // True while the model stands in for this thing's body sprite.
@@ -837,7 +837,15 @@ namespace IsoRim
                         bool onDeck = Bridges.BeginPrint(this, t);   // on a bridge deck: lifted onto it
                         try
                         {
-                            if (ModelBaker.Bake(this, t, Forms.For(t.def).model, 0f))
+                            ThingForm card = Forms.For(t.def);
+                            if (card.shape == ModelShape.Card)
+                            {
+                                if (ShapeCards.Print(this, t, card.bound, 0f))   // (Api 52)
+                                {
+                                    baked[t.thingIDNumber] = lit;
+                                }
+                            }
+                            else if (ModelBaker.Bake(this, t, Forms.For(t.def).model, 0f))
                             {
                                 Building_Bookcase bookcase = t as Building_Bookcase;
                                 if (bookcase != null)

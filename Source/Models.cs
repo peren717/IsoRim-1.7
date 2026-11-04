@@ -106,6 +106,11 @@ namespace IsoRim
         public bool layFlat = false;        // the model is built as held; on the ground it is tipped onto its side
         public float scatter = 0f;          // move each thing up to this far (in cells) off the middle of its cell
         public bool spriteTint = false;     // colour "stuff" parts from the thing's own sprite instead of its material
+        // (Api 52) A shape in place of a model, for a def with no model file (Shapes.cs; the binder's shape row).
+        public ModelShape shape = ModelShape.None;
+        public List<BoxFace> boxFaces;      // (Api 52) Box: what each face shows; a side not listed shows the sprite
+        public float topInset = 0f;         // (Api 52) Box: how far in the top is drawn from the sides, cells (a tapered top)
+        public float raisedOutline = 0f;    // (Api 52) a def with no model: how bold an outline its raised sprite gets; 0 none, as without a def
         public bool paintedHull = false;    // a paintable building made of no stuff: its "stuff" parts are the paint,
                                             // white while unpainted and the paint colour once painted, on the Metal swatch
         public string fallback;             // "SmallPlants": every plant that is not a tree and has no other entry
@@ -703,6 +708,8 @@ namespace IsoRim
         public bool glow;        // gives off its own light (flames, embers, lamps): never shaded
         public bool fire;        // a flame or embers: left out while the thing's fire is out
         public bool beam;        // (Api 33) a name starting with "beam_": its faces are the model's beam part (Model.beam)
+        public bool round;       // (Api 52) a name starting with "stuff_round", no texture: baked faces lit by smooth normals, no
+                                 // light steps (ModelBaker.Write), so a round thing reads round instead of as a few flat bands
         public Texture2D runtimeTexture;   // (Api 34) a texture made at run time (a wall top's side, ShapeTops) instead of texture's
                                            // path, named runtimeName; texture is then only a placeholder
         public string runtimeName;
@@ -1315,6 +1322,11 @@ namespace IsoRim
             ModelEntry entry = new ModelEntry();
             entry.def = md;
             entry.variants = loaded.ToArray();
+            if (md.shape == ModelShape.Box && loaded.Count == 0)
+            {
+                md.spriteTint = true;   // (Api 52) its plain faces: the sprite's mean colour
+                entry.variants = new[] { ShapeBoxes.Build(md) };
+            }
             // (Api 38) a female animal's own body variants, loaded the same way
             List<string> femaleFiles = new List<string>();
             if (!md.femaleModel.NullOrEmpty())
@@ -2690,6 +2702,7 @@ namespace IsoRim
             ModelMaterial mat = new ModelMaterial();
             mat.name = name;
             mat.tinted = name.StartsWith("stuff", StringComparison.OrdinalIgnoreCase);
+            mat.round = name.StartsWith("stuff_round", StringComparison.OrdinalIgnoreCase);
             mat.sheet = name.StartsWith("sheet", StringComparison.OrdinalIgnoreCase);
             mat.leaf = name.StartsWith("leaf", StringComparison.OrdinalIgnoreCase);
             mat.twig = name.StartsWith("twig", StringComparison.OrdinalIgnoreCase);
@@ -3010,6 +3023,52 @@ namespace IsoRim
         // A plain box from min to max (game axes), coloured by the tint it is drawn with (its top,
         // if given, a fixed colour instead), with the same outline as a loaded model. Used for the
         // books on a bookcase's shelves.
+        // (Api 52) A model of quads (corners clockwise seen from outside), tinted "stuff" faces of the colours given.
+        public static Model FromQuads(List<Vector3[]> quads, List<Color> colors)
+        {
+            int n = quads.Count * 6;
+            Model m = new Model();
+            m.positions = new Vector3[n];
+            m.normals = new Vector3[n];
+            m.colors = new Color[n];
+            m.tinted = new bool[n];
+            m.uvs = new Vector2[n];
+            m.material = new int[n];
+            ModelMaterial mat = new ModelMaterial();
+            mat.name = "stuff";
+            mat.tinted = true;
+            mat.color = Color.white;
+            m.materials = new[] { mat };
+            int[] order = { 0, 1, 2, 0, 2, 3 };
+            m.minX = float.MaxValue;
+            m.minZ = float.MaxValue;
+            m.maxX = float.MinValue;
+            m.maxZ = float.MinValue;
+            for (int q = 0; q < quads.Count; q++)
+            {
+                Vector3[] c = quads[q];
+                Vector3 normal = Vector3.Cross(c[1] - c[0], c[2] - c[0]).normalized;
+                for (int k = 0; k < 6; k++)
+                {
+                    int i = q * 6 + k;
+                    Vector3 p = c[order[k]];
+                    m.positions[i] = p;
+                    m.normals[i] = normal;
+                    m.colors[i] = colors[q];
+                    m.tinted[i] = true;
+                    m.maxY = Mathf.Max(m.maxY, p.y);
+                    m.halfDepth = Mathf.Max(m.halfDepth, Mathf.Abs(p.z));
+                    m.minX = Mathf.Min(m.minX, p.x);
+                    m.maxX = Mathf.Max(m.maxX, p.x);
+                    m.minZ = Mathf.Min(m.minZ, p.z);
+                    m.maxZ = Mathf.Max(m.maxZ, p.z);
+                }
+            }
+            m.id = nextId++;
+            m.hull = BuildHull(m.positions, m.normals, OutlineWidth);
+            return m;
+        }
+
         public static Model Box(Vector3 min, Vector3 max, Color? top = null)
         {
             Vector3[] n = { Vector3.up, Vector3.down, Vector3.forward, Vector3.back, Vector3.right, Vector3.left };
@@ -3637,7 +3696,26 @@ namespace IsoRim
             {
                 px = SpritePixels.GpuSample(tex, N);
             }
+            if (px != null && !AnySolid(px))
+            {
+                // (Api 52) thin art (a railing) falls between the samples: look closer before taking the fallback
+                px = SpritePixels.Sample(tex, Vector2.one, Vector2.zero, FineN) ?? px;
+            }
             return MeanOf(px);
+        }
+
+        private const int FineN = 128;
+
+        private static bool AnySolid(Color32[] px)
+        {
+            for (int i = 0; i < px.Length; i++)
+            {
+                if (px[i].a >= 128)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         // The lifted mean colour of the solid pixels of a sample; the fallback if there are none.
@@ -3884,6 +3962,23 @@ namespace IsoRim
                 litSolid[curve] = m;
             }
             return m;
+        }
+
+        // (Api 52) The same for baked faces lit by smooth normals (ModelMaterial.round): a piece of mesh of their own, whose
+        // corners all carry a normal.
+        private static Material litRound;
+
+        public static Material LitRound
+        {
+            get
+            {
+                if (litRound == null && Solid != null)
+                {
+                    litRound = Make(SolidDef, "IsoRim_LitRound", -1, ModeOf(0));
+                    IsoGlow.Use(litRound, IsoGlow.OwnCell);
+                }
+                return litRound;
+            }
         }
 
         // The lit plain material for models: pawns, animals, baked models, extruded sides.

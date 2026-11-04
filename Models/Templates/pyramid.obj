@@ -1,0 +1,19 @@
+# IsoRim template: pyramid (rough, tools/bindershapes_templates.py). 1 unit = 1 cell, +Y up, -Z north.
+mtllib templates.mtl
+o pyramid
+v 0.4600 0.0000 0.4600
+v -0.4600 0.0000 0.4600
+v -0.4600 0.0000 -0.4600
+v 0.4600 0.0000 -0.4600
+v 0.0000 0.8000 0.0000
+vt 1.9200 0.0000
+vt 1.0000 0.0000
+vt 0.0800 0.0000
+vt 1.0000 0.0000
+vt 1.0000 0.8000
+usemtl stuff_plain
+f 1/1 5/5 2/2
+f 2/2 5/5 3/3
+f 3/3 5/5 4/4
+f 4/4 5/5 1/1
+f 1/1 2/2 3/3 4/4

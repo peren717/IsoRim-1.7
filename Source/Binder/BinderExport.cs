@@ -31,6 +31,7 @@ namespace IsoRim
         // its number here.
         private static readonly Dictionary<string, int> FieldVersion = new Dictionary<string, int>
         {
+            { "shape", 52 }, { "boxFaces", 52 }, { "topInset", 52 }, { "raisedOutline", 52 },
             { "deadBellyUp", 5 }, { "hackedGlowOff", 5 }, { "legFromHip", 5 }, { "legLift", 5 }, { "legYaw", 5 },
             { "rotationByFacing", 6 }, { "style", 6 }, { "crownTop", 6 }, { "doorLeafRise", 6 }, { "byState", 6 },
             { "wallTop", 11 },
@@ -63,6 +64,13 @@ namespace IsoRim
         // Fields never written: the binding (the patch adds it) and the matching rules of shared entries.
         private static readonly HashSet<string> Skip = new HashSet<string> { "thingDef", "thingCategory", "match", "graphicPath", "fallback", "style" };
 
+        // (Api 52) A def with no model that still changes the thing: a shape, or Raised's settings (height, offset and groundShadow
+        // are old fields, so such a pack needs no newer IsoRim: its height works anywhere, the rest where it is drawn).
+        private static bool Shaped(ModelDef live)
+        {
+            return live.shape != ModelShape.None || live.height > 0f || live.offset != Vector3.zero || live.raisedOutline > 0f || !live.groundShadow;
+        }
+
         public static string SafeName(string s)
         {
             StringBuilder b = new StringBuilder();
@@ -85,7 +93,7 @@ namespace IsoRim
             {
                 return "R3D_Binder_BadPack".Translate();
             }
-            if (live.model.NullOrEmpty() && (live.models == null || live.models.Count == 0))
+            if (live.model.NullOrEmpty() && (live.models == null || live.models.Count == 0) && !Shaped(live))
             {
                 return "R3D_Binder_NoFile".Translate();
             }
@@ -95,7 +103,6 @@ namespace IsoRim
             {
                 Directory.CreateDirectory(Path.Combine(dir, "Defs"));
                 Directory.CreateDirectory(Path.Combine(dir, "Patches"));
-                Directory.CreateDirectory(Path.Combine(dir, "Models"));
 
                 // Model files: copied into Models/, paths in the def rewritten to Models/<name>.
                 Dictionary<string, string> copied = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -105,6 +112,7 @@ namespace IsoRim
                     string rel;
                     if (!copied.TryGetValue(full, out rel))
                     {
+                        Directory.CreateDirectory(Path.Combine(root, "Models"));   // (a shape needs no files)
                         rel = "Models/" + CopyModel(full, Path.Combine(root, "Models"), copied.Count);
                         copied[full] = rel;
                     }

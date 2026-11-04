@@ -257,6 +257,19 @@
     </shaderProgram>
   </ShaderDef>
 
+  <!-- (Api 52) Things drawn as cards (ModelDef.shape Card, ShapeCards): the plant card's vertex stage; the fragment stage
+       is the game's Cutout or CutoutComplex (by _IsoMasked), so masked sprites keep their colours. -->
+  <ShaderDef>
+    <defName>IsoRimCardSprite</defName>
+    <shaderProgram>
+      <vertexShaderFileName>IsoRimCard.vert.glsl</vertexShaderFileName>
+      <fragmentShaderFileName>IsoRimCardSprite.frag.glsl</fragmentShaderFileName>
+      <transparent>true</transparent>
+      <depthWrite>true</depthWrite>
+      <renderQueue>2900</renderQueue>
+    </shaderProgram>
+  </ShaderDef>
+
   <ShaderDef>
     <defName>IsoRimCardSnow</defName>
     <shaderProgram>

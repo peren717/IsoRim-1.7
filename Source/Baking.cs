@@ -30,6 +30,8 @@ namespace IsoRim
         public ModelEntry model;
         internal float wallTop;     // a wall drawn from a model (WallBoxes.ModelWall): the height of its wall top, cells; else 0
         internal WallTopSpec wallTops;  // (Api 11) a Block or Ground with a shaped top (ModelDef.wallTop, WallTops.cs); else null
+        internal ModelShape shape;      // (Api 52) ModelShape.Card: drawn by ShapeCards (form Extruded, height the card's)
+        internal ModelEntry bound;      // (Api 52) the def's entry when it has one and no model (Card, Raised): its offset, outline, groundShadow
     }
 
     public static class Forms
@@ -93,6 +95,25 @@ namespace IsoRim
             }
             ModelEntry entry;
             bool listed = ModelLibrary.TryGet(def, out entry);
+            bool shaped = listed && !entry.def.flat && !def.IsFrame && !def.IsBlueprint;
+
+            // (Api 52) A card, also of a thing the game draws every frame (baked by SectionLayer_IsoRimBodies).
+            if (shaped && entry.def.shape == ModelShape.Card && !entry.HasModel)
+            {
+                f.form = Form3D.Extruded;
+                f.shape = ModelShape.Card;
+                f.bound = entry;
+                f.height = ShapeCards.HeightOf(def, entry.def);
+                return f;
+            }
+            // (Api 52) An item with a height of its own and no model: raised to it, whatever its kind would be.
+            if (shaped && def.category == ThingCategory.Item && !entry.HasModel && entry.def.height > 0f && st.autoExtrude)
+            {
+                f.form = Form3D.Extruded;
+                f.bound = entry;
+                f.height = entry.def.height;
+                return f;
+            }
 
             // Things the game draws every frame (drawerType RealtimeOnly) are never printed into the
             // map mesh, so only a building with a hand-made model is reshaped: its model is baked
@@ -234,6 +255,7 @@ namespace IsoRim
                 }
                 f.form = Form3D.Extruded;
                 f.height = setHeight > 0f ? setHeight : Mathf.Max(def.fillPercent, 0.2f) * View3D.WallHeight;
+                f.bound = listed ? entry : null;
                 return f;
             }
 
@@ -332,6 +354,10 @@ namespace IsoRim
                 return BenchTops.Carries(b) ? BenchTops.TopOf(b) : 0f;
             }
             ThingForm f = For(b.def);
+            if (f.shape == ModelShape.Card)
+            {
+                return 0f;   // (Api 52) a card has no top to rest on: what is on it stays on the ground, as on a flat sprite
+            }
             return (f.form == Form3D.Flat || f.form == Form3D.Block) ? 0f : f.form == Form3D.Model ? SurfaceOf(b, f) : f.height;
         }
 
@@ -365,6 +391,9 @@ namespace IsoRim
         public static float baseHeight;   // cells above the ground the thing rests on
         public static float height;       // cells above the ground of its top
         public static bool done;          // its first sprite quad has been dealt with
+        public static Vector3 shift;      // (Api 52) Extrude: ModelDef.offset of a bound def with no model, cells
+        public static float outline;      // (Api 52) Extrude: its outline; 0 none (the automatic look has none)
+        public static bool noShadow;      // (Api 52) Extrude: its groundShadow off
 
         public static void Clear()
         {
@@ -374,6 +403,9 @@ namespace IsoRim
             baseHeight = 0f;
             height = 0f;
             done = false;
+            shift = Vector3.zero;
+            outline = 0f;
+            noShadow = false;
         }
     }
 
@@ -617,10 +649,15 @@ namespace IsoRim
                     if (!PrintContext.done)
                     {
                         PrintContext.done = true;
-                        bool extruded = Extruder.Extrude(layer, sm, n, mat, PrintContext.baseHeight, PrintContext.height);
-                        if (!extruded && PrintContext.baseHeight > 0f)
+                        Vector3 shift = PrintContext.shift;
+                        for (int i = n - 4; i < n; i++)
                         {
-                            MeshWriter.Raise(sm, n, PrintContext.baseHeight);
+                            sm.verts[i] += new Vector3(shift.x, 0f, shift.z);
+                        }
+                        bool extruded = Extruder.Extrude(layer, sm, n, mat, PrintContext.baseHeight + shift.y, PrintContext.height + shift.y);
+                        if (!extruded && PrintContext.baseHeight + shift.y > 0f)
+                        {
+                            MeshWriter.Raise(sm, n, PrintContext.baseHeight + shift.y);
                         }
                     }
                     break;
@@ -1825,6 +1862,7 @@ namespace IsoRim
         private const float LineShade = 0.30f;       // dark line where a side meets the ground
         private const float LineHeight = 0.03f;      // in cells
         private const float Gap = 0.004f;
+        private const float OutlineShell = 0.03f;    // (Api 52) cells, as a model's outline
 
         // dir 0 = toward the sprite's bottom edge, 1 = top, 2 = left, 3 = right.
         private static readonly int[] StepA = { 0, 0, -1, 1 };
@@ -1923,7 +1961,15 @@ namespace IsoRim
 
             MeshWriter.Raise(sm, n, top);
 
-            if (bottom <= 0.001f && GroundShadows.On)
+            LayerSubMesh outline = PrintContext.outline > 0f && IsoRimMod.Settings.outlines && R3DMaterials.Outline != null
+                ? MeshWriter.Sub(layer, R3DMaterials.Outline) : null;
+            if (outline != null && outline.verts.Count + mask.runs.Count * 4 > MeshWriter.MaxVerts)
+            {
+                outline = null;
+            }
+            float hullOut = OutlineShell * PrintContext.outline;
+
+            if (bottom <= 0.001f && GroundShadows.On && !PrintContext.noShadow)
             {
                 GroundShadows.UnderSprite(layer, v0, new Vector2(ax, az), new Vector2(bx, bz), mask.lids, top - bottom);
             }
@@ -1981,6 +2027,20 @@ namespace IsoRim
                     new Vector3(px, yBottom, pz), new Vector3(px, yTop, pz), new Vector3(qx, yTop, qz), new Vector3(qx, yBottom, qz),
                     R3DMaterials.Shaded(c0, shade * BottomShade), R3DMaterials.Shaded(c0, shade),
                     R3DMaterials.Shaded(c1, shade), R3DMaterials.Shaded(c1, shade * BottomShade));
+
+                if (outline != null)
+                {
+                    // (Api 52) as a model's outline: the side pushed out and turned inside out
+                    float ox = nx * hullOut;
+                    float oz = nz * hullOut;
+                    float yOut = yTop + hullOut / squash;
+                    Color32 line0 = R3DMaterials.Shaded(c0, LineShade);
+                    Color32 line1 = R3DMaterials.Shaded(c1, LineShade);
+                    MeshWriter.Quad(outline,
+                        new Vector3(qx + ox, yBottom, qz + oz), new Vector3(qx + ox, yOut, qz + oz),
+                        new Vector3(px + ox, yOut, pz + oz), new Vector3(px + ox, yBottom, pz + oz),
+                        line1, line1, line0, line0);
+                }
 
                 float gx = nx * Gap;
                 float gz = nz * Gap;
@@ -2427,6 +2487,11 @@ namespace IsoRim
         // The lowest height a baked model's corners are written at: the ground, except below a sunk hole (Bake).
         private static float Floor;
 
+        // (Api 52) Where BakeModel placed the box whose sprites follow it.
+        private static Vector3 shapeCenter, shapeFit;
+        private static Quaternion shapeTurn;
+        private static float shapeBase;
+
         // (Api 34) the shape pieces a wall drawn from a model stands in (ShapeModels.For), reused.
         private static readonly List<ShapeModels.Piece> shapePieces = new List<ShapeModels.Piece>();
 
@@ -2492,6 +2557,10 @@ namespace IsoRim
             bool mounted;
             Place(thing, entry, m, scale, ref yaw, ref baseHeight, out center, out fit, out mounted);
             Quaternion turn = Quaternion.AngleAxis(yaw, Vector3.up);
+            shapeTurn = turn;
+            shapeCenter = center;
+            shapeFit = fit;
+            shapeBase = baseHeight;
             Quaternion lay = def.layFlat ? Quaternion.AngleAxis(90f, Vector3.right) : Quaternion.identity;
             Vector3 layLift = def.layFlat ? new Vector3(0f, m.halfDepth, 0f) : Vector3.zero;
             Color tint = def.spriteTint ? SpriteColors.MeanFor(thing) : R3DTextures.ModelTint(thing);
@@ -2611,6 +2680,10 @@ namespace IsoRim
             finally
             {
                 CutTags.Enabled = tagsWere;
+            }
+            if (def.shape == ModelShape.Box && def.model.NullOrEmpty() && Ghost.a <= 0f && DamageMarks <= 0)
+            {
+                ShapeBoxes.PrintFaces(layer, thing, def, shapeCenter, shapeTurn, shapeFit, offset, shapeBase);   // (Api 52) its sprites
             }
             if (wall && DamageMarks <= 0 && thing.Map != null)
             {
@@ -2907,6 +2980,8 @@ namespace IsoRim
                 looked[i] = false;
             }
             LayerSubMesh plain = null;
+            LayerSubMesh round = null;   // (Api 52) the ModelMaterial.round faces, and their smooth normals
+            Vector3[] roundNormals = null;
 
             float squash = View3D.Squash;
             float baseY = baseHeight / squash;
@@ -2951,6 +3026,24 @@ namespace IsoRim
                         }
                     }
                     pm = plain;
+                }
+                bool smoothFace = mm != null && mm.round && !glow && mm.texture == null;
+                if (smoothFace)
+                {
+                    if (round == null)
+                    {
+                        Material roundMat = R3DMaterials.LitRound;
+                        round = roundMat != null ? MeshWriter.Sub(layer, roundMat) : null;
+                        roundNormals = SmoothFigures.NormalsOf(m);
+                    }
+                    if (round != null && roundNormals != null && round.verts.Count + n <= MeshWriter.MaxVerts)
+                    {
+                        pm = round;
+                    }
+                    else
+                    {
+                        smoothFace = false;
+                    }
                 }
 
                 // Find (once per material) where this triangle's textured face goes.
@@ -3011,6 +3104,14 @@ namespace IsoRim
                     if (tagged)
                     {
                         CutTags.Stamp(pm, triTag);
+                    }
+                    if (smoothFace)
+                    {
+                        // IsoRim.vert.glsl reads the flags and turns the normal by the mesh's squash (the baked corners are
+                        // squashed already, its matrix is not): written so that it comes out true.
+                        Vector3 sn = turn * (lay * roundNormals[k]);
+                        pm.normals.Add(new Vector3(sn.x / squash, sn.y, sn.z / squash));
+                        pm.uvsChannelTwo.Add(new Vector3(thing.Position.x + 0.5f, thing.Position.z + 0.5f, SmoothFigures.Bit | SmoothFigures.RoundBit));
                     }
 
                     // 2. outline

@@ -19,6 +19,14 @@ namespace IsoRim
     //   binderrefuse=x,z[,Def]        log why the binder refuses that thing (empty: it takes it)
     //   binderfile=<path>             the model file (as typed into the file field)
     //   binderpick=<text>             the Pick list: the first .obj whose name holds text
+    //   bindershape=<Model|Raised|Card|Box> / binderface=<side> / binderfacemode=<side>,<look>[,mirror] / binderfacemenu=1 / binderpicklist=1
+    //                                 the shape row and the Box face editor (Api 52)
+    //   bsuninstall=x,z               the building in the cell marked to be uninstalled (colonists do it: run tick= after)
+    //   bsreinstall=<Def>,x,z,rot     the first minified <Def> on the map given an install blueprint there (colonists carry it over)
+    //   bsbill=x,z,<RecipeDef>        a "do forever" bill on the work table in the cell
+    //   bsrest=x,z                    the first free colonist ordered to lie down in the bed in the cell
+    //   bsflow=<label>                logs each colonist's job, target and what it carries, and every building, frame, blueprint and
+    //                                 minified thing near the colonists' things (real pawn flows)
     //   binderset=<field>,<value>     a panel field: offset.x, builtFor.y, rotation, rotationByFacing.1, scale, overArt ...
     //   bindercopy=<ThingDef>         "Copy from existing" with that thing's model
     //   binderturn=1 / binderrevert=1 / binderclose=1
@@ -182,6 +190,98 @@ namespace IsoRim
                     return true;
                 case "bindertype":
                     BinderType(a[0], a[1]);
+                    return true;
+                case "bsuninstall":
+                {
+                    Thing t = new IntVec3(I(a[0]), 0, I(a[1])).GetFirstBuilding(map);
+                    if (t != null)
+                    {
+                        map.designationManager.AddDesignation(new Designation(t, DesignationDefOf.Uninstall));
+                    }
+                    Log.Message("[IsoRim probe] bsuninstall " + (t != null ? t.def.defName : "NOTHING"));
+                    return true;
+                }
+                case "bsreinstall":
+                {
+                    ThingDef want = DefDatabase<ThingDef>.GetNamed(a[0]);
+                    MinifiedThing m = map.listerThings.AllThings.OfType<MinifiedThing>().FirstOrDefault(x => x.InnerThing != null && x.InnerThing.def == want);
+                    if (m != null)
+                    {
+                        GenConstruct.PlaceBlueprintForInstall(m, new IntVec3(I(a[1]), 0, I(a[2])), map, new Rot4(I(a[3])), Faction.OfPlayer);
+                    }
+                    Log.Message("[IsoRim probe] bsreinstall " + a[0] + ": " + (m != null ? "placed" : "NO MINIFIED THING"));
+                    return true;
+                }
+                case "bsbill":
+                {
+                    Building_WorkTable table = new IntVec3(I(a[0]), 0, I(a[1])).GetFirstBuilding(map) as Building_WorkTable;
+                    RecipeDef recipe = DefDatabase<RecipeDef>.GetNamed(a[2]);
+                    if (table != null)
+                    {
+                        Bill_Production bill = (Bill_Production)recipe.MakeNewBill();
+                        bill.repeatMode = BillRepeatModeDefOf.Forever;
+                        table.BillStack.AddBill(bill);
+                    }
+                    Log.Message("[IsoRim probe] bsbill " + a[2] + " on " + (table != null ? table.def.defName : "NO TABLE"));
+                    return true;
+                }
+                case "bsrest":
+                {
+                    Building_Bed bed = new IntVec3(I(a[0]), 0, I(a[1])).GetFirstBuilding(map) as Building_Bed;
+                    Pawn p = map.mapPawns.FreeColonistsSpawned.FirstOrDefault();
+                    if (p != null && bed != null)
+                    {
+                        p.needs.rest.CurLevel = 0.1f;
+                        p.jobs.TryTakeOrderedJob(JobMaker.MakeJob(JobDefOf.LayDown, bed));
+                    }
+                    Log.Message("[IsoRim probe] bsrest " + (p != null ? p.LabelShort : "NOBODY") + " in " + (bed != null ? bed.def.defName : "NO BED"));
+                    return true;
+                }
+                case "bsitems":   // bsitems=x,z: logs what rests in the cell and how high
+                {
+                    foreach (Thing t in new IntVec3(I(a[0]), 0, I(a[1])).GetThingList(map))
+                    {
+                        Log.Message("[IsoRim probe] bsitems " + t.def.defName + " x" + t.stackCount + " form " + Forms.For(t).form + " top " + Forms.HeightOf(t).ToString("0.###")
+                            + (t.def.category == ThingCategory.Item ? " rests on " + Forms.BaseUnder(t, true).ToString("0.###") : ""));
+                    }
+                    return true;
+                }
+                case "bsflow":
+                {
+                    foreach (Pawn p in map.mapPawns.FreeColonistsSpawned)
+                    {
+                        Thing held = p.carryTracker != null ? p.carryTracker.CarriedThing : null;
+                        Log.Message("[IsoRim probe] bsflow " + a[0] + " " + p.LabelShort + " at " + p.Position + " job " + (p.CurJobDef != null ? p.CurJobDef.defName : "-")
+                            + " target " + (p.CurJob != null ? p.CurJob.targetA.ToString() : "-") + " carrying " + (held != null ? held.LabelNoCount : "-")
+                            + " posture " + p.GetPosture());
+                    }
+                    foreach (Thing t in map.listerThings.AllThings)
+                    {
+                        if (t is Blueprint || t is Frame || t is MinifiedThing || (t.Faction == Faction.OfPlayer && t.def.category == ThingCategory.Building))
+                        {
+                            Log.Message("[IsoRim probe] bsflow " + a[0] + " thing " + t.def.defName + " at " + t.Position + " form " + Forms.For(t).form + " height " + Forms.HeightOf(t).ToString("0.##")
+                                + (t is MinifiedThing mt ? " holds " + mt.InnerThing.def.defName : ""));
+                        }
+                    }
+                    return true;
+                }
+                case "bindershape":   // bindershape=Box: the panel's shape row; also closes the debug log for the shot
+                    Find.WindowStack.TryRemove(typeof(EditWindow_Log), false);
+                    Find.WindowStack.TryRemove(typeof(FloatMenu), false);
+                    BinderOpen.Shape = (BinderWindow.PanelShape)Enum.Parse(typeof(BinderWindow.PanelShape), a[0]);
+                    Log.Message("[IsoRim probe] bindershape " + a[0] + ": panel " + BinderOpen.Shape);
+                    return true;
+                case "binderface":    // binderface=<Top|North|East|South|West>: the selected face
+                    BinderOpen.SelectFace((BoxSide)Enum.Parse(typeof(BoxSide), a[0]));
+                    return true;
+                case "binderfacemode":   // binderfacemode=<side>,<BoxLook>[,mirror]
+                    BinderOpen.SetFace((BoxSide)Enum.Parse(typeof(BoxSide), a[0]), (BoxLook)Enum.Parse(typeof(BoxLook), a[1]), a.Length > 2);
+                    return true;
+                case "binderfacemenu":   // opens the selected face's dropdown
+                    BinderOpen.OpenFaceMenu();
+                    return true;
+                case "binderpicklist":   // opens the Pick list and leaves it open
+                    BinderOpen.OpenPicker();
                     return true;
                 case "coverage":
                 {

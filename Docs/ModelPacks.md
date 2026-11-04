@@ -73,6 +73,7 @@ Everything else in the `.mtl` is ignored. Write the `.mtl` by hand: Blender writ
 | Prefix | Effect |
 |---|---|
 | `stuff...` | Tinted by what the thing is made of; `{stuff}` in its texture path becomes Wood, Stone, Metal or Fabric. Use `stuff` / `stuff_dark` / `stuff_deep` for the body of things made of stuff. |
+| `stuff_round...` | Api 52: as `stuff`, for a material with no texture on a baked model: lit by smooth normals, no light steps, so round things read round. Faces meeting at more than the smoothing crease keep a hard edge. |
 | `sheet...` | Api 24: multiplied by the thing's second colour (`DrawColorTwo`), as the game tints the second-colour mask of its sprite: a bed's sheets in green, blue (medical), orange (prisoner) or yellow (slave), also for mod beds. Give it a light grey `Kd` (most other things' second colour is white). On an older IsoRim it simply keeps its `Kd`. |
 | `glow...`, `flame...`, `ember...` | Unlit (screens, lamps, fire). |
 | `leaf...`, `twig...` | Trees only (hidden / shown while bare). |
@@ -117,6 +118,12 @@ Common fields:
 | `layFlat` | false | Items built as held: tipped onto their side on the ground |
 | `outline`, `outlineMinSize` | 1, 0 | Outline strength (0: none); pieces smaller than `outlineMinSize` get none |
 | `groundShadow` | true | Soft shading on the ground under it |
+| `height` | -1 | With no model: height of the automatic shape (the raised sprite) or of a `Box`, in cells; -1 lets the mod decide |
+| `flat` | false | Keeps the thing as a flat sprite |
+| `shape` | None | (Api 52) A shape in place of a model file: `Card` or `Box`, see [Shapes without a model](#shapes-without-a-model-api-52) |
+| `boxFaces` | none | (Api 52) `Box`: what each face shows; a side not listed shows its sprite |
+| `topInset` | 0 | (Api 52) `Box`: how far in the top is drawn from the sides, in cells (a tapered top) |
+| `raisedOutline` | 0 | (Api 52) With no model and no shape: how bold an outline the raised sprite gets; 0 none |
 | `byAppearance`, `byState`, `byStyle` | | Other models by stuff look (Planks, Bricks ...), by an addon's state (Api 6), by Ideology style |
 | `aged` | 0 | Api 15: drawn old and rusty |
 | `immatureModels`, `immatureHide` | | Api 24, plants: the young stage, drawn while the plant is not yet harvestable (as the game's `immatureGraphic`, growth up to `harvestMinGrowth`). `immatureModels`: own models, one per variant of `models` (same order). `immatureHide`: material names left out of the young stage, e.g. the produce; with no `immatureModels` the young stage is the mature model without them. `growthScale` still shrinks it |
@@ -159,6 +166,48 @@ Examples:
   </immatureHide>
 </IsoRim.ModelDef>
 ```
+
+## Shapes without a model (Api 52)
+
+For things nobody has made a model for. No `model`; the thing's own sprite does the work, so its stuff colour, facings and
+random variants come along, and a pack needs no `Models/` folder.
+
+- **Raised** is no `shape`: a def with no model and `height`, `offset`, `groundShadow`, `raisedOutline`. It is the automatic
+  look, adjusted, so it works on any IsoRim (`height` always; the rest from Api 52). Walls, linked things and things the game
+  draws every frame have no raised form.
+- **`Card`**: the sprite stood up in the middle of the footprint, facing the camera. `scale` sizes it, `offset` moves it; empty rows
+  under the paint go below the ground. No thickness; a building's art may be top-down, so it suits towers, signs, tall things.
+- **`Box`**: a box of the footprint, `height` tall (default 0.6), `scale` sizing it. Set `builtFor` to the thing's size.
+  Faces turn with the box. Its plain faces take the sprite's mean colour, which also shows through see-through pixels. Buildings only.
+
+```xml
+<IsoRim.ModelDef>
+  <defName>R3D_MyPack_Press</defName>
+  <thingDef>Press</thingDef>
+  <shape>Box</shape>
+  <height>0.8</height>
+  <builtFor>(2, 1)</builtFor>
+  <topInset>0.1</topInset>
+  <boxFaces>
+    <li><side>North</side><look>Edge</look></li>
+    <li><side>West</side><look>SpriteEast</look><mirror>true</mirror></li>
+    <li><side>Top</side><look>None</look></li>
+  </boxFaces>
+</IsoRim.ModelDef>
+```
+
+`side` is `Top`, `North`, `East`, `South` or `West`. `look`:
+
+| Look | The face shows |
+|---|---|
+| `Sprite` | The sprite the thing shows now, whole (its empty margin left out). The default |
+| `SpriteNorth`, `SpriteEast`, `SpriteSouth`, `SpriteWest` | The sprite of that facing (Graphic_Multi) |
+| `Edge` | Sides only: a strip of the sprite from that side, stretched up the face, like a raised sprite's sides |
+| `MeanColour` | The sprite's mean colour |
+| `None` | Left open: the box gets thin walls and a dark inside |
+
+`mirror` flips the sprite left to right. Gate these fields on Api 52 (the binder's export does): an older IsoRim leaves the thing as it is.
+Per-frame overlays (power icons, fuel bars, glows) stay where the game draws them.
 
 ## Gating on IsoRim's version
 
@@ -517,9 +566,14 @@ draws every frame) and items; it refuses doors, turrets, pawns, styled things an
 
 The panel (it does not pause the game; typing in its fields doesn't move the camera):
 
+- **Shape**: **Model** (a file, below), or (Api 52) **Raised**, **Card** and **Box** with no file, see
+  [Shapes without a model](#shapes-without-a-model-api-52). Only the shapes the thing can take are listed; a thing with no model opens on
+  Raised, its look now. A shape starts from an empty def; going back to Model restores the model. **Box** has an unfolded box: click a
+  face, choose what it shows, **Mirror** it, **Apply to sides** copies the selected side to all four.
 - **File**: paste a full path to an `.obj` (for example a fresh Blender export), or **Pick** one from a searchable list:
-  every `Models/*.obj` of IsoRim and of each active mod in your local Mods folder, and the workspace
-  `<save data>/IsoRimBinder/Models/`. Under it: triangles and size, and warnings (below the ground, wider than the
+  **Templates** first (20 simple shapes in `Models/Templates/`: picking one sets Built for to one cell, so it fills the footprint, and on
+  a thing without stuff turns on **Sprite colour**, `spriteTint`), then every `Models/*.obj` of IsoRim and of each active mod in your local
+  Mods folder, and the workspace `<save data>/IsoRimBinder/Models/`. Under it: triangles and size, and warnings (below the ground, wider than the
   footprint, stuff faces on a thing without stuff). **Reload** reads the file again; a file saved again is also reloaded
   by itself within a second.
 - **Built for, Offset, Rotation** (with 0/90/180/270 buttons), **Per facing** (`rotationByFacing`), **Turn** (turns the
@@ -533,7 +587,7 @@ The panel (it does not pause the game; typing in its fields doesn't move the cam
 - **Export** with a **Pack** name writes `<save data>/IsoRimBinder/<Pack>/`: `Defs/` (the ModelDef, defName
   `R3D_<Pack>_<thing>`, no thingDef, base fields only), `Patches/` (the binding plus the newer fields, gated on the
   `minVersion` they need), `Models/`
-  (copies of the `.obj` and the `.mtl` files it names), and, the first time, `About/About.xml` and the gate DLL. Exporting
+  (copies of the `.obj` and the `.mtl` files it names; none for a shape), and, the first time, `About/About.xml` and the gate DLL. Exporting
   more things with the same pack name adds them to the same folder. Fill in `About.xml` (author, packageId) and move the
   folder into your Mods folder to load it. The binder never writes into a mod or Workshop folder.
 

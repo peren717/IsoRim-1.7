@@ -103,7 +103,7 @@ namespace IsoRim
         // 51: ApparelModelDef.fitLift (People.FitLift): an over-the-shell garment fitted as cloth resting on what is worn under it,
         // its parts inside leaving up over the clothes' top (per ring and direction) or out past their reach, rounded fields, the
         // moves smoothed over its mesh; garments without it keep FitOver unchanged.
-        public static int Version => 51;
+        public static int Version => 52;
 
         // ---- glass parts (Version 30)
 

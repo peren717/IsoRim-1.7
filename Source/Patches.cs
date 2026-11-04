@@ -1740,6 +1740,12 @@ namespace IsoRim
                 bool item = __0.def.category == ThingCategory.Item;
                 float resting = item ? Forms.BaseUnder(__0, true) : 0f;
 
+                // (Api 52) A card stands in for the sprite.
+                if (form.shape == ModelShape.Card && ShapeCards.Print(__instance, __0, form.bound, resting))
+                {
+                    return false;
+                }
+
                 // A wall fixture without a model: its sprite stands on the wall face (WallMount).
                 if (form.form != Form3D.Model && !item && WallMount.Is(__0.def) && WallMount.PrintCard(__instance, __0))
                 {
@@ -1785,6 +1791,14 @@ namespace IsoRim
                         PrintContext.mode = PrintMode.Extrude;
                         PrintContext.baseHeight = resting;
                         PrintContext.height = resting + form.height;
+                        if (form.bound != null)
+                        {
+                            // (Api 52) what a bound def with no model sets (the binder's Raised)
+                            ModelDef raised = form.bound.def;
+                            PrintContext.shift = raised.offset;
+                            PrintContext.outline = raised.raisedOutline;
+                            PrintContext.noShadow = !raised.groundShadow;
+                        }
                         break;
 
                     case Form3D.Worn:

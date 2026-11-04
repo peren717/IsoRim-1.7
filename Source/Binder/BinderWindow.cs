@@ -13,7 +13,7 @@ namespace IsoRim
     // The model binder's panel (ModelBinder.Open): a non-pausing dev window on one thing. Every change goes straight into a
     // clone of the thing's ModelDef (live) and is drawn through ModelLibrary.SetOverride; the map rebuild that follows is
     // debounced by the view (View3D.StateSignature). Closing the panel keeps the change for this game; Revert drops it.
-    public class BinderWindow : EditWindow
+    public partial class BinderWindow : EditWindow
     {
         private readonly Thing thing;
         private readonly ThingDef def;
@@ -106,6 +106,7 @@ namespace IsoRim
             }
             pathText = ModelBinder.FullPath(live, live.model) ?? "";
             NoteFile();
+            PanelFromLive();
             if (ModelLibrary.IsOverridden(def))
             {
                 entry = ModelLibrary.TryGet(def, out ModelEntry e) ? e : null;
@@ -118,7 +119,7 @@ namespace IsoRim
 
         public override Vector2 InitialSize
         {
-            get { return new Vector2(470f, 560f); }
+            get { return new Vector2(470f, 640f); }
         }
 
         // At the left edge, so the thing in the middle of the screen stays in view.
@@ -133,7 +134,7 @@ namespace IsoRim
         // Draws the thing with live now (the map follows after the view's debounce).
         public void Apply()
         {
-            if (live.model.NullOrEmpty() && (live.models == null || live.models.Count == 0))
+            if (panelShape == PanelShape.Model && live.model.NullOrEmpty() && (live.models == null || live.models.Count == 0))
             {
                 return;   // nothing to draw yet
             }
@@ -172,6 +173,7 @@ namespace IsoRim
             live.immatureModels = null;  // (Api 24) the copied def's young stage; its immatureHide still applies to the new file
             live.byStyle = null;
             live.parts = null;
+            TemplatePicked(full);
             pathText = full;
             NoteFile();
             Apply();
@@ -203,6 +205,9 @@ namespace IsoRim
             NoteFile();
             warnings.Clear();
             DynamicModels.Forget();
+            beforeShape = null;
+            PanelFromLive();
+            fitPending = true;
         }
 
         // Starts again from another thing's model (its file, placement and options), bound to this thing.
@@ -231,6 +236,9 @@ namespace IsoRim
             pathText = ModelBinder.FullPath(live, live.model) ?? "";
             buffers.Clear();
             NoteFile();
+            beforeShape = null;
+            panelShape = PanelShape.Model;
+            fitPending = true;
             Apply();
         }
 
@@ -409,7 +417,7 @@ namespace IsoRim
             {
                 stuff |= mm.tinted;
             }
-            if (stuff && !def.MadeFromStuff)
+            if (stuff && !def.MadeFromStuff && !live.spriteTint)
             {
                 warnings.Add("R3D_Binder_StuffOnStuffless".Translate());
             }
@@ -448,6 +456,17 @@ namespace IsoRim
             Widgets.Label(new Rect(0f, y, w, 22f), how);
             GUI.color = Color.white;
             y += 24f;
+
+            DrawShapeRow(ref y, w);
+            if (Shape != PanelShape.Model)
+            {
+                DrawShapeControls(ref y, w);
+                DrawFooter(ref y, w);
+                viewHeight = y + 10f;
+                Widgets.EndScrollView();
+                FitOnce();
+                return;
+            }
 
             // File row: path field, picker, reload.
             Widgets.Label(new Rect(0f, y, 90f, 24f), "R3D_Binder_File".Translate());
@@ -602,6 +621,7 @@ namespace IsoRim
                 Check(ref y, w, "R3D_Binder_OverArt", "overArt");
                 Check(ref y, w, "R3D_Binder_LayFlat", "layFlat");
             }
+            Check(ref y, w, "R3D_Binder_SpriteTint", "spriteTint");
             Single(ref y, w, "R3D_Binder_Outline", "outline");
             Check(ref y, w, "R3D_Binder_GroundShadow", "groundShadow");
             if (entry != null && Forms.For(def).form != Form3D.Model)
@@ -612,7 +632,25 @@ namespace IsoRim
                 y += 24f;
             }
             y += 6f;
+            DrawFooter(ref y, w);
+            viewHeight = y + 10f;
+            Widgets.EndScrollView();
+            FitOnce();
+        }
 
+        // After a change of shape the window takes the panel's height once; from then on it keeps the size it is dragged to.
+        private void FitOnce()
+        {
+            if (fitPending)
+            {
+                fitPending = false;
+                windowRect.height = Mathf.Min(InitialSize.y, viewHeight + 80f);
+            }
+        }
+
+        // Start over and export: the same for every shape.
+        private void DrawFooter(ref float y, float w)
+        {
             // Start over.
             float half = (w - 4f) / 2f;
             if (Widgets.ButtonText(new Rect(0f, y, half, 28f), "R3D_Binder_Copy".Translate()))
@@ -642,8 +680,6 @@ namespace IsoRim
                 GUI.color = Color.white;
                 y += 40f;
             }
-            viewHeight = y + 10f;
-            Widgets.EndScrollView();
         }
 
         // Clicking outside the panel drops the focus of its fields, so the camera keys work again.
@@ -677,13 +713,7 @@ namespace IsoRim
 
         public void OpenPicker()
         {
-            List<BinderList.Entry> list = new List<BinderList.Entry>();
-            foreach (ModelBinder.ObjFile f in ModelBinder.ObjFiles())
-            {
-                string path = f.path;
-                list.Add(new BinderList.Entry { group = f.group, label = f.name, tip = path, pick = () => SetFile(path) });
-            }
-            Find.WindowStack.Add(new BinderList("R3D_Binder_Pick".Translate(), list));
+            Find.WindowStack.Add(new BinderList("R3D_Binder_Pick".Translate(), PickEntries()));
         }
 
         private void OpenCopyList()

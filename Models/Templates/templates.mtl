@@ -1,0 +1,16 @@
+# IsoRim binder templates: "stuff" names take the thing's colour; stuff_round faces are lit by smooth normals.
+
+newmtl stuff_plain
+Kd 1.000 1.000 1.000
+
+newmtl stuff_plain_dark
+Kd 0.800 0.800 0.800
+
+newmtl stuff_round
+Kd 1.000 1.000 1.000
+
+newmtl stuff_round_dark
+Kd 0.800 0.800 0.800
+
+newmtl glow
+Kd 1.000 0.930 0.700
