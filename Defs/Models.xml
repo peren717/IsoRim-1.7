@@ -67,30 +67,62 @@
     <defName>R3D_Table1x2c</defName>
     <thingDef>Table1x2c</thingDef>
     <model>Models/table_1x2.obj</model>
+    <byStyle>
+      <li><style>Morbid_Table1x2c</style><model>Models/morbid_table_1x2.obj</model></li>
+      <li><style>Totemic_Table1x2c</style><model>Models/totemic_table_1x2.obj</model></li>
+      <li><style>Spikecore_Table1x2c</style><model>Models/spikecore_table_1x2.obj</model></li>
+      <li><style>Rustic_Table1x2c</style><model>Models/rustic_table_1x2.obj</model></li>
+      <li><style>Techist_Table1x2c</style><model>Models/techist_table_1x2.obj</model></li>
+    </byStyle>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Table2x2c</defName>
     <thingDef>Table2x2c</thingDef>
     <model>Models/table_2x2.obj</model>
+    <byStyle>
+      <li><style>Morbid_Table2x2c</style><model>Models/morbid_table_2x2.obj</model></li>
+      <li><style>Totemic_Table2x2c</style><model>Models/totemic_table_2x2.obj</model></li>
+      <li><style>Spikecore_Table2x2c</style><model>Models/spikecore_table_2x2.obj</model></li>
+      <li><style>Rustic_Table2x2c</style><model>Models/rustic_table_2x2.obj</model></li>
+      <li><style>Techist_Table2x2c</style><model>Models/techist_table_2x2.obj</model></li>
+    </byStyle>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Table2x4c</defName>
     <thingDef>Table2x4c</thingDef>
     <model>Models/table_2x4.obj</model>
+    <byStyle>
+      <li><style>Morbid_Table2x4c</style><model>Models/morbid_table_2x4.obj</model></li>
+      <li><style>Totemic_Table2x4c</style><model>Models/totemic_table_2x4.obj</model></li>
+      <li><style>Spikecore_Table2x4c</style><model>Models/spikecore_table_2x4.obj</model></li>
+      <li><style>Rustic_Table2x4c</style><model>Models/rustic_table_2x4.obj</model></li>
+      <li><style>Techist_Table2x4c</style><model>Models/techist_table_2x4.obj</model></li>
+    </byStyle>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Table3x3c</defName>
     <thingDef>Table3x3c</thingDef>
     <model>Models/table_3x3.obj</model>
+    <byStyle>
+      <li><style>Morbid_Table3x3c</style><model>Models/morbid_table_3x3.obj</model></li>
+      <li><style>Totemic_Table3x3c</style><model>Models/totemic_table_3x3.obj</model></li>
+      <li><style>Spikecore_Table3x3c</style><model>Models/spikecore_table_3x3.obj</model></li>
+      <li><style>Rustic_Table3x3c</style><model>Models/rustic_table_3x3.obj</model></li>
+      <li><style>Techist_Table3x3c</style><model>Models/techist_table_3x3.obj</model></li>
+    </byStyle>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Stool</defName>
     <thingDef>Stool</thingDef>
     <model>Models/stool.obj</model>
+    <byStyle>
+      <li><style>Morbid_Stool</style><model>Models/morbid_stool.obj</model></li>
+      <li><style>Totemic_Stool</style><model>Models/totemic_stool.obj</model></li>
+    </byStyle>
     <seatHeight>0.44</seatHeight>
   </IsoRim.ModelDef>
 
@@ -98,6 +130,9 @@
     <defName>R3D_DiningChair</defName>
     <thingDef>DiningChair</thingDef>
     <model>Models/dining_chair.obj</model>
+    <byStyle>
+      <li><style>Totemic_DiningChair</style><model>Models/totemic_dining_chair.obj</model></li>
+    </byStyle>
     <seatHeight>0.44</seatHeight>
   </IsoRim.ModelDef>
 
@@ -112,6 +147,12 @@
     <defName>R3D_TorchLamp</defName>
     <thingDef>TorchLamp</thingDef>
     <model>Models/torch_lamp.obj</model>
+    <byStyle>
+      <li><style>Morbid_TorchLamp</style><model>Models/morbid_torch_lamp.obj</model></li>
+      <li><style>Totemic_TorchLamp</style><model>Models/totemic_torch_lamp.obj</model></li>
+      <li><style>Spikecore_TorchLamp</style><model>Models/spikecore_torch_lamp.obj</model></li>
+      <li><style>Rustic_TorchLamp</style><model>Models/rustic_torch_lamp.obj</model></li>
+    </byStyle>
     <surfaceHeight>0.00</surfaceHeight>
   </IsoRim.ModelDef>
 
@@ -119,6 +160,13 @@
     <defName>R3D_StandingLamp</defName>
     <thingDef>StandingLamp</thingDef>
     <model>Models/standing_lamp.obj</model>
+    <byStyle>
+      <li><style>Morbid_StandingLamp</style><model>Models/morbid_standing_lamp.obj</model></li>
+      <li><style>Totemic_StandingLamp</style><model>Models/totemic_standing_lamp.obj</model></li>
+      <li><style>Spikecore_StandingLamp</style><model>Models/spikecore_standing_lamp.obj</model></li>
+      <li><style>Rustic_StandingLamp</style><model>Models/rustic_standing_lamp.obj</model></li>
+      <li><style>Techist_StandingLamp</style><model>Models/techist_standing_lamp.obj</model></li>
+    </byStyle>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -144,6 +192,9 @@
     <defName>R3D_PlantPot</defName>
     <thingDef>PlantPot</thingDef>
     <model>Models/plant_pot_b8.obj</model>
+    <byStyle>
+      <li><style>Techist_PlantPot</style><model>Models/techist_plant_pot.obj</model></li>
+    </byStyle>
     <builtFor>(1, 1)</builtFor>
     <surfaceHeight>0.30</surfaceHeight>
   </IsoRim.ModelDef>
@@ -209,6 +260,12 @@
     <defName>R3D_TorchWallLamp</defName>
     <thingDef>TorchWallLamp</thingDef>
     <model>Models/wall_torch.obj</model>
+    <byStyle>
+      <li><style>Morbid_WallTorch</style><model>Models/morbid_wall_torch.obj</model></li>
+      <li><style>Totemic_WallTorch</style><model>Models/totemic_wall_torch.obj</model></li>
+      <li><style>Spikecore_WallTorch</style><model>Models/spikecore_wall_torch.obj</model></li>
+      <li><style>Rustic_WallTorch</style><model>Models/rustic_wall_torch.obj</model></li>
+    </byStyle>
     <surfaceHeight>0.00</surfaceHeight>
     <wallMounted>true</wallMounted>
     <groundShadow>false</groundShadow>
@@ -218,6 +275,13 @@
     <defName>R3D_WallLamp</defName>
     <thingDef>WallLamp</thingDef>
     <model>Models/wall_lamp.obj</model>
+    <byStyle>
+      <li><style>Morbid_WallLamp</style><model>Models/morbid_wall_lamp.obj</model></li>
+      <li><style>Totemic_WallLamp</style><model>Models/totemic_wall_lamp.obj</model></li>
+      <li><style>Spikecore_WallLamp</style><model>Models/spikecore_wall_lamp.obj</model></li>
+      <li><style>Rustic_WallLamp</style><model>Models/rustic_wall_lamp.obj</model></li>
+      <li><style>Techist_WallLamp</style><model>Models/techist_wall_lamp.obj</model></li>
+    </byStyle>
     <surfaceHeight>0.00</surfaceHeight>
     <wallMounted>true</wallMounted>
     <groundShadow>false</groundShadow>
@@ -344,6 +408,9 @@
     <defName>R3D_ShelfSmall</defName>
     <thingDef>ShelfSmall</thingDef>
     <model>Models/shelf_small.obj</model>
+    <byStyle>
+      <li><style>Techist_ShelfSmall</style><model>Models/techist_shelf_small.obj</model></li>
+    </byStyle>
     <surfaceHeight>0.60</surfaceHeight>
   </IsoRim.ModelDef>
 
@@ -351,6 +418,9 @@
     <defName>R3D_Shelf</defName>
     <thingDef>Shelf</thingDef>
     <model>Models/shelf.obj</model>
+    <byStyle>
+      <li><style>Techist_Shelf</style><model>Models/techist_shelf.obj</model></li>
+    </byStyle>
     <surfaceHeight>0.60</surfaceHeight>
   </IsoRim.ModelDef>
 
@@ -418,6 +488,13 @@
     <defName>R3D_Column</defName>
     <thingDef>Column</thingDef>
     <model>Models/column.obj</model>
+    <byStyle>
+      <li><style>Morbid_Column</style><model>Models/morbid_column.obj</model></li>
+      <li><style>Totemic_Column</style><model>Models/totemic_column.obj</model></li>
+      <li><style>Spikecore_Column</style><model>Models/spikecore_column.obj</model></li>
+      <li><style>Rustic_Column</style><model>Models/rustic_column.obj</model></li>
+      <li><style>Techist_Column</style><model>Models/techist_column.obj</model></li>
+    </byStyle>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -5651,6 +5728,16 @@
       <li>(-0.77, 0.62, -1.6)</li>
     </emitters>
     <emitterRise>0.15</emitterRise>
+  </IsoRim.ModelDef>
+
+  <!-- Ideology's Techist autodoor (one-cell door, Doors.DrawOne): the plain lintel as frame, a leaf of its own; the other leaf is the same turned half round. -->
+  <IsoRim.ModelDef>
+    <defName>R3D_Techist_Autodoor</defName>
+    <thingDef>Autodoor</thingDef>
+    <style>Techist_Autodoor</style>
+    <model>Models/techist_door_frame.obj</model>
+    <doorLeafModel>Models/techist_door_leaf.obj</doorLeafModel>
+    <builtFor>(1, 1)</builtFor>
   </IsoRim.ModelDef>
 
   <!-- Animal flap (one cell, 2026-10-21, tools/make_animal_flap.py): a fabric valance (frame) and two halves of the

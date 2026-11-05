@@ -1,0 +1,10 @@
+# Style furniture batch 2 (make_stylefurn.py): fixed colours read from the sprites.
+newmtl sf_log_dark
+Kd 0.340 0.230 0.140
+map_Kd IsoRim/Swatches/Wood
+
+newmtl sf_bone
+Kd 0.800 0.800 0.790
+
+newmtl sf_bone_dark
+Kd 0.170 0.170 0.170

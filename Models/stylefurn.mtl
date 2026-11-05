@@ -1,0 +1,16 @@
+# Style furniture (make_stylefurn.py): flush top zones between stuff and stuff_dark, and the ribs of the Rustic lamp shade.
+newmtl stuff_sf_panel
+Kd 0.880 0.880 0.880
+map_Kd IsoRim/Swatches/{stuff}
+
+newmtl stuff_sf_panel2
+Kd 0.940 0.940 0.940
+map_Kd IsoRim/Swatches/{stuff}
+
+newmtl stuff_sf_line
+Kd 0.700 0.700 0.700
+map_Kd IsoRim/Swatches/{stuff}
+
+newmtl glow_sf_rib
+Kd 0.840 0.760 0.580
+map_Kd IsoRim/Swatches/Glow
