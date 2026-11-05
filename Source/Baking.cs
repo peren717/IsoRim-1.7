@@ -934,7 +934,7 @@ namespace IsoRim
             {
                 return WallKind.Sandbags;
             }
-            switch (R3DTextures.StuffSwatch(t))
+            switch (R3DTextures.WallSwatch(t))
             {
                 case "Stone":
                     return WallKind.Bricks;

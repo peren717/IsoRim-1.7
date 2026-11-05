@@ -1,4 +1,4 @@
-# Armchair (make_armchair3.py): the stuff tones on the Fabric swatch. Armchairs are made of Fabric and Leathery stuff only; {stuff} would pick Metal for them.
+# Armchair (make_armchair3.py): the stuff tones on the Fabric swatch. Armchairs are made of Fabric and Leathery stuff only, the swatch {stuff} gives them too.
 newmtl stuff_armchair
 Kd 1.000 1.000 1.000
 map_Kd IsoRim/Swatches/Fabric

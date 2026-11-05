@@ -3618,7 +3618,32 @@ namespace IsoRim
             return SwatchOf(t.Stuff);
         }
 
+        // The surface texture of models of this stuff. The game gives a stuff that names no look the appearance Smooth,
+        // so cloth and leather come here as Smooth too: their category says what they are. Walls do not ask this
+        // (WallSwatch): a cloth wall keeps its plates.
         public static string SwatchOf(ThingDef stuff)
+        {
+            if (stuff != null && stuff.stuffProps != null && stuff.stuffProps.appearance != null && stuff.stuffProps.appearance.defName == "Smooth"
+                && (HasCategory(stuff, "Fabric") || HasCategory(stuff, "Leathery")))
+            {
+                return "Fabric";
+            }
+            return BySurfaceLook(stuff);
+        }
+
+        // Which of the wall texture sets (ModelBaker's WallKind) a wall of this thing's stuff takes.
+        public static string WallSwatch(Thing t)
+        {
+            return BySurfaceLook(t.Stuff);
+        }
+
+        private static bool HasCategory(ThingDef stuff, string category)
+        {
+            List<StuffCategoryDef> cats = stuff.stuffProps.categories;
+            return cats != null && cats.Exists(c => c.defName == category);
+        }
+
+        private static string BySurfaceLook(ThingDef stuff)
         {
             if (stuff == null || stuff.stuffProps == null)
             {
@@ -3656,7 +3681,8 @@ namespace IsoRim
                     }
                 }
             }
-            return "Wood";
+            // The Metal look on a stuff of no category read above (the labyrinth's gray matter)
+            return name == "Metal" && !HasCategory(stuff, "Woody") ? "Metal" : "Wood";
         }
     }
 
