@@ -32,6 +32,7 @@ namespace IsoRim
         private static readonly Dictionary<string, int> FieldVersion = new Dictionary<string, int>
         {
             { "holdAsBuilt", 54 }, { "carryStand", 54 }, { "carryLean", 54 }, { "bakedItem", 54 },
+            { "tubeColor", 58 },
             { "shape", 52 }, { "boxFaces", 52 }, { "topInset", 52 }, { "raisedOutline", 52 },
             { "deadBellyUp", 5 }, { "hackedGlowOff", 5 }, { "legFromHip", 5 }, { "legLift", 5 }, { "legYaw", 5 },
             { "rotationByFacing", 6 }, { "style", 6 }, { "crownTop", 6 }, { "doorLeafRise", 6 }, { "byState", 6 },

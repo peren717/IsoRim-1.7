@@ -118,9 +118,10 @@ Common fields:
 | `layFlat` | false | Items built as held: tipped onto their side on the ground |
 | `outline`, `outlineMinSize` | 1, 0 | Outline strength (0: none); pieces smaller than `outlineMinSize` get none |
 | `groundShadow` | true | Soft shading on the ground under it |
-| `height` | -1 | With no model: height of the automatic shape (the raised sprite) or of a `Box`, in cells; -1 lets the mod decide |
+| `height` | -1 | With no model: height of the automatic shape (the raised sprite) or of a `Box`, or thickness of a `Tube`, in cells; -1 lets the mod decide |
 | `flat` | false | Keeps the thing as a flat sprite |
-| `shape` | None | (Api 52) A shape in place of a model file: `Card` or `Box`, see [Shapes without a model](#shapes-without-a-model-api-52) |
+| `shape` | None | (Api 52) A shape in place of a model file: `Card` or `Box`, see [Shapes without a model](#shapes-without-a-model-api-52); (Api 58) `Tube` |
+| `tubeColor` | from the atlas | (Api 58) `Tube`: its colour |
 | `boxFaces` | none | (Api 52) `Box`: what each face shows; a side not listed shows its sprite |
 | `topInset` | 0 | (Api 52) `Box`: how far in the top is drawn from the sides, in cells (a tapered top) |
 | `raisedOutline` | 0 | (Api 52) With no model and no shape: how bold an outline the raised sprite gets; 0 none |
@@ -180,6 +181,9 @@ random variants come along, and a pack needs no `Models/` folder.
   under the paint go below the ground. No thickness; a building's art may be top-down, so it suits towers, signs, tall things.
 - **`Box`**: a box of the footprint, `height` tall (default 0.6), `scale` sizing it. Set `builtFor` to the thing's size.
   Faces turn with the box. Its plain faces take the sprite's mean colour, which also shows through see-through pixels. Buildings only.
+
+- **`Tube`** (Api 58): a low linked thing (a conduit, a pipe) as a tube along the sides its sprite joins, as thick as its atlas's pipe and in its colour
+  unless `height` or `tubeColor` say otherwise. Set `groundShadow` false and `outline` 0. See Docs/Api.md part 41.
 
 ```xml
 <IsoRim.ModelDef>

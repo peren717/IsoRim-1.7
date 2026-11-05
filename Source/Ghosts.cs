@@ -25,6 +25,16 @@ namespace IsoRim
             return t.def.entityDefToBuild as ThingDef;
         }
 
+        // The form a thing's ghost takes: its own, except a tube (Api 58, ShapeTubes), whose blueprint, frame and placing ghost keep the
+        // game's flat drawing.
+        private static readonly ThingForm FlatForm = new ThingForm();
+
+        private static ThingForm FormOf(ThingDef def)
+        {
+            ThingForm f = Forms.For(def);
+            return f.form == Form3D.Model && f.model != null && f.model.def.shape == ModelShape.Tube ? FlatForm : f;
+        }
+
         // Writes the ghost of a blueprint or frame into a block of the map. Returns false if the
         // thing it will become has no 3D shape, so the game's own sprite should be drawn.
         public static bool Print(SectionLayer layer, Thing t)
@@ -35,7 +45,7 @@ namespace IsoRim
             {
                 return false;
             }
-            ThingForm form = Forms.For(target);
+            ThingForm form = FormOf(target);
             Color col = t is Frame ? FrameColor : BlueprintColor;
             // Inside a solid building (a cooler set into a wall line): the x-ray ghost (Occupied, see DrawGhost).
             bool xray = !FixOff && Occupied(target, t.Position, t.Rotation, t.Map, t);
@@ -129,7 +139,7 @@ namespace IsoRim
                 {
                     continue;
                 }
-                ThingForm form = Forms.For(target);
+                ThingForm form = FormOf(target);
                 if (form.form == Form3D.Block && form.height >= height - 0.01f)
                 {
                     return true;
@@ -421,7 +431,7 @@ namespace IsoRim
             {
                 return false;
             }
-            ThingForm form = Forms.For(def);
+            ThingForm form = FormOf(def);
             float s = View3D.Squash;
             if (!FixOff && def.thingClass != null && typeof(Building_Door).IsAssignableFrom(def.thingClass))
             {
@@ -525,7 +535,7 @@ namespace IsoRim
                     || typeof(Building_MultiTileDoor).IsAssignableFrom(def.thingClass) && ModelLibrary.TryGet(def, out e) && e.HasModel && e.doorLeaf != null
                     || WideSupported(def) && IsoRimMod.Settings.models3D && ModelLibrary.TryGet(def, out e) && e.HasModel;   // (Api 29)
             }
-            ThingForm form = Forms.For(def);
+            ThingForm form = FormOf(def);
             switch (form.form)
             {
                 case Form3D.Model:
@@ -548,7 +558,7 @@ namespace IsoRim
         // How the placement preview shows a def in 3D (probe inventory): "model", "block", or "2d:<why>".
         public static string PreviewKind(ThingDef def)
         {
-            ThingForm form = Forms.For(def);
+            ThingForm form = FormOf(def);
             ModelEntry e;
             bool listed = ModelLibrary.TryGet(def, out e);
             if (def.thingClass != null && typeof(Building_Door).IsAssignableFrom(def.thingClass))

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Low linked things drawn as tubes (Api 58, ModelDef shape Tube, Docs/Api.md part 41), as thick as their art, in its colour. Hidden conduits have no entry: they stay as the game draws them. -->
+  <IsoRim.ModelDef>
+    <defName>R3D_PowerConduit</defName>
+    <thingDef>PowerConduit</thingDef>
+    <shape>Tube</shape>
+    <groundShadow>false</groundShadow>
+    <outline>0</outline>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_WaterproofConduit</defName>
+    <thingDef>WaterproofConduit</thingDef>
+    <shape>Tube</shape>
+    <groundShadow>false</groundShadow>
+    <outline>0</outline>
+  </IsoRim.ModelDef>
+
+</Defs>

@@ -13,7 +13,8 @@ namespace IsoRim
     {
         None,
         Card,   // the sprite stood up facing the camera (ShapeCards)
-        Box     // a box of the thing's footprint with sprites on its faces (ShapeBoxes)
+        Box,    // a box of the thing's footprint with sprites on its faces (ShapeBoxes)
+        Tube    // (Api 58) a thin tube along the sides a low linked thing joins (ShapeTubes)
     }
 
     public enum BoxSide

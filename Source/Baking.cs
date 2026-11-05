@@ -211,7 +211,7 @@ namespace IsoRim
 
             if (def.category == ThingCategory.Building)
             {
-                // Frames, blueprints and anything that lives at floor level (spots, conduits) stay flat.
+                // Frames, blueprints and anything that lives at floor level (spots, conduits without a Tube def) stay flat.
                 if (def.IsFrame || def.IsBlueprint || def.altitudeLayer <= AltitudeLayer.FloorEmplacement)
                 {
                     return f;
@@ -2500,6 +2500,10 @@ namespace IsoRim
         {
             ModelDef def = entry.def;
             Model m = entry.Pick(thing);
+            if (def.shape == ModelShape.Tube)
+            {
+                m = ShapeTubes.PieceFor(entry, thing);   // (Api 58) the piece for the sides it joins
+            }
             if (def.linked && entry.variants != null && entry.variants.Length >= 1)
             {
                 m = entry.variants[0];   // the part that stands in the cell; the second is added toward each neighbour

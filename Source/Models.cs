@@ -111,6 +111,7 @@ namespace IsoRim
         public List<BoxFace> boxFaces;      // (Api 52) Box: what each face shows; a side not listed shows the sprite
         public float topInset = 0f;         // (Api 52) Box: how far in the top is drawn from the sides, cells (a tapered top)
         public float raisedOutline = 0f;    // (Api 52) a def with no model: how bold an outline its raised sprite gets; 0 none, as without a def
+        public Color tubeColor = new Color(0f, 0f, 0f, 0f);   // (Api 58) Tube: its colour; unset: the colour of the thing's own atlas. Its thickness is height; unset: the atlas's
         public bool paintedHull = false;    // a paintable building made of no stuff: its "stuff" parts are the paint,
                                             // white while unpainted and the paint colour once painted, on the Metal swatch
         public string fallback;             // "SmallPlants": every plant that is not a tree and has no other entry
@@ -1347,6 +1348,11 @@ namespace IsoRim
             {
                 md.spriteTint = true;   // (Api 52) its plain faces: the sprite's mean colour
                 entry.variants = new[] { ShapeBoxes.Build(md) };
+            }
+            if (md.shape == ModelShape.Tube && loaded.Count == 0)
+            {
+                md.surfaceHeight = 0f;                            // (Api 58) nothing rests on it
+                entry.variants = new[] { ShapeTubes.Plain(md) };  // ModelBaker picks the piece for each thing
             }
             // (Api 38) a female animal's own body variants, loaded the same way
             List<string> femaleFiles = new List<string>();

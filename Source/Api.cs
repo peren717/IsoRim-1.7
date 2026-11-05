@@ -111,7 +111,8 @@ namespace IsoRim
         // 56: ApparelModelDef.byStyle (with shows): other worn models by the item's ThingStyleDef, picked in People.Dress as byState is (so on
         // outfit stands and on the ground too); a binding may have byStyle only, its other items keep IsoRim's own look.
         // 57: ApparelStyleModel.bodyModels: a byStyle entry of a Body binding has a model per body type, picked as the binding's bodyModels.
-        public static int Version => 57;
+        // 58: ModelDef.shape Tube and tubeColor (ShapeTubes.cs): a low linked thing drawn as a tube along the sides its own linked graphic joins, as thick as its art.
+        public static int Version => 58;
 
         // ---- glass parts (Version 30)
 

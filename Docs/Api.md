@@ -109,10 +109,11 @@ if (IsoRim.Api.Version >= 53) { /* model decals: ModelDecal, AddModelDecals, Rem
 if (IsoRim.Api.Version >= 54) { /* held weapons and worn states: CatchWeaponDraws, ModelDef holdAsBuilt, carryStand, carryLean, bakedItem, decals on held weapons, ApparelModelDef.byState (part 38) */ }
 if (IsoRim.Api.Version >= 56) { /* worn styles: ApparelModelDef.byStyle with shows (part 40) */ }
 if (IsoRim.Api.Version >= 57) { /* worn styles per body type: bodyModels in a byStyle entry (part 40) */ }
+if (IsoRim.Api.Version >= 58) { /* tubes: ModelDef.shape Tube, tubeColor: a low linked thing as a thin tube (part 41) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -2118,6 +2119,47 @@ From version 57 a `byStyle` entry of a Body binding can have a model per body ty
 - **Slots:** Body only; `bodyModels` on another slot is a config error. `shows` is unchanged, for the Head slot.
 - **Version gate:** gate on Api 57 (`bodyModels` in an entry is an XML error on an older IsoRim).
 
+## Part 41: tubes (version 58)
+
+Plain data, no call: a `IsoRim.ModelDef` with `<shape>Tube</shape>` and no model file draws a low linked thing (a power conduit, a
+pipe) as a tube lying on the ground instead of its flat link sprite, as thick as the art and in its colour. IsoRim's own
+`Defs/Tubes.xml` does this for the game's `PowerConduit` and `WaterproofConduit`, always, with no setting of its own (it is a model:
+`models3D` off gives the sprite back).
+
+| Field | Meaning |
+|---|---|
+| `shape` | `Tube`: the new value of the enum of part 36. |
+| `height` | The tube's thickness in cells. Unset: the body width of the thing's own atlas (below). |
+| `tubeColor` (58) | Its colour, lit as a model is. Unset: the colour of the middle of the atlas's pipe. |
+
+```xml
+<IsoRim.ModelDef>
+  <defName>R3D_MyPack_WaterPipe</defName>
+  <thingDef>MyWaterPipe</thingDef>
+  <shape>Tube</shape>
+  <groundShadow>false</groundShadow>
+  <outline>0</outline>
+</IsoRim.ModelDef>
+```
+
+- **Measured from the art:** per ThingDef, when the first one is baked, so one def serves many things (an `Api.AddModelRule` naming it for a
+  whole family, as the VE Framework Pack does for every pipe). The atlas's straight east-west piece is read down columns across the cell and the
+  median column taken, so flanges along the pipe do not count: its width without the dark outline, its middle's colour. An atlas that cannot be
+  read gives 0.22 and grey.
+- **What joins:** what the sprite would join. Each of the four sides is asked of the thing's own `Graphic_Linked.ShouldLinkWith`, so a mod's
+  linked graphic decides with no code here. The thing's `Graphic` must be a `Graphic_Linked`; any other draws the piece joined to nothing.
+- **When it changes:** the tube is baked with the block, when the game redraws the cell, as for the sprite. A graphic whose answer changes
+  without the game redrawing the cell (a mod's own net) has to dirty it, as it has to for its sprite.
+- **Shape:** one generated piece per set of joined sides. Toward another tube an arm ends at the cell's edge; toward anything else it runs 0.06 cells
+  on and is closed, so it meets a model set in from its cell's edge.
+  The game's link sprite, also the one it prints under a power building beside it, is not drawn: the piece replaces the thing's whole print.
+- **Stays as the game draws it:** the blueprint, the frame and the placing ghost, the power overlay, the 3D view off.
+- **Is a model otherwise:** `Forms.For` says `Model`, so the roof clip, floors, bridges, damage marks and `outline`, `groundShadow` work as for any model.
+  Nothing rests on it (`surfaceHeight` is set to 0); a thing with `isEdifice` true still counts as the cell's edifice for the game.
+- A thing with no entry is not touched: the game's `HiddenConduit` keeps its drawing. Bind only what the player is meant to see.
+
+Version gate: gate on Api 58 (`tubeColor` is an XML error on an older IsoRim, and `Tube` an unknown enum value).
+
 ## Part M: model packs (IsoRim.ModelDef)
 
 A model pack is an XML-only mod (or a mod with a small DLL) that adds `IsoRim.ModelDef`s binding OBJ models to other
@@ -2153,6 +2195,7 @@ mods' things.
 | `anyArt` (50) | Weapons: the model is kept whatever art the weapon has (part 34); default false: a weapon whose sprite another mod supplies draws that sprite. |
 | `holdAsBuilt`, `carryStand`, `carryLean`, `bakedItem` (54) | Weapons: held as built, carried standing in front of the figure, an item with a drawing of its own baked as its model (part 38). |
 | `effectHeight`, `effectRadius`, `cardState`, `spinAlways` (55) | A body in the air: the thing's effects go round it, the game's sprite on a card in a state, a spin part that always turns (part 39). |
+| `tubeColor` (58) | With `shape` `Tube`: the tube's colour (part 41). |
 | `wallTop` (11), `cutaway` (20), `backHeight` (13), wing fields (14), `doorLeafModel`, `doorLeafGather` (18), `crownTop`, `doorLeafRise` (6) | See their parts. |
 
 The numbers in brackets are the Api version a field needs; fields without one are there from version 2.
