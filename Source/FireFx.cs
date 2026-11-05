@@ -231,7 +231,7 @@ namespace IsoRim
         private static Material smokeMat;
 
         // See-through smoke, unshaded (no facets), darkened by its own cell's light like the glass (after the light overlay).
-        private static Material SmokeMat
+        internal static Material SmokeMat
         {
             get
             {
@@ -249,7 +249,7 @@ namespace IsoRim
 
         // A soft smoke puff one unit across, its foot at 0: three nested round shells (an icosahedron split once, 80 faces
         // each), the outer ones fainter, so it thickens toward its middle and its edge melts away. alpha: the middle's.
-        private static Mesh SmokeMesh(Color c, float alpha)
+        internal static Mesh SmokeMesh(Color c, float alpha)
         {
             float g = (1f + Mathf.Sqrt(5f)) / 2f;
             Vector3[] p =
@@ -387,7 +387,7 @@ namespace IsoRim
             return Finish(v, col, "IsoRim_FireSpark");
         }
 
-        private static void Tri(List<Vector3> v, List<Color32> col, Vector3 a, Vector3 b, Vector3 c, Color32 ca, Color32 cb, Color32 cc)
+        internal static void Tri(List<Vector3> v, List<Color32> col, Vector3 a, Vector3 b, Vector3 c, Color32 ca, Color32 cb, Color32 cc)
         {
             v.Add(a);
             v.Add(b);
@@ -398,7 +398,7 @@ namespace IsoRim
         }
 
         // The mesh as DynamicModels makes its moving parts: clipped under the roof over where it is drawn (RoofClip tag).
-        private static Mesh Finish(List<Vector3> v, List<Color32> col, string name)
+        internal static Mesh Finish(List<Vector3> v, List<Color32> col, string name)
         {
             Mesh m = new Mesh();
             m.name = name;

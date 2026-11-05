@@ -268,6 +268,7 @@ namespace IsoRim
             }
 
             int worn = def.mech && OtherLook(pawn) ? (pawn.thingIDNumber & 0x7FFFFFFF) % WornVariants : -1;
+            HitFlash.Begin(pawn);   // the body and its moving pieces; not its guns, which the game draws apart
             DynamicModels.DrawLocal(Corpses.Body(pawn, Pick(rig, def, null, worn, marked)), at, yaw, whole, mark, null);
 
             // Each moving piece, placed in the body's space (after its parent's movement).
@@ -372,7 +373,9 @@ namespace IsoRim
                     {
                         // Some other gun: drawn as that gun's own 3D form, at the mount.
                         Vector3 mount = WorldPoint(at, yaw, whole * places[i], p.def.pivot);
+                        bool flashWas = HitFlash.Pause();
                         Patches.HeldWeapon3D(gun, mount, aim);
+                        HitFlash.Resume(flashWas);
                         continue;
                     }
                 }
@@ -380,7 +383,8 @@ namespace IsoRim
                 {
                     continue;
                 }
-                if (p.motion == Motion.Weapon || p.motion == Motion.Turret)
+                bool isGun = p.motion == Motion.Weapon || p.motion == Motion.Turret;
+                if (isGun)
                 {
                     // Where this gun's barrel ends as drawn: its shots and flash start there (Projectiles.MechTip).
                     ThingDef shooting = p.motion == Motion.Weapon ? pawn.equipment.Primary.def : turret?.gun?.def;
@@ -389,8 +393,14 @@ namespace IsoRim
                         Projectiles.MechTip(pawn, shooting, WorldPoint(at, yaw, whole * places[i], p.tip));
                     }
                 }
+                bool flashOn = isGun && HitFlash.Pause();
                 DynamicModels.DrawLocal(Corpses.Body(pawn, Pick(rig, def, p, worn, marked)), at, yaw, whole * places[i], mark, null);
+                if (isGun)
+                {
+                    HitFlash.Resume(flashOn);
+                }
             }
+            HitFlash.End();
             if (showGun && !gunDrawn)
             {
                 // A gun the model has no mount for: held in front, half way up.

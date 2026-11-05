@@ -690,6 +690,7 @@ namespace IsoRim
             // together once for this look and the way it is facing.
             int turned = Mathf.RoundToInt(Mathf.Repeat(yaw, 360f) / 45f) % 8;
             FigureScope.Root(at, yaw);   // (Api.DrawFigure: placed elsewhere)
+            HitFlash.Begin(pawn);   // the body, what it wears and its face, to HitFlash.End below
             FigureParts hidden = FigureParts.None;
             if (FigureHooks.Count > 0)
             {
@@ -729,6 +730,7 @@ namespace IsoRim
             // The game's wounds, bandages and scars on the body and head (WoundMarks; a body without legs keeps none).
             WoundMarks.DrawPerson(pawn, look, at, yaw, bodyPlace, headPlace,
                 !headOnly && !noLegs && (hidden & (FigureParts.Body | FigureParts.Legs)) == 0, !look.headHidden && (hidden & FigureParts.Head) == 0);
+            HitFlash.End();
             if (look.flames && !dead)
             {
                 // A bound model's flame* parts (a torch belt): IsoRim's live flame (ApparelModels).
@@ -2538,8 +2540,8 @@ namespace IsoRim
         // and side corners leave sideways and never part front to back (Close), so the strap ends cover pauldron tips and the
         // sides stay as closed as made. Points outside stay where they are, and so do hidden corners inside the bare figure. The
         // normals turn with the faces (Turned); decals print from the shape as made (MadeShape). What is measured is the bulk
-        // of the clothes (Bulk): the tips of spikes on them don't count, so the cloth rests on the coat and they poke through.
-        // Kept per shape and clothes under it, as FitOver.
+        // of the clothes (Bulk): the tips of spikes and narrow parts standing clear of them don't count, so the cloth rests on the
+        // coat and they poke through. Kept per shape and clothes under it, as FitOver.
         private const int LiftRings = 36;        // rings up to 0.72 cells out
         private const float LiftRing = 0.02f;
         private const float LiftUpBias = 3f;     // a face turned straight up goes up while that is up to 1 + 3 times the way out
@@ -2569,10 +2571,13 @@ namespace IsoRim
             }
             float[] reach = new float[OverRows * OverSectors];
             float[] top = new float[LiftRings * OverSectors];
+            float[] bare = new float[OverRows * OverSectors];
+            MaxReach(bare, Reach(look.upper));
+            MaxReach(bare, Reach(look.lower));
             Model[] bulk = new Model[under.Length];
             for (int i = 0; i < under.Length; i++)
             {
-                bulk[i] = Bulk(under[i]);
+                bulk[i] = Bulk(under[i], look, bare);
                 MaxReach(reach, Reach(bulk[i]));
                 MaxReach(top, Top(bulk[i]));
             }
@@ -2606,9 +2611,6 @@ namespace IsoRim
             // Corners inside the bare figure (a garment's hidden inner faces, such as a cap closing its bottom round the
             // body) stay where they are and take no part in the fit: they are never seen, and moving them out by the
             // nearest way would drag the faces round them anywhere.
-            float[] bare = new float[OverRows * OverSectors];
-            MaxReach(bare, Reach(look.upper));
-            MaxReach(bare, Reach(look.lower));
             int m = corner.Count;
             bool[] hidden = new bool[m];
             // Corners on the garment's sides (further out across than front to back: the strap ends over the shoulders, the
@@ -2957,20 +2959,22 @@ namespace IsoRim
 
         // A model as cloth resting on it feels it (FitLift): the tip of a spike, a corner standing further out of the ring of
         // corners round it than LiftTip and than LiftTipRatio times that ring's width, is laid back into the ring's middle. A
-        // cloth has nothing to rest on there: measured with the tips, it would stretch out to them. The same model when it has
-        // no tips, so what has none fits as before. Only measured, never drawn.
+        // cloth has nothing to rest on there: measured with the tips, it would stretch out to them. A narrow part (Posts) is
+        // left out for the same reason. The same model when it has neither, so what has none fits as before. Only measured,
+        // never drawn. Kept per model and bare figure (bare is that figure's reach).
         private const float LiftTip = 0.12f;
         private const float LiftTipRatio = 1.6f;
-        private static readonly Dictionary<int, Model> overBulk = new Dictionary<int, Model>();
+        private static readonly Dictionary<string, Model> overBulk = new Dictionary<string, Model>();
 
-        private static Model Bulk(Model m)
+        private static Model Bulk(Model m, Look look, float[] bare)
         {
             if (m == null)
             {
                 return null;
             }
+            string key = m.id + "," + (look.upper != null ? look.upper.id : 0) + "," + (look.lower != null ? look.lower.id : 0);
             Model bulk;
-            if (overBulk.TryGetValue(m.id, out bulk))
+            if (overBulk.TryGetValue(key, out bulk))
             {
                 return bulk;
             }
@@ -3032,24 +3036,169 @@ namespace IsoRim
                     laid[u] = middle;
                 }
             }
+            bool[] post = Posts(p, weld, corner, ring, bare);
             bulk = m;
-            if (laid.Count > 0)
+            if (laid.Count > 0 || post != null)
             {
-                Vector3[] pos = (Vector3[])p.Clone();
-                for (int v = 0; v < pos.Length; v++)
+                List<Vector3> pos = new List<Vector3>(p.Length);
+                for (int t = 0; t + 2 < p.Length; t += 3)
                 {
-                    Vector3 to;
-                    if (laid.TryGetValue(weld[v], out to))
+                    if (post != null && post[weld[t]])
                     {
-                        pos[v] = to;
+                        continue;
+                    }
+                    for (int v = t; v < t + 3; v++)
+                    {
+                        Vector3 to;
+                        pos.Add(laid.TryGetValue(weld[v], out to) ? to : p[v]);
                     }
                 }
                 bulk = new Model();
-                bulk.positions = pos;
+                bulk.positions = pos.ToArray();
                 bulk.id = ObjLoader.NewId();
             }
-            overBulk[m.id] = bulk;
+            overBulk[key] = bulk;
             return bulk;
+        }
+
+        // The narrow parts of a model that stand clear of it and of the figure (Bulk): a part being a piece of mesh joined to the
+        // rest by no face, narrow being no wider across its length than LiftPost and at least LiftTipRatio times as long as
+        // that (posts on a back, fins, rods). Such a part goes when one end of its length stands further than LiftTip out of
+        // both the bare figure (at that height or LiftTip under it, so the top of a strap over the shoulder counts as close) and
+        // the model's other parts at its height, and it either rises by more than LiftTip from its other end or that end
+        // stands clear too. So what lies along the body stays: straps, collars, ribs on a breastplate, a pauldron running
+        // front to back. Per corner of the welded model, true for those left out; null when there are none.
+        private const float LiftPost = 0.16f;
+
+        private static bool[] Posts(Vector3[] p, int[] weld, List<Vector3> corner, HashSet<int>[] ring, float[] bare)
+        {
+            int[] part = new int[corner.Count];
+            List<List<int>> parts = new List<List<int>>();
+            Stack<int> open = new Stack<int>();
+            for (int u = 0; u < part.Length; u++)
+            {
+                part[u] = -1;
+            }
+            for (int u = 0; u < part.Length; u++)
+            {
+                if (part[u] >= 0)
+                {
+                    continue;
+                }
+                List<int> members = new List<int>();
+                part[u] = parts.Count;
+                open.Push(u);
+                while (open.Count > 0)
+                {
+                    int c = open.Pop();
+                    members.Add(c);
+                    foreach (int w in ring[c])
+                    {
+                        if (part[w] < 0)
+                        {
+                            part[w] = parts.Count;
+                            open.Push(w);
+                        }
+                    }
+                }
+                parts.Add(members);
+            }
+            if (parts.Count < 2)
+            {
+                return null;
+            }
+            Vector3[] end = new Vector3[parts.Count * 2];
+            bool[] narrow = new bool[parts.Count];
+            bool any = false;
+            for (int i = 0; i < narrow.Length; i++)
+            {
+                narrow[i] = Narrow(parts[i], corner, out end[2 * i], out end[2 * i + 1]);
+                any |= narrow[i];
+            }
+            if (!any)
+            {
+                return null;
+            }
+            // Measured against the parts that are not narrow, so two posts side by side don't hold each other up.
+            List<Vector3> solid = new List<Vector3>(p.Length);
+            for (int t = 0; t + 2 < p.Length; t += 3)
+            {
+                if (!narrow[part[weld[t]]])
+                {
+                    solid.Add(p[t]);
+                    solid.Add(p[t + 1]);
+                    solid.Add(p[t + 2]);
+                }
+            }
+            Model rest = new Model();
+            rest.positions = solid.ToArray();
+            rest.id = ObjLoader.NewId();
+            float[] others = Reach(rest);
+            overReach.Remove(rest.id);
+            bool[] post = null;
+            for (int i = 0; i < narrow.Length; i++)
+            {
+                if (!narrow[i])
+                {
+                    continue;
+                }
+                float a = Stands(end[2 * i], bare, others), b = Stands(end[2 * i + 1], bare, others);
+                float far = Mathf.Max(a, b), near = Mathf.Min(a, b);
+                if (far > LiftTip && (far - near > LiftTip || near > LiftTip))
+                {
+                    if (post == null)
+                    {
+                        post = new bool[corner.Count];
+                    }
+                    foreach (int c in parts[i])
+                    {
+                        post[c] = true;
+                    }
+                }
+            }
+            return post;
+        }
+
+        // Whether a part is narrow, with the two ends of its length (its two corners furthest apart).
+        private static bool Narrow(List<int> members, List<Vector3> corner, out Vector3 a, out Vector3 b)
+        {
+            a = b = corner[members[0]];
+            float most = 0f;
+            for (int i = 0; i < members.Count; i++)
+            {
+                for (int j = i + 1; j < members.Count; j++)
+                {
+                    float d = (corner[members[i]] - corner[members[j]]).sqrMagnitude;
+                    if (d > most)
+                    {
+                        most = d;
+                        a = corner[members[i]];
+                        b = corner[members[j]];
+                    }
+                }
+            }
+            float length = Mathf.Sqrt(most);
+            if (length < 1e-4f)
+            {
+                return false;
+            }
+            Vector3 along = (b - a) / length;
+            float width = 0f;
+            foreach (int c in members)
+            {
+                Vector3 d = corner[c] - a;
+                width = Mathf.Max(width, (d - along * Vector3.Dot(d, along)).magnitude);
+            }
+            return width <= LiftPost && length >= LiftTipRatio * width;
+        }
+
+        // How far a point stands out of the bare figure and the model's other parts, whichever is closer.
+        private static float Stands(Vector3 c, float[] bare, float[] others)
+        {
+            float r = Mathf.Sqrt(c.x * c.x + c.z * c.z);
+            float angle = Mathf.Atan2(c.z, c.x);
+            float figure = Mathf.Max(Sample(bare, c.y, angle), Sample(bare, c.y - LiftTip, angle));
+            return r - Mathf.Max(figure, Sample(others, c.y, angle));
         }
 
         // How high a model's top is per ring round the figure's middle line and direction (FitLift): its faces sampled as

@@ -251,6 +251,32 @@ namespace IsoRim
             }
         }
 
+        /// <summary>
+        /// (Api version 59) Draws a weapon with the figure as IsoRim draws a weapon in the hand: its 3D model (the player's
+        /// "Weapons as 3D models"), else its own sprite made solid, in its stuff's colour, with its outline and shadow. For a mod
+        /// that shows weapons worn on the body (a sword on the back, a pistol on the hip). The weapon need not be in the figure's
+        /// hands or spawned. local: the weapon's picture in the body frame, with no scale in it: its middle at the origin, the
+        /// picture's x across it, y up it, z through it. scale: of the size it has in the hand. Call only from a figure hook,
+        /// for this frame. Returns false and draws nothing if the player's "Held weapons in 3D" is off, or the weapon has
+        /// neither a model nor a sprite to draw: then draw it your own way.
+        /// </summary>
+        public bool AttachWeaponToBody(Thing weapon, Matrix4x4 local, float scale = 1f)
+        {
+            if (!live || weapon == null)
+            {
+                return false;
+            }
+            bool flashWas = HitFlash.Pause();   // the game does not flash weapons
+            try
+            {
+                return FigureWeapons.DrawAttached(weapon, bodyRaw * local, scale);
+            }
+            finally
+            {
+                HitFlash.Resume(flashWas);
+            }
+        }
+
         /// <summary>The same in the body frame.</summary>
         public void AttachToBody(ModelHandle model, Matrix4x4 local, Color colour, string swatch = null)
         {
@@ -617,6 +643,7 @@ namespace IsoRim
             min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
             max = new Vector3(float.MinValue, float.MinValue, float.MinValue);
             measured = false;
+            bool flashWas = HitFlash.Pause();   // (drawn inside a hit figure's own draw, by another mod's hook)
             try
             {
                 RaceProperties race = pawn.RaceProps;
@@ -637,6 +664,7 @@ namespace IsoRim
             }
             finally
             {
+                HitFlash.Resume(flashWas);
                 Active = false;
                 measuring = false;
                 extra = Matrix4x4.identity;
@@ -699,7 +727,13 @@ namespace IsoRim
             {
                 return;
             }
-            IsoGlow.DrawLit(mesh, Floors.DrawnMatrix(Apply(matrix)), material, 0);
+            Matrix4x4 drawn = Floors.DrawnMatrix(Apply(matrix));
+            if (HitFlash.On && IsoGlow.Marked(material))
+            {
+                IsoGlow.DrawLit(mesh, drawn, material, 0, HitFlash.Block(-1));   // one of IsoRim's own: keeps its light pass
+                return;
+            }
+            IsoGlow.DrawLit(mesh, drawn, HitFlash.Mat(material), 0);
         }
     }
 }

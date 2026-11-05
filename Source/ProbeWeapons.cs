@@ -20,6 +20,7 @@ namespace IsoRim
     //   cast=x,z,<AbilityDef>,tx,tz  the pawn in (x,z) given that ability (if it lacks it) and ordered to cast it at the pawn
     //                              in (tx,tz), else at the cell (the game's casting job: run tick= or burst= after it)
     //   equip=x,z,<ThingDef>[,Stuff]  the pawn in (x,z) (a mech too) given that weapon as its primary, its old one destroyed
+    //   inventory=x,z,<ThingDef>    that thing put in the pawn's inventory (a spare weapon); clear: emptied first
     //   job=x,z,<JobDef>[,tx,tz]   the pawn in (x,z) undrafted and given that job (a thing or cell target when given), as the
     //                              game's own job (no work giver)
     //   weaponsizes=1              logs every weapon with a 3D model: its fit to its sprite (WeaponModels.Hold) and its length
@@ -505,6 +506,24 @@ namespace IsoRim
                     }
                     p.equipment.AddEquipment((ThingWithComps)ThingMaker.MakeThing(def, stuff));
                     Log.Message("[IsoRim probe] equip " + p.LabelShort + " at " + p.Position + ": " + p.equipment.Primary.def.defName);
+                    return true;
+                }
+                case "inventory":
+                {
+                    Pawn p = PawnAt(map, I(a[0]), I(a[1]));
+                    if (p != null && p.inventory != null && a[2] == "clear")
+                    {
+                        p.inventory.innerContainer.ClearAndDestroyContents();
+                        return true;
+                    }
+                    ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(a[2]);
+                    if (p == null || def == null || p.inventory == null)
+                    {
+                        Log.Warning("[IsoRim probe] inventory: no pawn with an inventory at " + a[0] + "," + a[1] + " or no def " + a[2]);
+                        return true;
+                    }
+                    p.inventory.innerContainer.TryAdd(ThingMaker.MakeThing(def, def.MadeFromStuff ? GenStuff.DefaultStuffFor(def) : null));
+                    Log.Message("[IsoRim probe] inventory " + p.LabelShort + " at " + p.Position + ": " + def.defName);
                     return true;
                 }
                 case "weaponsizes":

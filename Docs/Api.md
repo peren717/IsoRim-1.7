@@ -110,10 +110,11 @@ if (IsoRim.Api.Version >= 54) { /* held weapons and worn states: CatchWeaponDraw
 if (IsoRim.Api.Version >= 56) { /* worn styles: ApparelModelDef.byStyle with shows (part 40) */ }
 if (IsoRim.Api.Version >= 57) { /* worn styles per body type: bodyModels in a byStyle entry (part 40) */ }
 if (IsoRim.Api.Version >= 58) { /* tubes: ModelDef.shape Tube, tubeColor: a low linked thing as a thin tube (part 41) */ }
+if (IsoRim.Api.Version >= 59) { /* FigureFrame.AttachWeaponToBody, WeaponAxis: a weapon in its 3D form on a figure (part 1) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -200,6 +201,8 @@ a frame per figure. With no hook registered nothing extra runs.
 | `frame.SkipFlags` | The game's head render skip flags as the person is now (`(frame.SkipFlags & RenderSkipFlagDefOf.Hair) != 0`). |
 | `frame.Skull`, `frame.Headless` | Dried to bones (a skull stands in); the game's own "has no head" state (IsoRim still draws the head). |
 | `frame.Lying`, `frame.Crawling`, `frame.Seated`, `frame.Dead`, `frame.Carried`, `frame.Lift`, `frame.BodyShown` | Pose and state; `BodyShown` is false in a bed that shows only the head. |
+| `frame.AttachWeaponToBody(Thing weapon, Matrix4x4 local, float scale = 1f)` | (Version 59) Draws a weapon with the figure as IsoRim draws one in the hand: its 3D model ("Weapons as 3D models"), else its sprite made solid, with stuff colour, outline and shadow. For weapons worn on the body; the weapon need not be held or spawned. `local`: the weapon's picture in the body frame with no scale in it, middle at the origin, picture x across, y up, z through it. `scale`: of its size in the hand. Returns false and draws nothing with "Held weapons in 3D" off, or with nothing to draw: draw it your own way then. Figure hooks only, for this frame. Example: `frame.AttachWeaponToBody(sword, Matrix4x4.TRS(new Vector3(0f, 0.6f, -0.2f), Quaternion.Euler(0f, 0f, 80f), Vector3.one))` lays a sword along the back. |
+| `Api.WeaponAxis(Thing weapon)` | (Version 59) The long axis of the weapon's own sprite: a unit `Vector2` in the picture (x across, y up; either end), from its opaque pixels, whatever way the game turns it in the hand. To lay a weapon along something with `AttachWeaponToBody`. `Vector2.right` without a sprite. |
 | `frame.AttachToHead(ModelHandle model, Matrix4x4 local, Color colour, string swatch = null)` / `AttachToBody(...)` | Draws a model with the figure, `local` in the head / body frame. It follows pose and facing and is lit, outlined and shadowed like the figure's own parts (and moves with it on stacked floors and in `DrawFigure`). |
 | `frame.AttachMeshToHead(Mesh mesh, Material material, Matrix4x4 local)` / `AttachMeshToBody(...)` | The same for your own mesh and material (no outline). |
 
@@ -1875,7 +1878,12 @@ is under it instead:
   its top is per ring (0.02 cells apart). Both are rounded off: each bin takes the largest value nearby, then the mean of
   those, so the result never drops below the real shape. The tips of spikes don't count: a corner standing out of the
   ring of corners round it by more than 0.12 cells and more than 1.6 times that ring's width is measured as lying in the
-  ring's middle, so the cloth rests on the coat and the spikes poke through it. Clothes without such corners measure as made.
+  ring's middle, so the cloth rests on the coat and the spikes poke through it. Narrow parts standing clear don't count either:
+  a piece of mesh joined to the rest by no face, at most 0.16 wide and at least 1.6 times as long as that (posts on a back,
+  fins, rods), with one end more than 0.12 out of the bare figure and the garment's other parts, which either rises more
+  than 0.12 from its other end or has that end clear too. What lies along the body (straps, collars, ribs, a pauldron) stays.
+  A post fused into the main mesh is not a part and still counts, so model posts as their own pieces.
+  Clothes with neither measure as made.
 - **Wide shoulders:** when what is under it reaches further across at shoulder height than the garment (pauldrons), the
   garment's upper part is first widened to it, in proportion from the neck out and fading out down the chest, so the
   strap ends reach over the tips. Flanks and hem keep their width.

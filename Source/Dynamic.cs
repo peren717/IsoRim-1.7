@@ -580,6 +580,11 @@ namespace IsoRim
                         Beams.PartDraws++;
                         continue;
                     }
+                    if (HitFlash.On && !p.outline)
+                    {
+                        IsoGlow.DrawLit(p.mesh, matrix, p.material, 0, HitFlash.Block(floor));   // a hit figure, in the game's red: not batched
+                        continue;
+                    }
                     if (p.alone || !PartBatches.Add(p.mesh, matrix, p.material, floor))
                     {
                         IsoGlow.DrawLit(p.mesh, matrix, p.material, 0, RoofClip.FloorBlock(floor));   // clipped on its own floor (RoofClip)

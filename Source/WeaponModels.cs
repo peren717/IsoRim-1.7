@@ -595,15 +595,8 @@ namespace IsoRim
             return h;
         }
 
-        private static Hold Fit(Model m, Material mat, Vector2 drawSize, float angleOffset)
+        private static List<Vector2> OpaquePoints(bool[] sprite, Vector2 drawSize)
         {
-            bool[] sprite = MaskOf(mat);
-            if (sprite == null)
-            {
-                return null;
-            }
-            sprite = OnePiece(sprite);
-            // The sprite's long axis: the narrowest width across.
             List<Vector2> pts = new List<Vector2>();
             for (int j = 0; j < N; j++)
             {
@@ -615,6 +608,12 @@ namespace IsoRim
                     }
                 }
             }
+            return pts;
+        }
+
+        // The sprite's long axis: the turn (degrees from +u toward +v) with the narrowest width across.
+        private static float SpriteAxis(List<Vector2> pts)
+        {
             float bestWidth = float.MaxValue, theta = 0f;
             for (int a = 0; a < 180; a++)
             {
@@ -633,6 +632,67 @@ namespace IsoRim
                     theta = a;
                 }
             }
+            return theta;
+        }
+
+        private static readonly Dictionary<int, Vector2> axes = new Dictionary<int, Vector2>();
+
+        // (Api 59) What another mod's thing is drawn with: null for one with no art of its own, or one whose art cannot be read.
+        internal static Material ArtOf(Thing thing, out Graphic graphic)
+        {
+            graphic = null;
+            try
+            {
+                Graphic g = thing.Graphic;
+                if (g == null || g == BaseContent.BadGraphic)
+                {
+                    return null;
+                }
+                Material mat = g.MatSingleFor(thing);
+                graphic = g;
+                return mat;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        // (Api 59, Api.WeaponAxis) The long axis of the weapon's sprite, unit length, in the picture at its drawn size; once per material.
+        internal static Vector2 AxisOf(Thing weapon)
+        {
+            Graphic g;
+            Material mat = ArtOf(weapon, out g);
+            if (mat == null || mat.mainTexture == null)
+            {
+                return Vector2.right;
+            }
+            Vector2 axis;
+            int key = mat.GetInstanceID();
+            if (!axes.TryGetValue(key, out axis))
+            {
+                axis = Vector2.right;
+                bool[] sprite = MaskOf(mat);
+                if (sprite != null)
+                {
+                    float r = SpriteAxis(OpaquePoints(OnePiece(sprite), g.drawSize)) * Mathf.Deg2Rad;
+                    axis = new Vector2(Mathf.Cos(r), Mathf.Sin(r));
+                }
+                axes[key] = axis;
+            }
+            return axis;
+        }
+
+        private static Hold Fit(Model m, Material mat, Vector2 drawSize, float angleOffset)
+        {
+            bool[] sprite = MaskOf(mat);
+            if (sprite == null)
+            {
+                return null;
+            }
+            sprite = OnePiece(sprite);
+            List<Vector2> pts = OpaquePoints(sprite, drawSize);
+            float theta = SpriteAxis(pts);
             float tr = theta * Mathf.Deg2Rad;
             Vector2 along = new Vector2(Mathf.Cos(tr), Mathf.Sin(tr)), across = new Vector2(-Mathf.Sin(tr), Mathf.Cos(tr));
             float aLo = float.MaxValue, aHi = float.MinValue, pLo = float.MaxValue, pHi = float.MinValue;

@@ -99,6 +99,14 @@ namespace IsoRim
             LastHeight = h;
         }
 
+        // From HitFx: what this sprayer makes now stands at h over the ground (at: Overhead.Floor), until End.
+        public static void Stand(float h, Matrix4x4 at)
+        {
+            active = true;
+            height = h;
+            floor = at;
+        }
+
         public static void End()
         {
             active = false;

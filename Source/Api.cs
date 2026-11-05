@@ -112,7 +112,8 @@ namespace IsoRim
         // outfit stands and on the ground too); a binding may have byStyle only, its other items keep IsoRim's own look.
         // 57: ApparelStyleModel.bodyModels: a byStyle entry of a Body binding has a model per body type, picked as the binding's bodyModels.
         // 58: ModelDef.shape Tube and tubeColor (ShapeTubes.cs): a low linked thing drawn as a tube along the sides its own linked graphic joins, as thick as its art.
-        public static int Version => 58;
+        // 59: FigureFrame.AttachWeaponToBody: a given weapon in its 3D form on a figure (FigureWeapons.DrawAttached); WeaponAxis (Api59.cs).
+        public static int Version => 59;
 
         // ---- glass parts (Version 30)
 

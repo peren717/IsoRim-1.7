@@ -250,7 +250,7 @@ namespace IsoRim
                 Placed p = list[i];
                 if (p.mesh != null && p.material != null)
                 {
-                    Graphics.DrawMesh(p.mesh, m, p.material, 0);
+                    Graphics.DrawMesh(p.mesh, m, HitFlash.Mat(p.material), 0);
                 }
             }
         }

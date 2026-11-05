@@ -71,7 +71,7 @@ namespace IsoRim
 
         private static Vector3 PosOf(TargetInfo t) => t.HasThing ? t.Thing.DrawPos : t.Cell.ToVector3Shifted();
 
-        public static void MakeMote_Prefix(SubEffecter_Sprayer __instance, TargetInfo A, TargetInfo B)
+        public static bool MakeMote_Prefix(SubEffecter_Sprayer __instance, TargetInfo A, TargetInfo B)
         {
             cross = Floors.On && A.IsValid && B.IsValid && Floors.CrossFloor(PosOf(A), PosOf(B));
             if (cross)
@@ -79,6 +79,7 @@ namespace IsoRim
                 Sprays++;
             }
             IngestBits.Begin(__instance, A, B);   // an eater's food bits or smoke: at its mouth
+            return !HitFx.Replaces(__instance, A, B);   // a wound's blood on a 3D figure: 3D droplets instead
         }
 
         public static void MakeMote_Finalizer()

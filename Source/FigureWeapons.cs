@@ -513,10 +513,38 @@ namespace IsoRim
         // The weapon's model fitted to the sprite the game drew (null: no model, or none to fit).
         private static WeaponModels.Hold HoldFor(Caught c)
         {
-            Model model = WeaponModels.ModelOf(c.weapon);
-            Graphic g = model != null ? c.weapon.Graphic : null;
-            WeaponModels.Hold hold = g != null ? WeaponModels.HoldOf(model, c.material, g.drawSize, c.weapon.def.equippedAngleOffset, WeaponModels.AsBuilt(c.weapon)) : null;
-            return hold != null && Projectiles.Thrown(c.weapon.def) ? WeaponModels.AtGroundSize(hold, model, c.weapon.def, Picture) : hold;
+            return HoldFor(c.weapon, c.material);
+        }
+
+        private static WeaponModels.Hold HoldFor(Thing weapon, Material material)
+        {
+            Model model = WeaponModels.ModelOf(weapon);
+            Graphic g = model != null ? weapon.Graphic : null;
+            WeaponModels.Hold hold = g != null ? WeaponModels.HoldOf(model, material, g.drawSize, weapon.def.equippedAngleOffset, WeaponModels.AsBuilt(weapon)) : null;
+            return hold != null && Projectiles.Thrown(weapon.def) ? WeaponModels.AtGroundSize(hold, model, weapon.def, Picture) : hold;
+        }
+
+        // (Api 59, FigureFrame.AttachWeaponToBody) A weapon on the figure, at its size in the hand times scale, drawn as DrawPiece
+        // draws one in the hand. placed: drawn space, the picture's middle at its origin, unscaled. False: "Held weapons in 3D"
+        // is off, or nothing to draw.
+        internal static bool DrawAttached(Thing weapon, Matrix4x4 placed, float scale)
+        {
+            Graphic g;
+            Material material = WeaponModels.ArtOf(weapon, out g);
+            if (material == null || !IsoRimMod.Settings.heldWeapons3D)
+            {
+                return false;
+            }
+            float k = Picture * scale;
+            Matrix4x4 slab = placed * Matrix4x4.Scale(new Vector3(k * g.drawSize.x, k * g.drawSize.y, k));
+            WeaponModels.Hold hold = WeaponModels.On ? HoldFor(weapon, material) : null;
+            Model model = hold != null ? WeaponModels.ModelOf(weapon) : null;
+            if (model != null)
+            {
+                WeaponModels.Draw(weapon, model, hold, slab);
+                return true;
+            }
+            return FigureScope.Measuring || SpriteSolids.DrawSlab(material, Floors.DrawnMatrix(FigureScope.Apply(slab)));
         }
 
         // A weapon aimed from the right shoulder: every ranged weapon (bows too) but what is thrown (a grenade, a pilum: from
@@ -833,7 +861,7 @@ namespace IsoRim
         }
 
         // How high the target's middle is over its floor (Projectiles.AimHeight's measure).
-        private static float TargetHeight(LocalTargetInfo t)
+        internal static float TargetHeight(LocalTargetInfo t)
         {
             if (!t.HasThing)
             {

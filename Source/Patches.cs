@@ -773,6 +773,7 @@ namespace IsoRim
 
         public static Exception CullThings_Finalizer(Exception __exception)
         {
+            HitFx.Draw();
             Cull.ThingsEnd();
             PartBatches.Flush();
             return __exception;
@@ -2016,6 +2017,7 @@ namespace IsoRim
             DrawHook.active = false;
             DrawHook.billboard = false;
             DrawHook.skip = false;
+            HitFlash.End();   // (a figure's draw that threw leaves nothing behind)
             pawnUpright = false;
             pawnLift = 0f;
             cardAiming = false;

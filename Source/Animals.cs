@@ -253,6 +253,7 @@ namespace IsoRim
             bool tintWas = DynamicModels.TintTextured;
             Color tint = def.tintFromGraphic ? GraphicColour(pawn) : Color.white;   // (Api 49) the vanilla colour
             DynamicModels.TintTextured = def.tintFromGraphic;
+            HitFlash.Begin(pawn);
             try
             {
                 DynamicModels.DrawLocal(body, position, yaw, bodyPose * sized * bodyTurn, tint, null);
@@ -315,6 +316,7 @@ namespace IsoRim
             }
             finally
             {
+                HitFlash.End();
                 DynamicModels.AnimalPart = partWas;
                 DynamicModels.SmoothTextured = texWas;
                 DynamicModels.TintTextured = tintWas;

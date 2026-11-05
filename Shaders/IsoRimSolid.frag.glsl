@@ -60,6 +60,7 @@ layout(set = 2, binding = 0) uniform MaterialUniforms
     float _IsoFade;   // @default = 0.0   faded floors (FadeFloors): share of pixels kept, 0 = drawn solid
     float _IsoFadeFrom; // @default = 0.0   faded floors: where in the dither pattern (0-1) the kept share starts
     vec4 _IsoToon;    // global, no default: stylised light (R3DMaterials.SetToon): x = sun bands on models (0 smooth, 2 or 3), y = rim light strength (0 off)
+    float _IsoFlash;  // @default = 0.0   per draw (HitFlash): how red a hit figure is now, 0 = not at all
 } uMaterial;
 
 layout(set = 2, binding = 1) uniform sampler2D _MainTex;
@@ -459,6 +460,9 @@ void main()
             return;
         }
     }
+
+    // A hit figure (HitFlash): the game's damage flash, its colour times Color.Lerp(white, red, _IsoFlash).
+    color.gb *= 1.0 - uMaterial._IsoFlash;
 
     float mode = uMaterial._LightMode;
     float shade = 1.0;

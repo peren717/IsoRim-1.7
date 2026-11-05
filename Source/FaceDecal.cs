@@ -242,7 +242,7 @@ namespace IsoRim
                     // each layer a little further out than the one under it. It writes no depth, so the head's light
                     // pass (queue 3099) still darkens it at night with the head's own cell.
                     bool isMouth = f.controllers[i].GetType().Name == "MouthControllerComp";
-                    Graphics.DrawMesh(isMouth && mouth != null ? mouth : m, Drawn(placed, i), gm, 0);
+                    Graphics.DrawMesh(isMouth && mouth != null ? mouth : m, Drawn(placed, i), HitFlash.Mat(gm), 0);
                 }
             }
             catch (Exception e)
