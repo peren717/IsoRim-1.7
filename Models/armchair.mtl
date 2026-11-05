@@ -1,0 +1,9 @@
+# Armchair (make_armchair.py): all of it takes the stuff colour, as the sprite. stuff_round: smooth light, no texture.
+newmtl stuff_round_armchair
+Kd 1.000 1.000 1.000
+
+newmtl stuff_round_armchair_line
+Kd 0.660 0.660 0.660
+
+newmtl stuff_round_armchair_side
+Kd 0.860 0.860 0.860
