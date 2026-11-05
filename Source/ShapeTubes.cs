@@ -13,7 +13,7 @@ namespace IsoRim
     // Thickness and colour come from the thing's own atlas unless the def sets them (height, tubeColor): the width and the middle's
     // colour of its straight piece, read once per ThingDef when the first one is baked, so one def can serve many things (a pack's
     // model rule). An arm toward something that is not a tube runs a little into its cell and is closed, so it meets a model set in
-    // from the cell's edge. Blueprints, frames and placing ghosts keep the game's flat drawing (Ghosts.FormOf).
+    // from the cell's edge. It takes the usual model outline (ModelDef.outline), for which a piece is one closed surface (Make). Blueprints, frames and placing ghosts keep the game's flat drawing (Ghosts.FormOf).
     public static class ShapeTubes
     {
         public const float DefaultThickness = 0.22f;   // the width of the game's conduit art: an atlas that cannot be read
@@ -23,6 +23,8 @@ namespace IsoRim
         private const float Reach = 0.06f;    // how far an arm runs into the cell of what it joins that is not a tube
         private const float CellOfTexture = 0.1875f;   // one cell of a link atlas, of the texture (MaterialAtlasPool)
         private const int Straight = 10;      // the east-west piece of an atlas (LinkDirections Right | Left)
+        private const float GroundLine = 1.6f;    // the outline's ring on the ground, of its usual width
+        private const float GroundLift = 0.012f;  // its height, cells
         private const float ArtToLit = 1.05f;  // the art's colour to a tube's that reads the same under the model lighting
 
         public class Look
@@ -222,27 +224,36 @@ namespace IsoRim
             return m;
         }
 
+        // A piece is one closed surface, so its outline (the model's hull) has nothing to cross: a straight run is one stretch, any other
+        // piece the cross-section's contours swept round the joined sides, a quarter of the cell at a time, mitred where they turn. Overlapping
+        // runs would each get a shell of their own, which shows as spikes and lines at every joint.
         private static Model Make(Look look, int bits, int ends, float r)
         {
             bool n = (bits & 1) != 0, e = (bits & 2) != 0, s = (bits & 4) != 0, w = (bits & 8) != 0;
+            float north = n ? ArmEnd(ends, 1) : 0f, east = e ? ArmEnd(ends, 2) : 0f, south = s ? ArmEnd(ends, 4) : 0f, west = w ? ArmEnd(ends, 8) : 0f;
+            Vector2[] p = Section(r);
             List<Vector3[]> quads = new List<Vector3[]>();
             if (bits == 0)
             {
-                Run(quads, false, -Stub, Stub, true, true, r);
+                Sweep(quads, p, new Vector2(-Stub, 0f), Stub, 0f, 0f, 0f, r);   // joined to nothing: a short stretch, both ends hipped
+                Sweep(quads, p, new Vector2(Stub, 0f), 0f, 0f, 0f, Stub, r);
             }
-            if (n || s)
+            else if (bits == 5 || bits == 10)
             {
-                bool through = e && w;   // its open end lies inside the run across
-                float a = !s ? -r : (ends & 4) != 0 ? -Edge - Reach : -Edge;
-                float b = !n ? r : (ends & 1) != 0 ? Edge + Reach : Edge;
-                Run(quads, true, a, b, !s ? !through : (ends & 4) != 0, !n ? !through : (ends & 1) != 0, r);
+                Run(quads, p, bits == 5, bits == 5 ? -south : -west, bits == 5 ? north : east, r);
             }
-            if (e || w)
+            else
             {
-                bool through = n && s;
-                float a = !w ? -r : (ends & 8) != 0 ? -Edge - Reach : -Edge;
-                float b = !e ? r : (ends & 2) != 0 ? Edge + Reach : Edge;
-                Run(quads, false, a, b, !w ? !through : (ends & 8) != 0, !e ? !through : (ends & 2) != 0, r);
+                Sweep(quads, p, Vector2.zero, east, north, south, west, r);
+            }
+            for (int d = 0; d < 4; d++)
+            {
+                if ((ends & 1 << d) != 0)
+                {
+                    bool alongZ = d == 0 || d == 2;
+                    float at = (d == 0 || d == 1 ? 1f : -1f) * (Edge + Reach);
+                    Cap(quads, p, alongZ, at, r);
+                }
             }
             List<Color> colors = new List<Color>(quads.Count);
             for (int i = 0; i < quads.Count; i++)
@@ -251,60 +262,157 @@ namespace IsoRim
             }
             Model m = ObjLoader.FromQuads(quads, colors);
             m.materials[0].name = "stuff_round";
-            m.materials[0].round = true;   // smooth along its round side, plain faces at its ends
+            m.materials[0].round = true;   // smooth round its side, plain faces where it turns
             for (int i = 0; i < m.tinted.Length; i++)
             {
                 m.tinted[i] = false;
+                if (m.positions[i].y < 0.001f)
+                {
+                    // The ring on the ground: its shell lies a hair over the ground (the outline's depth bias would put it under), and wider,
+                    // since from above only a sliver of it shows past the tube's near side.
+                    Vector3 h = m.hull[i] * GroundLine;
+                    m.hull[i] = new Vector3(h.x, GroundLift, h.z);
+                }
+            }
+            if (ends != 0)
+            {
+                EndsWithoutOutline(m);
             }
             return m;
         }
 
-        // The tube's cross-section, a hexagon on one flat side (left out: it lies on the ground): across, up.
+        // An arm's closed end lies in what it runs into: its faces get no outline and the shell stops level with it, or it would show as a
+        // dark hook on the building's face.
+        private static void EndsWithoutOutline(Model m)
+        {
+            const float End = Edge + Reach - 0.001f;
+            int n = m.positions.Length;
+            m.noOutline = new bool[n];
+            for (int i = 0; i + 2 < n; i += 3)
+            {
+                bool east = true, north = true;
+                for (int k = i; k < i + 3; k++)
+                {
+                    east &= Mathf.Abs(m.positions[k].x) >= End;
+                    north &= Mathf.Abs(m.positions[k].z) >= End;
+                }
+                m.noOutline[i] = m.noOutline[i + 1] = m.noOutline[i + 2] = east || north;
+            }
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 h = m.hull[i];
+                m.hull[i] = new Vector3(Mathf.Abs(m.positions[i].x) >= End ? 0f : h.x, h.y, Mathf.Abs(m.positions[i].z) >= End ? 0f : h.z);
+            }
+        }
+
+        private static float ArmEnd(int ends, int side)
+        {
+            return (ends & side) != 0 ? Edge + Reach : Edge;
+        }
+
+        // The cross-section's right half as (distance from the middle, height), from the top round to the bottom's middle; the ring
+        // at height 0 carries the outline along the ground.
         private static Vector2[] Section(float r)
         {
             float mid = r * 0.866f;
             return new[]
             {
-                new Vector2(r / 2f, 0f), new Vector2(r, mid), new Vector2(r / 2f, mid * 2f),
-                new Vector2(-r / 2f, mid * 2f), new Vector2(-r, mid), new Vector2(-r / 2f, 0f)
+                new Vector2(0f, mid * 2f), new Vector2(r / 2f, mid * 2f), new Vector2(r, mid), new Vector2(r / 2f, 0f), new Vector2(0f, 0f)
             };
         }
 
-        // One straight stretch from a to b along z (north) or x (east), its ends closed where asked.
-        private static void Run(List<Vector3[]> quads, bool alongZ, float a, float b, bool capA, bool capB, float r)
+        private static Vector3 At(bool alongZ, float across, float y, float along)
         {
-            Vector2[] p = Section(r);
-            Vector3 middle = At(alongZ, new Vector2(0f, r * 0.866f), (a + b) / 2f);
+            return alongZ ? new Vector3(across, y, along) : new Vector3(along, y, across);
+        }
+
+        // One straight stretch from a to b along z (north) or x (east), open at both ends.
+        private static void Run(List<Vector3[]> quads, Vector2[] p, bool alongZ, float a, float b, float r)
+        {
+            Vector3 middle = At(alongZ, 0f, r * 0.866f, (a + b) / 2f);
+            float[] sides = { 1f, -1f };
+            for (int i = 1; i + 2 < p.Length; i++)   // the slopes, each side
+            {
+                foreach (float s in sides)
+                {
+                    Add(quads, middle, At(alongZ, s * p[i].x, p[i].y, a), At(alongZ, s * p[i].x, p[i].y, b),
+                        At(alongZ, s * p[i + 1].x, p[i + 1].y, b), At(alongZ, s * p[i + 1].x, p[i + 1].y, a));
+                }
+            }
+            int low = p.Length - 2;
+            Add(quads, middle, At(alongZ, p[1].x, p[1].y, a), At(alongZ, p[1].x, p[1].y, b), At(alongZ, -p[1].x, p[1].y, b), At(alongZ, -p[1].x, p[1].y, a));
+            Add(quads, middle, At(alongZ, p[low].x, 0f, a), At(alongZ, p[low].x, 0f, b), At(alongZ, -p[low].x, 0f, b), At(alongZ, -p[low].x, 0f, a));
+        }
+
+        // The end of an arm that stops at something that is not a tube: the whole cross-section.
+        private static void Cap(List<Vector3[]> quads, Vector2[] p, bool alongZ, float at, float r)
+        {
+            Vector3 inside = At(alongZ, 0f, r * 0.866f, at * 0.5f);
             for (int i = 0; i + 1 < p.Length; i++)
             {
-                Add(quads, middle, At(alongZ, p[i], a), At(alongZ, p[i], b), At(alongZ, p[i + 1], b), At(alongZ, p[i + 1], a));
-            }
-            if (capA)
-            {
-                Cap(quads, alongZ, p, a, b);
-            }
-            if (capB)
-            {
-                Cap(quads, alongZ, p, b, a);
+                Add(quads, inside, At(alongZ, p[i].x, p[i].y, at), At(alongZ, p[i + 1].x, p[i + 1].y, at),
+                    At(alongZ, -p[i + 1].x, p[i + 1].y, at), At(alongZ, -p[i].x, p[i].y, at));
             }
         }
 
-        private static void Cap(List<Vector3[]> quads, bool alongZ, Vector2[] p, float at, float away)
+        // The cross-section swept round a point: the four quarters round centre, each with its arm lengths (0: no arm that way).
+        private static void Sweep(List<Vector3[]> quads, Vector2[] p, Vector2 centre, float east, float north, float south, float west, float r)
         {
-            Vector3 inside = At(alongZ, Vector2.zero, away);
-            Add(quads, inside, At(alongZ, p[5], at), At(alongZ, p[0], at), At(alongZ, p[1], at), At(alongZ, p[2], at));
-            Add(quads, inside, At(alongZ, p[2], at), At(alongZ, p[3], at), At(alongZ, p[4], at), At(alongZ, p[5], at));
+            Quarter(quads, p, centre, 1f, 1f, east, north, r);
+            Quarter(quads, p, centre, -1f, 1f, west, north, r);
+            Quarter(quads, p, centre, 1f, -1f, east, south, r);
+            Quarter(quads, p, centre, -1f, -1f, west, south, r);
         }
 
-        private static Vector3 At(bool alongZ, Vector2 section, float along)
+        private static void Quarter(List<Vector3[]> quads, Vector2[] p, Vector2 centre, float sx, float sz, float lx, float lz, float r)
         {
-            return alongZ ? new Vector3(section.x, section.y, along) : new Vector3(along, section.y, section.x);
+            for (int i = 0; i + 1 < p.Length; i++)
+            {
+                Vector2[] a = Contour(p[i].x, lx, lz), b = Contour(p[i + 1].x, lx, lz), mid = Contour(0f, lx, lz);
+                for (int k = 0; k + 1 < a.Length; k++)
+                {
+                    Vector3 inside = On(centre, sx, sz, (mid[k] + mid[k + 1]) / 2f, r * 0.866f);
+                    Add(quads, inside, On(centre, sx, sz, a[k], p[i].y), On(centre, sx, sz, a[k + 1], p[i].y),
+                        On(centre, sx, sz, b[k + 1], p[i + 1].y), On(centre, sx, sz, b[k], p[i + 1].y));
+                }
+            }
+        }
+
+        private static Vector3 On(Vector2 centre, float sx, float sz, Vector2 q, float y)
+        {
+            return new Vector3(centre.x + sx * q.x, y, centre.y + sz * q.y);
+        }
+
+        // The line at distance d from the tube's middle inside a quarter (x, z >= 0), by the arms bounding it.
+        private static Vector2[] Contour(float d, float lx, float lz)
+        {
+            if (lx > 0f && lz > 0f)
+            {
+                return new[] { new Vector2(d, lz), new Vector2(d, d), new Vector2(lx, d) };   // the inside of a turn
+            }
+            if (lz > 0f)
+            {
+                return new[] { new Vector2(d, lz), new Vector2(d, 0f) };
+            }
+            if (lx > 0f)
+            {
+                return new[] { new Vector2(0f, d), new Vector2(lx, d) };
+            }
+            return new[] { new Vector2(0f, d), new Vector2(d, d), new Vector2(d, 0f) };   // the outside of a turn, a hipped end
         }
 
         // A quad facing away from inside (ObjLoader.FromQuads takes the normal from its corner order).
         private static void Add(List<Vector3[]> quads, Vector3 inside, Vector3 c0, Vector3 c1, Vector3 c2, Vector3 c3)
         {
             Vector3 normal = Vector3.Cross(c1 - c0, c2 - c0);
+            if (normal.sqrMagnitude < 1e-12f)
+            {
+                normal = Vector3.Cross(c2 - c0, c3 - c0);   // a corner of the contours closed to a point
+            }
+            if (normal.sqrMagnitude < 1e-12f)
+            {
+                return;
+            }
             quads.Add(Vector3.Dot(normal, (c0 + c1 + c2 + c3) / 4f - inside) >= 0f ? new[] { c0, c1, c2, c3 } : new[] { c3, c2, c1, c0 });
         }
     }

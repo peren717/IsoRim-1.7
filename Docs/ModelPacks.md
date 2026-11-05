@@ -183,7 +183,7 @@ random variants come along, and a pack needs no `Models/` folder.
   Faces turn with the box. Its plain faces take the sprite's mean colour, which also shows through see-through pixels. Buildings only.
 
 - **`Tube`** (Api 58): a low linked thing (a conduit, a pipe) as a tube along the sides its sprite joins, as thick as its atlas's pipe and in its colour
-  unless `height` or `tubeColor` say otherwise. Set `groundShadow` false and `outline` 0. See Docs/Api.md part 41.
+  unless `height` or `tubeColor` say otherwise. Set `groundShadow` false. See Docs/Api.md part 41.
 
 ```xml
 <IsoRim.ModelDef>

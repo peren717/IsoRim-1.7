@@ -2138,7 +2138,6 @@ pipe) as a tube lying on the ground instead of its flat link sprite, as thick as
   <thingDef>MyWaterPipe</thingDef>
   <shape>Tube</shape>
   <groundShadow>false</groundShadow>
-  <outline>0</outline>
 </IsoRim.ModelDef>
 ```
 
@@ -2150,8 +2149,9 @@ pipe) as a tube lying on the ground instead of its flat link sprite, as thick as
   linked graphic decides with no code here. The thing's `Graphic` must be a `Graphic_Linked`; any other draws the piece joined to nothing.
 - **When it changes:** the tube is baked with the block, when the game redraws the cell, as for the sprite. A graphic whose answer changes
   without the game redrawing the cell (a mod's own net) has to dirty it, as it has to for its sprite.
-- **Shape:** one generated piece per set of joined sides. Toward another tube an arm ends at the cell's edge; toward anything else it runs 0.06 cells
-  on and is closed, so it meets a model set in from its cell's edge.
+- **Shape:** one generated piece per set of joined sides, each one closed surface: straight runs, mitred turns, a hipped end. Toward another tube an arm
+  ends at the cell's edge; toward anything else it runs 0.06 cells on and is closed, so it meets a model set in from its cell's edge.
+- **Outline:** the usual model outline (`outline`, default 1), along both sides and unbroken through joints. The closed end inside what it joins has none. `outline` 0 leaves it out, for half the vertices.
   The game's link sprite, also the one it prints under a power building beside it, is not drawn: the piece replaces the thing's whole print.
 - **Stays as the game draws it:** the blueprint, the frame and the placing ghost, the power overlay, the 3D view off.
 - **Is a model otherwise:** `Forms.For` says `Model`, so the roof clip, floors, bridges, damage marks and `outline`, `groundShadow` work as for any model.
