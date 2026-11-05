@@ -65,6 +65,9 @@ Everything else in the `.mtl` is ignored. Write the `.mtl` by hand: Blender writ
 - Tileable textures that come with IsoRim: `IsoRim/Swatches/` Wood, Stone, Metal, Fabric, Rock, Bark, Leaf, Soil, Solar,
   Glow, Flame. Each face draws its `Kd` colour, and the texture times `Kd` over it; players can switch textures off, so
   `Kd` alone must already be the right colour.
+- Textured faces are drawn 0.004 cells out along their normal. A plain face 0.0025 to 0.0046 over a textured one would land on that
+  layer and shimmer, so IsoRim moves it 0.006 further out when the model loads; nothing to do in the file. Closer than 0.0025 the
+  textured face hides it. Faces of the same kind must not be exactly coplanar: no lift settles those.
 - IsoRim's own materials are in its `Models/isorim.mtl` (stuff, metal, hull, glass, glow ...). To use them, ship a copy of
   that file next to your `.obj` (`mtllib isorim.mtl`) and never edit it. Own materials go in your own `.mtl` with your own
   prefix (`mypack_trim`).

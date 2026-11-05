@@ -2708,6 +2708,7 @@ namespace IsoRim
                 m.maxZ = Mathf.Max(m.maxZ, p.z);
             }
             m.id = nextId++;
+            DecalLift.Apply(m.positions, m.normals, m.material, m.materials);   // after the box: the model's size stays what the file says
             m.hull = BuildHull(m.positions, m.normals, OutlineWidth);
             return m;
         }
@@ -2849,6 +2850,7 @@ namespace IsoRim
                 m.minZ = Mathf.Min(m.minZ, p.z);
                 m.maxZ = Mathf.Max(m.maxZ, p.z);
             }
+            DecalLift.Apply(m.positions, m.normals, m.material, m.materials);   // a size baked in here moves gaps, not the textured lift
             m.hull = BuildHull(m.positions, m.normals, OutlineWidth);
             m.beam = Beams.Moved(src.beam, point, normal);   // (Api 33)
             m.id = nextId++;
@@ -3158,7 +3160,7 @@ namespace IsoRim
             return m;
         }
 
-        private static Vector3Int HullKey(Vector3 p)
+        internal static Vector3Int HullKey(Vector3 p)
         {
             return new Vector3Int(Mathf.RoundToInt(p.x * 10000f), Mathf.RoundToInt(p.y * 10000f), Mathf.RoundToInt(p.z * 10000f));
         }
@@ -3237,7 +3239,7 @@ namespace IsoRim
 
         // The shortest d with d · n >= 1 for every n (unit normals), if there is one. The answer
         // touches at most three of the planes d · n = 1, so every set of one to three is tried.
-        private static bool ShortestMitre(List<Vector3> n, out Vector3 best)
+        internal static bool ShortestMitre(List<Vector3> n, out Vector3 best)
         {
             best = Vector3.zero;
             float bestSq = float.MaxValue;
