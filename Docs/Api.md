@@ -111,10 +111,11 @@ if (IsoRim.Api.Version >= 56) { /* worn styles: ApparelModelDef.byStyle with sho
 if (IsoRim.Api.Version >= 57) { /* worn styles per body type: bodyModels in a byStyle entry (part 40) */ }
 if (IsoRim.Api.Version >= 58) { /* tubes: ModelDef.shape Tube, tubeColor: a low linked thing as a thin tube (part 41) */ }
 if (IsoRim.Api.Version >= 59) { /* FigureFrame.AttachWeaponToBody, WeaponAxis: a weapon in its 3D form on a figure (part 1) */ }
+if (IsoRim.Api.Version >= 60) { /* ApparelModelDef.fitKeepWidth: a fitLift garment keeps its width as made (part 35) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -288,6 +289,7 @@ older IsoRim adds these defs through a patch operation of its own that checks `I
 | `shown` | Api 43, Shield: when the model shows: `Default` (see below), `Weapon` (exactly while the game shows the person's weapon, whatever the apparel's class draws itself) or `Always` (whenever the person stands, as `alwaysShown`). |
 | `spriteColour` | Colour the `stuff` faces with the mean of the worn sprite instead of the item's colour. |
 | `fitLift` | Api 51, Body on a layer drawn over Shell: fitted as cloth resting on what is worn under it (up over collars and pauldrons, out past the sides, smoothed) instead of pushed out sideways (part 35). Default false. |
+| `fitKeepWidth` | Api 60, with `fitLift`: not widened to the shoulders under it, sides leave straight outward, so a garment of separate panels keeps about its width as made (part 35). Default false. |
 
 Colours are as for other IsoRim models: faces under a material whose name starts with `stuff` take the item's colour (its
 stuff, its dye or the colour its mod gives it, as the game tints the sprite); the others keep their own `Kd`. Faces under a
@@ -1904,6 +1906,23 @@ is under it instead:
 - **Cost:** worked out once per garment and combination of clothes under it, as the plain fit; nothing per frame.
 - Default false: the binding keeps the plain sideways push, unchanged. IsoRim's own over-the-shell shapes are not
   affected. A pack that must load on an older IsoRim adds the field by a version-gated patch (part M).
+
+### Keeping the width (version 60)
+
+The wide shoulders and the sideways exit above suit a garment closed at the sides. A garment of separate panels, whose open
+sides are the look, would be stretched to the pauldrons and its side edges pulled along the armour. Add this to `fitLift`:
+
+```xml
+<fitLift>true</fitLift>
+<fitKeepWidth>true</fitKeepWidth>   <!-- IsoRim.Api.Version >= 60 -->
+```
+
+- Measuring, the way up over collars and pauldrons, the smoothing, normals and prints are as above.
+- **Wide shoulders** are skipped: nothing is widened to what is under it.
+- Corners on the sides leave like every other corner, straight away from the figure's middle line, so the panels stay about
+  as wide as made, plus what clears the clothes under them, and front and back may part further than made.
+- Pauldrons wider than the panels are not covered: they show beside them.
+- Without `fitLift` the field does nothing. Default false: `fitLift` works as above, with identical results.
 
 ## Part 36: shapes without a model (version 52)
 

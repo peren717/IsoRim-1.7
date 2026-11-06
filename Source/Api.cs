@@ -113,7 +113,9 @@ namespace IsoRim
         // 57: ApparelStyleModel.bodyModels: a byStyle entry of a Body binding has a model per body type, picked as the binding's bodyModels.
         // 58: ModelDef.shape Tube and tubeColor (ShapeTubes.cs): a low linked thing drawn as a tube along the sides its own linked graphic joins, as thick as its art.
         // 59: FigureFrame.AttachWeaponToBody: a given weapon in its 3D form on a figure (FigureWeapons.DrawAttached); WeaponAxis (Api59.cs).
-        public static int Version => 59;
+        // 60: ApparelModelDef.fitKeepWidth (People.FitLift): with fitLift, no widening to the shoulders under it and corners leaving straight
+        // outward, so a garment of separate panels keeps its width as made plus what clears the clothes; without the field fitLift is unchanged.
+        public static int Version => 60;
 
         // ---- glass parts (Version 30)
 

@@ -1681,6 +1681,7 @@ namespace IsoRim
             Model overModel = null;
             Color overColour = Color.white;
             bool overLift = false;   // its binding's fitLift (Api 51): FitLift instead of FitOver
+            bool overKeepWidth = false;   // its binding's fitKeepWidth (Api 60)
             // The items behind the coat (bound or IsoRim's own shape), shell armour, flak vest, over-coat, middle and on-skin
             // shapes (ApparelDecals).
             Apparel coatFrom = null, shellArmourFrom = null, vestFrom = null, overFrom = null, midFrom = null, skinFrom = null;
@@ -1777,6 +1778,7 @@ namespace IsoRim
                                     overColour = tint;
                                     overFrom = a;
                                     overLift = bound.def.fitLift;
+                                    overKeepWidth = bound.def.fitKeepWidth;
                                     if (legsB)
                                     {
                                         look.lowerColor = tint;
@@ -2134,7 +2136,7 @@ namespace IsoRim
             if (overModel != null)
             {
                 // Over everything the game draws under it: fitted out over what reaches further than the bare figure.
-                look.overCoat = overLift ? FitLift(overModel, look) : FitOver(overModel, look);
+                look.overCoat = overLift ? FitLift(overModel, look, overKeepWidth) : FitOver(overModel, look);
                 look.overCoatColor = overColour;
                 look.overCoatFrom = overFrom;
             }
@@ -2542,6 +2544,10 @@ namespace IsoRim
         // normals turn with the faces (Turned); decals print from the shape as made (MadeShape). What is measured is the bulk
         // of the clothes (Bulk): the tips of spikes and narrow parts standing clear of them don't count, so the cloth rests on the
         // coat and they poke through. Kept per shape and clothes under it, as FitOver.
+        // Api 60 (ApparelModelDef.fitKeepWidth, keepWidth here): for a garment made in separate panels, whose width is the look. No
+        // ShoulderSpread and no side corners, so nothing stretches it to the pauldrons and no corner slides along the armour's
+        // surface: every corner takes the plain way out, straight away from the middle line, or up, and the panels keep their
+        // width as made plus what clears the clothes under them. The tops rise over collars as without it.
         private const int LiftRings = 36;        // rings up to 0.72 cells out
         private const float LiftRing = 0.02f;
         private const float LiftUpBias = 3f;     // a face turned straight up goes up while that is up to 1 + 3 times the way out
@@ -2549,7 +2555,7 @@ namespace IsoRim
         private static readonly Dictionary<int, float[]> overTop = new Dictionary<int, float[]>();
         private static readonly Dictionary<string, Model> overLifted = new Dictionary<string, Model>();
 
-        internal static Model FitLift(Model over, Look look)
+        internal static Model FitLift(Model over, Look look, bool keepWidth = false)
         {
             Model[] under = { look.shirtWear, look.mid, look.legArmour, look.underCoat, look.coat };
             string key = over.id.ToString();
@@ -2564,6 +2570,10 @@ namespace IsoRim
                 return over;
             }
             key += "," + (look.upper != null ? look.upper.id : 0) + "," + (look.lower != null ? look.lower.id : 0);
+            if (keepWidth)
+            {
+                key += ",keep";
+            }
             Model fitted;
             if (overLifted.TryGetValue(key, out fitted))
             {
@@ -2624,7 +2634,7 @@ namespace IsoRim
                 upward[u] = Mathf.InverseLerp(0.2f, 0.7f, upward[u] / shared[u]);
                 Vector3 c = corner[u];
                 hidden[u] = Mathf.Sqrt(c.x * c.x + c.z * c.z) < Sample(bare, c.y, Mathf.Atan2(c.z, c.x)) - LiftHidden;
-                side[u] = !hidden[u] && Mathf.Abs(c.x) > Mathf.Abs(c.z) && Mathf.Abs(c.x) > LiftSideMin;
+                side[u] = !keepWidth && !hidden[u] && Mathf.Abs(c.x) > Mathf.Abs(c.z) && Mathf.Abs(c.x) > LiftSideMin;
             }
             for (int t = 0; t + 2 < n; t += 3)
             {
@@ -2642,8 +2652,8 @@ namespace IsoRim
             // Shoulders wider than the garment (pauldrons): the garment's upper part is first widened across to them, in
             // proportion from the neck out, so the strap ends reach over the tips; what follows lays it on their curve.
             float spreadTop = look.upper != null ? look.upper.maxY : 0f;
-            float spreadRight = ShoulderSpread(bulk, corner, hidden, 1f, spreadTop);
-            float spreadLeft = ShoulderSpread(bulk, corner, hidden, -1f, spreadTop);
+            float spreadRight = keepWidth ? 1f : ShoulderSpread(bulk, corner, hidden, 1f, spreadTop);
+            float spreadLeft = keepWidth ? 1f : ShoulderSpread(bulk, corner, hidden, -1f, spreadTop);
             for (int u = 0; u < m; u++)
             {
                 if (!hidden[u])

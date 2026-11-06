@@ -79,6 +79,11 @@ namespace IsoRim
         /// upward over collars and pauldrons, its sides outward, smoothed. Default false: pushed out sideways only (People.FitOver).</summary>
         public bool fitLift;
 
+        /// <summary>Api 60, with fitLift: for a garment made in separate panels (open at the sides). Lifted over what is worn under
+        /// it as fitLift does, but not widened to the shoulders under it and with its sides leaving straight outward, so it keeps
+        /// about its width as made plus what clears those clothes. Default false: fitLift as ever.</summary>
+        public bool fitKeepWidth;
+
         /// <summary>Api 54: other models for the states another mod names (Api.AddModelState, asked with the worn item when the
         /// person's look is worked out). A state with no entry, or none: model as usual.</summary>
         public List<ApparelStateModel> byState;
