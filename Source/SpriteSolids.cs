@@ -40,7 +40,7 @@ namespace IsoRim
                 return false;
             }
 
-            Matrix4x4 m = Floors.DrawnMatrix(HeldMatrix(weapon, hand, aim, g.drawSize));
+            Matrix4x4 m = Floors.DrawnMatrix(HeldMatrix(weapon, hand, aim, BadArt.SizeOf(g, weapon)));
             IsoGlow.DrawLit(solid.sides, m, sideMat, 0);
             if (!ShipCapture.Note(solid.faces, m, mat, null))
             {
@@ -102,7 +102,7 @@ namespace IsoRim
             {
                 return false;
             }
-            Vector2 draw = g.drawSize;
+            Vector2 draw = BadArt.SizeOf(g, weapon);
             float s = View3D.Squash;
             // Seen from the south, a turn about +z looks anticlockwise; the half turn about up mirrors the slab
             // (it is the same on both faces), which turns the other way round.
@@ -138,7 +138,7 @@ namespace IsoRim
             {
                 return false;
             }
-            Vector2 draw = g.drawSize;
+            Vector2 draw = BadArt.SizeOf(g, t);
             float s = View3D.Squash;
             // Turned a quarter about east-west: the sprite's up points north, its thickness up and down.
             Matrix4x4 m = Matrix4x4.Translate(new Vector3(bottom.x, (bottom.y + thick * 0.5f) / s, bottom.z))

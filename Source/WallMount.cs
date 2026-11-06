@@ -98,7 +98,7 @@ namespace IsoRim
             {
                 return false;
             }
-            Vector2 size = g.drawSize;
+            Vector2 size = BadArt.SizeOf(g, t);
             Vector3 center = Vector3.zero;
             float yaw = t.Rotation.AsAngle;
             float wall = Wall(t.Map, t.Position, t.Rotation, ref center, ref yaw);

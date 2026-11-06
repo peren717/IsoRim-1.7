@@ -425,6 +425,9 @@ namespace IsoRim
                 prefix: nameof(ThingDrawAt_Prefix));
             Patch("3D models of buildings drawn every frame", AccessTools.DeclaredMethod(typeof(CompEmptyStateGraphic), "PostDraw"),
                 prefix: nameof(EmptyStatePostDraw_Prefix));
+            // The game's picture for "no art" stays one cell, whatever its drawSize says (BadArt).
+            Patch("the no-art picture keeps its size", AccessTools.DeclaredMethod(typeof(Graphic), nameof(Graphic.DrawWorker)), prefix: nameof(GraphicDrawWorker_Prefix));
+            Patch("the no-art picture keeps its size", AccessTools.DeclaredMethod(typeof(Graphic), nameof(Graphic.Print)), prefix: nameof(GraphicPrint_Prefix));
             // The game's flat fire and darklight sprites are left out where the model has its own flame (FlameStandsIn).
             Patch("3D models of buildings drawn every frame", AccessTools.DeclaredMethod(typeof(CompFireOverlay), "PostDraw"),
                 prefix: nameof(FireOverlayPostDraw_Prefix), finalizer: nameof(FireOverlayPostDraw_Finalizer));
@@ -2014,6 +2017,8 @@ namespace IsoRim
                     aiming = cardAiming, aimGame = cardAimGame, aimSeen = cardAimSeen,
                 });
             }
+            bool outerPlaced = DrawHook.active && !DrawHook.billboard;
+            Matrix4x4 outerPlacing = DrawHook.xform;
             DrawHook.active = false;
             DrawHook.billboard = false;
             DrawHook.skip = false;
@@ -2099,6 +2104,11 @@ namespace IsoRim
                         if (bedTop > 0f)
                         {
                             DrawHook.xform = View3D.LiftMatrix(bedTop);
+                            DrawHook.active = true;
+                        }
+                        else if (outerPlaced && pawn.Corpse != null && !pawn.Corpse.Spawned && !(pawn.Corpse.ParentHolder is Pawn_CarryTracker))
+                        {
+                            DrawHook.xform = outerPlacing;   // a corpse drawn by what holds it (a belt, Api.DrawItem): placed as that drawing is
                             DrawHook.active = true;
                         }
                         return true;
@@ -3237,6 +3247,16 @@ namespace IsoRim
                 defaultLabel = "R3D_Binder_Gizmo".Translate(),
                 action = () => ModelBinder.Open(t)
             };
+        }
+
+        public static bool GraphicDrawWorker_Prefix(Graphic __instance, Vector3 __0, ThingDef __2)
+        {
+            return !BadArt.Draw(__instance, __0, __2);
+        }
+
+        public static bool GraphicPrint_Prefix(Graphic __instance, SectionLayer __0, Thing __1)
+        {
+            return !BadArt.Print(__instance, __0, __1);
         }
 
         public static bool ThingDrawAt_Prefix(Thing __instance)

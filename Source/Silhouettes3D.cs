@@ -159,7 +159,7 @@ namespace IsoRim
             {
                 return;
             }
-            Vector2 ds = g.drawSize;
+            Vector2 ds = pawn != null ? g.drawSize : BadArt.SizeOf(g, t);
             Vector2 sz2 = pawn == null && t.def.rotatable ? new Vector2(ds.y, ds.x) : ds;   // as DrawSilhouette
             float inv = Find.CameraDriver.InverseFovScale.x;
             float sx = inv * (sz2.x < 2.5f ? sz2.x + SilhouetteUtility.AdjustScale(sz2.x) : sz2.x);

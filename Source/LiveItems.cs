@@ -74,7 +74,8 @@ namespace IsoRim
     // (Api 40) One item drawn this frame as IsoRim shows an item lying on the ground, by the player's item settings (Forms: the
     // item's model, its sprite made solid, or flat): for items the game draws every frame (LiveItems), and for items another
     // mod draws itself somewhere of its own (Api.DrawItem: a belt carrying them). The same placing as the map-mesh bake
-    // (ModelBaker.StartPlace / Place / BakeModel), only at the given point instead of the item's cell.
+    // (ModelBaker.StartPlace / Place / BakeModel), only at the given point instead of the item's cell. A corpse (of the items, only
+    // Api.DrawItem brings one here) has no picture of its own: its body is drawn as it lies on the ground, by the same rules (Corpses).
     internal static class ItemDraw
     {
         public static int Drawn;   // probe: items drawn here
@@ -83,6 +84,24 @@ namespace IsoRim
         // the item's own turn. scale: of its drawn size. flat: with no 3D form (the player's settings say flat, or a form with
         // nothing to show), the game's own sprite of it is drawn lying at that height (else false, nothing drawn).
         public static bool Draw(Thing t, Vector3 bottom, float yaw, float scale, bool flat)
+        {
+            Corpse corpse = t as Corpse;
+            bool done = corpse != null
+                ? FigureScope.DrawLying(corpse.InnerPawn, bottom, yaw, Matrix4x4.Scale(Vector3.one * scale))
+                : DrawForm(t, bottom, yaw, scale);
+            if (!done && flat)
+            {
+                done = DrawFlat(t, bottom, yaw, scale);
+            }
+            if (done)
+            {
+                Drawn++;
+            }
+            return done;
+        }
+
+        // The item's 3D form, if it has one to show.
+        private static bool DrawForm(Thing t, Vector3 bottom, float yaw, float scale)
         {
             ThingForm form = Forms.For(t);
             bool done = false;
@@ -100,14 +119,6 @@ namespace IsoRim
                     done = GroundGear.DrawLaid(t, bottom, yaw, scale)
                         || SpriteSolids.DrawLying(t, bottom, Forms.ItemThickness(t.def), scale, yaw + GroundGear.Turn(t));
                     break;
-            }
-            if (!done && flat)
-            {
-                done = DrawFlat(t, bottom, yaw, scale);
-            }
-            if (done)
-            {
-                Drawn++;
             }
             return done;
         }
@@ -140,9 +151,9 @@ namespace IsoRim
             return true;
         }
 
-        // The game's flat sprite of the item (its Graphic, as Thing.DrawAt draws it: stack sprite, random turn), lying at the
-        // height, turned by yaw and scaled about its middle; moved onto the stacked floor of its row when no thing's drawing
-        // has put one on already.
+        // The game's flat sprite of the item (its Graphic, as Thing.DrawAt draws it: stack sprite, random turn; of a corpse, its
+        // body as the game draws it: a figure off, a race with no figure, an animal dried to bones), lying at the height, turned
+        // by yaw and scaled about its middle; moved onto the stacked floor of its row when no thing's drawing has put one on already.
         private static bool DrawFlat(Thing t, Vector3 bottom, float yaw, float scale)
         {
             Graphic g = t.Graphic;
@@ -169,7 +180,14 @@ namespace IsoRim
             }
             using (UprightScopes.BeginTransform(m))
             {
-                g.Draw(at, t.Rotation, t);
+                if (t is Corpse)
+                {
+                    t.DrawNowAt(at);   // (keeps this transform: Patches.RenderPawnAt_Prefix)
+                }
+                else
+                {
+                    g.Draw(at, t.Rotation, t);
+                }
             }
             return true;
         }

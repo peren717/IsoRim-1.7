@@ -1509,6 +1509,9 @@ What is drawn (the same choice and placing as an item baked into the map mesh):
   random turn the game gives some items on the ground;
 - the game's **flat sprite** lying at that height when the settings make the item flat (thickness 0, solid items off).
 
+A **corpse** is drawn as its body lies on the ground (its 3D figure, or the game's sprite of the body where it has no figure), as
+it has rotted. A thing with no art at all shows the game's red square, always one cell, and the log names its def once.
+
 Notes:
 - `yaw` (degrees, clockwise seen from above) is added to the item's own turn; `scale` scales its drawn size (1: as on the ground).
 - The item need not be spawned (one held in a container); its own position is not used.

@@ -581,6 +581,10 @@ namespace IsoRim
         private static Matrix4x4 extra = Matrix4x4.identity;
         private static float targetYaw;
         private static float rootYaw;
+        private static bool lying;   // DrawLying: the drawer's own turn is kept, turnBy added to it
+        private static float turnBy;
+        private static Vector3 lyingAt;
+        private static Matrix4x4 lyingLocal;
         private static Vector3 min, max;
         private static bool measured;
 
@@ -604,12 +608,34 @@ namespace IsoRim
                 return;
             }
             rootYaw = yaw;
+            if (lying)
+            {
+                targetYaw = yaw + turnBy;
+                target = Placed(lyingAt, targetYaw) * lyingLocal;
+            }
             extra = target * Placed(at, yaw).inverse;
         }
 
         internal static bool Draw(Pawn pawn, Vector3 position, float yaw, Matrix4x4 local, bool withShadow)
         {
             return Run(pawn, Placed(position, yaw) * local, yaw, false, withShadow);
+        }
+
+        // A dead body put somewhere of its own (ItemDraw): Draw, only the figure keeps the turn it lies at, yaw added to it.
+        internal static bool DrawLying(Pawn pawn, Vector3 position, float yaw, Matrix4x4 local)
+        {
+            lying = true;
+            turnBy = yaw;
+            lyingAt = position;
+            lyingLocal = local;
+            try
+            {
+                return Run(pawn, Placed(position, yaw) * local, yaw, false, false);
+            }
+            finally
+            {
+                lying = false;
+            }
         }
 
         internal static bool Bounds(Pawn pawn, out Vector3 lo, out Vector3 hi)

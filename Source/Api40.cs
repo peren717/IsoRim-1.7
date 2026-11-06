@@ -17,7 +17,8 @@ namespace IsoRim
         /// (nothing on a hidden floor). yaw: degrees clockwise seen from above, added to the item's own turn; scale: of its
         /// drawn size. The item need not be spawned (one held in a container). Call from draw-time code, main thread. Returns
         /// false and draws nothing outside the 3D view, for a null or non-item thing, or if nothing could be drawn: then draw it
-        /// your own way. (Apparel shown "as worn" on the ground is drawn here as its sprite made solid.)
+        /// your own way. (Apparel shown "as worn" on the ground is drawn here as its sprite made solid.) A corpse is drawn as its
+        /// body lies on the ground: the 3D figure, or the game's sprite of the body where it has no figure, as it has rotted.
         /// </summary>
         public static bool DrawItem(Thing item, Vector3 position, float yaw = 0f, float scale = 1f)
         {

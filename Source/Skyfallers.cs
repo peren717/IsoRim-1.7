@@ -329,7 +329,7 @@ namespace IsoRim
                 float up = Vector3.Dot(pose.back, View3D.Up);
                 spin = new Vector2(right, up).sqrMagnitude > 1e-6f ? Mathf.Atan2(right, up) * Mathf.Rad2Deg : 0f;
             }
-            Vector2 size = g.drawSize;
+            Vector2 size = BadArt.SizeOf(g, s);
             float sq = View3D.Squash;
             float mid = streak ? 0f : size.y * 0.5f;   // a card stands on its bottom edge; a streak's head is its middle
             Matrix4x4 m = Matrix4x4.Translate(new Vector3(pose.ground.x, (pose.height + mid) / sq, pose.ground.z))

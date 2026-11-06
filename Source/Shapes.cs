@@ -452,9 +452,10 @@ namespace IsoRim
         }
 
         // The sprite's size on the map before the def's scale, as the game prints it for this facing.
-        private static Vector2 SizeOf(Graphic g, Rot4 rot)
+        private static Vector2 SizeOf(Graphic g, Rot4 rot, Thing t)
         {
-            return !g.ShouldDrawRotated && rot.IsHorizontal ? g.drawSize.Rotated() : g.drawSize;
+            Vector2 size = BadArt.SizeOf(g, t);
+            return !g.ShouldDrawRotated && rot.IsHorizontal ? size.Rotated() : size;
         }
 
         // How high a card of this def stands, cells: for selection, what rests on it and the like.
@@ -505,7 +506,7 @@ namespace IsoRim
             {
                 return false;
             }
-            Vector2 size = SizeOf(g, rot) * md.scale;
+            Vector2 size = SizeOf(g, rot, t) * md.scale;
             if (t.MultipleItemsPerCellDrawn())
             {
                 size *= 0.8f;
