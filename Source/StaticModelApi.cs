@@ -17,7 +17,16 @@ namespace IsoRim
         public string[] TexturePaths { get; internal set; }
     }
 
-    /// <summary>A static print after gameplay model selection, before geometry is appended. True map space, not squashed.</summary>
+    /// <summary>Current drawing state of a map row. Offset is in true, unsquashed units; faded floors are visible.</summary>
+    public struct StaticModelView
+    {
+        public bool Visible { get; internal set; }
+        public int Floor { get; internal set; }
+        public int ViewedFloor { get; internal set; }
+        public Vector3 Offset { get; internal set; }
+    }
+
+    /// <summary>A static print after gameplay model selection, before geometry is appended.</summary>
     public struct StaticModelContext
     {
         public Thing Thing { get; internal set; }
@@ -25,11 +34,15 @@ namespace IsoRim
         internal Vector3 center, lift, scale, offset;
         internal Quaternion turn, lay;
         internal float baseHeight, floor;
-        public Vector3 LocalToWorld(Vector3 point)
+        /// <summary>Raw map-row coordinates in true units, before the floor draw offset. Safe to cache for static geometry.</summary>
+        public Vector3 LocalToMap(Vector3 point)
         {
             Vector3 p = turn * (Vector3.Scale(lay * point + lift, scale) + offset);
             return new Vector3(center.x + p.x, baseHeight + Mathf.Max(floor, p.y), center.z + p.z);
         }
+        /// <summary>Current displayed world position in true units, including its floor offset; project with Api.WorldToViewport.</summary>
+        public Vector3 LocalToWorld(Vector3 point) => LocalToMap(point)
+            + Api.ReadStaticModelView(Thing?.Map, Thing == null ? -1 : Thing.Position.z).Offset;
     }
 
     /// <summary>Original is shared and read-only. Return null to retain it; cache a separate material for replacements.</summary>
@@ -42,8 +55,12 @@ namespace IsoRim
 
     public static partial class Api
     {
-        /// <summary>Static extension callbacks are available in the current view (stacked floors excluded).</summary>
-        public static bool StaticModelExtensionsActive => ModelsOn && !IsoRim.Floors.On;
+        /// <summary>Static extension callbacks are available in the current view, including stacked floors.</summary>
+        public static bool StaticModelExtensionsActive => ModelsOn;
+        /// <summary>Current render state for a row of the current map, including upper-floor peek/fade visibility.
+        /// Other maps, invalid/void rows and inactive views return Visible=false. Does not test camera frustum or roof occlusion.
+        /// Read once per occupied row/group, not per vertex. No consumer access to renderer internals is required.</summary>
+        public static StaticModelView ReadStaticModelView(Map map, int row) => StaticModelExtensions.ReadView(map, row);
         /// <summary>Pending API version (assigned at merge). Snapshot of an ordinary immutable textured model; null for unsupported model kinds.</summary>
         public static StaticModelGeometry ReadStaticModel(ModelHandle handle) => StaticModelExtensions.Read(handle);
 
@@ -53,7 +70,7 @@ namespace IsoRim
             Func<StaticMaterialContext, Material> material) => StaticModelExtensions.Register(model, normals, tangents, material);
 
         /// <summary>Pending API version (assigned at merge). First non-null selector wins, in registration order. Null keeps the gameplay-selected model.
-        /// No recursive selection; no shadows, ghosts, damage overlays, moving draws or stacked floors.</summary>
+        /// No recursive selection; no shadows, ghosts, damage overlays or moving draws.</summary>
         public static void AddStaticModelSelector(Func<StaticModelContext, ModelHandle> selector) => StaticModelExtensions.Add(selector);
         public static void RemoveStaticModelSelector(Func<StaticModelContext, ModelHandle> selector) => StaticModelExtensions.Remove(selector);
 
@@ -68,11 +85,12 @@ namespace IsoRim
         /// <summary>Pending API version (assigned at merge). Opt a custom material into the standard static texture lighting/culling contract.
         /// Its shader must preserve IsoRimTex positions, cut/roof tags and lighting uniforms. Call before first print.
         /// This does not convert an arbitrary shader into an IsoRim-compatible one.</summary>
-        public static void ConfigureStaticMaterial(Material material)
+        public static void ConfigureStaticMaterial(Material material, bool supportsFloorFade = false)
         {
             if (material == null) throw new ArgumentNullException(nameof(material));
             IsoGlow.Use(material, IsoGlow.OwnCell);
             Cull.RegisterStaticMaterial(material);
+            if (supportsFloorFade) FadeFloors.RegisterStaticMaterial(material);
         }
 
         internal static ModelHandle StaticHandle(Model model) => HandleOf(model);
@@ -98,6 +116,27 @@ namespace IsoRim
         private static Func<StaticModelContext, ModelHandle>[] selectors = Array.Empty<Func<StaticModelContext, ModelHandle>>();
         private static readonly Dictionary<Material, Material> originals = new Dictionary<Material, Material>();
         private static int surfaceCount;
+        private static bool bufferWarning;
+        private static int viewFrame = -1;
+        private static Map viewMap;
+
+        internal static StaticModelView ReadView(Map map, int row)
+        {
+            if (map == null || map != Find.CurrentMap || row < 0 || row >= map.Size.z || !Api.ModelsOn)
+                return new StaticModelView { Floor = -1 };
+            // MapComponentUpdate can precede the renderer's frame preparation. Refresh its existing layout once,
+            // rather than using the previous frame's floor state or asking the layout once for every building.
+            if (viewFrame != Time.frameCount || viewMap != map)
+            {
+                Floors.BeginFrame();
+                viewFrame = Time.frameCount;
+                viewMap = map;
+            }
+            if (!Floors.On) return new StaticModelView { Visible = true };
+            int k = Floors.FloorOfRow(row);
+            return new StaticModelView { Floor = k, ViewedFloor = Floors.PointerTop,
+                Visible = k >= 0 && Floors.Shown(k), Offset = Floors.RowOffset(row) };
+        }
 
         private static bool Ordinary(Model m)
         {
@@ -153,7 +192,7 @@ namespace IsoRim
         internal static Model Select(Thing thing, Model model, Vector3 center, Quaternion turn, Quaternion lay,
             Vector3 lift, Vector3 scale, Vector3 offset, float baseHeight, float floor)
         {
-            if (selectors.Length == 0 || Floors.On || !(thing is Building) || !thing.Spawned || !Ordinary(model)) return model;
+            if (selectors.Length == 0 || !(thing is Building) || !thing.Spawned || !Ordinary(model)) return model;
             var context = new StaticModelContext { Thing = thing, Model = Api.StaticHandle(model), center = center, turn = turn,
                 lay = lay, lift = lift, scale = scale, offset = offset, baseHeight = baseHeight, floor = floor };
             // A callback may add/remove registrations; do not let that invalidate iteration.
@@ -171,7 +210,7 @@ namespace IsoRim
             return model;
         }
         internal static bool HasSurface(Thing thing, Model model, Vector3 scale) => surfaceCount != 0 && thing is Building && thing.Spawned
-            && !Floors.On && scale.x > 0 && scale.y > 0 && scale.z > 0 && surfaces.TryGetValue(model, out Surface surface) && !surface.disabled;
+            && scale.x > 0 && scale.y > 0 && scale.z > 0 && surfaces.TryGetValue(model, out Surface surface) && !surface.disabled;
 
         internal static Material MaterialFor(Model model, int slot, Material original)
         {
@@ -216,7 +255,11 @@ namespace IsoRim
         {
             if (buffer.original != null) mesh.material = buffer.original;
             buffers.Remove(mesh);
-            Log.ErrorOnce("[IsoRim] Static surface buffer misaligned; original material retained", 1739103);
+            if (!bufferWarning)
+            {
+                bufferWarning = true;
+                Log.Warning("[IsoRim] Static surface buffer misaligned; original material retained.");
+            }
         }
     }
 }

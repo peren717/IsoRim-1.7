@@ -120,6 +120,10 @@ namespace IsoRim
 
         private static readonly ConditionalWeakTable<Material, Entry> copies = new ConditionalWeakTable<Material, Entry>();
         private static Dictionary<Shader, Shader> shaderMap;
+        // Explicit per-material opt-in: a consumer owns its shader and promises the _IsoFade/_IsoFadeFrom contract.
+        // Do not globally whitelist every material using that shader; registrations do not keep materials alive.
+        private static readonly ConditionalWeakTable<Material, object> staticMaterials = new ConditionalWeakTable<Material, object>();
+        internal static void RegisterStaticMaterial(Material material) => staticMaterials.GetValue(material, _ => new object());
 
         // Vanilla ShaderDefs with a faded twin, and IsoRim's own defs whose fragment stage reads _IsoFade itself.
         private static readonly string[][] Twins =
@@ -181,7 +185,8 @@ namespace IsoRim
             Shader to;
             if (s == null || !shaderMap.TryGetValue(s, out to))
             {
-                return src;
+                if (s == null || !staticMaterials.TryGetValue(src, out _)) return src;
+                to = s;
             }
             Entry e = copies.GetValue(src, _ => new Entry { copies = new Copy[Keep.Length] });
             if (e.copies.Length < Keep.Length)
