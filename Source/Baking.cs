@@ -2943,6 +2943,8 @@ namespace IsoRim
             {
                 return WriteGhost(layer, m, center, turn, lay, layLift, scale, offset, baseHeight);
             }
+            m = StaticModelExtensions.Select(thing, m, center, turn, lay, layLift, scale, offset, baseHeight, Floor);
+            bool customSurface = StaticModelExtensions.HasSurface(thing, m, scale);
             Material mat = R3DMaterials.Solid;
             LayerSubMesh sm = mat != null ? MeshWriter.Sub(layer, mat) : null;
             int n = m.positions.Length;
@@ -3089,6 +3091,10 @@ namespace IsoRim
                         string ownKey = own ? Model.OwnKey : null;
                         Material tmat = mm.runtimeTexture != null ? R3DMaterials.LitTexture(mm.runtimeTexture, mm.runtimeName + ownKey, c, 1)
                             : glow ? R3DTextures.MaterialFor(path, c, -1, ownKey) : R3DMaterials.LitTexture(path, c, 0, 0, ownKey);
+                        if (customSurface)
+                        {
+                            tmat = StaticModelExtensions.MaterialFor(m, mi, tmat);
+                        }
                         texturedMeshes[slot] = tmat != null ? MeshWriter.Sub(layer, tmat) : null;
                     }
                     tm = texturedMeshes[slot];
@@ -3157,6 +3163,8 @@ namespace IsoRim
                         tm.verts.Add(new Vector3(center.x + q.x, baseY + Mathf.Max(Floor, q.y) / squash, center.z + q.z));
                         tm.colors.Add(own ? R3DMaterials.Shaded(c, 1f) : White);
                         tm.uvs.Add(new Vector3(uv.x, uv.y, 0f));
+                        if (customSurface && decal == null)
+                            StaticModelExtensions.Append(m, k, tm, turn, lay, scale);
                         if (tagged)
                         {
                             CutTags.Stamp(tm, triTag);

@@ -526,6 +526,33 @@ namespace IsoRim
             return Mathf.Sqrt(r);
         }
 
+        // (Api 61) A consumer's static material whose shader passes positions through: culled as such. Only a shader IsoRim
+        // does not know is set; a known one (shared with IsoRim's own materials, say IsoRim.vert.glsl) keeps its own shift,
+        // so a consumer's material never makes IsoRim's blocks cull too tightly.
+        internal static void RegisterStaticMaterial(Material material)
+        {
+            Waylith.Rendering.Shader shader = material.engineMaterial?.Shader;
+            if (shader == null)
+            {
+                throw new ArgumentException("Material has no engine shader");
+            }
+            Shift shift;
+            if (!shifts.TryGetValue(shader, out shift))
+            {
+                shift = ShiftOfFile(FileOf(shader));
+            }
+            if (shift == Shift.Unknown)
+            {
+                shifts[shader] = Shift.None;
+            }
+        }
+
+        private static string FileOf(Waylith.Rendering.Shader shader)
+        {
+            string file = shader.VertexShaderFileName;
+            return string.IsNullOrEmpty(file) ? "" : System.IO.Path.GetFileName(file);
+        }
+
         // How a material's vertex shader moves vertices, from its file name.
         private static Shift ShiftOf(Material mat)
         {
@@ -540,8 +567,19 @@ namespace IsoRim
             {
                 return shift;
             }
-            string file = shader.VertexShaderFileName;
-            string name = string.IsNullOrEmpty(file) ? "" : System.IO.Path.GetFileName(file);
+            string name = FileOf(shader);
+            shift = ShiftOfFile(name);
+            if (shift == Shift.Unknown && unknownSeen.Add(name))
+            {
+                ModLog.Note("[IsoRim] Map blocks drawn with " + name + " (" + shader.Name + ") are never culled: its vertex stage moves vertices.");
+            }
+            shifts[shader] = shift;
+            return shift;
+        }
+
+        private static Shift ShiftOfFile(string name)
+        {
+            Shift shift;
             switch (name)
             {
                 // Position passed straight through (checked in the 1.7 shader sources).
@@ -580,13 +618,8 @@ namespace IsoRim
                     break;
                 default:
                     shift = Shift.Unknown;
-                    if (unknownSeen.Add(name))
-                    {
-                        ModLog.Note("[IsoRim] Map blocks drawn with " + name + " (" + shader.Name + ") are never culled: its vertex stage moves vertices.");
-                    }
                     break;
             }
-            shifts[shader] = shift;
             return shift;
         }
 

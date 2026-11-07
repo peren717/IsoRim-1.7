@@ -102,6 +102,10 @@ namespace IsoRim
 
         private static Map frameMap;
         private static int frameNo = -1;
+
+        // The map this state was last worked out for (null before the first frame with a floor layout); for readers outside
+        // the renderer (Api 61 ReadStaticModelView), which must not work it out themselves.
+        internal static Map FrameMap => frameMap;
         private static int groundRows;
         private static int count;
         private static int pointer;

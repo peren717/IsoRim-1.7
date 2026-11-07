@@ -1261,9 +1261,26 @@ namespace IsoRim
             }
         }
 
+        // The byPath key of a model file: its full path. A path the system cannot resolve stays as given (LoadFile then fails to
+        // read it, as before).
+        internal static string CacheKey(string path)
+        {
+            try
+            {
+                return Path.GetFullPath(path);
+            }
+            catch (Exception)
+            {
+                return path;
+            }
+        }
+
         // Loads a model file once; null if it is missing or unreadable.
         public static Model LoadFile(string path)
         {
+            // One key per file whatever the spelling (ModelDef paths with "/" and Api.LoadModel's full path), so both get the same
+            // Model object (Api 61 registers surfaces per object).
+            path = CacheKey(path);
             Model model;
             if (byPath.TryGetValue(path, out model))
             {

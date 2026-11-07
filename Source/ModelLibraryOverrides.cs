@@ -103,7 +103,7 @@ namespace IsoRim
         {
             if (path != null)
             {
-                byPath.Remove(path);
+                byPath.Remove(CacheKey(path));   // keyed as LoadFile keys it (the binder hands "Mod\Models/x.obj" spellings)
             }
         }
     }

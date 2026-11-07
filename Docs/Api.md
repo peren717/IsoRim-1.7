@@ -3,7 +3,7 @@
 Model packs (XML and .obj files, no code), the dev-mode model binder and the coverage report: see [ModelPacks.md](ModelPacks.md).
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`, `WallShapeRule`, `WallShape`, `HeadDecal`, `SelectionRing`, `ModelDecal`, `ModelDecalProvider`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`, `WallShapeRule`, `WallShape`, `HeadDecal`, `SelectionRing`, `ModelDecal`, `ModelDecalProvider`, `StaticModelGeometry`, `StaticModelView`, `StaticModelContext`, `StaticMaterialContext`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
 in any update, even when it is public: do not patch or reflect into it, ask for an Api member instead. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -112,10 +112,11 @@ if (IsoRim.Api.Version >= 57) { /* worn styles per body type: bodyModels in a by
 if (IsoRim.Api.Version >= 58) { /* tubes: ModelDef.shape Tube, tubeColor: a low linked thing as a thin tube (part 41) */ }
 if (IsoRim.Api.Version >= 59) { /* FigureFrame.AttachWeaponToBody, WeaponAxis: a weapon in its 3D form on a figure (part 1) */ }
 if (IsoRim.Api.Version >= 60) { /* ApparelModelDef.fitKeepWidth: a fitLift garment keeps its width as made (part 35) */ }
+if (IsoRim.Api.Version >= 61) { /* static model surfaces and selection: an addon's normals, tangents, materials and model choice for static buildings (part 42) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -2189,6 +2190,58 @@ pipe) as a tube lying on the ground instead of its flat link sprite, as thick as
 - A thing with no entry is not touched: the game's `HiddenConduit` keeps its drawing. Bind only what the player is meant to see.
 
 Version gate: gate on Api 58 (`tubeColor` is an XML error on an older IsoRim, and `Tube` an unknown enum value).
+
+## Part 42: static model surfaces and selection (version 61)
+
+For an addon that draws static buildings its own way: normal maps or other lighting of its own (its own materials with a normal and
+tangent per corner), and another model by distance or view (detail levels). IsoRim still places, writes, culls, clips, fades and shadows
+the print; the addon brings its materials, shaders, asset files and policy. First user: IsoRim Material and LOD
+(muziyue707-sys, [IsoRim-MaterialLOD](https://github.com/muziyue707-sys/IsoRim-MaterialLOD), whose repository also holds its validation runs).
+Everything here is optional, main thread only, and saves nothing.
+
+| Member | Meaning |
+|---|---|
+| `Api.ReadStaticModel(ModelHandle handle)` | A copy (`StaticModelGeometry`) of the model's faces in the imported corner order: `Positions`, `UVs`, `MaterialIndices`, `MaterialNames`, `TexturePaths`. Null for a model that is not an ordinary textured one (no textures, own vertex colours, leaves or twigs, glow, fire, beam parts, runtime textures). At start-up, not every frame. |
+| `Api.RegisterStaticSurface(ModelHandle model, Vector3[] normals, Vector4[] tangents, Func<StaticMaterialContext, Material> material)` | Once per model: a unit normal and a unit tangent at right angles per corner (tangent `w` +1 or -1), in the model's own space, and a factory for its textured parts. The arrays are checked and copied. Throws on wrong arrays, an unsupported model or a second registration. |
+| `StaticMaterialContext` | What the factory gets: `Model`, `Slot` (material index), `Original` (IsoRim's shared material: read it, never change it). Return null or `Original` to keep it, or a material of your own: cache it, and never hand one material for two different originals. |
+| `Api.ConfigureStaticMaterial(Material material, bool supportsFloorFade = false)` | Sets up such a material for static textured faces: IsoRim's own-cell lighting and culling as a shader that passes positions through. With `supportsFloorFade` its faded copies are drawn on peeked floors; its shader then reads `_IsoFade` and `_IsoFadeFrom`. Call it before the material is first printed. |
+| `Api.AddStaticModelSelector(Func<StaticModelContext, ModelHandle> selector)` / `RemoveStaticModelSelector` | A rule that picks another model for a static building print, after the game's state picked one (so another addon's model states are not touched). First non-null answer wins, in the order added; null keeps the model. No recursion. Throws on null or adding the same rule twice. |
+| `StaticModelContext` | What a selector gets: `Thing`, `Model` (the model picked so far), `LocalToMap(point)`: a model point in map-row coordinates, true units, fixed for the print; `LocalToWorld(point)`: the same plus its floor's current offset, for `Api.WorldToViewport`. |
+| `Api.ReadStaticModelView(Map map, int row)` | How a row of the current map is drawn now (`StaticModelView`): `Visible` (a faded floor counts), `Floor` (-1 between floors), `ViewedFloor`, `Offset` (true units). Reads the state the renderer last prepared and changes nothing; until the renderer has drawn the map once, and for other maps or rows off the map, `Visible` is false. No frustum or roof test. Once per row or group, not per vertex. |
+| `Api.InvalidateStaticModel(Thing thing)` | Marks the building's section to be rebuilt (with the building layers drawn in real time), so the selectors are asked again. Rebuilt with the game's next section update; the caller limits how often it asks. |
+| `Api.StaticModelExtensionsActive` | True while models are drawn, with or without floors. |
+
+```csharp
+// Once after loading. ReadBasis, MyMaterials and MyPolicy are the addon's own.
+ModelHandle crate = Api.LoadModel(content, "Models/crate.obj");
+StaticModelGeometry g = Api.ReadStaticModel(crate);
+ReadBasis(g, out Vector3[] normals, out Vector4[] tangents);
+Api.RegisterStaticSurface(crate, normals, tangents, c => MyMaterials.For(c.Slot, c.Original));   // ConfigureStaticMaterial once per new material
+Api.AddStaticModelSelector(c => c.Model == crate ? MyPolicy.Pick(c) : null);
+// When the policy changes its mind for a building: Api.InvalidateStaticModel(building).
+```
+
+- **What it covers:** spawned buildings printed into the map's static blocks, their textured faces, on the ground and on ProjectZ floors.
+  Not: moving or dynamic draws, figures, door leaves, placing ghosts, damage marks, shadows (they keep the model the game's state
+  picked), copies IsoRim generates from a model (merged, cut, aged: a registration is per model object), a mirrored or flattened print
+  (a scale of 0 or less on an axis). A model decal (part 37) on a part wins over the surface there.
+- **The model still rules gameplay:** the game's model stays for layout, attach points and shadows; a replacement must keep the
+  origin, units and footprint. The basis is in model space and turned with the print. The second UV channel (`uvsChannelTwo`) stays IsoRim's (clip tags). No tangents are
+  worked out and no image convention is converted here.
+- **Failures fall back quietly:** a selector that throws or returns an unsupported model is removed; a factory that throws is turned off for
+  its model; each logs one warning and the native drawing stays. A section whose basis does not line up gets IsoRim's own material back
+  (one warning for the session). Faces already written with the consumer's material stay until their section is rebuilt for any other
+  reason. Only argument checks at registration throw: catch bad asset data before registering it. No red errors.
+- **Shader internals are not a stable interface:** the consumer's shaders are its own. IsoRim's vertex attributes, lighting uniforms,
+  clip tags and fade properties can change in any update, under the same Api version; `ConfigureStaticMaterial` is an opt-in, not a
+  promise that a shader keeps working. After an IsoRim update the consumer checks its shaders and adapts them.
+- **Floors:** a hidden floor's section can be rebuilt for the game's own reasons, so a selector can be asked for rows not shown: use
+  `ReadStaticModelView` to skip camera work there. What happens on floors below the viewed one is the addon's choice.
+- **Cost:** with nothing registered each hook leaves at its first check: no patches, no saved data, no update loop. With surfaces the
+  basis is uploaded with the section's mesh.
+- `Api.LoadModel` and a `ModelDef`'s model path now give the same model object for the same file, however the path is spelt.
+
+Version gate: gate on Api 61.
 
 ## Part M: model packs (IsoRim.ModelDef)
 

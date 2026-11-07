@@ -115,7 +115,10 @@ namespace IsoRim
         // 59: FigureFrame.AttachWeaponToBody: a given weapon in its 3D form on a figure (FigureWeapons.DrawAttached); WeaponAxis (Api59.cs).
         // 60: ApparelModelDef.fitKeepWidth (People.FitLift): with fitLift, no widening to the shoulders under it and corners leaving straight
         // outward, so a garment of separate panels keeps its width as made plus what clears the clothes; without the field fitLift is unchanged.
-        public static int Version => 60;
+        // 61: static model surfaces and selection (Api61.cs, StaticModels.cs; external PR #6): ReadStaticModel, RegisterStaticSurface,
+        // AddStaticModelSelector, RemoveStaticModelSelector, InvalidateStaticModel, ConfigureStaticMaterial, ReadStaticModelView,
+        // StaticModelExtensionsActive: an addon's own normals, tangents and materials for static textured building prints, and its choice of model.
+        public static int Version => 61;
 
         // ---- glass parts (Version 30)
 
