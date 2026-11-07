@@ -527,6 +527,13 @@ namespace IsoRim
         }
 
         // How a material's vertex shader moves vertices, from its file name.
+        internal static void RegisterStaticMaterial(Material material)
+        {
+            var shader = material.engineMaterial?.Shader;
+            if (shader == null) throw new ArgumentException("Material has no engine shader");
+            shifts[shader] = Shift.None;
+        }
+
         private static Shift ShiftOf(Material mat)
         {
             Waylith.Rendering.Material em = mat.engineMaterial;

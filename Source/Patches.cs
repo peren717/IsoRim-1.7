@@ -750,6 +750,7 @@ namespace IsoRim
 
         public static void CullFinalizeMesh_Postfix(LayerSubMesh __instance, MeshParts __0)
         {
+            StaticModelExtensions.Upload(__instance);
             if ((__0 & (MeshParts.Verts | MeshParts.Tris)) != MeshParts.None)
             {
                 MeshGuard.CheckLayer(__instance);

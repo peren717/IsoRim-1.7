@@ -115,6 +115,7 @@ namespace IsoRim
         // 59: FigureFrame.AttachWeaponToBody: a given weapon in its 3D form on a figure (FigureWeapons.DrawAttached); WeaponAxis (Api59.cs).
         // 60: ApparelModelDef.fitKeepWidth (People.FitLift): with fitLift, no widening to the shoulders under it and corners leaving straight
         // outward, so a garment of separate panels keeps its width as made plus what clears the clothes; without the field fitLift is unchanged.
+        // Static model extension API: version increment assigned by maintainer at merge.
         public static int Version => 60;
 
         // ---- glass parts (Version 30)
