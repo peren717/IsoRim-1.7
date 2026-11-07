@@ -1264,6 +1264,8 @@ namespace IsoRim
         // Loads a model file once; null if it is missing or unreadable.
         public static Model LoadFile(string path)
         {
+            // ModelDef paths and Api.LoadModel must share the same cached object (including mixed separators).
+            path = Path.GetFullPath(path);
             Model model;
             if (byPath.TryGetValue(path, out model))
             {
