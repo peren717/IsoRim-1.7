@@ -754,6 +754,10 @@ namespace IsoRim
 
         public static void RemoveWeaponModelRule(Func<ThingDef, bool?> rule) => WeaponRules.Remove(rule);
 
+        /// <summary>How a def got its model entry, as <see cref="ThingModelInfo.HowBound"/> gives it; null if it has none. A plain
+        /// lookup that asks no rule: safe inside a weapon model rule.</summary>
+        public static string HowBound(ThingDef def) => def != null ? ModelLibrary.HowBound(def) : null;
+
         /// <summary>A rule asked while an item on the ground is printed into the map (not blueprints or damage marks): a model to bake
         /// in its place, or null for IsoRim's own. In the order added; a rule that throws or answers no model is removed.</summary>
         public static void AddGroundModelRule(Func<GroundModelContext, GroundModel?> rule) => GroundRules.Add(rule);

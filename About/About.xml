@@ -20,6 +20,7 @@
   </loadAfter>
   <incompatibleWith>
     <li>connor.isorim</li>
+    <li>co.uk.epicguru.meleeanimation</li>
   </incompatibleWith>
   <description>Early access, work in progress.
 

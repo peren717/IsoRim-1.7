@@ -113,7 +113,7 @@ if (IsoRim.Api.Version >= 58) { /* tubes: ModelDef.shape Tube, tubeColor: a low 
 if (IsoRim.Api.Version >= 59) { /* FigureFrame.AttachWeaponToBody, WeaponAxis: a weapon in its 3D form on a figure (part 1) */ }
 if (IsoRim.Api.Version >= 60) { /* ApparelModelDef.fitKeepWidth: a fitLift garment keeps its width as made (part 35) */ }
 if (IsoRim.Api.Version >= 61) { /* static model surfaces and selection: an addon's normals, tangents, materials and model choice for static buildings (part 42) */ }
-if (IsoRim.Api.Version >= 62) { /* custom figure renderers: figure drawers, placing, figure mesh submit, materials, run-time models, things' models, weapon and ground rules, the figure shader contract (part 43) */ }
+if (IsoRim.Api.Version >= 62) { /* custom figure renderers: figure drawers, placing, figure mesh submit, materials, run-time models, things' models, weapon and ground rules, `Api.HowBound`, the figure shader contract (part 43) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
@@ -2299,7 +2299,8 @@ nothing registered every hook leaves at its first check.
 | `Api.DrawHeldThing(Thing thing, Matrix4x4 pictureTrueSpace, float scale = 1)` | Draws a weapon as IsoRim's figures hold one (model or solid sprite, outline, stuff colour). `pictureTrueSpace` places the weapon's picture (x right, y up, z out of it; a unit a cell, no scale) in true space; drawn at a figure's hand size times `scale`. |
 | `Api.ReportMuzzle(Pawn pawn, Thing weapon, Vector3 tip, Vector3 centre)` | This frame's drawn barrel end and weapon middle (true space): the pawn's next shots start there. |
 | `Api.DrawCarried(Pawn carrier, Vector3 at, float yaw)` | What the carrier carries, as IsoRim's figures draw it (`at`: the bottom of the carried thing, true space). |
-| `Api.AddWeaponModelRule(Func<ThingDef, bool?> rule)` / `RemoveWeaponModelRule` | Asked first whether a weapon def shows its model: true its bound model (any binding, its category too), false its sprite, null IsoRim's rules (own binding, own art). A rule that throws is removed. Dirty the map meshes yourself when an answer changes. |
+| `Api.AddWeaponModelRule(Func<ThingDef, bool?> rule)` / `RemoveWeaponModelRule` | Asked first whether a weapon def shows its model: true its bound model (any binding, its category too), false its sprite, null IsoRim's rules (own binding, own art). A rule that throws is removed. Dirty the map meshes yourself when an answer changes. To learn how a def is bound, use `Api.HowBound` inside a rule (not `ReadThingModel`, which asks the rules). |
+| `Api.HowBound(ThingDef def)` | How the def got its model entry, as `ThingModelInfo.HowBound` gives it: `thingDef` (by its own name), `rule:<ModelDef>` (a model rule, part 27), `graphicPath:<path>` (by its art, the path as the ModelDef writes it), `category:<thingCategory>`, `match:<name part>`, `fallback:SmallPlants`, or `binder` (the dev-mode binder, this session only); null if it has none or `def` is null. A plain lookup that asks no rule: safe inside a weapon rule. |
 
 **Baking on the ground**
 
@@ -2326,8 +2327,8 @@ if (IsoRim.Api.Version >= 62)
 ```
 
 - **Limits:** placing is for people (animals and mechs can be stood in for, but `ReadPlacement` is false for them). A figure drawn from inside a
-  drawer (`Api.DrawFigure` in a drawer) is IsoRim's own. An off-screen pawn's shots (`MeasureWeapon`) start from IsoRim's own pose until it
-  is drawn again. A stood-in figure gets no blob shadow from IsoRim.
+  drawer (`Api.DrawFigure` in a drawer) is IsoRim's own. A pawn not drawn just now (off screen, a hidden floor) shoots from where
+  IsoRim's own figure would hold its weapon. A stood-in figure gets no blob shadow from IsoRim.
 - **Failures fall back quietly:** a drawer or rule that throws, or a ground rule answering no model, is removed with one warning and IsoRim
   draws as before. Only argument checks throw.
 
