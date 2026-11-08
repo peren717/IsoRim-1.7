@@ -239,8 +239,9 @@
   <R3D_Settings_Models3D>手工模型</R3D_Settings_Models3D>
   <R3D_Settings_Models3DTip>家具、机器、残骸、人物、动物和护甲。</R3D_Settings_Models3DTip>
   <R3D_Settings_Trees3D>树木</R3D_Settings_Trees3D>
-  <R3D_Settings_SmallPlants3D>草、花和作物</R3D_Settings_SmallPlants3D>
+  <R3D_Settings_SmallPlants3D>草和野花</R3D_Settings_SmallPlants3D>
   <R3D_Settings_SmallPlants3DTip>大地图上数以千计，会占用内存；卡顿时可关闭。</R3D_Settings_SmallPlants3DTip>
+  <R3D_Settings_Crops3D>农作物</R3D_Settings_Crops3D>
   <R3D_Settings_AutoExtrude>其他所有东西，由贴图生成</R3D_Settings_AutoExtrude>
   <R3D_Settings_ThickItems>物品带一点厚度</R3D_Settings_ThickItems>
   <R3D_Settings_ItemThickness>  物品厚度</R3D_Settings_ItemThickness>

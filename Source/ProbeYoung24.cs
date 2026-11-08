@@ -195,6 +195,25 @@ namespace IsoRim
                             + ", young now " + StateModels.Immature(p) + ", built " + (built == null ? "not noted" : built.Value ? "young" : "mature"));
                     }
                     return true;
+                case "plantform":
+                {
+                    // plantform=x0,z0,x1,z1: each plant kind in the rectangle once: sowable, tree, its switch on, its form now, the stamp
+                    HashSet<ThingDef> seen = new HashSet<ThingDef>();
+                    IsoRimSettings pst = IsoRimMod.Settings;
+                    Log.Message("[IsoRim probe] plantform settings trees3D " + pst.trees3D + " smallPlants3D " + pst.smallPlants3D + " crops3D " + pst.crops3D
+                        + ", stamp " + View3D.Stamp);
+                    foreach (IntVec3 c in Rect(a, 0))
+                    {
+                        Plant p = c.InBounds(map) ? c.GetPlant(map) : null;
+                        if (p == null || !seen.Add(p.def))
+                        {
+                            continue;
+                        }
+                        Log.Message("[IsoRim probe] plantform " + p.def.defName + " " + c + ": sowable " + p.def.plant.Sowable + ", tree " + p.def.plant.IsTree
+                            + ", switch on " + Forms.PlantModelsOn(p.def) + ", form " + Forms.For(p.def).form);
+                    }
+                    return true;
+                }
                 case "couple":
                 {
                     // couple=x1,z1,x2,z2: the colonists in the two cells made spouses, so they may share a double bed (BedUtility:

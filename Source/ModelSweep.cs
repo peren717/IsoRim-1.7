@@ -93,8 +93,7 @@ namespace IsoRim
 
                 List<string> flags = new List<string>();
                 bool item = def.category == ThingCategory.Item;
-                bool plantOff = def.category == ThingCategory.Plant
-                    && (def.plant != null && def.plant.IsTree ? !st.trees3D : !st.smallPlants3D);
+                bool plantOff = !Forms.PlantModelsOn(def);
                 if (hasModel && !flat && form.form != Form3D.Model && !door && st.models3D && !plantOff)
                 {
                     if (item && (GroundGear.IsWeapon(def) || (def.IsApparel && !GroundGear.ApparelOn)) && !Forms.IsChunk(def) && !Forms.OverArt(entry))
@@ -147,7 +146,7 @@ namespace IsoRim
             StringBuilder txt = new StringBuilder();
             txt.Append("IsoRim model sweep, vanilla + DLC buildings/plants/items: ").Append(rows).Append(" defs\n");
             txt.Append("settings: models3D=").Append(st.models3D).Append(" itemsFromArt=").Append(st.itemsFromArt)
-                .Append(" trees3D=").Append(st.trees3D).Append(" smallPlants3D=").Append(st.smallPlants3D).Append(" doors3D=").Append(st.doors3D).Append('\n');
+                .Append(" trees3D=").Append(st.trees3D).Append(" smallPlants3D=").Append(st.smallPlants3D).Append(" crops3D=").Append(st.crops3D).Append(" doors3D=").Append(st.doors3D).Append('\n');
             txt.Append("forms: ").Append(string.Join(", ", forms.OrderBy(p => p.Key).Select(p => p.Key + " " + p.Value))).Append('\n');
             txt.Append("flags: ").Append(string.Join(", ", counts.OrderBy(p => p.Key).Select(p => p.Key + " " + p.Value))).Append('\n');
             txt.Append("\nflagged rows (ITEM_ART- and GEAR_ART-only rows left out):\n");

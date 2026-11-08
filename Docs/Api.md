@@ -1536,6 +1536,13 @@ default on). The setting names and saved keys are unchanged (`Api.SetOption` sti
   that very apparel by thingDef still wins; off: the sprite made solid). Clothes worn by pawns and on outfit stands are not
   affected.
 
+### Plant settings: crops apart
+
+Plants that are not trees have two switches. `crops3D` (new, default on) covers every plant the game lets players sow
+(`plant.Sowable`: crops, decorative flowers, modded crops, also where one grows wild); `smallPlants3D` now covers the rest
+(grass and wild plants); before, it covered all of them. Trees, sowable or not, follow `trees3D`. The setting names and saved
+keys are unchanged (`Api.SetOption` takes all three). A plant whose switch is off is drawn from its sprite as before.
+
 ## Part 27: model rules (version 42)
 
 For a pack whose things are only known at load (another mod's generated or patched defs, a family of defs that mod maps to a

@@ -74,7 +74,8 @@ namespace IsoRim
         public bool texturedModels = true;
         public bool ruggedRock = true;
         public bool trees3D = true;
-        public bool smallPlants3D = true;
+        public bool smallPlants3D = true;       // non-tree plants that are not sowable: grass and wild plants
+        public bool crops3D = true;             // non-tree plants the game lets players sow (Forms.PlantModelsOn)
         public bool groundStyle = true;
         public bool grassSoil = true;
         public bool floorStyle = true;
@@ -221,6 +222,7 @@ namespace IsoRim
             Scribe_Values.Look(ref ruggedRock, "ruggedRock", true);
             Scribe_Values.Look(ref trees3D, "trees3D", true);
             Scribe_Values.Look(ref smallPlants3D, "smallPlants3D", true);
+            Scribe_Values.Look(ref crops3D, "crops3D", true);
             Scribe_Values.Look(ref groundStyle, "groundStyle", true);
             Scribe_Values.Look(ref grassSoil, "grassSoil", true);
             Scribe_Values.Look(ref floorStyle, "floorStyle", true);
@@ -1128,6 +1130,7 @@ namespace IsoRim
                 Check(l, "R3D_Settings_Models3D".Translate(), ref st.models3D, "R3D_Settings_Models3DTip".Translate());
                 Check(l, "R3D_Settings_Trees3D".Translate(), ref st.trees3D);
                 Check(l, "R3D_Settings_SmallPlants3D".Translate(), ref st.smallPlants3D, "R3D_Settings_SmallPlants3DTip".Translate());
+                Check(l, "R3D_Settings_Crops3D".Translate(), ref st.crops3D);
                 Check(l, "R3D_Settings_AutoExtrude".Translate(), ref st.autoExtrude);
                 Check(l, "R3D_Settings_ThickItems".Translate(), ref st.thickItems);
                 if (st.thickItems)

@@ -876,6 +876,7 @@ namespace IsoRim
                 h = h * 31 + (st.ruggedRock ? 1 : 0);
                 h = h * 31 + (st.trees3D ? 1 : 0);
                 h = h * 31 + (st.smallPlants3D ? 1 : 0);
+                h = h * 31 + (st.crops3D ? 1 : 0);
                 h = h * 31 + (st.models3D ? 1 : 0);
                 h = h * 31 + (st.effects3D ? 1 : 0);   // live flames: torch and brazier models are baked without their own
                 h = h * 31 + (st.groundShadows ? 1 : 0);

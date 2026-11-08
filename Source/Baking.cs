@@ -193,12 +193,7 @@ namespace IsoRim
                 }
                 return f;
             }
-            bool plantModelsOff = false;
-            if (def.category == ThingCategory.Plant)
-            {
-                bool tree = def.plant != null && def.plant.IsTree;
-                plantModelsOff = tree ? !st.trees3D : !st.smallPlants3D;
-            }
+            bool plantModelsOff = !PlantModelsOn(def);
             if (listed && entry.HasModel && st.models3D && !plantModelsOff)
             {
                 f.form = Form3D.Model;
@@ -266,6 +261,24 @@ namespace IsoRim
                 f.height = (setHeight > 0f ? setHeight : (def.fillPercent > 0.3f ? 0.3f : 0.12f)) * Mathf.Clamp01(st.itemThickness);
             }
             return f;
+        }
+
+        // Whether a plant may take its model, by its own switch: trees by "Trees", plants the game lets players sow
+        // (PlantProperties.Sowable: crops, flowers, modded crops, also where one grows wild) by "Crops", the rest
+        // (grass, wild plants) by "Grass and wild plants". True for anything that is not a plant. A plant without its
+        // model is drawn from its sprite as before (the upright card or the flat sprite).
+        public static bool PlantModelsOn(ThingDef def)
+        {
+            if (def == null || def.category != ThingCategory.Plant)
+            {
+                return true;
+            }
+            IsoRimSettings st = IsoRimMod.Settings;
+            if (def.plant != null && def.plant.IsTree)
+            {
+                return st.trees3D;
+            }
+            return def.plant != null && def.plant.Sowable ? st.crops3D : st.smallPlants3D;
         }
 
         // An item whose model is used even while items are made from the game's art (raw materials, with

@@ -239,8 +239,9 @@
   <R3D_Settings_Models3D>Hand-made models</R3D_Settings_Models3D>
   <R3D_Settings_Models3DTip>Furniture, machines, wrecks, people, animals and armour.</R3D_Settings_Models3DTip>
   <R3D_Settings_Trees3D>Trees</R3D_Settings_Trees3D>
-  <R3D_Settings_SmallPlants3D>Grass, flowers and crops</R3D_Settings_SmallPlants3D>
+  <R3D_Settings_SmallPlants3D>Grass and wild plants</R3D_Settings_SmallPlants3D>
   <R3D_Settings_SmallPlants3DTip>Thousands of these on a big map cost memory; switch off if it drags.</R3D_Settings_SmallPlants3DTip>
+  <R3D_Settings_Crops3D>Crops</R3D_Settings_Crops3D>
   <R3D_Settings_AutoExtrude>Everything else, from its sprite</R3D_Settings_AutoExtrude>
   <R3D_Settings_ThickItems>Items get a little thickness</R3D_Settings_ThickItems>
   <R3D_Settings_ItemThickness>  How thick items are</R3D_Settings_ItemThickness>
