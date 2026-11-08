@@ -60,6 +60,7 @@ namespace IsoRim
         public bool workAnimations = true;
         public bool selectionRings = true;   // a ring on the ground under selected pawns in 3D (SelectionRings); off: brackets
         public bool labelsAboveHeads = true; // pawn name labels over the head in 3D (PawnLabels); off: at the feet as the game puts them
+        public float labelHeight = 0f;       // cells added to the over-head label's height (PawnLabels.AboveHead); 0 = the default place
         public bool damage3D = true;
         public bool outlines = true;
         public bool steppedLight = true;    // sun light on models in a few flat bands (Shaders/IsoRimSolid.frag.glsl SteppedAmount)
@@ -207,6 +208,7 @@ namespace IsoRim
             Scribe_Values.Look(ref workAnimations, "workAnimations", true);
             Scribe_Values.Look(ref selectionRings, "selectionRings", true);
             Scribe_Values.Look(ref labelsAboveHeads, "labelsAboveHeads", true);
+            Scribe_Values.Look(ref labelHeight, "labelHeight", 0f);
             Scribe_Values.Look(ref damage3D, "damage3D", true);
             Scribe_Values.Look(ref outlines, "outlines", true);
             Scribe_Values.Look(ref steppedLight, "steppedLight", true);
@@ -772,6 +774,10 @@ namespace IsoRim
                 }
                 Check(l, "R3D_Settings_ThingLabels".Translate(), ref st.thingLabels, "R3D_Settings_ThingLabelsTip".Translate());
                 Check(l, "R3D_Settings_LabelsAboveHeads".Translate(), ref st.labelsAboveHeads, "R3D_Settings_LabelsAboveHeadsTip".Translate());
+                if (st.labelsAboveHeads)
+                {
+                    st.labelHeight = Mathf.Round(Slider(l, "R3D_Settings_LabelHeight".Translate(), st.labelHeight, -0.3f, 1f, Cells(st.labelHeight, "0.00")) / 0.05f) * 0.05f;
+                }
                 Check(l, "R3D_Settings_Perspective".Translate(), ref st.perspective, "R3D_Settings_PerspectiveTip".Translate());
                 if (st.perspective)
                 {

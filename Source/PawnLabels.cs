@@ -63,7 +63,9 @@ namespace IsoRim
                 lift.y += attached.at.y / View3D.Squash;   // a rider (Api 13): over its seat on the host (animals' pick height has it)
             }
             Vector3 at = p.DrawPos;
-            Vector3 world = new Vector3(at.x, (Top(p) + Gap) / View3D.Squash, at.z) + new Vector3(lift.x, lift.y, lift.z);
+            IsoRimSettings st = IsoRimMod.Settings;
+            float raise = st != null ? st.labelHeight : 0f;   // the player's "Label height", cells
+            Vector3 world = new Vector3(at.x, (Top(p) + Gap + raise) / View3D.Squash, at.z) + new Vector3(lift.x, lift.y, lift.z);
             Vector3 onScreen = Find.Camera.WorldToScreenPoint(world);
             float scale = Prefs.UIScale;
             Vector2 r = new Vector2(onScreen.x / scale, Verse.UI.screenHeight - onScreen.y / scale);

@@ -59,6 +59,7 @@
   <R3D_Settings_ThingLabelsTip>地图上物品的标签（堆叠数量、品质）。人物头上的名字不受影响。</R3D_Settings_ThingLabelsTip>
   <R3D_Settings_LabelsAboveHeads>标签显示在头顶</R3D_Settings_LabelsAboveHeads>
   <R3D_Settings_LabelsAboveHeadsTip>角色名字显示在头顶，而不是脚下。</R3D_Settings_LabelsAboveHeadsTip>
+  <R3D_Settings_LabelHeight>  标签高度</R3D_Settings_LabelHeight>
   <R3D_Settings_Perspective>透视镜头</R3D_Settings_Perspective>
   <R3D_Settings_PerspectiveTip>真正的透视镜头：远处的东西变小，类似 Rim3D。关闭：平面（正交）视图。</R3D_Settings_PerspectiveTip>
   <R3D_Settings_Fov>视野</R3D_Settings_Fov>
