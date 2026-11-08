@@ -448,15 +448,28 @@ namespace IsoRim
             {
                 return false;
             }
+            Color? stone = Statues.Colour(pawn);   // (the renderer's statue colour: needs no look)
+
+            // (Api 62) Another mod's figure drawer may stand in for this figure (FigureDrawers, Api.AddFigureDrawer), before
+            // IsoRim's look work: a figure a drawer takes pays for it only if the drawer reads the placing (Placing runs this
+            // in its place-only mode). A statue's subject is never offered.
+            if (!stone.HasValue && FigureDrawers.Count != 0 && !Placing.active && FigureDrawers.Offer(pawn, drawLoc, neverAim, FigureKinds.People))
+            {
+                return true;
+            }
+
             Look look = LookOf(pawn);
             if (look == null || look.upper == null || look.lower == null)
             {
                 return false;
             }
 
-            Color? stone = Statues.Colour(pawn);
             if (stone.HasValue)
             {
+                if (Placing.active)
+                {
+                    return false;   // (Api 62) a statue's subject has no placing of its own to read
+                }
                 // A statue's subject (Statues.cs): standing still on the statue's base, facing south, carved in its colour.
                 const float South = 180f;
                 Vector3 onBase = new Vector3(drawLoc.x, Statues.ground, drawLoc.z);
@@ -539,7 +552,23 @@ namespace IsoRim
                 bool aiming = !lying && !prone && FigureWeapons.AimOf(pawn, neverAim, out aimGame, out aimDrawn);
                 // (not aiming: the facing another mod gives the sprite, BodyAnims.Facing; face down: toward the rule's cell)
                 float? face = prone ? (crouch.hasYaw ? crouch.yaw : (float?)null) : aiming ? aimDrawn : lying ? (float?)null : BodyAnims.FacingTurn(pawn);
-                Animals.Track(pawn, drawLoc, lying && !crawling, 0.9f * size, out yaw, out phase, out gait, face);
+                if (Placing.active)
+                {
+                    // (Api 62) a drawer's own stride and facing (FigurePlacementOptions); the tracker steps once a frame, so the
+                    // first ask of the frame decides
+                    if (Placing.stride > 0f)
+                    {
+                        Animals.Track(pawn, drawLoc, lying && !crawling, Placing.stride, out yaw, out phase, out gait, Placing.face ?? face);
+                    }
+                    else
+                    {
+                        Animals.Track(pawn, drawLoc, lying && !crawling, 0.9f * size, out yaw, out phase, out gait, Placing.face ?? face);
+                    }
+                }
+                else
+                {
+                    Animals.Track(pawn, drawLoc, lying && !crawling, 0.9f * size, out yaw, out phase, out gait, face);
+                }
             }
 
             float ground = 0f;
@@ -684,6 +713,87 @@ namespace IsoRim
             }
             // Selected: where its selection ring goes (SelectionRings), round the body as posed; on the ground (a seat's feet are
             // on the floor; carried or in mid-jump: under them), or the bed or holder it lies on.
+            if (Placing.active)
+            {
+                // (Api 62) only the placing was asked for (Api.ReadFigurePlacement): nothing is drawn or noted
+                FigureSituation situation;
+                Thing on = null;
+                if (attached)
+                {
+                    situation = FigureSituation.Attached;
+                }
+                else if (gibbet != null)
+                {
+                    situation = FigureSituation.Gibbet;
+                    on = gibbet;
+                }
+                else if (vat != null)
+                {
+                    situation = FigureSituation.InVat;
+                    on = holder;
+                }
+                else if (prone)
+                {
+                    situation = FigureSituation.Prone;
+                }
+                else if (lying)
+                {
+                    Building_Bed bed = dead ? null : pawn.CurrentBed();
+                    if (crawling)
+                    {
+                        situation = FigureSituation.Crawling;
+                    }
+                    else if (bed != null)
+                    {
+                        situation = FigureSituation.InBed;
+                        on = bed;
+                    }
+                    else if (!dead && holder != null && pawn.ParentHolder is IThingHolderWithDrawnPawn)
+                    {
+                        situation = FigureSituation.OnCouch;
+                        on = holder;
+                    }
+                    else
+                    {
+                        situation = dead ? FigureSituation.Corpse : FigureSituation.LyingBack;
+                    }
+                }
+                else if (crouched)
+                {
+                    situation = FigureSituation.Crouched;
+                }
+                else
+                {
+                    situation = seated ? FigureSituation.Seated : FigureSituation.Standing;
+                }
+                float aimGame = 0f, aimDrawn = 0f;
+                bool aims = !lying && !prone && !dead && FigureWeapons.AimOf(pawn, neverAim, out aimGame, out aimDrawn);
+                Placing.Fill(new FigurePlacement
+                {
+                    Situation = situation,
+                    Position = at,
+                    Yaw = yaw,
+                    StridePhase = phase,
+                    Gait = gait,
+                    Size = size,
+                    Lift = lift,
+                    Crouch = crouched ? crouch.amount : 0f,
+                    HeadOnlyInBed = headOnly,
+                    Dead = dead,
+                    Bones = dead && Corpses.Bones(pawn),
+                    Carried = pawn.CarriedBy != null,
+                    Aiming = aims,
+                    AimGame = aimGame,
+                    AimDrawn = aimDrawn,
+                    ChestLift = crawling || prone ? Crawl.ChestLift : 0f,
+                    Seat = seated && !attached ? seat.thing : null,
+                    Holder = on,
+                    Skin = dead ? Corpses.Skin(pawn, pawn.story.SkinColor) : pawn.story.SkinColor,
+                    BodyPlace = bodyPlace,
+                    HeadPlace = headPlace
+                }, look, seated && !attached ? 0f : ground, lying || proneDown, crawling || proneDown, seated || noLegs, !headOnly);
+                return true;
+            }
             SelectionRings.NotePerson(pawn, look, at, yaw, seated && !attached ? 0f : ground, bodyPlace, headPlace);
 
             // The whole figure is two ready-made meshes (body and head), each a single draw, put

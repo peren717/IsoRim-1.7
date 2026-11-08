@@ -99,6 +99,28 @@ namespace IsoRim
             {
                 return true;
             }
+            if (!InPlanes(min, max, m))
+            {
+                culledParts++;
+                return false;
+            }
+            if (drawingHidden)
+            {
+                thingViolations++;
+            }
+            return true;
+        }
+
+        // (Api 62, Api.FigureVisible) The same for a box of one's own (min..max in the box's space, drawn by m), while things
+        // are drawn; no counters.
+        internal static bool LocalBoxVisible(Vector3 min, Vector3 max, Matrix4x4 m)
+        {
+            return !On || !inThings || InPlanes(min, max, m);
+        }
+
+        // No plane has the whole box (min..max, under m) behind it.
+        private static bool InPlanes(Vector3 min, Vector3 max, Matrix4x4 m)
+        {
             Vector3 c = (min + max) * 0.5f, e = (max - min) * 0.5f;
             for (int i = 0; i < planes.Length; i++)
             {
@@ -112,13 +134,8 @@ namespace IsoRim
                 float r = Mathf.Abs(a) * e.x + Mathf.Abs(b) * e.y + Mathf.Abs(cz) * e.z;
                 if (v + r < 0f)
                 {
-                    culledParts++;
                     return false;
                 }
-            }
-            if (drawingHidden)
-            {
-                thingViolations++;
             }
             return true;
         }

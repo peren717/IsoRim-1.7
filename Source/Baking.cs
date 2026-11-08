@@ -3089,7 +3089,7 @@ namespace IsoRim
                         }
                         string path = mm.texture.Replace("{stuff}", swatch);
                         string ownKey = own ? Model.OwnKey : null;
-                        Material tmat = mm.runtimeTexture != null ? R3DMaterials.LitTexture(mm.runtimeTexture, mm.runtimeName + ownKey, c, 1)
+                        Material tmat = mm.runtimeTexture != null ? R3DMaterials.LitTexture(mm.runtimeTexture, mm.runtimeName + ownKey, c, mm.runtimeModelLight ? 0 : 1)
                             : glow ? R3DTextures.MaterialFor(path, c, -1, ownKey) : R3DMaterials.LitTexture(path, c, 0, 0, ownKey);
                         if (customSurface)
                         {

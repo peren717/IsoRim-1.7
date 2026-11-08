@@ -68,6 +68,12 @@ namespace IsoRim
         // The draw's property block now: the flash and, as RoofClip.FloorBlock, the floor it stands on (below 0: not given).
         internal static MaterialPropertyBlock Block(int floor)
         {
+            return BlockFor(floor, step);
+        }
+
+        // (Api 62) The same for a flash of the given step (sixteenths): Api.SubmitFigureMesh without a block of the caller's.
+        internal static MaterialPropertyBlock BlockFor(int floor, int step)
+        {
             int owner = floor >= 0 && Floors.On ? floor + 1 : 0;
             int key = owner * 32 + step;
             MaterialPropertyBlock b;

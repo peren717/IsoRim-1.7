@@ -286,6 +286,35 @@ namespace IsoRim
             public Matrix4x4 matrix;
             public Material mat;
             public MaterialPropertyBlock props;
+            internal int submesh;   // (Api 62) the sub-mesh drawn: 0 for all of IsoRim's own draws, any for a submitted figure mesh
+            internal bool noMark;   // (Api 62) drawn without its stencil mark (a figure mesh submitted without LightPass)
+
+            // The same draw at another matrix.
+            internal Rec At(Matrix4x4 m)
+            {
+                Rec r = this;
+                r.matrix = m;
+                return r;
+            }
+
+            // Draws it again at a matrix, with its stencil mark (the light pass, as IsoGlow.DrawLit) when it had one.
+            internal void Replay(Matrix4x4 at, bool markReady)
+            {
+                Graphics.DrawMesh(mesh, at, mat, 0, null, submesh, props);
+                Material mark = markReady && !noMark ? IsoGlow.MarkFor(mat) : null;
+                if (mark == null)
+                {
+                    return;
+                }
+                if (submesh == 0)
+                {
+                    Graphics.DrawMesh(mesh, at, mark, 0);   // IsoRim's own draws: as before
+                }
+                else
+                {
+                    Graphics.DrawMesh(mesh, at, mark, 0, null, submesh);
+                }
+            }
         }
 
         // Set while the chokepoints call Note (recording, hiding or both).
@@ -333,12 +362,18 @@ namespace IsoRim
         // draw on an upper deck, given in its floor's rows, moved over the ground and raised: ShipCells.Holds).
         public static bool Note(Mesh mesh, Matrix4x4 matrix, Material mat, MaterialPropertyBlock props)
         {
+            return Note(mesh, matrix, mat, props, 0, true);
+        }
+
+        // (Api 62) The same for one sub-mesh of the mesh; withMark false: drawn without its stencil mark (replayed so too).
+        internal static bool Note(Mesh mesh, Matrix4x4 matrix, Material mat, MaterialPropertyBlock props, int submesh, bool withMark)
+        {
             if (Shell.Recording != null)
             {
                 // (Api 37) a shell being built notes every draw of its moving parts; none of them is drawn
                 if (mesh != null && mat != null)
                 {
-                    Shell.Recording.Add(new Rec { mesh = mesh, matrix = matrix, mat = mat, props = props });
+                    Shell.Recording.Add(new Rec { mesh = mesh, matrix = matrix, mat = mat, props = props, submesh = submesh, noMark = !withMark });
                 }
                 return true;
             }
@@ -353,7 +388,7 @@ namespace IsoRim
             }
             if (storing)
             {
-                Store(new Rec { mesh = mesh, matrix = drawn, mat = mat, props = props });
+                Store(new Rec { mesh = mesh, matrix = drawn, mat = mat, props = props, submesh = submesh, noMark = !withMark });
             }
             return hiding;
         }

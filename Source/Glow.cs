@@ -193,6 +193,12 @@ namespace IsoRim
         // Makes a material take its night and indoor light per pixel (see the class comment).
         public static void Use(Material m, int mode)
         {
+            Use(m, mode, false);
+        }
+
+        // (Api 62) textured: take the textured light pass even before the material has its texture (Api.ConfigureFigureMaterial).
+        internal static void Use(Material m, int mode, bool textured)
+        {
             if (m == null)
             {
                 return;
@@ -202,7 +208,7 @@ namespace IsoRim
             {
                 return;
             }
-            bool textured = m.mainTexture != null || m.shader == R3DMaterials.ShaderOf(R3DMaterials.SolidTexDef);
+            textured |= m.mainTexture != null || m.shader == R3DMaterials.ShaderOf(R3DMaterials.SolidTexDef);
             Shader s = R3DMaterials.ShaderOf(textured ? MarkTexDef : MarkDef);
             if (s == null)
             {
@@ -270,15 +276,22 @@ namespace IsoRim
         // props: the moving model's floor (RoofClip.FloorBlock), or null.
         public static void DrawLit(Mesh mesh, Matrix4x4 matrix, Material mat, int layer, MaterialPropertyBlock props = null)
         {
-            if (ShipCapture.Recording && ShipCapture.Note(mesh, matrix, mat, props))
+            DrawLit(mesh, matrix, mat, layer, props, 0, true);
+        }
+
+        // (Api 62) The same for one sub-mesh; withMark false leaves the stencil mark (the light pass) out. A gravship's flight notes
+        // the sub-mesh and whether it has its mark, and replays it so.
+        internal static void DrawLit(Mesh mesh, Matrix4x4 matrix, Material mat, int layer, MaterialPropertyBlock props, int submesh, bool withMark)
+        {
+            if (ShipCapture.Recording && ShipCapture.Note(mesh, matrix, mat, props, submesh, withMark))
             {
                 return;   // a gravship's moving parts (ShipFlight): noted, and hidden while a landing ship waits under the frozen ground
             }
-            Graphics.DrawMesh(mesh, matrix, mat, layer, null, 0, props);
-            Material mark = View3D.Ready ? MarkFor(mat) : null;
+            Graphics.DrawMesh(mesh, matrix, mat, layer, null, submesh, props);
+            Material mark = withMark && View3D.Ready ? MarkFor(mat) : null;
             if (mark != null)
             {
-                Graphics.DrawMesh(mesh, matrix, mark, layer, null, 0, props);
+                Graphics.DrawMesh(mesh, matrix, mark, layer, null, submesh, props);
             }
         }
 

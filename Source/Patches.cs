@@ -1757,6 +1757,12 @@ namespace IsoRim
                 bool item = __0.def.category == ThingCategory.Item;
                 float resting = item ? Forms.BaseUnder(__0, true) : 0f;
 
+                // (Api 62) An item another mod's ground rule bakes as a model of its own (Api.AddGroundModelRule).
+                if (item && GroundRules.Count != 0 && GroundRules.Print(__instance, __0, form, resting))
+                {
+                    return false;
+                }
+
                 // (Api 52) A card stands in for the sprite.
                 if (form.shape == ModelShape.Card && ShapeCards.Print(__instance, __0, form.bound, resting))
                 {

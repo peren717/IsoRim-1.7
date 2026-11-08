@@ -132,6 +132,11 @@ namespace IsoRim
             {
                 return false;
             }
+            // (Api 62) Another mod's figure drawer may stand in for this figure (FigureDrawers, Api.AddFigureDrawer).
+            if (FigureDrawers.Count != 0 && FigureDrawers.Offer(pawn, drawLoc, false, pawn.RaceProps.IsMechanoid ? FigureKinds.Mechs : FigureKinds.Animals))
+            {
+                return true;
+            }
             ModelDef def = entry.def;
             IsoRimSettings st = IsoRimMod.Settings;
 

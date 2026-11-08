@@ -550,16 +550,7 @@ namespace IsoRim
                 Sweep();
             }
             int floor;
-            matrix = Floors.DrawnMatrix(matrix, out floor);   // a thing on an upper floor: before culling, tested where it shows
-            // Api 10: a model drawn outside a thing's draw (Api.DrawModel from an addon's own update) on a floor faded while
-            // peeking takes that floor's fade, as the floor's own things do (they set FadeSlot in Floors.ThingPhase_Prefix).
-            // Its rows tell the floor; it is in drawn space by now, so FadeSlot carries the fade to Graphics
-            // (Floors.Fade_Prefix), and PartBatches leaves the draw to be made at once (it only batches solid draws).
-            int fadeWas = Floors.FadeSlot;
-            if (fadeWas == 0 && floor > 0)
-            {
-                Floors.FadeSlot = Floors.FadeOfFloor(floor);
-            }
+            int fadeWas = EnterFloor(ref matrix, out floor);
             try
             {
                 bool outlines = IsoRimMod.Settings.outlines;
@@ -597,6 +588,83 @@ namespace IsoRim
             }
         }
 
+        // Moves a moving model's matrix (drawn space) onto the stacked floor of its rows and sets that floor's peek fade if none is
+        // set; gives back the fade slot to restore. Api 10: a model drawn outside a thing's draw (Api.DrawModel from an addon's own
+        // update) on a floor faded while peeking takes that floor's fade, as the floor's own things do (they set FadeSlot in
+        // Floors.ThingPhase_Prefix). Its rows tell the floor; it is in drawn space by now, so FadeSlot carries the fade to Graphics
+        // (Floors.Fade_Prefix), and PartBatches leaves the draw to be made at once (it only batches solid draws).
+        internal static int EnterFloor(ref Matrix4x4 matrix, out int floor)
+        {
+            matrix = Floors.DrawnMatrix(matrix, out floor);   // a thing on an upper floor: before culling, tested where it shows
+            int fadeWas = Floors.FadeSlot;
+            if (fadeWas == 0 && floor > 0)
+            {
+                Floors.FadeSlot = Floors.FadeOfFloor(floor);
+            }
+            return fadeWas;
+        }
+
+        // (Api 62, Api.SubmitFigureMesh) Another mod's mesh drawn as a moving model's part: the figure scope (Api.DrawFigure moves
+        // or measures it), the floor and its fade, the outline option, the cull, the floor and hit flash in the caller's block (or
+        // IsoRim's), the light pass. matrix: drawn space. Never batched.
+        private static readonly List<Part> ownPart = new List<Part> { new Part() };
+        private static readonly int ownerFloorId = Shader.PropertyToID("_IsoOwnerFloor");
+        private static readonly int flashId = Shader.PropertyToID("_IsoFlash");
+
+        internal static void SubmitOwn(Mesh mesh, Material material, Matrix4x4 matrix, MaterialPropertyBlock block, FigureMeshFlags flags, int submesh, float flash)
+        {
+            bool outline = (flags & FigureMeshFlags.Outline) != 0;
+            if (FigureScope.Active)
+            {
+                Part p = ownPart[0];
+                p.mesh = mesh;
+                p.material = material;
+                p.outline = outline;
+                bool measured = FigureScope.Submit(ownPart, ref matrix);
+                p.mesh = null;
+                p.material = null;
+                if (measured)
+                {
+                    return;   // a figure measured for another mod (Api.FigureBounds): nothing drawn
+                }
+                flash = 0f;   // a figure drawn for another mod does not flash, as IsoRim's own
+            }
+            if (outline && !IsoRimMod.Settings.outlines)
+            {
+                return;
+            }
+            if (retired.Count > 0)
+            {
+                Sweep();
+            }
+            int floor;
+            int fadeWas = EnterFloor(ref matrix, out floor);
+            try
+            {
+                if ((flags & FigureMeshFlags.NoCull) == 0 && !Cull.MeshVisible(mesh, matrix))
+                {
+                    return;
+                }
+                int step = outline ? 0 : Mathf.Clamp(Mathf.RoundToInt(flash * 16f), 0, 16);
+                MaterialPropertyBlock props;
+                if (block != null)
+                {
+                    block.SetFloat(ownerFloorId, floor >= 0 && Floors.On ? floor + 1f : 0f);
+                    block.SetFloat(flashId, step / 16f);
+                    props = block;
+                }
+                else
+                {
+                    props = step > 0 ? HitFlash.BlockFor(floor, step) : RoofClip.FloorBlock(floor);
+                }
+                IsoGlow.DrawLit(mesh, matrix, material, 0, props, submesh, (flags & FigureMeshFlags.LightPass) != 0);
+            }
+            finally
+            {
+                Floors.FadeSlot = fadeWas;
+            }
+        }
+
         // (Api 54) The meshes of a model with parts printed with decal looks: one thing's own, kept by ModelDecals.HeldParts (their
         // looks are a thing's, so they are not shared through the cache); given back to Retire when that thing's look changes.
         internal static List<Part> PartsWithDecals(Model m, Color tint, string swatch, ModelDecals.Look[] looks)
@@ -622,7 +690,7 @@ namespace IsoRim
 
         // The ready-made meshes of a model in one colour. They carry no shading (the shader lights
         // them), so they serve every light and every way the model is turned.
-        private static List<Part> PartsFor(Model m, Color tint, string swatch)
+        internal static List<Part> PartsFor(Model m, Color tint, string swatch)
         {
             bool textured = IsoRimMod.Settings.texturedModels && m.materials != null && m.uvs != null && m.material != null;
 
@@ -751,7 +819,9 @@ namespace IsoRim
                         }
                         string ownKey = own ? Model.OwnKey : null;
                         string path = mm.texture.Replace("{stuff}", swatch);
-                        Material tmat = glow ? R3DTextures.MaterialFor(path, c, -1, ownKey) : R3DMaterials.LitTexture(path, c, 0, 0, ownKey);
+                        // (Api 62) a texture made at run time (Api.CreateModel), lit as a model
+                        Material tmat = mm.runtimeTexture != null ? R3DMaterials.LitTexture(mm.runtimeTexture, mm.runtimeName + ownKey, c, 0)
+                            : glow ? R3DTextures.MaterialFor(path, c, -1, ownKey) : R3DMaterials.LitTexture(path, c, 0, 0, ownKey);
                         if (tmat != null)
                         {
                             texturedLists[slot] = new Lists();

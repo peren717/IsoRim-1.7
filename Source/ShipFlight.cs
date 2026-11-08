@@ -890,7 +890,7 @@ namespace IsoRim
                 Matrix4x4 back = Matrix4x4.Translate(-s.pivot);
                 foreach (ShipCapture.Rec r in recorded)
                 {
-                    s.items.Add(new ShipCapture.Rec { mesh = r.mesh, matrix = back * r.matrix, mat = r.mat, props = r.props });
+                    s.items.Add(r.At(back * r.matrix));
                 }
             }
 
@@ -1356,13 +1356,7 @@ namespace IsoRim
                 {
                     continue;   // a mesh the game has let go of since
                 }
-                Matrix4x4 mi = m * r.matrix;
-                Graphics.DrawMesh(r.mesh, mi, r.mat, 0, null, 0, r.props);
-                Material mark = View3D.Ready ? IsoGlow.MarkFor(r.mat) : null;
-                if (mark != null)
-                {
-                    Graphics.DrawMesh(r.mesh, mi, mark, 0);
-                }
+                r.Replay(m * r.matrix, View3D.Ready);
             }
         }
 

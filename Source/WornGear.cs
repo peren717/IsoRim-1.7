@@ -35,6 +35,7 @@ namespace IsoRim
         private const float BeltHalfWidth = 0.19f;
         private const float BeltHalfDepth = 0.132f;
         private const float HipClip = 0.19f;
+        internal const float HipClipAnchor = HipClip;   // (Api 62, ThingModelInfo.MountAnchor)
         private const float Gap = 0.006f;
 
         private class Loaded

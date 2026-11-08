@@ -59,6 +59,14 @@ namespace IsoRim
             {
                 return false;
             }
+            if (WeaponRules.Count != 0)
+            {
+                bool? rule = WeaponRules.Ask(def);   // (Api 62) another mod's rule first: its bound model (any binding), or its sprite
+                if (rule.HasValue)
+                {
+                    return rule.Value;
+                }
+            }
             // Its own model: bound to this very weapon (by name or a model rule, Api 42; or its art, Api 16), not a stand-in for
             // its category or name.
             string how = ModelLibrary.HowBound(def);

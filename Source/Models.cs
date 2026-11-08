@@ -735,6 +735,7 @@ namespace IsoRim
         public Texture2D runtimeTexture;   // (Api 34) a texture made at run time (a wall top's side, ShapeTops) instead of texture's
                                            // path, named runtimeName; texture is then only a placeholder
         public string runtimeName;
+        public bool runtimeModelLight;   // (Api 62) a run-time texture of a model made in code (Api.CreateModel): lit on the model curve, not the wall curve
     }
 
     // One entry of ModelDef.byAppearance: <li><appearance>Planks</appearance><model>Models/x.obj</model></li>
@@ -1872,6 +1873,14 @@ namespace IsoRim
         {
             return BuildHull(positions, normals, OutlineWidth);
         }
+
+        // (Api 62) The same at another width (Api.BuildOutlineHull), and the width itself (Api.OutlineWidth).
+        internal static Vector3[] HullOf(Vector3[] positions, Vector3[] normals, float width)
+        {
+            return BuildHull(positions, normals, width);
+        }
+
+        internal const float OutlineWidthCells = OutlineWidth;
 
         // A copy of a model whose faces of one material give off light (unlit, see ModelMaterial.glow),
         // each separate piece of them (faces joined by shared corners) in the next of colors in turn:

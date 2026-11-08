@@ -3,7 +3,7 @@
 Model packs (XML and .obj files, no code), the dev-mode model binder and the coverage report: see [ModelPacks.md](ModelPacks.md).
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`, `WallShapeRule`, `WallShape`, `HeadDecal`, `SelectionRing`, `ModelDecal`, `ModelDecalProvider`, `StaticModelGeometry`, `StaticModelView`, `StaticModelContext`, `StaticMaterialContext`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`, `WallShapeRule`, `WallShape`, `HeadDecal`, `SelectionRing`, `ModelDecal`, `ModelDecalProvider`, `StaticModelGeometry`, `StaticModelView`, `StaticModelContext`, `StaticMaterialContext`, `FigureDrawer`, `FigureDrawContext`, `FigureKinds`, `FigureSituation`, `FigurePlacement`, `FigurePlacementOptions`, `FigureMeshFlags`, `FigureMaterialKind`, `FigureMeshPart`, `ModelData`, `ModelDataMaterial`, `ThingModelUse`, `ThingModelInfo`, `WornMount`, `GroundModel`, `GroundModelContext`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
 in any update, even when it is public: do not patch or reflect into it, ask for an Api member instead. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -113,6 +113,7 @@ if (IsoRim.Api.Version >= 58) { /* tubes: ModelDef.shape Tube, tubeColor: a low 
 if (IsoRim.Api.Version >= 59) { /* FigureFrame.AttachWeaponToBody, WeaponAxis: a weapon in its 3D form on a figure (part 1) */ }
 if (IsoRim.Api.Version >= 60) { /* ApparelModelDef.fitKeepWidth: a fitLift garment keeps its width as made (part 35) */ }
 if (IsoRim.Api.Version >= 61) { /* static model surfaces and selection: an addon's normals, tangents, materials and model choice for static buildings (part 42) */ }
+if (IsoRim.Api.Version >= 62) { /* custom figure renderers: figure drawers, placing, figure mesh submit, materials, run-time models, things' models, weapon and ground rules, the figure shader contract (part 43) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
@@ -2242,6 +2243,113 @@ Api.AddStaticModelSelector(c => c.Model == crate ? MyPolicy.Pick(c) : null);
 - `Api.LoadModel` and a `ModelDef`'s model path now give the same model object for the same file, however the path is spelt.
 
 Version gate: gate on Api 61.
+
+## Part 43: custom figure renderers (version 62)
+
+For a mod that draws pawns its own way (its own skinned or animated figures) or bakes models of its own, on top of IsoRim and
+without reaching into its internals. IsoRim still decides where a figure stands and how it is placed, moves and fades it on stacked
+floors, culls, clips under roofs, lights it at night, flashes it when hit and moves or measures it for `Api.DrawFigure`; the addon
+brings its meshes, materials and shaders. Everything here is optional, main thread only, at draw time, and saves nothing. With
+nothing registered every hook leaves at its first check.
+
+**Standing in for a figure**
+
+| Member | Meaning |
+|---|---|
+| `Api.AddFigureDrawer(FigureDrawer drawer, FigureKinds kinds)` / `RemoveFigureDrawer` | A drawer asked for each figure of these kinds (`People`, `Animals`, `Mechs`) IsoRim would draw, after IsoRim's own gates (3D view and model options, portraits, first person, hidden pawns, races not drawn as figures, models missing); statues' subjects are never offered. In the order added; the first `true` draws it and IsoRim draws nothing of that figure (body, face, wounds, held or carried things, blob shadow; hooks are not raised). `false`: IsoRim draws it. Throws on null, twice or no kind. A drawer that throws is removed (one warning) and IsoRim draws. |
+| `FigureDrawContext` | `Pawn` (a corpse's inner pawn), `DrawLoc`, `NeverAim`, `Kind`, `ForOtherMod` (inside `Api.DrawFigure`/`FigureBounds`: draw without held things; what you submit is moved or measured), `Measuring`, `Flash` (the game's damage flash, 0..1 in sixteenths; 0 for another mod's draw). Valid only during the call. |
+| `ctx.ReadPlacement(FigurePlacementOptions options, out FigurePlacement p)` | IsoRim's placing of this person (people only). Reading the placing costs IsoRim's look work for that pawn (so does the default selection ring). |
+| `ctx.NoteSelectionBox(Vector3 position, float yaw, float ground, Vector3 min, Vector3 max)` | Where the selection ring goes: a box in the figure's space. Without it a person's ring goes round IsoRim's placing of the body. |
+| `ctx.ReadFigureBoxes(out headCentre, out headSize, out bodyCentre, out bodySize)` | IsoRim's head and body boxes in its head and body placings, to fit yours before raising hooks. |
+| `ctx.RaiseFigureHooks(Vector3 position, float yaw, Matrix4x4 headPlace, Matrix4x4 bodyPlace)` | Raises the other mods' figure hooks (part 1) on your figure: their attachments (gene parts, decals, gear) are drawn in your head and body placings (figure space, as `FigurePlacement.HeadPlace`), flashing with it. Returns the `FigureParts` they hide. People only. |
+
+**Placing**
+
+| Member | Meaning |
+|---|---|
+| `Api.ReadFigurePlacement(Pawn pawn, Vector3 drawLoc, bool neverAim, FigurePlacementOptions options, out FigurePlacement p)` | The same outside a drawer. False when IsoRim would not draw the person as a figure. |
+| `FigurePlacementOptions` | `Stride` (cells per step cycle; 0 or less: IsoRim's), `Face` (a yaw to turn toward while standing). The stride tracker steps once a frame: the first read of a frame decides, later reads (and IsoRim's own draw) get the same values. |
+| `FigurePlacement` | `Situation` (`Standing`, `Seated`, `LyingBack`, `InBed`, `OnCouch`, `Crawling`, `Crouched`, `Prone`, `Attached`, `InVat`, `Gibbet`, `Corpse`), `Position` (true space: x, z map cells, y the feet's height: ground, seat, bed, couch, vat floor, plus lift; before stacked floors move it), `Yaw`, `StridePhase`, `Gait`, `Size`, `Lift`, `Crouch`, `HeadOnlyInBed`, `Dead`, `Bones`, `Carried`, `Aiming`, `AimGame`, `AimDrawn`, `ChestLift`, `Seat`, `Holder`, `Skin` (with rot), `BodyPlace`, `HeadPlace` (IsoRim's own placings in figure space, pose and size in them). |
+| `Api.AimPitch(Pawn pawn, float handsHeight)` | How far the aim is raised from hands at that height toward the target as drawn (degrees). |
+| `Api.SurfaceHeight(Thing building)`, `Api.DrawnDelta(Vector3 from, Vector3 to)`, `Api.IsDrawnWater(TerrainDef t)`, `Api.ApparelColour(Apparel a)`, `Api.FigureSizeFor(float bodySizeFactor)` | Small queries as IsoRim answers them for its own figures. |
+
+**Drawing meshes**
+
+| Member | Meaning |
+|---|---|
+| `Api.SubmitFigureMesh(Mesh mesh, Material material, Matrix4x4 trueSpace, MaterialPropertyBlock block = null, FigureMeshFlags flags = LightPass, int submesh = 0, float flash = 0)` | Draws a mesh as a moving model's part. `trueSpace` = `Translate(position) * Rotate(yaw) * local` in true space; IsoRim squashes it, moves or measures it for `Api.DrawFigure`, moves it onto its stacked floor with that floor's peek fade (nothing on a hidden floor), culls it (unless `NoCull`), writes `_IsoOwnerFloor` and `_IsoFlash` into your `block` (or uses its own), draws the light pass (`LightPass`). `Outline` parts are left out while outlines are off and never flash. Never batched. |
+| `Api.FigureVisible(Bounds local, Matrix4x4 trueSpace)` | IsoRim's cull for a whole figure (for meshes posed on the graphics card, whose own boxes are the rest pose). True while drawn or measured for another mod. |
+| `Api.ConfigureFigureMaterial(Material m, FigureMaterialKind kind, Shader lightPassShader = null)` | Sets up your material as IsoRim's moving models': `Solid` and `Textured` get the model light curve and own-cell night light with IsoRim's light pass; `Outline` gets the outline push (and the light pass only with `lightPassShader`); `Unlit` neither. `lightPassShader` replaces the light pass's program (a vertex stage of your own, such as GPU skinning). On a peeked floor IsoRim draws a copy of the material (and of its light pass) with `_IsoFade` and `_IsoFadeFrom` set: a shader of your own fades by reading them, else draws solid. False until IsoRim's materials exist. |
+| `Api.ModelVertexColour(Color tint, bool outline)`, `Api.RoundTint(Color tint)`, `Api.OutlineWidth`, `Api.OutlinePush`, `Api.BuildOutlineHull(positions, normals, width)`, `Api.MovingMeshTag`, `Api.RetireMesh(Mesh)` | Look constants and helpers so a mesh of yours matches IsoRim's models: the vertex colours, the tint rounding, the outline and its shell offsets, the second texture coordinate of a moving mesh (roof clipping), a delayed destroy. |
+| `Api.ScreenShadingOn`, `Api.GetOption(string name)` | Screen-space shading drawn now; an option's value by field name (`SetOption`'s counterpart). |
+
+**Models**
+
+| Member | Meaning |
+|---|---|
+| `Api.CreateModel(ModelData data)` | A model from a triangle soup made at run time (`Positions`, optional `Normals`, `Hull`, `Colours`, `Tinted`; `UVs` + `Material` + `Materials` with run-time textures). Usable everywhere a loaded one is (`DrawModel`, `FigureFrame.Attach*`, ground rules). Arrays checked and copied; throws on wrong ones. |
+| `Api.ModelParts(ModelHandle model, Color tint, string swatch, List<FigureMeshPart> into)` | IsoRim's ready meshes of a model (mesh, material, outline). IsoRim's: ask every frame (cached), never keep or destroy them. |
+| `Api.ReadSpritePixels(Texture texture, int size)` | A texture's pixels, read on the CPU or the graphics card (null for a sprite sheet). Not every frame. |
+
+**Things' models**
+
+| Member | Meaning |
+|---|---|
+| `Api.ReadThingModel(Thing thing, ThingModelUse use, out ThingModelInfo info)` | What IsoRim shows for a thing `Held` (a weapon: `Model`, `Tint`, `Swatch`, `OnSprite` = the model laid into the weapon's picture space, `HandScale`, `BarrelEnd` in model space, `Thrown`), `Worn` (packs, belts, hip gear: `Model`, `Tint`, `Mount`, `MountAnchor`) or on the `Ground` (`Model`, `Tint`, `Scale`, `Yaw`). False: its sprite. `HowBound` for logs. |
+| `Api.DrawHeldThing(Thing thing, Matrix4x4 pictureTrueSpace, float scale = 1)` | Draws a weapon as IsoRim's figures hold one (model or solid sprite, outline, stuff colour). `pictureTrueSpace` places the weapon's picture (x right, y up, z out of it; a unit a cell, no scale) in true space; drawn at a figure's hand size times `scale`. |
+| `Api.ReportMuzzle(Pawn pawn, Thing weapon, Vector3 tip, Vector3 centre)` | This frame's drawn barrel end and weapon middle (true space): the pawn's next shots start there. |
+| `Api.DrawCarried(Pawn carrier, Vector3 at, float yaw)` | What the carrier carries, as IsoRim's figures draw it (`at`: the bottom of the carried thing, true space). |
+| `Api.AddWeaponModelRule(Func<ThingDef, bool?> rule)` / `RemoveWeaponModelRule` | Asked first whether a weapon def shows its model: true its bound model (any binding, its category too), false its sprite, null IsoRim's rules (own binding, own art). A rule that throws is removed. Dirty the map meshes yourself when an answer changes. |
+
+**Baking on the ground**
+
+| Member | Meaning |
+|---|---|
+| `Api.AddGroundModelRule(Func<GroundModelContext, GroundModel?> rule)` / `RemoveGroundModelRule` | Asked while an item lying on the ground is printed into the map (not blueprints, not damage marks): `GroundModelContext` gives the `Thing`, `IsoRimModel` (what IsoRim would bake, or null) and `WornLook` (IsoRim would lay it as worn clothes); answer a `GroundModel` (`Model`, `Scale`, `Yaw` in degrees, `Tint`) to bake that model at the thing's place, with roof clipping, outline and shadow as IsoRim's own, or null for IsoRim's. A rule that throws or answers no model is removed (one warning). Not for `Api.DrawItem` (part 26). |
+
+```csharp
+// Once after loading (sketch). MyFigure is the addon's own.
+if (IsoRim.Api.Version >= 62)
+{
+    IsoRim.Api.ConfigureFigureMaterial(myMaterial, IsoRim.FigureMaterialKind.Solid, mySkinnedLightPass);
+    IsoRim.Api.AddFigureDrawer(ctx =>
+    {
+        if (!MyFigure.Handles(ctx.Pawn) || !ctx.ReadPlacement(new IsoRim.FigurePlacementOptions { Stride = 1.1f }, out IsoRim.FigurePlacement p))
+            return false;                                   // IsoRim draws it
+        Matrix4x4 place = Matrix4x4.TRS(p.Position, Quaternion.AngleAxis(p.Yaw, Vector3.up), Vector3.one) * p.BodyPlace;
+        if (IsoRim.Api.FigureVisible(MyFigure.Box, place))
+            IsoRim.Api.SubmitFigureMesh(MyFigure.Mesh, myMaterial, place, MyFigure.Bones(ctx.Pawn),
+                IsoRim.FigureMeshFlags.LightPass | IsoRim.FigureMeshFlags.NoCull, 0, ctx.Flash);
+        return true;
+    }, IsoRim.FigureKinds.People);
+}
+```
+
+- **Limits:** placing is for people (animals and mechs can be stood in for, but `ReadPlacement` is false for them). A figure drawn from inside a
+  drawer (`Api.DrawFigure` in a drawer) is IsoRim's own. An off-screen pawn's shots (`MeasureWeapon`) start from IsoRim's own pose until it
+  is drawn again. A stood-in figure gets no blob shadow from IsoRim.
+- **Failures fall back quietly:** a drawer or rule that throws, or a ground rule answering no model, is removed with one warning and IsoRim
+  draws as before. Only argument checks throw.
+
+### Figure shader contract (version 62, `Api.FigureShaderContract` = 1)
+
+A consumer's own shaders on `SubmitFigureMesh` and `ConfigureFigureMaterial` can rely on exactly these, by name and meaning; anything else
+of IsoRim's shaders can change in any update (as in part 42). A change to one of these raises `Api.FigureShaderContract` and is written here.
+
+- **Per draw** (set by `SubmitFigureMesh` in the block): `_IsoOwnerFloor` (1 + the stacked floor the figure stands on, 0 none),
+  `_IsoFlash` (the damage flash 0..1; 0 on outlines); while a peeked floor fades, `_IsoFade` and `_IsoFadeFrom` (the dither share and offset).
+- **Per material** (set by `ConfigureFigureMaterial`): `_LightMode` (1 the model light curve, 0 unlit), `_GlowMode` (1 own-cell light by the
+  light pass, 0 the game's overlay), `_MarkPass` (1 on the light-pass material), `_OutlinePush` (cells, outlines).
+- **Globals:** `_IsoSun`, `_IsoView` (w = squash), `_IsoSky`, `_IsoToon`, `_IsoGlowMap` + `_IsoGlowTex`, `_IsoCellMap` + `_IsoCellTex`, `_IsoLevel`,
+  `_IsoFloorGlow`, `_IsoRoof` + `_IsoRoofTex`, `_IsoEye`, `_IsoSee`, `_IsoSee2`, with the meanings written beside them in `IsoRimSolid.frag.glsl`.
+- **Layout:** in set 2, bindings 0 (the material block), 1 (`_MainTex`), 2 (glow), 3 (cell), 4 (instancing) and 5 (roof) are IsoRim's;
+  bindings 6 to 9 stay free for consumers. The light pass draws at queue 3099. IsoRim does not use stencil bit 64.
+- **Vertices:** the second texture coordinate is the clip tag (`Api.MovingMeshTag`, plus IsoRim's smooth bits in z); vertex colours as
+  `Api.ModelVertexColour` gives them.
+- **Not promised:** the shader code (lighting, roof, fog and slab clipping maths), the order of a consumer's own material block, render
+  queues not listed. Copying IsoRim's .glsl files is a start, not an interface: check them after IsoRim updates.
+
+Version gate: gate on Api 62.
 
 ## Part M: model packs (IsoRim.ModelDef)
 

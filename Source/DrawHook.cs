@@ -180,7 +180,7 @@ namespace IsoRim
                 matrix = floorMatrix * matrix;
             }
 
-            if (!ShipCapture.Note(mesh, matrix, material, properties))
+            if (!ShipCapture.Note(mesh, matrix, material, properties, submeshIndex, true))
             {
                 Graphics.DrawMesh(mesh, matrix, material, layer, camera, submeshIndex, properties);
             }
@@ -199,7 +199,7 @@ namespace IsoRim
             }
             if (active || floor)
             {
-                if (!ShipCapture.Note(mesh, Final(Matrix4x4.TRS(position, rotation, Vector3.one)), material, properties))
+                if (!ShipCapture.Note(mesh, Final(Matrix4x4.TRS(position, rotation, Vector3.one)), material, properties, submeshIndex, true))
                 {
                     Graphics.DrawMesh(mesh, Final(Matrix4x4.TRS(position, rotation, Vector3.one)), material, layer, camera, submeshIndex, properties);
                 }
@@ -207,7 +207,7 @@ namespace IsoRim
 
             else
             {
-                if (!ShipCapture.Note(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, properties))
+                if (!ShipCapture.Note(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, properties, submeshIndex, true))
                 {
                     Graphics.DrawMesh(mesh, position, rotation, material, layer, camera, submeshIndex, properties);
                 }
@@ -264,7 +264,7 @@ namespace IsoRim
                 matrix = floorMatrix * matrix;
             }
 
-            if (!ShipCapture.Note(mesh, matrix, material, null))
+            if (!ShipCapture.Note(mesh, matrix, material, null, submeshIndex, true))
             {
                 Graphics.DrawMesh(mesh, matrix, material, layer, camera, submeshIndex);
             }
@@ -284,14 +284,14 @@ namespace IsoRim
             }
             if (active || floor)
             {
-                if (!ShipCapture.Note(mesh, Final(Matrix4x4.TRS(position, rotation, Vector3.one)), material, null))
+                if (!ShipCapture.Note(mesh, Final(Matrix4x4.TRS(position, rotation, Vector3.one)), material, null, submeshIndex, true))
                 {
                     Graphics.DrawMesh(mesh, Final(Matrix4x4.TRS(position, rotation, Vector3.one)), material, layer, camera, submeshIndex);
                 }
             }
             else
             {
-                if (!ShipCapture.Note(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, null))
+                if (!ShipCapture.Note(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, null, submeshIndex, true))
                 {
                     Graphics.DrawMesh(mesh, position, rotation, material, layer, camera, submeshIndex);
                 }

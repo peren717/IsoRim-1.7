@@ -516,7 +516,7 @@ namespace IsoRim
             return HoldFor(c.weapon, c.material);
         }
 
-        private static WeaponModels.Hold HoldFor(Thing weapon, Material material)
+        internal static WeaponModels.Hold HoldFor(Thing weapon, Material material)
         {
             Model model = WeaponModels.ModelOf(weapon);
             Graphic g = model != null ? weapon.Graphic : null;
@@ -839,7 +839,7 @@ namespace IsoRim
         }
 
         // How far the aim is raised (degrees, down negative): from the hands to the target's middle, between floors as drawn.
-        private static float PitchOf(Pawn pawn, float handsY)
+        internal static float PitchOf(Pawn pawn, float handsY)
         {
             Stance_Busy busy = pawn.stances != null ? pawn.stances.curStance as Stance_Busy : null;
             if (busy == null || !busy.focusTarg.IsValid)

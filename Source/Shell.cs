@@ -407,7 +407,7 @@ namespace IsoRim
                 Matrix4x4 back = Matrix4x4.Translate(-origin);
                 foreach (ShipCapture.Rec r in rec)
                 {
-                    s.items.Add(new ShipCapture.Rec { mesh = r.mesh, matrix = back * r.matrix, mat = r.mat, props = r.props });
+                    s.items.Add(r.At(back * r.matrix));
                 }
 
                 // ---- meshes, the slab under the deck and the shadow
@@ -788,13 +788,7 @@ namespace IsoRim
                     {
                         continue;
                     }
-                    Matrix4x4 mi = m * r.matrix;
-                    Graphics.DrawMesh(r.mesh, mi, r.mat, 0, null, 0, r.props);
-                    Material mark = IsoGlow.MarkFor(r.mat);
-                    if (mark != null)
-                    {
-                        Graphics.DrawMesh(r.mesh, mi, mark, 0);
-                    }
+                    r.Replay(m * r.matrix, true);
                 }
                 DrawShadow(centre, height, turn, alpha, Find.CurrentMap);
             }

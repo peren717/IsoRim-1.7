@@ -99,6 +99,11 @@ namespace IsoRim
             {
                 return false;
             }
+            // (Api 62) Another mod's figure drawer may stand in for this figure (FigureDrawers, Api.AddFigureDrawer).
+            if (FigureDrawers.Count != 0 && FigureDrawers.Offer(pawn, drawLoc, false, FigureKinds.Animals))
+            {
+                return true;
+            }
 
             float size = def.scale * SizeOf(pawn);
             bool dead = pawn.Dead;
