@@ -2353,6 +2353,29 @@ namespace IsoRim
         public const float FaceLift = 0.004f;
         private static readonly Color32 White = new Color32(255, 255, 255, 255);
 
+        // (M230) The outline ring of an item lying on something (the ground, a floor, a shelf).
+        // Every corner of a model is written no lower than its base (Floor), so the underside of the outline shell, pushed
+        // out round the model, is pressed flat into a sheet on that base: round a thing lying flat (a gun, clothes, a stack)
+        // that sheet is the outline's ring. The outline is drawn with a depth bias away from the camera (IsoRimOutline, so
+        // the shell never shows through the model's own faces); its slope part is about a pixel's worth of depth, so a
+        // sheet level with the ground, or a fixed height above it, loses to the ground drawn there (at play zoom a lift of
+        // a few hundredths of a cell is not enough), and only the bits of the shell that rise up the item's sides showed.
+        // So for items the sheet is written ItemLineLift (cells) over the base, and its triangles (all three corners on it)
+        // go to OutlineRing: the same shell material without the slope bias. The lift then only has to keep it off the
+        // ground's own depth (more than the 0.0025-0.0046 window where faces of two shaders fight, DecalLift), which holds
+        // at every zoom; it moves the ring a pixel or two at the closest zoom. A ring triangle is a level sheet under the
+        // item, so without the bias it still cannot come through the item's faces (they are all above it).
+        // Things standing on the ground (buildings, walls, furniture, plants) are left as they were: no ring round their feet.
+        public const float ItemLineLift = 0.01f;
+
+        // The lowest height an outline corner of the thing is written at (cells over its base): floor (the model's lowest,
+        // Floor), raised by ItemLineLift for an item. The one rule for every outline of a thing lying on something
+        // (ModelBaker.Write, GroundGear's laid clothes); a triangle with all three corners at it is the ring (OutlineRing).
+        internal static float LineFloor(Thing thing, float floor)
+        {
+            return thing != null && thing.def.category == ThingCategory.Item ? floor + ItemLineLift : floor;
+        }
+
         // Writes the model into the block's mesh in place of the thing's sprite. baseHeight is
         // how far above the ground it rests, in cells. Returns false if it could not, in which
         // case the sprite is printed as usual.
@@ -2994,6 +3017,8 @@ namespace IsoRim
 
             float squash = View3D.Squash;
             float baseY = baseHeight / squash;
+            float lineFloor = LineFloor(thing, Floor);   // (M230) an item's outline ring is kept off what it lies on
+            LayerSubMesh ring = null;                    // (M230) and drawn without the outline's slope bias
 
             // The outline is a set width on the map: a model drawn larger (a full-grown tree is
             // more than twice the size it was built) does not get a thicker line with it.
@@ -3018,6 +3043,31 @@ namespace IsoRim
                 }
                 Vector3 triTag = tagged ? (mm.leaf ? leafTag : twigTag) : Vector3.zero;
                 bool joint = joinedSides != 0 && outline != null && OnJoint(m, i, turn, lay, layLift, scale, offset, joinedSides);
+
+                // (M230) An item's outline triangle lying wholly on what the item lies on is its ring (LineFloor): it goes to
+                // the ring material, the rest of the shell stays in the outline.
+                LayerSubMesh line = outline;
+                if (outline != null && lineFloor > Floor && !joint && m.hull != null && (m.noOutline == null || !m.noOutline[i]))
+                {
+                    bool onBase = true;
+                    for (int k = i; k < i + 3 && onBase; k++)
+                    {
+                        onBase = (turn * (Vector3.Scale(lay * (m.positions[k] + m.hull[k] * hullScale) + layLift, scale) + offset)).y <= lineFloor;
+                    }
+                    if (onBase)
+                    {
+                        if (ring == null)
+                        {
+                            Material ringMat = R3DMaterials.OutlineRing;
+                            ring = ringMat != null ? MeshWriter.Sub(layer, ringMat) : null;
+                            if (ring == null || ring.verts.Count + n > MeshWriter.MaxVerts)
+                            {
+                                ring = outline;   // (as it was: in the outline)
+                            }
+                        }
+                        line = ring;
+                    }
+                }
 
                 bool glow = mm != null && mm.glow;
 
@@ -3144,13 +3194,13 @@ namespace IsoRim
                     if (outline != null && !joint && (m.noOutline == null || !m.noOutline[k]))
                     {
                         Vector3 h = turn * (Vector3.Scale(lay * (m.positions[k] + hull) + layLift, scale) + offset);
-                        outline.tris.Add(outline.verts.Count);
-                        outline.verts.Add(new Vector3(center.x + h.x, baseY + Mathf.Max(Floor, h.y) / squash, center.z + h.z));
-                        outline.colors.Add(R3DMaterials.Shaded(c, OutlineShade));
-                        outline.uvs.Add(default);
+                        line.tris.Add(line.verts.Count);
+                        line.verts.Add(new Vector3(center.x + h.x, baseY + Mathf.Max(lineFloor, h.y) / squash, center.z + h.z));
+                        line.colors.Add(R3DMaterials.Shaded(c, OutlineShade));
+                        line.uvs.Add(default);
                         if (tagged)
                         {
-                            CutTags.Stamp(outline, triTag);
+                            CutTags.Stamp(line, triTag);
                         }
                     }
 

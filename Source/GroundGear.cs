@@ -626,7 +626,10 @@ namespace IsoRim
                 any |= Put(solid != null ? MeshWriter.Sub(layer, solid) : null, shape.glow, litPal, center, turn, scale, baseHeight);
                 if (any && IsoRimMod.Settings.outlines && R3DMaterials.Outline != null)
                 {
-                    Put(MeshWriter.Sub(layer, R3DMaterials.Outline), shape.line, linePal, center, turn, scale, baseHeight);
+                    float lineFloor = ModelBaker.LineFloor(thing, 0f);   // (M230) the ring kept off the ground, without the slope bias
+                    Material ringMat = lineFloor > 0f ? R3DMaterials.OutlineRing : null;
+                    Put(MeshWriter.Sub(layer, R3DMaterials.Outline), shape.line, linePal, center, turn, scale, baseHeight, lineFloor,
+                        ringMat != null ? MeshWriter.Sub(layer, ringMat) : null);
                 }
                 for (int i = 0; i < shape.slowParts.Length; i++)
                 {
@@ -755,8 +758,11 @@ namespace IsoRim
         }
 
         // Appends a triangle list to a piece of the block's mesh: scaled, turned about up, placed at center, baseHeight up,
-        // each corner the colour of its palette entry.
-        private static bool Put(LayerSubMesh sm, Tris tris, Color32[] pal, Vector3 center, Quaternion turn, float scale, float baseHeight)
+        // each corner the colour of its palette entry; no corner lower than floor cells over the base (the outline shell:
+        // ModelBaker.LineFloor). ring: where the triangles with all three corners at that floor go (the outline's ring,
+        // R3DMaterials.OutlineRing); null: with the rest.
+        private static bool Put(LayerSubMesh sm, Tris tris, Color32[] pal, Vector3 center, Quaternion turn, float scale, float baseHeight,
+            float floor = 0f, LayerSubMesh ring = null)
         {
             Vector3[] pos = tris.pos;
             int n = pos.Length;
@@ -767,20 +773,46 @@ namespace IsoRim
             float squash = View3D.Squash;
             float baseY = baseHeight / squash;
             float yScale = scale / squash;
+            float yMin = floor / scale;   // (in the shape's own units)
             Vector3 right = turn * Vector3.right * scale, forward = turn * Vector3.forward * scale;
             int[] palOf = tris.pal;
             int first = sm.verts.Count;
             for (int k = 0; k < n; k++)
             {
                 Vector3 p = pos[k];
-                sm.verts.Add(new Vector3(center.x + right.x * p.x + forward.x * p.z, baseY + Mathf.Max(0f, p.y) * yScale, center.z + right.z * p.x + forward.z * p.z));
+                sm.verts.Add(new Vector3(center.x + right.x * p.x + forward.x * p.z, baseY + Mathf.Max(yMin, p.y) * yScale, center.z + right.z * p.x + forward.z * p.z));
                 sm.colors.Add(pal[palOf[k]]);
                 sm.uvs.Add(default);
             }
             int[] index = tris.index;
-            for (int k = 0; k < index.Length; k++)
+            if (ring == null || ring == sm || ring.verts.Count + index.Length > MeshWriter.MaxVerts)
             {
-                sm.tris.Add(first + index[k]);
+                for (int k = 0; k < index.Length; k++)
+                {
+                    sm.tris.Add(first + index[k]);
+                }
+                return true;
+            }
+            for (int k = 0; k + 2 < index.Length; k += 3)
+            {
+                int a = index[k], b = index[k + 1], c = index[k + 2];
+                if (pos[a].y <= yMin && pos[b].y <= yMin && pos[c].y <= yMin)
+                {
+                    // (M230) the ring: its corners copied over (the shared ones stay unused in sm)
+                    for (int j = k; j < k + 3; j++)
+                    {
+                        ring.tris.Add(ring.verts.Count);
+                        ring.verts.Add(sm.verts[first + index[j]]);
+                        ring.colors.Add(sm.colors[first + index[j]]);
+                        ring.uvs.Add(default);
+                    }
+                }
+                else
+                {
+                    sm.tris.Add(first + a);
+                    sm.tris.Add(first + b);
+                    sm.tris.Add(first + c);
+                }
             }
             return true;
         }

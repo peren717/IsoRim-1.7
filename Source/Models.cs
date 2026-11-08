@@ -4167,12 +4167,29 @@ namespace IsoRim
             }
         }
 
+        // (M230) The ring of an item's outline: the level sheet of its shell lying on what the item lies on (ModelBaker.LineFloor).
+        // The outline's def without the slope part of its depth bias, which would sink it under the ground beside it.
+        private static Material outlineRing;
+
+        public static Material OutlineRing
+        {
+            get
+            {
+                if (outlineRing == null && Outline != null)
+                {
+                    outlineRing = Make(OutlineRingDef, "IsoRim_OutlineRing");
+                }
+                return outlineRing;
+            }
+        }
+
         // ---- shaders (Defs\ShaderDefs\IsoRim_Shaders.xml). Every IsoRim def runs the same
         // fragment program (vertex colour * _Color [* texture] * shade); the def sets the render
         // state. _LightMode picks the shade: 0 unlit, 1 model curve, 2 wall curve, 3 roof slates.
         public const string SolidDef = "IsoRimSolid";       // opaque, depth write, cull off, 2000
         public const string SolidTexDef = "IsoRimSolidTex"; // same + texture, cut out at alpha 0.5, 2001
         public const string OutlineDef = "IsoRimOutline";   // opaque, cull front, pushed back in depth
+        public const string OutlineRingDef = "IsoRimOutlineRing";   // the same without the slope bias (M230: item rings)
         public const string GhostDef = "IsoRimGhost";       // alpha, depth write, cull back, 3100
         public const string BlendDef = "IsoRimBlend";       // alpha, depth test, no depth write, 3050
         public const string OverlayDef = "IsoRimOverlay";   // alpha, no depth test or write, 3650

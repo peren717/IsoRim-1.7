@@ -54,6 +54,23 @@
     </shaderProgram>
   </ShaderDef>
 
+  <!-- (M230) The ring of an item's outline: the level sheet of its shell, lifted a hair over what the item lies on
+       (ModelBaker.LineFloor). The outline's def without the slope part of the bias: that part is about a pixel's worth
+       of depth, more than the lift at play zoom, and sank the ring under the ground beside the item. -->
+  <ShaderDef>
+    <defName>IsoRimOutlineRing</defName>
+    <shaderProgram>
+      <vertexShaderFileName>IsoRim.vert.glsl</vertexShaderFileName>
+      <fragmentShaderFileName>IsoRimSolid.frag.glsl</fragmentShaderFileName>
+      <useTexture>false</useTexture>
+      <blendMode>Opaque</blendMode>
+      <cullMode>Front</cullMode>
+      <depthBiasConstantFactor>-1</depthBiasConstantFactor>
+      <depthBiasSlopeFactor>0</depthBiasSlopeFactor>
+      <renderQueue>2000</renderQueue>
+    </shaderProgram>
+  </ShaderDef>
+
   <!-- Blueprints and frames: see-through, but they write depth so a ghost hides its own back faces.
        Queue 3101: after the game's lighting overlay; they take the light of their own cell. -->
   <ShaderDef>
