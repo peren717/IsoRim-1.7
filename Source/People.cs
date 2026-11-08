@@ -579,6 +579,7 @@ namespace IsoRim
             float workLean = 0f;
             float workDip = 0f;
             float headLift = 0f;
+            Building_Bed sleptIn = null;   // a head-only bed: its blanket pushed up by the hidden body (SleeperBlanket)
             if (prone)
             {
                 // Face down (Api 45): as a crawl (Crawl), tipped forward about the feet from the crouch as it eases down (and
@@ -607,6 +608,7 @@ namespace IsoRim
                     yaw = bed.Rotation.AsAngle;
                     ground = Poses.SleeperHeight(pawn, bed);   // the bed's surface, or their slot's (Api 28: a bunk's level)
                     headOnly = ground > 0.05f && bed.def.building != null && !bed.def.building.bed_showSleeperBody;
+                    sleptIn = headOnly ? bed : null;
                     pose = Matrix4x4.Translate(new Vector3(0f, (headOnly ? BedHeadLift : 0.15f) * size, HeadHeight * size)) * Matrix4x4.Rotate(onBack);
                 }
                 else if (!dead && holder != null && pawn.ParentHolder is IThingHolderWithDrawnPawn drawnIn)
@@ -829,6 +831,10 @@ namespace IsoRim
                 }
             }
             DynamicModels.DrawParts(Merged(look, true, dead, turned, null, headOnly && look.alien != null, hidden), at, yaw, headPlace);
+            if (sleptIn != null)
+            {
+                SleeperBlanket.Draw(pawn, sleptIn, at, yaw, size, ground);   // the blanket over the hidden body
+            }
             if (look.alien != null)
             {
                 AlienCards.Draw(look, at, yaw, headPlace, bodyPlace, hidden, !headOnly, lying || proneDown, crawling || proneDown);   // a race's addons as cards (Api 25)

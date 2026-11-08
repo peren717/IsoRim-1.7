@@ -114,6 +114,8 @@ namespace IsoRim
     //                                bx,bz (LayDown); nomed first turns the bed's medical toggle off (hospital beds start medical)
     //   downpawn=x,z                 the colonist in the cell hurt until downed (no bleeding wounds)
     //   bedcheck=1                   logs each free colonist: posture, bed, job, People.Report (hat, skips)
+    //   blanket=0|1                  the sleeper's blanket lump in head-only beds off / on (SleeperBlanket.On; before/after shots)
+    //   blanketcheck=1               logs each person: posture, bed (type, medical, sheet colour), job, SleeperBlanket.Report
     //   testslots=Def,h0,h1..        (Api 28 test) gives the live ModelDef of that thing ModelDef.slots with those heights
     //                                (model units; -1 keeps the surface); testslots=Def,none takes them off again
     //   slotcheck=1                  logs each pawn in a bed: its slot and the heights worked out for it (Poses.SlotReport)
@@ -1412,6 +1414,18 @@ namespace IsoRim
                         Building_Bed bb = bp.CurrentBed();
                         Log.Message("[IsoRim probe] bedcheck " + bp.LabelShort + " " + bp.Position + ": posture " + bp.GetPosture() + ", bed " + (bb != null ? bb.def.defName : "none")
                             + ", job " + (bp.CurJobDef != null ? bp.CurJobDef.defName : "none") + "; " + People.Report(bp));
+                    }
+                    break;
+                case "blanket":
+                    SleeperBlanket.On = a[0] != "0";   // (harness: before/after shots)
+                    break;
+                case "blanketcheck":
+                    foreach (Pawn bp in map.mapPawns.AllPawnsSpawned.Where(x => x.RaceProps.Humanlike).OrderBy(x => x.Position.x).ThenBy(x => x.Position.z).ToList())
+                    {
+                        Building_Bed bb = bp.CurrentBed();
+                        Log.Message("[IsoRim probe] blanketcheck " + bp.LabelShort + " " + bp.Position + ": posture " + bp.GetPosture() + ", bed "
+                            + (bb != null ? bb.def.defName + " " + bb.ForOwnerType + (bb.Medical ? " medical" : "") + " sheet " + bb.DrawColorTwo : "none")
+                            + ", job " + (bp.CurJobDef != null ? bp.CurJobDef.defName : "none") + "; " + SleeperBlanket.Report(bp));
                     }
                     break;
                 case "standcheck":
