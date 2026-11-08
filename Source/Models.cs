@@ -291,6 +291,13 @@ namespace IsoRim
         // draws it (so it follows the bar's rotation). Size and margin are scaled together (the margin by the smaller of
         // the two), so the filled part stays in proportion. (1, 1): the bar's own size.
         public Vector2 barScale = Vector2.one;
+        // (Api 63) The plane those bars lie in at barAt: its normal (model space, facing north, turned and fitted with the
+        // model), e.g. (1, 0, 0) for a side face, (0, 1, -0.2) for a panel tilted to the south. The bar is tipped from flat
+        // onto it by the smallest turn, so its long axis keeps the game's direction, now running in the plane. Zero: flat.
+        public Vector3 barNormal = Vector3.zero;
+        // (Api 63) Each of those bars drawn a second time mirrored across the model's middle (barAt.x and barNormal.x negated): the
+        // same gauge on both sides of a symmetric model (both side faces of a nacelle). False: one bar.
+        public bool barMirror = false;
         // Harvesters (WorkParts.cs). cableAnchors: the connectors (x, height, z; model space, facing north) the
         // game's cables to holding platforms (CompCableConnection) run up to, taken in turn. workPanel: the two
         // ends (x, height, z) of a strip on the model where lights run while the building works (stopped while

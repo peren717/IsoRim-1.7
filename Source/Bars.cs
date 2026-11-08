@@ -155,7 +155,13 @@ namespace IsoRim
             public bool fillSet;
             public Material wasFill;
             public Material wasBack;
+            public bool skipLifted;   // DrawHook.skip turned off for this bar (DrawHook.skipKeepsBars)
+            public bool mirrorNext;   // (Api 63) barMirror: the same bar drawn again mirrored, after this one
+            public GenDraw.FillableBarRequest request;
         }
+
+        // (Api 63) Set while a barMirror bar's mirrored copy is drawn (DrawFillableBar_Finalizer).
+        private static bool mirroring;
 
         // ---- the fill over its back from every camera angle (playtest 2026-10-30)
         // GenDraw.DrawFillableBar draws the grey back and then the fill 0.01 above it (a hair in the 3D view, where heights are
@@ -194,6 +200,12 @@ namespace IsoRim
         public static void DrawFillableBar_Prefix(ref GenDraw.FillableBarRequest __0, out BarAtState __state)
         {
             __state = default(BarAtState);
+            GenDraw.FillableBarRequest asGiven = __0;
+            if (DrawHook.skip && DrawHook.skipKeepsBars)
+            {
+                __state.skipLifted = true;   // a model stands in for the sprite drawn with it (wind turbine blades), not for the bar
+                DrawHook.skip = false;
+            }
             if (View3D.Ready)
             {
                 __state.fillSet = true;
@@ -226,14 +238,40 @@ namespace IsoRim
                 {
                     return;
                 }
+                Vector3 at = entry.def.barAt.Value;
+                Vector3 normal = entry.def.barNormal;
+                if (mirroring)
+                {
+                    at.x = -at.x;           // (Api 63) the copy on the other side of the model's middle (x = 0)
+                    normal.x = -normal.x;
+                }
+                else if (entry.def.barMirror)
+                {
+                    __state.mirrorNext = true;
+                    __state.request = asGiven;
+                }
                 Vector3 fit;
                 float yaw;
-                Vector3 p = ModelBaker.PointOnMap(t, entry, m, entry.def.barAt.Value, out fit, out yaw);
+                Vector3 p = ModelBaker.PointOnMap(t, entry, m, at, out fit, out yaw);
                 __0.center = new Vector3(p.x, __0.center.y, p.z);
                 __0.preRotationOffset = Vector2.zero;   // centred on barAt
                 __state.changed = true;
                 __state.wasXform = DrawHook.xform;
-                DrawHook.xform = View3D.LiftMatrix(p.y);
+                if (normal == Vector3.zero)
+                {
+                    DrawHook.xform = View3D.LiftMatrix(p.y);
+                }
+                else
+                {
+                    // (Api 63) Tipped onto the model's plane about its centre, in true space (heights unsquashed), then lifted.
+                    normal = new Vector3(normal.x / Mathf.Max(fit.x, 1e-4f), normal.y / Mathf.Max(fit.y, 1e-4f), normal.z / Mathf.Max(fit.z, 1e-4f));
+                    normal = (Quaternion.AngleAxis(yaw, Vector3.up) * normal).normalized;
+                    Vector3 flat = new Vector3(p.x, __0.center.y, p.z);
+                    DrawHook.xform = Matrix4x4.Translate(new Vector3(p.x, __0.center.y + p.y / View3D.Squash, p.z))
+                        * Matrix4x4.Scale(new Vector3(1f, 1f / View3D.Squash, 1f))
+                        * Matrix4x4.Rotate(Quaternion.FromToRotation(Vector3.up, normal))
+                        * Matrix4x4.Translate(-flat);
+                }
                 BarAtDraws++;
                 LastBarAt = p;
                 LastBarOwner = t.ThingID;
@@ -246,6 +284,10 @@ namespace IsoRim
 
         public static void DrawFillableBar_Finalizer(BarAtState __state)
         {
+            if (__state.skipLifted)
+            {
+                DrawHook.skip = true;
+            }
             if (__state.changed)
             {
                 DrawHook.xform = __state.wasXform;
@@ -254,6 +296,18 @@ namespace IsoRim
             {
                 FillMat = __state.wasFill;
                 BackMat = __state.wasBack;
+            }
+            if (__state.mirrorNext && !mirroring)
+            {
+                mirroring = true;
+                try
+                {
+                    GenDraw.DrawFillableBar(__state.request);   // through the prefix again, placed mirrored
+                }
+                finally
+                {
+                    mirroring = false;
+                }
             }
         }
     }

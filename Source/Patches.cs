@@ -2938,7 +2938,8 @@ namespace IsoRim
                 if (Turbines.Draw(__instance))
                 {
                     __state = true;
-                    DrawHook.skip = true;
+                    DrawHook.skip = true;            // the game's flat blades
+                    DrawHook.skipKeepsBars = true;   // but not its power bar (ModelDef.barAt places it)
                 }
             }
             catch (Exception e)
@@ -2952,6 +2953,7 @@ namespace IsoRim
             if (__state)
             {
                 DrawHook.skip = false;
+                DrawHook.skipKeepsBars = false;
             }
         }
 

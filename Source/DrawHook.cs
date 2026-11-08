@@ -96,6 +96,10 @@ namespace IsoRim
         // While set, nothing is drawn at all: a 3D model is standing in for the sprite.
         public static bool skip;
 
+        // With skip: the fillable bars drawn meanwhile (GenDraw.DrawFillableBar) are still drawn, as the thing's other bars
+        // (Bars.DrawFillableBar_Prefix lifts skip for each): a model stands in for the sprite, not for its gauge.
+        public static bool skipKeepsBars;
+
         private static readonly Dictionary<MethodInfo, MethodInfo> replacements = new Dictionary<MethodInfo, MethodInfo>();
 
         public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer)

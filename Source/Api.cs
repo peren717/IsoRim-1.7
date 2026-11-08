@@ -118,7 +118,9 @@ namespace IsoRim
         // 61: static model surfaces and selection (Api61.cs, StaticModels.cs; external PR #6): ReadStaticModel, RegisterStaticSurface,
         // AddStaticModelSelector, RemoveStaticModelSelector, InvalidateStaticModel, ConfigureStaticMaterial, ReadStaticModelView,
         // StaticModelExtensionsActive: an addon's own normals, tangents and materials for static textured building prints, and its choice of model.
-        public static int Version => 62;
+        // 63: ModelDef.barNormal, barMirror (Bars.DrawFillableBar_Prefix): the plane of the fillable bars placed at barAt (a side face, a
+        // tilted panel), and the same bar again on the mirrored side; unset: flat and single, as before.
+        public static int Version => 63;
 
         // ---- glass parts (Version 30)
 

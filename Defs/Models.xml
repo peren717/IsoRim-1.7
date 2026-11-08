@@ -220,6 +220,10 @@
     <thingDef>SolarGenerator</thingDef>
     <model>Models/solar_generator.obj</model>
     <surfaceHeight>0.00</surfaceHeight>
+    <!-- the power bar in the dark slot along the north-middle panel (back row, middle), lying in the tilted panel (Api 36, 63) -->
+    <barAt>(0, 0.970, 0.924)</barAt>
+    <barScale>(0.61, 0.77)</barScale>
+    <barNormal>(0, 1, -0.2)</barNormal>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -228,6 +232,11 @@
     <model>Models/wind_turbine.obj</model>
     <surfaceHeight>0.00</surfaceHeight>
     <rotation>180</rotation>
+    <!-- the power bar in the dark slots on both sides of the nacelle, standing in the side faces (Api 36, 63) -->
+    <barAt>(0.225, 2.75, 0.03)</barAt>
+    <barScale>(0.75, 0.75)</barScale>
+    <barNormal>(1, 0, 0)</barNormal>
+    <barMirror>true</barMirror>
   </IsoRim.ModelDef>
 
   <!-- Sandbags (remodel3, 2026-11-01): linked like R3D_Barricade. sandbags_post (square pile, 4 courses) in every cell,
