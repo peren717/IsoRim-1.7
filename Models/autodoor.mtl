@@ -1,0 +1,4 @@
+# Vanilla Autodoor (make_autodoor.py): the dark square of the leaf, stuff coloured.
+newmtl stuff_autodoor_panel
+Kd 0.420 0.420 0.420
+map_Kd IsoRim/Swatches/{stuff}

@@ -5740,6 +5740,17 @@
     <builtFor>(1, 1)</builtFor>
   </IsoRim.ModelDef>
 
+  <!-- Vanilla autodoor (one cell, 2026-11-08, tools/make_autodoor.py): the plain lintel as frame and a leaf of its own (stripes, dark
+       panel, pointed band and seam line from Autodoor_Mover as flush zones), the other leaf the same turned half round; all stuff
+       coloured. Doors.DrawOne; a style entry (R3D_Techist_Autodoor) still wins for its style. -->
+  <IsoRim.ModelDef>
+    <defName>R3D_Autodoor</defName>
+    <thingDef>Autodoor</thingDef>
+    <model>Models/autodoor_frame.obj</model>
+    <doorLeafModel>Models/autodoor_leaf.obj</doorLeafModel>
+    <builtFor>(1, 1)</builtFor>
+  </IsoRim.ModelDef>
+
   <!-- Animal flap (one cell, 2026-10-21, tools/make_animal_flap.py): a fabric valance (frame) and two halves of the
        curtain (doorLeafModel) that gather toward their jambs as it opens (Api 18 doorLeafGather; Doors.DrawOne).
        stuff_fabric* only: cloth or leather colour with the Fabric swatch. -->
