@@ -10,7 +10,8 @@
 // shade (_LightMode): 0 unlit; 1 model curve; 2 wall curve; 3 roof slates (model curve * 1.05, at most 1.1).
 // The sun is IsoRim's own (C# R3DMaterials.SunDirAt), pushed every frame as the global _IsoSun.
 // The face normal comes from screen derivatives of the world position in true (unsquashed) space,
-// turned toward the camera, and snapped to the same 26 direction groups as the C# BinOf.
+// turned toward the camera (ToEye: per fragment with a perspective camera), and snapped to the same 26 direction
+// groups as the C# BinOf.
 //
 // Night, lamp and indoor light (_GlowMode): 0 none (the game's pulled lighting overlay darkens it);
 // 1 the light of the face's OWN cell, from IsoRim's glow texture (the corner colours of the game's
@@ -304,11 +305,23 @@ float SteppedAmount(float t, float bands, float tw)
     return (floor(x) + smoothstep(0.5 - w, 0.5 + w, fract(x))) / k;
 }
 
-// Rim light: how much light edge a model face takes, 0..1. Faces seen almost edge-on (the silhouette) on the side away
-// from the sun; tops and faces turned to the camera none. n is turned toward the camera.
-float RimAmount(vec3 n, vec3 L)
+// The direction from a fragment at p (true space) toward the camera. Perspective and first person (_IsoEye.w 1): toward
+// the eye, so it changes across the screen; orthographic: the camera's own direction (_IsoView), the same everywhere.
+// The camera's axis is no use with perspective: at yaws of 90 and 270 degrees it lies exactly in the plane of the
+// axis-aligned side faces, so the face normal's turn depended on rounding and flipped from pixel to pixel (M229).
+vec3 ToEye(vec3 p)
 {
-    vec3 V = normalize(uMaterial._IsoView.xyz);
+    vec4 eye = uMaterial._IsoEye;
+    if (eye.w > 0.5)
+        return vec3(eye.x, eye.y * uMaterial._IsoView.w, eye.z) - p;
+    return uMaterial._IsoView.xyz;
+}
+
+// Rim light: how much light edge a model face takes, 0..1. Faces seen almost edge-on (the silhouette) on the side away
+// from the sun; tops and faces turned to the camera none. n is turned toward the camera; p is the fragment (true space).
+float RimAmount(vec3 n, vec3 L, vec3 p)
+{
+    vec3 V = normalize(ToEye(p));
     float edge = smoothstep(0.4, 0.9, 1.0 - clamp(dot(n, V), 0.0, 1.0));
     vec2 nf = n.xz;
     float side = length(nf);
@@ -367,7 +380,7 @@ void main()
     vec3 n = cross(dFdx(p), dFdy(p));
     float len = length(n);
     n = len > 1e-20 ? n / len : vec3(0.0, 1.0, 0.0);
-    if (dot(n, uMaterial._IsoView.xyz) < 0.0)
+    if (dot(n, ToEye(p)) < 0.0)
         n = -n;
     vec3 faceNormal = n;   // the exact face normal, turned toward the camera
     // Stepped light on smooth figures: how fast the sun amount changes per pixel, for the band edges (SteppedAmount).
@@ -519,7 +532,7 @@ void main()
                 vec3 rn = smoothTex ? n : faceNormal;
 #endif
                 // Light of the sky colour: none at night; the game's light then scales it like the rest of the face.
-                rim = uMaterial._IsoSky.rgb * (toon.y * RimAmount(rn, L));
+                rim = uMaterial._IsoSky.rgb * (toon.y * RimAmount(rn, L, p));
             }
         }
         else if (mode < 2.5)
