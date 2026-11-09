@@ -36,7 +36,7 @@ namespace IsoRim
         // 1 at a normal pitch, fading to 0 as the camera gets shallow; 0 in first person.
         public static float PitchFactor()
         {
-            if (FirstPerson.On)
+            if (FirstPerson.Viewing)
             {
                 return 0f;
             }

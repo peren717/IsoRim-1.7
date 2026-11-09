@@ -24,7 +24,7 @@ namespace IsoRim
         public static float FieldOfView => ViewPerspective ? View3D.FieldOfView : 0f;
 
         /// <summary>The pawn whose eyes the view looks through (IsoRim's first person), or null.</summary>
-        public static Pawn FirstPersonPawn => View3D.Ready && FirstPerson.On ? FirstPerson.Pawn : null;
+        public static Pawn FirstPersonPawn => View3D.Ready ? FirstPerson.ViewingPawn : null;
 
         /// <summary>
         /// A counter that goes up whenever how the 3D view looks at the map changes: the view turned on or off, perspective
@@ -282,7 +282,7 @@ namespace IsoRim
                     float f = p ? View3D.FieldOfView : 0f;
                     float y = r ? View3D.Yaw : 0f;
                     float pt = r ? View3D.Pitch : 0f;
-                    Pawn e = r && FirstPerson.On ? FirstPerson.Pawn : null;
+                    Pawn e = r ? FirstPerson.ViewingPawn : null;
                     if (r != ready || p != persp || f != fov || y != yaw || pt != pitch || e != eyes)
                     {
                         version++;

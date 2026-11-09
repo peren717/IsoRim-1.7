@@ -3,7 +3,7 @@
 Model packs (XML and .obj files, no code), the dev-mode model binder and the coverage report: see [ModelPacks.md](ModelPacks.md).
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`, `WallShapeRule`, `WallShape`, `HeadDecal`, `SelectionRing`, `ModelDecal`, `ModelDecalProvider`, `StaticModelGeometry`, `StaticModelView`, `StaticModelContext`, `StaticMaterialContext`, `FigureDrawer`, `FigureDrawContext`, `FigureKinds`, `FigureSituation`, `FigurePlacement`, `FigurePlacementOptions`, `FigureMeshFlags`, `FigureMaterialKind`, `FigureMeshPart`, `ModelData`, `ModelDataMaterial`, `ThingModelUse`, `ThingModelInfo`, `WornMount`, `GroundModel`, `GroundModelContext`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`, `WallShapeRule`, `WallShape`, `HeadDecal`, `SelectionRing`, `ModelDecal`, `ModelDecalProvider`, `StaticModelGeometry`, `StaticModelView`, `StaticModelContext`, `StaticMaterialContext`, `FigureDrawer`, `FigureDrawContext`, `FigureKinds`, `FigureSituation`, `FigurePlacement`, `FigurePlacementOptions`, `FigureMeshFlags`, `FigureMaterialKind`, `FigureMeshPart`, `ModelData`, `ModelDataMaterial`, `ThingModelUse`, `ThingModelInfo`, `WornMount`, `GroundModel`, `GroundModelContext`, `ViewPose`, `ViewPoseOptions`, `SceneImageOptions`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
 in any update, even when it is public: do not patch or reflect into it, ask for an Api member instead. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -117,6 +117,7 @@ if (IsoRim.Api.Version >= 62) { /* custom figure renderers: figure drawers, plac
 if (IsoRim.Api.Version >= 63) { /* ModelDef.barNormal, barMirror: the plane of the fillable bars at barAt (a side face, a tilted panel), and a mirrored second bar (part M) */ }
 if (IsoRim.Api.Version >= 64) { /* ReleaseFigureMaterial: frees what ConfigureFigureMaterial made for a material no longer used (part 43) */ }
 if (IsoRim.Api.Version >= 65) { /* ModelDef.byBodyGraphic: an animal's model, legs, wings, tint or texture by the body graphic the game shows it with; ReadAnimalModel (part 44) */ }
+if (IsoRim.Api.Version >= 66) { /* camera poses (PushViewPose, BeforeViewUpdate, CurrentViewPose, SetPlayerView) and scene images without the interface (RequestSceneImage) (part 45) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
@@ -2422,6 +2423,107 @@ antlers whatever its sex.
 | `Api.ReadAnimalModel(Pawn pawn, out ModelHandle body, out ModelHandle leg, out ModelHandle wing, out Color tint, out bool tintTextured)` | The body, leg and right wing IsoRim draws this animal with now (its `byBodyGraphic` entry, else `model` / `femaleModel`, `legModel` / `femaleLegModel`, `wingModel` / `femaleWingModel`) and the tint (the entry's, else the graphic colour with `tintFromGraphic`, else white). `tintTextured`: the tint also multiplies textured materials. `leg` / `wing` null when it has none. A rotting body is not darkened here. False (nulls, white) for a pawn without an animal model. Main thread. |
 
 Version gate: `IsoRim.Api.Version >= 65`.
+
+## Part 45: camera poses and scene images (version 66)
+
+Two generic tools for camera and photo mods: a pushed **camera pose** takes the 3D view for as long as it is held (a free
+camera, a cinematic, a photo from a chosen spot), and a **scene image** is a picture of the map view as shown, with all of
+IsoRim's screen effects and without any interface.
+
+### Camera poses
+
+```csharp
+if (IsoRim.Api.Version >= 66)
+{
+    IDisposable held = IsoRim.Api.PushViewPose(this, () => flying ? IsoRim.ViewPose.FromEye(eye, yaw, pitch, 70f) : (IsoRim.ViewPose?)null);
+    IsoRim.Api.BeforeViewUpdate += ReadMyInput;   // once a frame, before the pose is asked for
+    ...
+    IsoRim.Api.SetPlayerView(yaw, null);           // optional: the player's camera keeps facing this way afterwards
+    held.Dispose();                                // the view is the player's again
+}
+```
+
+| Member | Meaning |
+|---|---|
+| `IDisposable Api.PushViewPose(object owner, Func<ViewPose?> pose, ViewPoseOptions options = null)` | `pose` is called once a frame (main thread) while the 3D view is on; the view looks from what it returns, `null` gives the view back for that frame. Dispose the handle to remove it. Throws on a null owner or callback. |
+| `int Api.RemoveViewPoses(object owner)` | Removes every pose of this owner; how many. |
+| `event Action Api.BeforeViewUpdate` | Raised once a frame while a game is shown, after IsoRim read its own view keys and before the pose is asked for and the view set: the place for a camera mod's input and movement. |
+| `bool Api.ViewPoseActive`, `object Api.ViewPoseOwner` | A pushed pose holds the view this frame, and whose. |
+| `ViewPose Api.CurrentViewPose` | The camera this frame as a pose (pushed, first person or the player's), every field filled: `Eye`, `Focus` (orthographic: the ground at the middle of the screen), `Fov`, `OrthoSize`, `FocusDistance`, `Near`, `Far`. |
+| `void Api.SetPlayerView(float? yaw, float? pitch, bool snap = true)` | Turns and tilts the player's own camera (null keeps one): written to the settings the player's keys and drags write (the yaw on top of the eighth turns, the pitch of the current mode within the player's range). `snap`: no swing. |
+
+`ViewPose` fields (true space: x and z in cells, y the height in cells; 0 or null takes IsoRim's own value):
+
+| Field | Meaning |
+|---|---|
+| `Yaw` | Degrees clockwise from north seen from above. |
+| `Pitch` | Degrees below the horizon (90 straight down, negative looks up). Perspective -89..89, orthographic 1..89. |
+| `Perspective` | Perspective or orthographic. |
+| `Eye` | Perspective: the eye itself. Null: the eye stands back from `Focus` as IsoRim's perspective camera does at this zoom. Orthographic: the view is centred where the line of sight from it meets the ground. |
+| `Focus` | The ground point at the middle of the screen when there is no eye. Null: the game camera's point (what the player pans). |
+| `Fov` | Vertical field of view, 5-150 degrees. 0: the player's option. |
+| `OrthoSize` | The zoom: half the screen height in cells. 0: the game's zoom. |
+| `FocusDistance` | Perspective: how far the view "looks" (label fading, pointer reach, fog, the lighting overlay's pull). 0: with an eye, the distance along the line of sight to the ground within 10-150 (150 looking level or up); without, the distance to the focus. |
+| `Near`, `Far` | Clip planes. 0: IsoRim's (with an eye: near 0.08-1 by the eye's height, far = FocusDistance + the view distance option + 90). |
+
+Helpers: `ViewPose.FromEye(eye, yaw, pitch, fov = 0)`, `ViewPose.Orbit(focus, yaw, pitch, perspective, orthoSize = 0, fov = 0)`.
+
+`ViewPoseOptions`: `BlockPlayerCamera` (default true: the player's look drag, turn, tilt and reset keys do nothing while the
+pose holds the view; the 3D view, isometric, first person and roof keys, and the game's own pan and zoom, still work),
+`CountsAsTurning` (default true, see below), `Priority` (higher wins; among equal priorities the newest push wins).
+
+- **What follows the pose:** everything that follows IsoRim's own camera. The main and helper cameras' matrices, culling and
+  the game's view rect (what is drawn and updated), pointer rays and the cell under the mouse (`ScreenToGround`, `WorldToScreen`,
+  `ScreenToMap`), labels and their fading, upright cards and sprites and their facings, sky, fog and weather, the lighting
+  overlay, the cut-away by the pointer, the screen passes. `ViewPitch`, `ViewYaw`, `FieldOfView`, `ViewPerspective` report
+  the pose.
+- **Never written:** the player's settings and turn state. Nothing that bakes the map depends on the pose, so nothing is
+  rebuilt for it. With `CountsAsTurning` the view counts as turning while the pose holds it: what is built for the camera's
+  direction (the map edge, cut-away walls) is not rebuilt for the pose, and once when the player's camera is back (as after a
+  turn). `false`: those follow the pose's facing, an eighth turn of the pose rebuilding them as a player's turn does.
+- **Giving it back:** when the last pose is gone (or every pose returns null) the view is the player's camera exactly as the
+  player left it, the same frame. To hand the pose's angles to the player's camera call `SetPlayerView` before disposing.
+- **First person:** a pose wins over IsoRim's first person while pushed (the colonist is drawn again and `FirstPersonPawn` is
+  null); first person carries on underneath and is back when the pose goes.
+- **Limits:** only while the 3D view is on (a pose does not switch it on); a new game removes every pose; the pose callback runs
+  on the main thread before the camera is set, so it should be cheap. A pose callback or `BeforeViewUpdate` handler that throws,
+  or a pose that is not a number: one warning, removed.
+
+### Scene images
+
+```csharp
+IsoRim.Api.RequestSceneImage(tex =>
+{
+    if (tex == null) return;                           // could not be taken
+    File.WriteAllBytes(path, tex.EncodeToPNG());
+    UnityEngine.Object.Destroy(tex);
+}, new IsoRim.SceneImageOptions { IncludeOverlays = false });
+```
+
+| Member | Meaning |
+|---|---|
+| `bool Api.RequestSceneImage(Action<Texture2D> done, SceneImageOptions options = null)` | A picture of the map view as shown, without the interface. `done` gets a new screen-size RGBA32 texture (the caller's to destroy) on the main thread a few frames later, or null if it could not be taken. False (and `done` is not called) when it can't be asked now (no game shown). |
+| `RenderTexture Api.SceneImageTexture` | The last picture on the GPU (R8G8B8A8), IsoRim's, valid until the next one; null before the first. |
+
+- **What is in it:** everything the map pass draws, 3D view or flat map: models, sprites, sky, fog, weather, stacked floors,
+  and IsoRim's ambient occlusion, sun shadows, tilt-shift, anti-aliasing and colour grade; then the engine's final saturation
+  (the sky's) as the screen gets it, so the picture matches the screen. **Not in it:** all IMGUI, which the game draws after
+  the map: the game's and every mod's windows, buttons, labels, bars, messages, the debug log. `SceneImageTexture` is the
+  copy before that final saturation step.
+- **Overlays:** `IncludeOverlays = false` leaves out selection brackets and rings, designations, status icons, the designator in
+  hand (drag box, ghosts, placing previews), targeting highlights, room stats, group move markers, IsoRim's drag boxes and the
+  mining x-ray. Their draws are skipped for two frames round the grabbed one, so on screen they blink once. Zone and area
+  colours and the game's grid toggles (roofs, fertility, beauty) stay.
+- **How and when:** a grab after the colour grade (render queue 4990) copied on the render thread, read back only after that
+  frame was submitted: about 5 frames after asking. Never in the same frame and never blocking. One picture at a time;
+  requests made meanwhile share it (each caller gets its own texture). A material with a render queue above 4990 (no game or
+  IsoRim one has one) is not in the picture. With a camera pose pushed, the picture is from the pose.
+- **Cost:** nothing when nobody asks (no grab is drawn). A picture costs one screen-size copy on the GPU and a read back on the
+  main thread (about 50 ms at 1600x900).
+- **Failure:** an engine change that breaks the copy turns pictures off for the session with one warning; requests then answer
+  null.
+
+Version gate: `IsoRim.Api.Version >= 66`.
 
 ## Part M: model packs (IsoRim.ModelDef)
 

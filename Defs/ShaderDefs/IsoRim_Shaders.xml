@@ -259,6 +259,28 @@
     </shaderProgram>
   </ShaderDef>
 
+  <!-- Scene image (Api 66, SceneImage.cs): drawn only on frames a picture of the map view is asked for. Its grab at
+       4990 comes after the colour grade (4900) and everything else the map pass draws (the game's map queues end at
+       4000), before the interface; the pass writes the grabbed picture back unchanged. -->
+  <ShaderDef>
+    <defName>IsoRimShot</defName>
+    <shaderProgram>
+      <vertexShaderFileName>IsoRimScreen.vert.glsl</vertexShaderFileName>
+      <fragmentShaderFileName>IsoRimShot.frag.glsl</fragmentShaderFileName>
+      <useTexture>false</useTexture>
+      <flipTextureST>false</flipTextureST>
+      <blendMode>Opaque</blendMode>
+      <depthTest>false</depthTest>
+      <depthWrite>false</depthWrite>
+      <cullMode>None</cullMode>
+      <renderQueue>4990</renderQueue>
+      <sceneGrab>
+        <name>IsoRimShot</name>
+        <queue>4990</queue>
+      </sceneGrab>
+    </shaderProgram>
+  </ShaderDef>
+
   <!-- Plants without a 3D model, stood up as cards facing the camera (IsoRimCard.vert.glsl turns
        them from the camera's angle, so a tilt or a turn rebuilds nothing). Render state and fragment
        stage as the game's CutoutPlant (plants) and TransparentPlant (their snow), whose materials

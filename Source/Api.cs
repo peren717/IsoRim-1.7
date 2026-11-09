@@ -125,7 +125,11 @@ namespace IsoRim
         // 65: ModelDef.byBodyGraphic (BodyGraphicModels.cs): an animal's model, legs, wings, tint or texture by the body graphic the game
         // shows it with (alternate graphics, life stage, sex), in every animal draw (ModelEntry.Pick, LegFor, WingFor, Tint); ReadAnimalModel
         // (Api65.cs). A ModelDef without the list is drawn as before.
-        public static int Version => 65;
+        // 66: camera poses and scene images (Api66.cs): PushViewPose (ViewPose, ViewPoseOptions; ViewPoses.cs: one pose source switch in
+        // View3D.ApplyCamera, wins over first person, counts as turning, never writes settings), RemoveViewPoses, BeforeViewUpdate,
+        // ViewPoseActive, ViewPoseOwner, CurrentViewPose, SetPlayerView; RequestSceneImage (SceneImageOptions), SceneImageTexture
+        // (SceneImage.cs: late grab IsoRimShot at 4990, render-thread blit to RGBA8, deferred readback).
+        public static int Version => 66;
 
         // ---- glass parts (Version 30)
 

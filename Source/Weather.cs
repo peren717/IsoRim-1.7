@@ -366,7 +366,7 @@ namespace IsoRim
             Vector3 centre;
             if (View3D.Perspective)
             {
-                float d = FirstPerson.On ? 6f : View3D.CamDistance;
+                float d = FirstPerson.Viewing ? 6f : View3D.CamDistance;
                 centre = eye + fwd * (d * 0.45f);
                 r = Mathf.Clamp(d * 0.6f, 15f, 45f);
                 top = Mathf.Clamp(eye.y + 2f, 6f, 30f);

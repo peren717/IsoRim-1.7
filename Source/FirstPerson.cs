@@ -34,6 +34,19 @@ namespace IsoRim
             get { return pawn; }
         }
 
+        // The camera is in the colonist's head this frame: first person is on and no external camera pose (Api 66) holds
+        // the view. What depends on the camera being in the head (the colonist and their label hidden, no tilt-shift, the
+        // rain box round the eye) asks this; first person itself (following the colonist, its look) carries on underneath.
+        public static bool Viewing
+        {
+            get { return pawn != null && !ViewPoses.Active; }
+        }
+
+        public static Pawn ViewingPawn
+        {
+            get { return Viewing ? pawn : null; }
+        }
+
         public static float Yaw
         {
             get { return Mathf.Repeat(heading + lookYaw, 360f); }

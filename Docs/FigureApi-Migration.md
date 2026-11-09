@@ -100,13 +100,34 @@ These are fixes. Nothing else should look or behave differently.
 
 ## 8. Not covered by Api 62
 
-- **Camera** (`View3D` private fields, `ApplyCamera`, `TurnCamera`, `HandleLook`, `Pitch` patches and the work after them):
-  planned as a later Api version.
+- **Camera:** covered by Api 66 (Docs/Api.md part 45), see "Camera (Api 66)" below.
 - **Patching `ModelBaker.Write` to lift item outline rings out of the ground:** this works round an IsoRim bug. It will be
   fixed in IsoRim itself, after which the patch can go.
 - **Patching `ModelLibrary.LoadAll` to restore ModelDefs:** no Api.
 - `GroundGear.ChildOnly` and `GroundGear.IsGear` read vanilla data. Use your own checks.
 - **IsoRim model files loaded by name** (tools) through `Api.LoadModel`: these keep working.
+
+### Camera (Api 66)
+
+A free or scripted camera that today writes `View3D`'s private fields, patches `ApplyCamera`, `TurnCamera`, the `Pitch` getter
+or `HandleLook`, and calls `Cull.SetCamera`, `R3DMaterials.SetView`, `UprightCards.SetCamera`, `Sky.Draw` or sets `_IsoEye`
+itself moves over like this (gate on `IsoRim.Api.Version >= 66`):
+
+| Today | With Api 66 |
+|---|---|
+| A `TurnCamera` prefix that reads input and moves the eye | A handler on `Api.BeforeViewUpdate` (same moment: after IsoRim's own view keys, before the camera is set). |
+| An `ApplyCamera` prefix with its own copy of the perspective branch, the private-field writes (`eye`, `fwd`, `up`, `right`, `orthoSize`, `aspect`, `tanHalf`, `camDist`, `nearNow`, `persp`, `cams`, `camerasOverridden`, `haveFrame`), the `FieldOfView` / `Altitude` setters, `LightingMatrix`, and the calls after it | `Api.PushViewPose(owner, () => ViewPose.FromEye(eye, yaw, pitch, fov))` once when the camera starts. IsoRim derives all of it from the pose. With `FocusDistance`, `Near`, `Far` left 0 the numbers are the usual free-camera ones (focus distance = distance to the ground along the line of sight within 10-150, near 0.08-1 by height, far = focus distance + view distance + 90); the matrices and fields come out bit-identical to that copy. |
+| `yawNow` / `yawSet` writes and a `Pitch` getter prefix (pitch beyond IsoRim's range) | The pose's `Yaw` and `Pitch` (perspective -89..89); `View3D.Pitch`, `View3D.Yaw`, `Api.ViewPitch`, `Api.ViewYaw` and everything built on them report it. |
+| Writing the settings `pitch` / `isoPitch` every frame so inlined readers see the camera's pitch | Not needed: nothing reads the settings for the camera any more. The options pitch slider shows the player's own pitch while the pose holds the view. |
+| A `HandleLook` prefix and clearing `lookDragging` | `ViewPoseOptions.BlockPlayerCamera` (default true): IsoRim's look drag, turn, tilt and reset keys wait while the pose holds the view. |
+| Relying on `Turning` being true so nothing is rebuilt while flying | `ViewPoseOptions.CountsAsTurning` (default true): the same, by rule. One rebuild of the facing-built parts after the camera gives the view back, as before. |
+| On leaving: writing `freeYaw` so IsoRim's camera keeps facing the same way, and restoring the saved pitch | `Api.SetPlayerView(yaw, null)` and then dispose the handle. Nothing to restore: the player's settings were never touched. |
+| Leaving when first person starts | Optional now: a pushed pose wins over first person, which resumes when the pose goes. |
+| Reading `View3D.EyePosition`, `View3D.ViewDistance` | `Api.CurrentViewPose` (`Eye`, `Far`, `FocusDistance`, `Near`). |
+
+Stays in the camera mod: its own patches on the game's camera driver, input, cursor and jumps (dolly, zoom, pointer locking or
+warping, glides), keeping the game camera ahead of the eye, and remembering places. A camera that also wants a picture of its
+view without the interface uses `Api.RequestSceneImage` (part 45).
 
 ## 9. Failures
 

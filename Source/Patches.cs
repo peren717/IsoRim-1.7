@@ -1623,7 +1623,7 @@ namespace IsoRim
         // In the 3D view the label is drawn on IsoRim's plate (PawnLabels.DrawLabel).
         public static bool DrawPawnLabel_Prefix(Pawn __0, Vector2 __1, ref float __2, float __3, Dictionary<string, string> __4, GameFont __5, bool __7)
         {
-            if (__0 != null && __0 == FirstPerson.Pawn)
+            if (__0 != null && __0 == FirstPerson.ViewingPawn)
             {
                 return false;   // first person: no name floating in front of the eyes
             }
@@ -2073,7 +2073,7 @@ namespace IsoRim
                 float spriteHeight = 1.5f;
                 Cards.Drawn(pawn);   // not a card this frame unless stood up below (Api.IsCard)
 
-                if (pawn != null && pawn == FirstPerson.Pawn)
+                if (pawn != null && pawn == FirstPerson.ViewingPawn)
                 {
                     return false;   // first person: the camera is in this colonist's head
                 }
