@@ -122,7 +122,10 @@ namespace IsoRim
         // tilted panel), and the same bar again on the mirrored side; unset: flat and single, as before.
         // 64: ReleaseFigureMaterial (Api62.cs): ConfigureFigureMaterial's counterpart; IsoGlow.Unmark, FadeFloors.Release, the mark and
         // faded copies destroyed a few frames later (DynamicModels.RetireMaterial). Nothing changes for a mod that never calls it.
-        public static int Version => 64;
+        // 65: ModelDef.byBodyGraphic (BodyGraphicModels.cs): an animal's model, legs, wings, tint or texture by the body graphic the game
+        // shows it with (alternate graphics, life stage, sex), in every animal draw (ModelEntry.Pick, LegFor, WingFor, Tint); ReadAnimalModel
+        // (Api65.cs). A ModelDef without the list is drawn as before.
+        public static int Version => 65;
 
         // ---- glass parts (Version 30)
 

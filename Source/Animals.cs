@@ -256,8 +256,9 @@ namespace IsoRim
             DynamicModels.AnimalPart = pawn.RaceProps == null || !pawn.RaceProps.IsMechanoid;
             DynamicModels.SmoothTextured = def.smoothTextured;
             bool tintWas = DynamicModels.TintTextured;
-            Color tint = def.tintFromGraphic ? GraphicColour(pawn) : Color.white;   // (Api 49) the vanilla colour
-            DynamicModels.TintTextured = def.tintFromGraphic;
+            bool tintTextured;
+            Color tint = BodyGraphicModels.Tint(entry, pawn, out tintTextured);   // (Api 49) the vanilla colour, (Api 65) byBodyGraphic's
+            DynamicModels.TintTextured = tintTextured;
             HitFlash.Begin(pawn);
             try
             {

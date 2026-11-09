@@ -287,6 +287,7 @@ namespace IsoRim
         {
             LoadWatch();
             TubeReloadTick();
+            BgReloadTick();
             if (loadLogged || Find.CurrentMap == null)
             {
                 return;

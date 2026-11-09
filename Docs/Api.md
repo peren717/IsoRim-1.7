@@ -116,10 +116,11 @@ if (IsoRim.Api.Version >= 61) { /* static model surfaces and selection: an addon
 if (IsoRim.Api.Version >= 62) { /* custom figure renderers: figure drawers, placing, figure mesh submit, materials, run-time models, things' models, weapon and ground rules, `Api.HowBound`, the figure shader contract (part 43) */ }
 if (IsoRim.Api.Version >= 63) { /* ModelDef.barNormal, barMirror: the plane of the fillable bars at barAt (a side face, a tilted panel), and a mirrored second bar (part M) */ }
 if (IsoRim.Api.Version >= 64) { /* ReleaseFigureMaterial: frees what ConfigureFigureMaterial made for a material no longer used (part 43) */ }
+if (IsoRim.Api.Version >= 65) { /* ModelDef.byBodyGraphic: an animal's model, legs, wings, tint or texture by the body graphic the game shows it with; ReadAnimalModel (part 44) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -2362,6 +2363,66 @@ of IsoRim's shaders can change in any update (as in part 42). A change to one of
 
 Version gate: gate on Api 62.
 
+## Part 44: animals by body graphic (version 65)
+
+The game draws an animal's body from one of several sprites: its kind's life stage (`bodyGraphicData`, `femaleGraphicData`
+for a female) or one of the kind's `alternateGraphics` (picked by the pawn's ID). `byBodyGraphic` lets one binding follow
+that choice: a horse in each of its six coats, a young tom that the game draws as a hen, a fawn that is spotted and has no
+antlers whatever its sex.
+
+```xml
+<IsoRim.ModelDef>
+  <defName>MyPack_Animal_Deer</defName>
+  <thingDef>Deer</thingDef>
+  <model>Models/stag.obj</model>
+  <femaleModel>Models/doe.obj</femaleModel>
+  <animal>true</animal>
+  <byBodyGraphic>   <!-- IsoRim.Api.Version >= 65 -->
+    <li><path>Things/Pawn/Animal/Deer/DeerBaby</path><model>Models/doe.obj</model><texture>MyPack/Animals/Fawn</texture></li>
+  </byBodyGraphic>
+</IsoRim.ModelDef>
+```
+
+```xml
+  <byBodyGraphic>
+    <li><path>Horse/Horse1</path><tint>(196,150,104)</tint></li>
+    <li><path>Horse2</path><tint>(120,84,60)</tint></li>
+  </byBodyGraphic>
+```
+
+- **Entry fields:** `path` (required), and any of `model`, `legModel`, `wingModel`, `texture`, `tint`. What an entry leaves
+  unset stays as without it: no `model` keeps `model` / `femaleModel` (by sex), no `tint` keeps `tintFromGraphic` or white.
+  - `model`: the body for both sexes; the def's `parts` and `outlineMinSize` apply as to `model`. Build it on the same hips
+    and hinges (`legs`, `wings`, `legLength`, `bodyCentre` ... are shared).
+  - `legModel`, `wingModel`: that entry's leg and right wing (the left one mirrored).
+  - `texture`: replaces the body model's own textures (every `map_Kd` that is not a `{stuff}` swatch or a glowing part), a
+    path under `Textures/` without extension. Legs and wings keep theirs.
+  - `tint`: the body's and legs' textured materials times this colour, as `tintFromGraphic` (part 33) does; paint the texture
+    in light colours and keep the tint out of `Kd`. Plain-colour materials and the outline keep their colour.
+- **Matching:** case-insensitive, `\` = `/`, on whole trailing path segments: `Horse3`, `Horse/Horse3` and
+  `Things/Pawn/Animal/Horse/Horse3` all match `Things/Pawn/Animal/Horse/Horse3`; `Horse` does not match `Horse3`, `orse3`
+  matches nothing. Short forms therefore also match another mod's animal whose files end the same way; give more segments
+  to tell them apart. The first matching entry in list order wins.
+- **Which path:** first the graphic the game draws the body with now (`PawnRenderer.BodyGraphic`, so another mod's change to
+  that graphic counts), then the living body graphic by the game's own rule (the kind's alternate graphic, else
+  `femaleGraphicData` for a female, else `bodyGraphicData` of the current life stage). The second keeps a rotting body, or
+  one shown with a `corpseGraphicData`, on its living entry. A dried body (`Dessicated`) is drawn as the game's sprite, as
+  before.
+- **Where:** every 3D animal draw: standing, walking, asleep, downed, dead, rotting, carried, on a shelf or platform, held by
+  a host, a figure drawer's `Api.ReadAnimalModel`. A life stage change (growing up), an alternate graphic and another mod's
+  new body graphic are picked up on the next frame; nothing is saved.
+- **Cost:** per animal, one lookup per frame (the graphic object, life stage and sex compared); the entry is matched again
+  only when one of them changes. A texture copy is made once per model and texture.
+- **Unchanged:** a ModelDef without `byBodyGraphic`, and an animal no entry matches, are drawn exactly as before.
+
+**Reading it (for figure drawers, part 43)**
+
+| Member | Meaning |
+|---|---|
+| `Api.ReadAnimalModel(Pawn pawn, out ModelHandle body, out ModelHandle leg, out ModelHandle wing, out Color tint, out bool tintTextured)` | The body, leg and right wing IsoRim draws this animal with now (its `byBodyGraphic` entry, else `model` / `femaleModel`, `legModel` / `femaleLegModel`, `wingModel` / `femaleWingModel`) and the tint (the entry's, else the graphic colour with `tintFromGraphic`, else white). `tintTextured`: the tint also multiplies textured materials. `leg` / `wing` null when it has none. A rotting body is not darkened here. False (nulls, white) for a pawn without an animal model. Main thread. |
+
+Version gate: `IsoRim.Api.Version >= 65`.
+
 ## Part M: model packs (IsoRim.ModelDef)
 
 A model pack is an XML-only mod (or a mod with a small DLL) that adds `IsoRim.ModelDef`s binding OBJ models to other
@@ -2395,6 +2456,7 @@ mods' things.
 | `barMirror` (63) | Each of those bars drawn a second time on the other side of the model's middle: `barAt` and `barNormal` with x negated (model space), e.g. the same gauge in both side slots of a symmetric nacelle. The copy keeps the game's direction, so seen from its side the fill runs the other way, as the game's own bar seen from behind. Default false: one bar. 3D only. |
 | `femaleModel` / `femaleModels` (38) | Animals: a female's own body (`pawn.gender` Female), as `model` / `models`: several are variants, and each animal keeps one by the same rule as `models` (its ID), so a female always gets the same one. Every animal drawing uses it: standing, walking, asleep, downed, dead and corpses (rotting colours too), flying, carried, attached (part 7), `Api.DrawFigure`, outlines and the aged look. `parts` and `outlineMinSize` apply to it as to `model`. Males, genderless animals and animals of entries without it are drawn as before. `model` / `models` must still be set. |
 | `femaleLegModel`, `femaleWingModel` (38) | Animals: her own leg and wing models; unset, she uses `legModel` / `wingModel`. The hips (`legs`), hinges (`wings`), `legLength` and the other animal fields are shared, so build her body on the same hips and hinges. |
+| `byBodyGraphic` (65) | Animals: another `model`, `legModel`, `wingModel`, `texture` or `tint` by the body graphic the game shows the pawn with (alternate graphics, life stage, sex), first match by whole trailing path segments; see part 44. |
 | `byGraphic` (39) | A model by the sprite the game draws the thing with **now**: its runtime `Thing.Graphic.path`, which a mod's own `Graphic` override may change (a conveyor piece showing a turn, a merger or a splitter; a hopper lit for input or output). `<li><path>Things/Building/Belts/BeltTurnLeft_north</path><model>Models/belt_turn_left.obj</model><yaw>90</yaw></li>`; `<prefix>true</prefix>` matches every path starting with `path` (case-insensitive, `` = `/`). `<facing>North</facing>` (or East, South, West) limits an entry to things facing that way, for a one-direction sprite whose look also depends on the thing's facing (a splitter's sprite names its two outputs, not the side that feeds it). The first matching entry wins; no match: `model` and the other rules. Facing follows the game: the model of a `Graphic_Multi` sprite turns with the thing's facing, any other graphic (`Graphic_Single`) is drawn north-up as the sprite is; `yaw` (degrees, clockwise from above) is added either way; a `Graphic_Multi` model also takes `rotation`, `rotationByFacing` and `ignoreRotation` as any model does, any other graphic only `rotation`. Checked each frame the game draws the thing (a dictionary lookup per graphic) and the block rebuilt only when the matching entry changes; with `prefix`, a path that only changes after the prefix does not rebuild. While such a thing's model stands in, its own sprite drawn every frame by a custom `DrawAt` (`Graphic.Draw` of `thing.Graphic`) is left out; what that `DrawAt` draws besides (carried items, comps, other graphics) is kept. Items drawn by it are lifted to the thing's `surfaceHeight` as before. Version 50: weapons too, matched by the sprite variant they show (part 34). |
 | `anyArt` (50) | Weapons: the model is kept whatever art the weapon has (part 34); default false: a weapon whose sprite another mod supplies draws that sprite. |
 | `holdAsBuilt`, `carryStand`, `carryLean`, `bakedItem` (54) | Weapons: held as built, carried standing in front of the figure, an item with a drawing of its own baked as its model (part 38). |

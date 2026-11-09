@@ -416,6 +416,13 @@ namespace IsoRim
         // the tint out of Kd (Kd = the sprite's lit white). Every pose Animals.Draw draws (standing, asleep, downed, dead,
         // carried); the outline keeps its own colour. Off (default): the model's own colours, as before. Opt-in, per model.
         public bool tintFromGraphic = false;
+        // (Api 65) Animals: another model, legs, wings, tint or texture by the body graphic the game shows the pawn with
+        // (its kind's alternateGraphics, life stage, femaleGraphicData; BodyGraphicModels.cs). The first entry whose path
+        // matches the graphic's path or its last whole segments (case-insensitive) stands in; what an entry leaves unset is
+        // as without it. No match, or no list: model / femaleModel, legs, wings and tintFromGraphic as before.
+        //   <li><path>Things/Pawn/Animal/Horse/Horse3</path><tint>(150,110,80)</tint></li>
+        //   <li><path>DeerBaby</path><model>Models/doe.obj</model><texture>MyPack/Animals/Fawn</texture></li>
+        public List<BodyGraphicModel> byBodyGraphic;
         // (Api 50) Weapons: use this model whatever art the weapon has. Off (default): a weapon whose sprite another mod
         // supplies (a texture pack's same-named texture, a patched texPath, one more variant in its folder) draws that sprite
         // instead of the model (WeaponModels.ArtIsOwn). On: for a pack that binds models to retextured weapons on purpose.
@@ -766,6 +773,17 @@ namespace IsoRim
         public string model;
     }
 
+    // (Api 65) One entry of ModelDef.byBodyGraphic (BodyGraphicModels.cs). Unset fields: as without the entry.
+    public class BodyGraphicModel
+    {
+        public string path;         // the body graphic's texPath, or its last whole segments ("Horse3", "Turkey/TurkeyHen")
+        public string model;        // the body (the def's parts and outlineMinSize apply as to model), for both sexes
+        public string legModel;
+        public string wingModel;
+        public string texture;      // replaces the body model's own map_Kd textures (path under Textures/, no extension)
+        public Color tint = new Color(0f, 0f, 0f, 0f);   // the textured materials times this (as tintFromGraphic); unset: as without
+    }
+
     // (Api 39) One entry of ModelDef.byGraphic:
     //   <li><path>Things/Building/Belts/BeltTurnLeft_north</path><model>Models/belt_turn_left.obj</model></li>
     //   <li><path>Things/Building/Belts/BeltSplitter_EastNorth</path><prefix>true</prefix><model>..</model><yaw>90</yaw></li>
@@ -803,6 +821,7 @@ namespace IsoRim
         public Model femaleLeg;     // (Api 38) femaleLegModel, or null (she uses leg)
         public Model femaleWing;    // (Api 38) femaleWingModel, or null (she uses wing)
         public Model femaleWingMirror;
+        public BodyGraphicModels.Entry[] byBodyGraphic;   // (Api 65) byBodyGraphic in order; null if none
         public Model wing;        // animals with wings only (wingModel), the right wing
         public Model wingMirror;  // the same, mirrored: the left wing
         public Model top;   // turrets only
@@ -916,6 +935,13 @@ namespace IsoRim
             {
                 return null;
             }
+            // (Api 65) an animal by the body graphic the game shows it with (ModelDef.byBodyGraphic): the entry's body, or the
+            // usual one below with the entry's texture
+            BodyGraphicModels.Entry bg = byBodyGraphic != null ? BodyGraphicModels.For(this, t) : null;
+            if (bg != null && bg.model != null)
+            {
+                return BodyGraphicModels.Textured(bg, bg.model);
+            }
             if (byStyle != null && t != null)
             {
                 Model styled = ForStyle(StyleOf(t), t);
@@ -948,7 +974,7 @@ namespace IsoRim
                 n = -n;
             }
             Model[] set = IsFemale(t) ? female : variants;   // (Api 38) a female animal's own models
-            return set[n % set.Length];
+            return bg != null ? BodyGraphicModels.Textured(bg, set[n % set.Length]) : set[n % set.Length];
         }
 
         // (Api 38) True if t is a female pawn and this entry has female body models.
@@ -961,12 +987,28 @@ namespace IsoRim
         // (Api 38) The leg model the animal is drawn with: femaleLeg for a female if set, else leg.
         public Model LegFor(Pawn pawn)
         {
+            if (byBodyGraphic != null)
+            {
+                BodyGraphicModels.Entry bg = BodyGraphicModels.For(this, pawn);   // (Api 65) the entry's legs
+                if (bg != null && bg.leg != null)
+                {
+                    return bg.leg;
+                }
+            }
             return femaleLeg != null && pawn != null && pawn.gender == Gender.Female ? femaleLeg : leg;
         }
 
         // (Api 38) The right wing (mirror: the left one) the animal is drawn with: femaleWing for a female if set, else wing.
         public Model WingFor(Pawn pawn, bool mirror)
         {
+            if (byBodyGraphic != null)
+            {
+                BodyGraphicModels.Entry bg = BodyGraphicModels.For(this, pawn);   // (Api 65) the entry's wings
+                if (bg != null && bg.wing != null)
+                {
+                    return mirror ? bg.wingMirror ?? bg.wing : bg.wing;
+                }
+            }
             if (femaleWing != null && pawn != null && pawn.gender == Gender.Female)
             {
                 return mirror ? femaleWingMirror ?? femaleWing : femaleWing;
@@ -1468,6 +1510,11 @@ namespace IsoRim
                 }
             }
             entry.byGraphic = GraphicModels.Load(md);   // (Api 39)
+            entry.byBodyGraphic = BodyGraphicModels.Load(md, file =>
+            {
+                List<Model> one = LoadBodies(md, new List<string> { file });   // (Api 65) as model: parts, outlineMinSize
+                return one.Count > 0 ? one[0] : null;
+            });
             entry.immature = ImmatureModels(md, entry.variants);
             if (!md.legModel.NullOrEmpty() && md.modContentPack != null)
             {
