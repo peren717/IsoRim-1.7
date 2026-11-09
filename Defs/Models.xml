@@ -4128,19 +4128,21 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Turkey</defName>
     <thingDef>Turkey</thingDef>
-    <model>Models/animal_turkey.obj</model>
+    <model>Models/animal_turkey_tom_blob.obj</model>
+    <femaleModel>Models/animal_turkey_hen_blob.obj</femaleModel>
+    <!-- blob turkey (2026-11-09): legs fused into the body, glides; tom with the fan, hen (femaleModel); colours painted in
+         TurkeyTom.png / TurkeyHen.png (the vanilla sprites are untinted). Vanilla draws poults and juveniles of both sexes with
+         TurkeyHen: byBodyGraphic gives them the hen. animal_turkey(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_turkey_leg.obj</legModel>
-    <legs>
-      <li>(-0.086, 0.208, -0.019)</li>
-      <li>(0.086, 0.208, -0.019)</li>
-    </legs>
-    <legLength>0.208</legLength>
-    <legSwing>30</legSwing>
-    <stride>0.50</stride>
-    <bodyCentre>0.285</bodyCentre>
-    <bodyHalfWidth>0.138</bodyHalfWidth>
-    <bodyHalfLength>0.287</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.34</bodyCentre>
+    <bodyHalfWidth>0.25</bodyHalfWidth>
+    <bodyHalfLength>0.44</bodyHalfLength>
+    <byBodyGraphic>
+      <li><path>Turkey/TurkeyHen</path><model>Models/animal_turkey_hen_blob.obj</model></li>
+    </byBodyGraphic>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4219,21 +4221,27 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Horse</defName>
     <thingDef>Horse</thingDef>
-    <model>Models/animal_horse.obj</model>
+    <model>Models/animal_horse_stubby_blob.obj</model>
+    <!-- blob horse (2026-11-09, variant B: stubby legs carved out of the body), glides; eyes, mane and tail in HorseStubby.png
+         (mane 0.68, tail 0.37 of the coat, as in every vanilla coat). The white horse keeps its graphic colour (tintFromGraphic);
+         the six alternate coats Horse1..Horse6 are the white horse times one colour each (byBodyGraphic).
+         animal_horse(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_horse_leg.obj</legModel>
-    <legs>
-      <li>(-0.150, 0.755, 0.372)</li>
-      <li>(0.150, 0.755, 0.372)</li>
-      <li>(-0.150, 0.755, -0.409)</li>
-      <li>(0.150, 0.755, -0.409)</li>
-    </legs>
-    <legLength>0.755</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.81</stride>
-    <bodyCentre>0.908</bodyCentre>
-    <bodyHalfWidth>0.242</bodyHalfWidth>
-    <bodyHalfLength>0.769</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.54</bodyCentre>
+    <bodyHalfWidth>0.28</bodyHalfWidth>
+    <bodyHalfLength>0.93</bodyHalfLength>
+    <byBodyGraphic>
+      <li><path>Horse/Horse1</path><tint>(173,98,58)</tint></li>
+      <li><path>Horse/Horse2</path><tint>(205,184,152)</tint></li>
+      <li><path>Horse/Horse3</path><tint>(181,186,197)</tint></li>
+      <li><path>Horse/Horse4</path><tint>(67,67,63)</tint></li>
+      <li><path>Horse/Horse5</path><tint>(192,151,115)</tint></li>
+      <li><path>Horse/Horse6</path><tint>(109,82,58)</tint></li>
+    </byBodyGraphic>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4259,21 +4267,17 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Alpaca</defName>
     <thingDef>Alpaca</thingDef>
-    <model>Models/animal_alpaca.obj</model>
+    <model>Models/animal_alpaca_blob.obj</model>
+    <!-- blob alpaca (2026-11-09): legs fused into the body, glides; eyes and nose in Alpaca.png; vanilla colour (tintFromGraphic).
+         animal_alpaca(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_alpaca_leg.obj</legModel>
-    <legs>
-      <li>(-0.108, 0.446, 0.228)</li>
-      <li>(0.108, 0.446, 0.228)</li>
-      <li>(-0.108, 0.446, -0.251)</li>
-      <li>(0.108, 0.446, -0.251)</li>
-    </legs>
-    <legLength>0.446</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.07</stride>
-    <bodyCentre>0.549</bodyCentre>
-    <bodyHalfWidth>0.175</bodyHalfWidth>
-    <bodyHalfLength>0.471</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.35</bodyCentre>
+    <bodyHalfWidth>0.25</bodyHalfWidth>
+    <bodyHalfLength>0.62</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4439,21 +4443,23 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Deer</defName>
     <thingDef>Deer</thingDef>
-    <model>Models/animal_deer.obj</model>
+    <model>Models/animal_deer_stag_blob.obj</model>
+    <femaleModel>Models/animal_deer_doe_blob.obj</femaleModel>
+    <!-- blob deer (2026-11-09): legs carved out of the body, glides; stag with antlers, doe (femaleModel); coat in the vanilla
+         colours (tintFromGraphic), antlers and tail plain untinted materials. Vanilla draws fawns of both sexes (first two life
+         stages) with DeerBaby: byBodyGraphic gives them animal_deer_fawn_blob.obj (the doe geometry with spot UVs, made by
+         tools/make_deer_fawn.py; fawn colour baked in DeerFawn.png, white spots untinted). animal_deer(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_deer_leg.obj</legModel>
-    <legs>
-      <li>(-0.098, 0.522, 0.276)</li>
-      <li>(0.098, 0.522, 0.276)</li>
-      <li>(-0.098, 0.522, -0.304)</li>
-      <li>(0.098, 0.522, -0.304)</li>
-    </legs>
-    <legLength>0.522</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.25</stride>
-    <bodyCentre>0.624</bodyCentre>
-    <bodyHalfWidth>0.159</bodyHalfWidth>
-    <bodyHalfLength>0.570</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.41</bodyCentre>
+    <bodyHalfWidth>0.16</bodyHalfWidth>
+    <bodyHalfLength>0.66</bodyHalfLength>
+    <byBodyGraphic>
+      <li><path>Deer/DeerBaby</path><model>Models/animal_deer_fawn_blob.obj</model><tint>(255,255,255)</tint></li>
+    </byBodyGraphic>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4559,21 +4565,16 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_WildBoar</defName>
     <thingDef>WildBoar</thingDef>
-    <model>Models/animal_wildboar.obj</model>
+    <model>Models/animal_wildboar_blob.obj</model>
+    <!-- blob wild boar (2026-11-09): legs fused into the body, glides; sprite colours baked in WildBoar.png (vanilla is untinted).
+         animal_wildboar(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_wildboar_leg.obj</legModel>
-    <legs>
-      <li>(-0.125, 0.281, 0.240)</li>
-      <li>(0.125, 0.281, 0.240)</li>
-      <li>(-0.125, 0.281, -0.264)</li>
-      <li>(0.125, 0.281, -0.264)</li>
-    </legs>
-    <legLength>0.281</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.67</stride>
-    <bodyCentre>0.394</bodyCentre>
-    <bodyHalfWidth>0.202</bodyHalfWidth>
-    <bodyHalfLength>0.496</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.32</bodyCentre>
+    <bodyHalfWidth>0.23</bodyHalfWidth>
+    <bodyHalfLength>0.55</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4809,21 +4810,16 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Wolf_Timber</defName>
     <thingDef>Wolf_Timber</thingDef>
-    <model>Models/animal_wolf_timber.obj</model>
+    <model>Models/animal_wolf_timber_blob.obj</model>
+    <!-- blob timber wolf (2026-11-09): legs carved out of the body, glides; sprite colours baked in WolfTimber.png (vanilla is
+         untinted). animal_wolf_timber(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_wolf_timber_leg.obj</legModel>
-    <legs>
-      <li>(-0.086, 0.428, 0.240)</li>
-      <li>(0.086, 0.428, 0.240)</li>
-      <li>(-0.086, 0.428, -0.264)</li>
-      <li>(0.086, 0.428, -0.264)</li>
-    </legs>
-    <legLength>0.428</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.03</stride>
-    <bodyCentre>0.517</bodyCentre>
-    <bodyHalfWidth>0.138</bodyHalfWidth>
-    <bodyHalfLength>0.496</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.42</bodyCentre>
+    <bodyHalfWidth>0.21</bodyHalfWidth>
+    <bodyHalfLength>0.75</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4929,41 +4925,33 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Bear_Grizzly</defName>
     <thingDef>Bear_Grizzly</thingDef>
-    <model>Models/animal_bear_grizzly.obj</model>
+    <model>Models/animal_bear_blob.obj</model>
+    <!-- blob bear (2026-11-09): legs carved out of the body, glides; white Bear.png times the vanilla colour (tintFromGraphic).
+         animal_bear_grizzly(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_bear_grizzly_leg.obj</legModel>
-    <legs>
-      <li>(-0.205, 0.516, 0.360)</li>
-      <li>(0.205, 0.516, 0.360)</li>
-      <li>(-0.205, 0.516, -0.396)</li>
-      <li>(0.205, 0.516, -0.396)</li>
-    </legs>
-    <legLength>0.516</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.24</stride>
-    <bodyCentre>0.708</bodyCentre>
-    <bodyHalfWidth>0.331</bodyHalfWidth>
-    <bodyHalfLength>0.744</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.56</bodyCentre>
+    <bodyHalfWidth>0.42</bodyHalfWidth>
+    <bodyHalfLength>0.87</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Bear_Polar</defName>
     <thingDef>Bear_Polar</thingDef>
-    <model>Models/animal_bear_polar.obj</model>
+    <model>Models/animal_bear_blob.obj</model>
+    <!-- blob bear (2026-11-09): the grizzly model in the polar bear colour (tintFromGraphic; vanilla uses the same sprite and
+         size). animal_bear_polar(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_bear_polar_leg.obj</legModel>
-    <legs>
-      <li>(-0.233, 0.585, 0.408)</li>
-      <li>(0.233, 0.585, 0.408)</li>
-      <li>(-0.233, 0.585, -0.449)</li>
-      <li>(0.233, 0.585, -0.449)</li>
-    </legs>
-    <legLength>0.585</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.40</stride>
-    <bodyCentre>0.802</bodyCentre>
-    <bodyHalfWidth>0.375</bodyHalfWidth>
-    <bodyHalfLength>0.843</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.56</bodyCentre>
+    <bodyHalfWidth>0.42</bodyHalfWidth>
+    <bodyHalfLength>0.87</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
