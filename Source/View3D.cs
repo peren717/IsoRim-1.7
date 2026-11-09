@@ -881,6 +881,7 @@ namespace IsoRim
                 h = h * 31 + (st.effects3D ? 1 : 0);   // live flames: torch and brazier models are baked without their own
                 h = h * 31 + (st.groundShadows ? 1 : 0);
                 h = h * 31 + (st.waterStyle ? 1 : 0);
+                h = h * 31 + (st.bridges3D ? 1 : 0);
                 h = h * 31 + (st.cutRooms ? 1 : 0);
                 h = h * 31 + Mathf.RoundToInt(st.cutHeight * 100f);
                 h = h * 31 + (st.treeShadows ? 1 : 0);
@@ -1165,6 +1166,7 @@ namespace IsoRim
         private static void RegenerateAllMaps()
         {
             stale.Clear();
+            Floors.RedirtyOverlays();   // the whole-map overlays follow (3D on or off, bridge decks lifted or not)
             foreach (Map map in Find.Maps)
             {
                 if (Shown(map))

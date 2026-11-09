@@ -45,7 +45,7 @@ namespace IsoRim
     //   home=x0,z0,x1,z1             home area
     //   designate=mine|cut|deconstruct,x,z
     //   select=x,z | select=none     kept selected through the shots (the harness clears the selection)
-    //   overlay=power|temperature|beauty|roof|fertility|none
+    //   overlay=power|temperature|beauty|roof|fertility|home|roofarea|none   (home, roofarea: the home / build-roof area)
     //   darkness=1                   Anomaly's unnatural darkness
     //   fleck=smoke|dust|glow,x,z,<count>
     //   ramp=0|1                     the grade's test band of known colours (Grade.TestPattern)
@@ -136,6 +136,7 @@ namespace IsoRim
     //   opendoor=x,z                 the door in the cell opened by a colonist (Building_Door.StartManualOpenBy)
     //   walkto=px,pz,tx,tz           every free colonist drafted (so none wanders off), the one in cell px,pz ordered to walk
     //                                to tx,tz (a real Goto job: it opens doors on its path; run tick= or burst= after it)
+    //   walkto=px,pz,tx,tz,solo      the same, only the walker drafted (the others keep their jobs)
     //   burstticks=k                 each burst= frame first runs k game ticks (films a real job, e.g. a door opening),
     //                                and logs every wide door's open fraction
     //   lockwall=h                   the wall height locked as ProjectZ locks it (View3D.LockedWallHeight; 0 = unlocked)
@@ -1495,6 +1496,10 @@ namespace IsoRim
                     }
                     foreach (Pawn dp in map.mapPawns.FreeColonistsSpawned)
                     {
+                        if (a.Length > 4 && a[4] == "solo" && dp != walker)
+                        {
+                            continue;   // (solo: only the walker drafted, the others keep their jobs, e.g. a sleeper)
+                        }
                         if (dp.drafter != null)
                         {
                             dp.drafter.Drafted = true;
@@ -2389,6 +2394,10 @@ namespace IsoRim
             if (overlay == "home" && Find.CurrentMap != null)
             {
                 Find.CurrentMap.areaManager.Home.MarkForDraw();
+            }
+            if (overlay == "roofarea" && Find.CurrentMap != null)
+            {
+                Find.CurrentMap.areaManager.BuildRoof.MarkForDraw();
             }
         }
 

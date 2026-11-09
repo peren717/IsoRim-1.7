@@ -22,11 +22,15 @@ namespace IsoRim
     //     the game's terrain, which writes none, still hides what is under the deck);
     //   - things: Floors.ThingOffset / ExtraMatrix (things drawn every frame, labels, brackets, culling, silhouettes),
     //     PrintLift (things printed into the map mesh: TakePrintFrom, the realtime bodies layer), IsoCellMap.TopOf (the
-    //     fog lid).
-    // Ground floor only (ProjectZ's floors have no bridges). With the 3D view off nothing changes.
+    //     fog lid);
+    //   - the game's whole-map overlays (CellBoolDrawer: areas, roofs, temperature, fertility, pollution ...):
+    //     LiftOverlay, from Floors.CellBool_Postfix; the drawers are re-made when a bridge comes or goes
+    //     (TerrainChanged) and on every map rebuild (View3D.RegenerateAllMaps: 3D or this option switched).
+    // Ground floor only (ProjectZ's floors have no bridges). With the 3D view or the "3D bridges" option off (Active)
+    // nothing changes: the bridges are the game's own, its props sprite drawn over the 3D water (PropsPostfix).
     // Call sites: Patches (TakePrintFrom prefix/finalizer, ThingPhase, ground layer postfixes, BridgeProps postfix,
-    // TerrainChanged_Postfix), Floors (ThingOffset, ExtraMatrix, DrawnOffset, ThingPhase_Prefix), Layers (water under
-    // bridges, realtime bodies), Cells (TopOf).
+    // TerrainChanged_Postfix, CellBool_Postfix), Floors (ThingOffset, ExtraMatrix, DrawnOffset, ThingPhase_Prefix,
+    // CellBool_Postfix), Layers (water under bridges, realtime bodies), Cells (TopOf), Ghosts (bridge blueprints).
     [StaticConstructorOnStartup]
     public static class Bridges
     {
@@ -41,7 +45,7 @@ namespace IsoRim
 
         public static bool Active
         {
-            get { return View3D.Active; }
+            get { return View3D.Active && IsoRimMod.Settings.bridges3D; }
         }
 
         // The bridge in a cell (ground rows only), or null.
@@ -166,11 +170,12 @@ namespace IsoRim
         }
 
         // How far a thing is lifted (true cells): pawns by where they are drawn (smooth up and down a ramp), anything
-        // else by the cells it covers (the deck if any of them is a deck cell). Doors are not lifted: like the walls
-        // (BeginPrint) they rise from the ground through the deck, so their tops stay level with the walls beside them.
+        // else by the cells it covers (the deck if any of them is a deck cell). Doors drawn in 3D are not lifted: like the
+        // walls (BeginPrint) they rise from the ground through the deck, so their tops stay level with the walls beside
+        // them. A door drawn with the game's flat sprite (3D doors off, a wide door without models) lies on the deck.
         public static float LiftOf(Thing t)
         {
-            if (t == null || !t.Spawned || !Active || t is Building_Door)
+            if (t == null || !t.Spawned || !Active || t is Building_Door && Doors.Shows3D(t.def))
             {
                 return 0f;
             }
@@ -251,31 +256,34 @@ namespace IsoRim
 
         // ---- the game's ground layers
 
-        // Postfix of the ground layers' Regenerate (terrain, zones, plans, snow, sand): their pieces in deck cells are put
-        // on the deck. Snow and sand keep their geometry between rebuilds (only recoloured), so heights are set, not added.
+        // Postfix of the ground layers' Regenerate (terrain, zones, plans, snow, sand, gas, the power overlay's conduits):
+        // their pieces in deck cells are put on the deck. Snow and sand keep their geometry between rebuilds (only
+        // recoloured), so heights are set, not added.
         public static void LiftGround(SectionLayer layer)
         {
-            if (layer == null)
-            {
-                return;
-            }
-            Map map = MapSections.MapOf(layer);
-            if (map == null || !Active)
+            if (layer == null || !Active)
             {
                 return;
             }
             bool terrain = layer.GetType() == typeof(SectionLayer_Terrain);
             bool nine = layer is SectionLayer_Snow || layer is SectionLayer_Sand;
-            if (!terrain && !nine && !(layer.GetType().Name == "SectionLayer_Zones") && !(layer is SectionLayer_Plans))
+            if (!terrain && !nine && !(layer.GetType().Name == "SectionLayer_Zones") && !(layer is SectionLayer_Plans)
+                && !(layer is SectionLayer_Gas) && !(layer is SectionLayer_ThingsPowerGrid))
             {
-                return;   // (the water-depth layer derives from the terrain's)
+                return;   // (the water-depth layer derives from the terrain's; the other things layers lift each thing, BeginPrint)
+            }
+            Map map = MapSections.MapOf(layer);
+            if (map == null)
+            {
+                return;
             }
             Section section = layerSection(layer);
-            if (section == null || (!nine && !AnyIn(map, section.CellRect)))
+            if (section == null || (!nine && !AnyIn(map, section.CellRect.ExpandedBy(1).ClipInsideMap(map))))
             {
                 return;   // (snow and sand: heights are set back to the ground where a bridge went)
             }
             float dy = Deck / View3D.Squash;
+            bool ramps = !terrain;   // (the ramp itself stands in for the ground's own terrain on its land)
             List<LayerSubMesh> subs = layer.subMeshes;
             for (int s = 0; s < subs.Count; s++)
             {
@@ -284,7 +292,7 @@ namespace IsoRim
                 {
                     continue;
                 }
-                bool changed = nine ? SetNine(map, sm, dy) : LiftQuads(map, sm, dy);
+                bool changed = nine ? SetNine(map, sm, dy) : LiftQuads(map, sm, ramps);
                 if (changed)
                 {
                     sm.mesh.SetVertices(sm.verts);
@@ -294,6 +302,67 @@ namespace IsoRim
         }
 
         private static readonly AccessTools.FieldRef<SectionLayer, Section> layerSection = AccessTools.FieldRefAccess<SectionLayer, Section>("section");
+
+        // How far a flat piece of the ground at (x, z) (true cells), belonging to cell c, is lifted: onto the deck in a deck
+        // cell; with ramps, onto the ramp on the land beside a deck (each corner at the ramp's height there, so the piece
+        // lies on or just over the ramp, which would hide it).
+        private static float SurfaceLift(Map map, IntVec3 c, float x, float z, bool ramps)
+        {
+            if (DeckAt(map, c) != null)
+            {
+                return Deck;
+            }
+            return ramps && c.InBounds(map) ? RampHeight(map, c, x, z) : 0f;
+        }
+
+        // ---- the game's whole-map overlays (CellBoolDrawer.RegenerateMesh, from Floors.CellBool_Postfix): one quad per
+        // cell, its first corner the cell's south-west corner. The quads of deck cells are put on the deck, those of a
+        // ramp's land on the ramp, as LiftGround does for the ground layers. Before the floors move theirs (only ground rows
+        // hold decks).
+        private static readonly AccessTools.FieldRef<CellBoolDrawer, int> boolSizeX = AccessTools.FieldRefAccess<CellBoolDrawer, int>("mapSizeX");
+        private static readonly AccessTools.FieldRef<CellBoolDrawer, int> boolSizeZ = AccessTools.FieldRefAccess<CellBoolDrawer, int>("mapSizeZ");
+
+        public static void LiftOverlay(CellBoolDrawer drawer, List<Mesh> meshes)
+        {
+            if (!Active || drawer == null || meshes == null)
+            {
+                return;
+            }
+            Map map = Find.CurrentMap;   // (overlays are drawn, and so made, for the map shown)
+            if (map == null || map.Size.x != boolSizeX(drawer) || map.Size.z != boolSizeZ(drawer))
+            {
+                return;
+            }
+            float squash = View3D.Squash;
+            for (int i = 0; i < meshes.Count; i++)
+            {
+                Mesh mesh = meshes[i];
+                if (mesh == null || mesh.vertexCount == 0)
+                {
+                    continue;
+                }
+                Vector3[] v = mesh.vertices;
+                bool changed = false;
+                for (int q = 0; q + 3 < v.Length; q += 4)
+                {
+                    IntVec3 cell = new IntVec3(Mathf.FloorToInt(v[q].x + 0.5f), 0, Mathf.FloorToInt(v[q].z + 0.5f));
+                    for (int k = 0; k < 4; k++)
+                    {
+                        float h = SurfaceLift(map, cell, v[q + k].x, v[q + k].z, true);
+                        if (h > 0f)
+                        {
+                            v[q + k].y += h / squash;
+                            changed = true;
+                        }
+                    }
+                }
+                if (changed)
+                {
+                    mesh.vertices = v;
+                    mesh.RecalculateBounds();
+                }
+            }
+        }
 
         private static bool AnyIn(Map map, CellRect r)
         {
@@ -307,34 +376,39 @@ namespace IsoRim
             return false;
         }
 
-        // Quads of their own per cell (terrain on a foundation never blends, zones, plans): each triangle whose middle is
-        // in a deck cell is lifted, each corner once.
+        // Quads of their own per cell (terrain on a foundation never blends, zones, plans, gas, conduits): each triangle is
+        // lifted by the cell its middle is in (SurfaceLift: the deck; with ramps, the ramp beside it), each corner once.
         private static readonly HashSet<int> lifted = new HashSet<int>();
 
-        private static bool LiftQuads(Map map, LayerSubMesh sm, float dy)
+        private static bool LiftQuads(Map map, LayerSubMesh sm, bool ramps)
         {
             lifted.Clear();
+            float squash = View3D.Squash;
+            bool changed = false;
             List<int> tris = sm.tris;
             List<Vector3> verts = sm.verts;
             for (int i = 0; i + 2 < tris.Count; i += 3)
             {
                 Vector3 a = verts[tris[i]], b = verts[tris[i + 1]], c = verts[tris[i + 2]];
                 IntVec3 cell = new IntVec3(Mathf.FloorToInt((a.x + b.x + c.x) / 3f), 0, Mathf.FloorToInt((a.z + b.z + c.z) / 3f));
-                if (DeckAt(map, cell) == null)
-                {
-                    continue;
-                }
                 for (int k = 0; k < 3; k++)
                 {
-                    if (lifted.Add(tris[i + k]))
+                    if (lifted.Contains(tris[i + k]))
                     {
-                        Vector3 p = verts[tris[i + k]];
-                        p.y += dy;
+                        continue;
+                    }
+                    Vector3 p = verts[tris[i + k]];
+                    float h = SurfaceLift(map, cell, p.x, p.z, ramps);
+                    if (h > 0f)
+                    {
+                        lifted.Add(tris[i + k]);
+                        p.y += h / squash;
                         verts[tris[i + k]] = p;
+                        changed = true;
                     }
                 }
             }
-            return lifted.Count > 0;
+            return changed;
         }
 
         // Nine corners a cell, the cell's middle last (SectionLayerGeometryMaker_Solid): each cell's corners at the
@@ -367,20 +441,65 @@ namespace IsoRim
             return changed;
         }
 
-        // The game's flat props sprite south of a bridge: the 3D supports stand in for it.
-        public static void HideProps(SectionLayer layer)
+        // The game's flat props sprite south of a bridge: with 3D bridges the 3D supports stand in for it. Without them (the
+        // option off) it is kept, moved to a copy of its material drawn after IsoRim's water (Ghosts.OverWater), which hid it.
+        public static void PropsPostfix(SectionLayer layer)
         {
-            if (!Active || layer == null)
+            if (layer == null || !View3D.Active)
             {
                 return;
             }
             List<LayerSubMesh> subs = layer.subMeshes;
-            for (int i = 0; i < subs.Count; i++)
+            if (Active)
             {
-                if (subs[i].verts.Count > 0)
+                for (int i = 0; i < subs.Count; i++)
                 {
-                    subs[i].Clear(MeshParts.All);   // not finalized: not drawn
+                    if (subs[i].verts.Count > 0)
+                    {
+                        subs[i].Clear(MeshParts.All);   // not finalized: not drawn
+                    }
                 }
+                return;
+            }
+            if (!IsoRimMod.Settings.waterStyle)
+            {
+                return;   // the game's own water: drawn before the sprite
+            }
+            List<LayerSubMesh> moved = null;
+            int n = subs.Count;   // (the copies come after these)
+            for (int i = 0; i < n; i++)
+            {
+                LayerSubMesh from = subs[i];
+                if (from.verts.Count == 0 || from.material == null || from.material.renderQueue >= Ghosts.OverWaterQueue)
+                {
+                    continue;
+                }
+                LayerSubMesh to = layer.GetSubMesh(Ghosts.OverWater(from.material));
+                if (to == null || to == from)
+                {
+                    continue;
+                }
+                int start = to.verts.Count;
+                to.verts.AddRange(from.verts);
+                to.uvs.AddRange(from.uvs);
+                to.colors.AddRange(from.colors);
+                for (int k = 0; k < from.tris.Count; k++)
+                {
+                    to.tris.Add(from.tris[k] + start);
+                }
+                from.Clear(MeshParts.All);   // not finalized: not drawn
+                if (moved == null)
+                {
+                    moved = new List<LayerSubMesh>();
+                }
+                if (!moved.Contains(to))
+                {
+                    moved.Add(to);
+                }
+            }
+            for (int i = 0; moved != null && i < moved.Count; i++)
+            {
+                moved[i].FinalizeMesh(MeshParts.All);
             }
         }
 
@@ -388,7 +507,7 @@ namespace IsoRim
         // lifted onto it and the fog lid's height there are worked out again.
         public static void TerrainChanged(Map map, IntVec3 c, TerrainDef oldTerr, TerrainDef newTerr)
         {
-            if (map == null || !View3D.Active || Current.ProgramState != ProgramState.Playing)
+            if (map == null || !Active || Current.ProgramState != ProgramState.Playing)
             {
                 return;
             }
@@ -397,6 +516,7 @@ namespace IsoRim
             {
                 return;
             }
+            Floors.RedirtyOverlays();   // the whole-map overlays lifted onto the deck (LiftOverlay)
             MapSections.QueueAround(map, c, 1, typeof(SectionLayer_IsoRimBridges), true);
             ulong flags = MapMeshFlagDefOf.Things;
             flags |= MapMeshFlagDefOf.Buildings;
@@ -413,6 +533,10 @@ namespace IsoRim
             if (MapMeshFlagDefOf.PowerGrid != null)
             {
                 flags |= MapMeshFlagDefOf.PowerGrid;
+            }
+            if (MapMeshFlagDefOf.Gas != null)
+            {
+                flags |= MapMeshFlagDefOf.Gas;
             }
             map.mapDrawer.MapMeshDirty(c, flags);
             IsoCellMap.Dirty(map, CellRect.CenteredOn(c, 1).ClipInsideMap(map));
@@ -1025,7 +1149,7 @@ namespace IsoRim
 
         public override bool Visible
         {
-            get { return View3D.Ready; }
+            get { return View3D.Ready && IsoRimMod.Settings.bridges3D; }
         }
 
         public override void Regenerate()

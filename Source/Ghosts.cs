@@ -161,11 +161,12 @@ namespace IsoRim
             return td != null && td.bridge ? td : null;
         }
 
-        // Writes the deck ghost of a bridge blueprint. False: not a bridge blueprint, or no ghost (ghosts off, an upper floor).
+        // Writes the deck ghost of a bridge blueprint. False: not a bridge blueprint, or no ghost (ghosts off, 3D bridges off,
+        // an upper floor).
         public static bool PrintBridge(SectionLayer layer, Thing t)
         {
             TerrainDef bridge = BridgeTarget(t);
-            if (bridge == null || !IsoRimMod.Settings.ghosts3D || !Bridges.CanDeck(t.Map, t.Position))
+            if (bridge == null || !IsoRimMod.Settings.ghosts3D || !Bridges.Active || !Bridges.CanDeck(t.Map, t.Position))
             {
                 return false;
             }
@@ -291,7 +292,7 @@ namespace IsoRim
             }
         }
 
-        private static Material OverWater(Material m)
+        internal static Material OverWater(Material m)
         {
             Material copy;
             if (!overWater.TryGetValue(m, out copy) || copy == null)

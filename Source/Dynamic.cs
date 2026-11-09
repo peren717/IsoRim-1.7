@@ -2081,6 +2081,28 @@ namespace IsoRim
             }
         }
 
+        // A built door of this def is drawn in 3D by the DrawAt / DrawMovers prefixes (Patches) rather than with the game's
+        // flat sprites: 3D doors on, and one cell wide, or wide with its own models (the game's wide door with a leaf model,
+        // or a wide supported door, Api 29). Bridges.LiftOf: a flat door stands on a bridge deck, a 3D one does not.
+        internal static bool Shows3D(ThingDef def)
+        {
+            IsoRimSettings st = IsoRimMod.Settings;
+            if (def == null || def.thingClass == null || !typeof(Building_Door).IsAssignableFrom(def.thingClass) || !st.doors3D)
+            {
+                return false;
+            }
+            if (def.size.x == 1 && def.size.z == 1)
+            {
+                return true;
+            }
+            ModelEntry e;
+            if (!st.models3D || !ModelLibrary.TryGet(def, out e) || !e.HasModel)
+            {
+                return false;
+            }
+            return typeof(Building_MultiTileDoor).IsAssignableFrom(def.thingClass) ? e.doorLeaf != null : Ghosts.WideSupported(def);
+        }
+
         // The placement preview of a door (Ghosts.DrawPreview): the shut door as it will be drawn once built (the same
         // choice of drawing as the game's DrawAt prefixes make), each model part a see-through ghost in col. False if
         // IsoRim would not draw this door in 3D (the game's flat ghost then stands).

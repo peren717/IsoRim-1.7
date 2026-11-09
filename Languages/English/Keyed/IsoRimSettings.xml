@@ -216,6 +216,8 @@
   <R3D_Settings_FloorStyle>Built floors in the mod's style</R3D_Settings_FloorStyle>
   <R3D_Settings_Water>Water</R3D_Settings_Water>
   <R3D_Settings_WaterStyle>Stylised water</R3D_Settings_WaterStyle>
+  <R3D_Settings_Bridges3D>3D bridges</R3D_Settings_Bridges3D>
+  <R3D_Settings_Bridges3DTip>Bridge decks sit a little above the water, on posts. Off: drawn as in vanilla.</R3D_Settings_Bridges3DTip>
   <R3D_Settings_WaterStyleTip>Faceted bands of colour from the shore to the deep, foam along the shores, streaks on rivers and sparkles.</R3D_Settings_WaterStyleTip>
   <R3D_Settings_RoofsNote>Built roofs as slate lids over your rooms, and rock roofs over caves.</R3D_Settings_RoofsNote>
   <R3D_Settings_ShowRoofs>Show roofs</R3D_Settings_ShowRoofs>

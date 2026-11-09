@@ -1289,7 +1289,7 @@ namespace IsoRim
             }
             h.Patch(AccessTools.Method(typeof(GenDraw), nameof(GenDraw.DrawLineBetween), new[] { typeof(Vector3), typeof(Vector3), typeof(Material), typeof(float) }),
                 prefix: new HarmonyMethod(typeof(Floors), nameof(Line_Prefix)));
-            h.Patch(AccessTools.Method(typeof(CellBoolDrawer), nameof(CellBoolDrawer.RegenerateMesh)), postfix: new HarmonyMethod(typeof(Floors), nameof(CellBool_Postfix)));
+            // (CellBoolDrawer.RegenerateMesh: CellBool_Postfix is hooked always, by Patches, for bridge decks too)
             h.Patch(AccessTools.Method(typeof(SectionLayer_LightingOverlay), nameof(SectionLayer_LightingOverlay.Regenerate)), postfix: new HarmonyMethod(typeof(Floors), nameof(LightingOverlay_Postfix)));
             h.Patch(AccessTools.Method(typeof(Camera), nameof(Camera.WorldToScreenPoint), new[] { typeof(Vector3) }), prefix: new HarmonyMethod(typeof(Floors), nameof(WorldToScreen_Prefix)));
             h.Patch(AccessTools.Method(typeof(MapDrawer), nameof(MapDrawer.MapMeshDirty), new[] { typeof(IntVec3), typeof(ulong), typeof(bool), typeof(bool) }),
@@ -1524,8 +1524,10 @@ namespace IsoRim
         }
 
         // ---- the game's whole-map overlays (home area, roofs, beauty, temperature ...): one mesh of world-space cell
-        // quads. Each cell's quad is moved onto its floor; on hidden floors and between floors it is folded away.
-        // The drawers are remembered so a change of the view (another floor shown) remakes them.
+        // quads. Quads on a bridge deck are put on it (Bridges.LiftOverlay, with or without floors); then, with floors,
+        // each cell's quad is moved onto its floor; on hidden floors and between floors it is folded away.
+        // The drawers are remembered so a change of the view (another floor shown, a bridge built or gone, 3D or 3D bridges
+        // switched: RedirtyOverlays) remakes them. Hooked always (Patches.CellBool_Postfix).
         private static readonly AccessTools.FieldRef<CellBoolDrawer, List<Mesh>> boolMeshes = AccessTools.FieldRefAccess<CellBoolDrawer, List<Mesh>>("meshes");
         private static readonly List<System.WeakReference<CellBoolDrawer>> boolDrawers = new List<System.WeakReference<CellBoolDrawer>>();
         private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<CellBoolDrawer, object> boolKnown = new System.Runtime.CompilerServices.ConditionalWeakTable<CellBoolDrawer, object>();
@@ -1538,11 +1540,12 @@ namespace IsoRim
                 boolKnown.Add(__instance, null);
                 boolDrawers.Add(new System.WeakReference<CellBoolDrawer>(__instance));
             }
+            List<Mesh> meshes = boolMeshes(__instance);
+            Bridges.LiftOverlay(__instance, meshes);
             if (!On)
             {
                 return;
             }
-            List<Mesh> meshes = boolMeshes(__instance);
             for (int i = 0; meshes != null && i < meshes.Count; i++)
             {
                 Mesh mesh = meshes[i];
@@ -1579,6 +1582,12 @@ namespace IsoRim
 
         // The view changed (floors on, another floor shown, another height): the overlays are remade.
         private static void ViewChanged()
+        {
+            RedirtyOverlays();
+        }
+
+        // Every remembered whole-map overlay is remade the next time it is drawn.
+        internal static void RedirtyOverlays()
         {
             for (int i = boolDrawers.Count - 1; i >= 0; i--)
             {

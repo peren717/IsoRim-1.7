@@ -216,6 +216,8 @@
   <R3D_Settings_FloorStyle>建造的地板使用模组风格</R3D_Settings_FloorStyle>
   <R3D_Settings_Water>水体</R3D_Settings_Water>
   <R3D_Settings_WaterStyle>风格化水面</R3D_Settings_WaterStyle>
+  <R3D_Settings_Bridges3D>立体桥梁</R3D_Settings_Bridges3D>
+  <R3D_Settings_Bridges3DTip>桥面略高于水面，下有桥桩。关闭后按原版绘制。</R3D_Settings_Bridges3DTip>
   <R3D_Settings_WaterStyleTip>从岸边到深水的分层色带、岸边的泡沫、河面的水纹和波光。</R3D_Settings_WaterStyleTip>
   <R3D_Settings_RoofsNote>房间上方显示为石板屋顶，洞穴上方显示为岩顶。</R3D_Settings_RoofsNote>
   <R3D_Settings_ShowRoofs>显示屋顶</R3D_Settings_ShowRoofs>

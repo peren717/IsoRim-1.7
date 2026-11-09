@@ -215,15 +215,21 @@ namespace IsoRim
             Patch("ground cut under sunk holes", FindMethod(typeof(SectionLayer_Sand), "Regenerate"), postfix: nameof(SinkCutColours_Postfix));
 
             // Bridge decks (Bridges): the ground layers' pieces on a deck are lifted onto it, the game's flat props sprite
-            // is left out (the 3D supports stand in), and things drawn every frame are lifted (Floors.ThingPhase_Prefix:
-            // also a pawn's rise on a stair step and things on hidden floors, with a floor layout).
+            // is left out (the 3D supports stand in) or, with 3D bridges off, drawn over the 3D water, and things drawn every
+            // frame are lifted (Floors.ThingPhase_Prefix: also a pawn's rise on a stair step and things on hidden floors,
+            // with a floor layout). The whole-map overlays (CellBoolDrawer) are lifted too, and moved onto stacked floors.
             Patch("bridge decks", FindMethod(typeof(SectionLayer_Terrain), "Regenerate"), postfix: nameof(BridgeGround_Postfix));
             Patch("bridge decks", FindMethod(typeof(SectionLayer_Snow), "Regenerate"), postfix: nameof(BridgeGround_Postfix));
             Patch("bridge decks", FindMethod(typeof(SectionLayer_Sand), "Regenerate"), postfix: nameof(BridgeGround_Postfix));
             Patch("bridge decks", FindMethod(typeof(SectionLayer_Plans), "Regenerate"), postfix: nameof(BridgeGround_Postfix));
             Type zonesLayer = AccessTools.TypeByName("Verse.SectionLayer_Zones");
             Patch("bridge decks", zonesLayer != null ? FindMethod(zonesLayer, "Regenerate") : null, postfix: nameof(BridgeGround_Postfix));
+            Patch("bridge decks", AccessTools.DeclaredMethod(typeof(SectionLayer_Gas), "Regenerate"), postfix: nameof(BridgeGround_Postfix));
+            // (the power overlay's conduits: SectionLayer_Things.Regenerate, shared with the other things layers, which
+            // LiftGround passes over)
+            Patch("bridge decks", AccessTools.Method(typeof(SectionLayer_ThingsPowerGrid), "Regenerate"), postfix: nameof(BridgeGround_Postfix));
             Patch("bridge decks", FindMethod(typeof(SectionLayer_BridgeProps), "Regenerate"), postfix: nameof(BridgeProps_Postfix));
+            Patch("bridge decks", AccessTools.Method(typeof(CellBoolDrawer), nameof(CellBoolDrawer.RegenerateMesh)), postfix: nameof(CellBool_Postfix));
             Patch("things on bridge decks", AccessTools.Method(typeof(Thing), nameof(Thing.DynamicDrawPhase)),
                 prefix: nameof(ThingLift_Prefix), finalizer: nameof(ThingLift_Finalizer));
 
@@ -2268,9 +2274,23 @@ namespace IsoRim
             }
         }
 
+        // The game's whole-map overlays (CellBoolDrawer): put on bridge decks (Bridges.LiftOverlay) and moved onto stacked
+        // floors (Floors).
+        public static void CellBool_Postfix(CellBoolDrawer __instance)
+        {
+            try
+            {
+                Floors.CellBool_Postfix(__instance);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Placing a map overlay failed: " + e, 93611474);
+            }
+        }
+
         public static void BridgeProps_Postfix(SectionLayer __instance)
         {
-            Bridges.HideProps(__instance);
+            Bridges.PropsPostfix(__instance);
         }
 
         public static bool ThingLift_Prefix(Thing __instance, DrawPhase phase, out bool __state)
@@ -4399,6 +4419,9 @@ namespace IsoRim
             AddTypeAndSubclasses(types, "RimWorld.TurretTop");
             AddTypeAndSubclasses(types, "RimWorld.CompPowerPlantWind");
             AddTypeAndSubclasses(types, "Verse.Designation");
+            // A door's flat leaves (Building_Door.DrawMovers: 3D doors off, wide doors without models) are drawn straight
+            // to Unity: through DrawHook they take the thing's lift (a flat door on a bridge deck, Bridges.LiftOf; a stair).
+            AddTypeAndSubclasses(types, "RimWorld.Building_Door");
 
             HarmonyMethod transpiler = Hook(nameof(Redirect_Transpiler));
             int count = 0;
