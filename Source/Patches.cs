@@ -605,6 +605,23 @@ namespace IsoRim
                     Patch("indirect fire of other mods on the shell arc", own, prefix: nameof(ProjectileOverrideDrawAt_Prefix), finalizer: nameof(ProjectileOverrideDrawAt_Finalizer));
                     // (its own Graphics.DrawMesh calls through DrawHook, so they are dropped while IsoRim draws it on the arc)
                     TryRedirect(own, Hook(nameof(Redirect_Transpiler)));
+                    // (its GenDraw.DrawQuad calls, a thruster flame, onto the card it is drawn on: Projectiles.OwnQuad)
+                    if (CallsDrawQuad(own))
+                    {
+                        Patch("projectile thruster flames on the shell arc", own, transpiler: nameof(OwnQuad_Transpiler));
+                    }
+                }
+            }
+            // Flecks projectiles spawn in their class's own tick while they fly (VGE's javelin rocket's smoke) follow the
+            // projectile as drawn in 3D, as those of their own DrawAt (Projectiles.OwnFleck).
+            foreach (Type sub in GenTypes.AllSubclasses(typeof(Projectile)))
+            {
+                foreach (MethodInfo own in new[] { AccessTools.DeclaredMethod(sub, "Tick", Type.EmptyTypes), AccessTools.DeclaredMethod(sub, "TickInterval", new[] { typeof(int) }) })
+                {
+                    if (own != null && !own.IsAbstract && own.DeclaringType == sub && own.GetMethodBody() != null)
+                    {
+                        Patch("projectile trails in 3D", own, prefix: nameof(ProjectileOwnTick_Prefix), finalizer: nameof(ProjectileOwnTick_Finalizer));
+                    }
                 }
             }
             // Flecks other mods' projectiles spawn in their own DrawAt (trails) follow the projectile as drawn in 3D.
@@ -2888,6 +2905,65 @@ namespace IsoRim
         public static void ProjectileOverrideDrawAt_Finalizer(Projectile __instance)
         {
             Projectiles.EndOwnDraw(__instance);
+        }
+
+        // A projectile class's own Tick / TickInterval: the flecks it spawns while flying follow the drawn projectile (Projectiles.OwnFleck).
+        public static void ProjectileOwnTick_Prefix(Projectile __instance, out Projectile __state)
+        {
+            __state = Projectiles.BeginOwnTick(__instance);
+        }
+
+        public static void ProjectileOwnTick_Finalizer(Projectile __state)
+        {
+            Projectiles.EndOwnTick(__state);
+        }
+
+        private static readonly MethodInfo drawQuadScalar = AccessTools.Method(typeof(GenDraw), nameof(GenDraw.DrawQuad),
+            new[] { typeof(Material), typeof(Vector3), typeof(Quaternion), typeof(float), typeof(MaterialPropertyBlock) });
+        private static readonly MethodInfo drawQuadVector = AccessTools.Method(typeof(GenDraw), nameof(GenDraw.DrawQuad),
+            new[] { typeof(Material), typeof(Vector3), typeof(Quaternion), typeof(Vector3), typeof(MaterialPropertyBlock) });
+
+        private static bool CallsDrawQuad(MethodInfo m)
+        {
+            try
+            {
+                foreach (KeyValuePair<OpCode, object> instruction in PatchProcessor.ReadMethodBody(m))
+                {
+                    MethodInfo callee = instruction.Value as MethodInfo;
+                    if (callee != null && (callee == drawQuadScalar || callee == drawQuadVector))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+            }
+            return false;
+        }
+
+        // A projectile class's own DrawAt: its GenDraw.DrawQuad calls go to Projectiles.OwnQuad (same parameters).
+        public static IEnumerable<CodeInstruction> OwnQuad_Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            MethodInfo scalar = AccessTools.Method(typeof(Projectiles), nameof(Projectiles.OwnQuad),
+                new[] { typeof(Material), typeof(Vector3), typeof(Quaternion), typeof(float), typeof(MaterialPropertyBlock) });
+            MethodInfo vector = AccessTools.Method(typeof(Projectiles), nameof(Projectiles.OwnQuad),
+                new[] { typeof(Material), typeof(Vector3), typeof(Quaternion), typeof(Vector3), typeof(MaterialPropertyBlock) });
+            foreach (CodeInstruction ci in instructions)
+            {
+                if (ci.opcode == OpCodes.Call && ci.operand is MethodInfo callee)
+                {
+                    if (callee == drawQuadScalar)
+                    {
+                        ci.operand = scalar;
+                    }
+                    else if (callee == drawQuadVector)
+                    {
+                        ci.operand = vector;
+                    }
+                }
+                yield return ci;
+            }
         }
 
         // A fleck spawned inside a projectile's own DrawAt (Projectiles.OwnFleck).

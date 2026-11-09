@@ -198,7 +198,15 @@ namespace IsoRim
             bool lobbed = Lobbed(p);
             if (lobbed)
             {
-                DrawAt(p, drawLoc);   // IsoRim draws it on the arc; the mod's own DrawAt still runs for its effects, its own draws dropped
+                wantCard = true;
+                try
+                {
+                    DrawAt(p, drawLoc);   // IsoRim draws it on the arc; the mod's own DrawAt still runs for its effects, its own draws dropped (its quads on the card: OwnQuad)
+                }
+                finally
+                {
+                    wantCard = false;
+                }
             }
             BeginOwnDraw(p, drawLoc, lobbed);
             return true;
@@ -209,13 +217,23 @@ namespace IsoRim
         // (flat, on its rows) to where it is drawn in 3D (its drawn flight: lead from the muzzle, height, the ground rows of
         // its floor) and stood up at that height (Emitters.Raise). A lobbed one is drawn by IsoRim on the arc first; then its
         // own draws in its DrawAt are dropped (DrawHook.skip) and the base Projectile.DrawAt it calls is skipped, so only its
-        // effects remain. Main thread (projectiles are drawn there, flecks created there).
+        // effects remain: its flecks, and the quads it draws with GenDraw.DrawQuad (a thruster flame), which go onto the card it is
+        // drawn on at the place the mod gives them round the projectile (OwnQuad). Main thread (projectiles are drawn there, flecks
+        // created there).
         [ThreadStatic] private static Projectile ownDraw;
         [ThreadStatic] private static Vector3 ownShift;
         [ThreadStatic] private static float ownHeight;
         [ThreadStatic] private static bool ownLobbed;
         [ThreadStatic] private static bool ownSkipWas;
+        [ThreadStatic] private static bool ownFramed;           // (lobbed, drawn on the arc just now) ownFrame is set
+        [ThreadStatic] private static Matrix4x4 ownFrame;       // from the game's flat frame of the projectile onto its card on the arc
+        [ThreadStatic] private static Matrix4x4 lastCard;       // DrawLobbed: the card the projectile was drawn on (unscaled), and for which
+        [ThreadStatic] private static Projectile lastCardFor;
+        [ThreadStatic] private static bool wantCard;
+        private const float OwnBehind = 0.05f;   // (cells) its quads just behind the card: the projectile in front of its flame, never fighting it for depth
         public static int OwnFlecks;   // probes: flecks moved onto a drawn projectile
+        public static int OwnQuads;    // probes: quads of a lobbed projectile's own DrawAt drawn on its card
+        public static int TickFlecks;  // probes: flecks of a flying projectile's own tick moved onto its drawn flight
 
         private static void BeginOwnDraw(Projectile p, Vector3 drawLoc, bool lobbed)
         {
@@ -223,6 +241,7 @@ namespace IsoRim
             Path path = PathOf(p, out flown);
             if (path == null)
             {
+                lastCardFor = null;
                 return;
             }
             flown = Flown(p, drawLoc);
@@ -232,10 +251,19 @@ namespace IsoRim
             ownHeight = at.y;
             ownLobbed = lobbed;
             ownSkipWas = DrawHook.skip;
+            ownFramed = false;
             if (lobbed)
             {
                 DrawHook.skip = true;
+                // The card DrawLobbed just drew it on (none when its floor is hidden: then its quads are dropped too). The game's
+                // frame: the projectile's own position and heading, as a mod lays out its effects round it (nose = +z).
+                if (lastCardFor == p)
+                {
+                    ownFrame = lastCard * Matrix4x4.Translate(new Vector3(0f, -OwnBehind, 0f)) * Matrix4x4.TRS(drawLoc, p.ExactRotation, Vector3.one).inverse;
+                    ownFramed = true;
+                }
             }
+            lastCardFor = null;
         }
 
         public static void EndOwnDraw(Projectile p)
@@ -247,6 +275,7 @@ namespace IsoRim
                     DrawHook.skip = ownSkipWas;
                 }
                 ownDraw = null;
+                ownFramed = false;
             }
         }
 
@@ -256,16 +285,78 @@ namespace IsoRim
             return ownDraw != null && ownDraw == p && ownLobbed;
         }
 
-        // FleckManager.CreateFleck: a fleck spawned inside a projectile's own DrawAt follows the drawn projectile.
+        // FleckManager.CreateFleck: a fleck spawned inside a projectile's own DrawAt follows the drawn projectile; one spawned
+        // in its own Tick while it flies (a smoke trail: VGE's javelin rocket) the same, at where it is drawn at that moment.
         public static void OwnFleck(ref FleckCreationData data)
         {
-            if (ownDraw == null || data.def == null)
+            if (data.def == null)
             {
                 return;
             }
-            data.spawnPosition += ownShift;
-            Emitters.Raise(data.spawnPosition, ownHeight, 0f, data.def);
-            OwnFlecks++;
+            if (ownDraw != null)
+            {
+                data.spawnPosition += ownShift;
+                Emitters.Raise(data.spawnPosition, ownHeight, 0f, data.def);
+                OwnFlecks++;
+                return;
+            }
+            Projectile p = ownTick;
+            if (p == null || !View3D.Ready || !p.Spawned || ticksToImpactRef(p) <= 0)
+            {
+                return;   // (not flying: its impact's flecks stay the game's)
+            }
+            float flown;
+            Path path = PathOf(p, out flown);
+            if (path == null)
+            {
+                return;
+            }
+            Vector3 now = p.ExactPosition;
+            Vector3 at = path.Point(Flown(p, now));
+            data.spawnPosition += new Vector3(at.x - now.x, 0f, at.z - now.z);
+            Emitters.Raise(data.spawnPosition, at.y, 0f, data.def);
+            TickFlecks++;
+        }
+
+        // ---- A projectile class's own Tick / TickInterval (another mod's, or the game's subclasses; Patches: prefix opens, finalizer
+        // closes): the flecks it spawns while flying follow it as drawn (OwnFleck). Main thread.
+        [ThreadStatic] private static Projectile ownTick;
+        private static readonly AccessTools.FieldRef<Projectile, int> ticksToImpactRef = AccessTools.FieldRefAccess<Projectile, int>("ticksToImpact");
+
+        public static Projectile BeginOwnTick(Projectile p)
+        {
+            Projectile was = ownTick;
+            ownTick = p;
+            return was;
+        }
+
+        public static void EndOwnTick(Projectile was)
+        {
+            ownTick = was;
+        }
+
+        // GenDraw.DrawQuad called from a projectile class's own DrawAt (Patches.OwnQuad_Transpiler): drawn straight to Unity, it
+        // stayed flat on the ground under a projectile drawn on the shell arc (VGE's javelin rocket: its thruster flame). There it is
+        // drawn on the projectile's card instead, where the mod lays it out round the projectile (a flame at its tail); dropped
+        // when the projectile is not drawn (hidden floor). Everywhere else the game's GenDraw.DrawQuad, unchanged.
+        public static void OwnQuad(Material mat, Vector3 position, Quaternion rotation, float scale, MaterialPropertyBlock props)
+        {
+            OwnQuad(mat, position, rotation, new Vector3(scale, 1f, scale), props);
+        }
+
+        public static void OwnQuad(Material mat, Vector3 position, Quaternion rotation, Vector3 scale, MaterialPropertyBlock props)
+        {
+            if (ownDraw == null || !ownLobbed)
+            {
+                GenDraw.DrawQuad(mat, position, rotation, scale, props);
+                return;
+            }
+            if (!ownFramed)
+            {
+                return;
+            }
+            Graphics.DrawMesh(MeshPool.plane10, ownFrame * Matrix4x4.TRS(position, rotation, scale), mat, 0, null, 0, props);
+            OwnQuads++;
         }
 
         // Mortar and artillery shells and other indirect fire (flyOverhead; shells have no arc of their own: vanilla flies them straight, which in 3D skimmed
@@ -301,7 +392,13 @@ namespace IsoRim
                 }
                 Vector3 at = drawLoc + new Vector3(0f, h / sq, row.z);
                 Vector2 size = p.def.graphicData.drawSize;
-                Matrix4x4 m = SkyStrikes.Card(at, SkyStrikes.ScreenSpin(along)) * Matrix4x4.Scale(new Vector3(size.x, 1f, size.y));
+                Matrix4x4 card = SkyStrikes.Card(at, SkyStrikes.ScreenSpin(along));
+                if (wantCard)
+                {
+                    lastCard = card;   // (for the own DrawAt run next: OverrideDrawAt)
+                    lastCardFor = p;
+                }
+                Matrix4x4 m = card * Matrix4x4.Scale(new Vector3(size.x, 1f, size.y));
                 Graphics.DrawMesh(MeshPool.plane10, m, p.DrawMat, 0);
                 postDraw(p);
             }
