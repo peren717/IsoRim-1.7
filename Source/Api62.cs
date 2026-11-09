@@ -445,6 +445,33 @@ namespace IsoRim
             return true;
         }
 
+        /// <summary>(Version 64) ConfigureFigureMaterial's counterpart, for a material you no longer use: IsoRim forgets it and destroys
+        /// what it made for it (its light pass, its faded copies) a few frames later, so a draw already queued this frame is safe.
+        /// Your material is never destroyed; one still in own-cell light is set to the overlay's light (_GlowMode 0). Drawn again
+        /// afterwards it draws without the light pass, and on a peeked floor faded only if its shader is one of IsoRim's, until
+        /// configured again. Safe twice, on a material never configured and on one you already destroyed. Throws on null. Main
+        /// thread.</summary>
+        public static void ReleaseFigureMaterial(Material material)
+        {
+            if (ReferenceEquals(material, null))
+            {
+                throw new ArgumentNullException(nameof(material));
+            }
+            List<Material> made = new List<Material>();
+            Material mark = IsoGlow.Unmark(material);
+            if (!ReferenceEquals(mark, null))
+            {
+                FadeFloors.Release(mark, made);
+                made.Add(mark);
+            }
+            FadeFloors.Release(material, made);
+            foreach (Material m in made)
+            {
+                DynamicModels.RetireMaterial(m);
+            }
+            DynamicModels.SweepRetired();
+        }
+
         private static readonly int LightModeId = Shader.PropertyToID("_LightMode");
         private static readonly int OutlinePushId = Shader.PropertyToID("_OutlinePush");
 

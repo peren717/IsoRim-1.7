@@ -272,6 +272,27 @@ namespace IsoRim
             return m != null && marks.ContainsKey(m);
         }
 
+        // (Api 64, Api.ReleaseFigureMaterial) Drops the mark of a material; gives back the mark IsoRim made (for the caller to
+        // destroy a few frames later), or null if it had none. A material still in own-cell mode goes to the overlay's light,
+        // as Use leaves one without the mark shader. Works on a material already destroyed too (its entry is dropped).
+        internal static Material Unmark(Material m)
+        {
+            Material mark;
+            if (ReferenceEquals(m, null) || !marks.TryGetValue(m, out mark))
+            {
+                return null;
+            }
+            marks.Remove(m);
+            if (m != null && Mathf.RoundToInt(m.GetFloat(glowModeId)) == OwnCell)
+            {
+                m.SetFloat(glowModeId, None);
+            }
+            return mark;
+        }
+
+        // (Api 64) The number of marked materials (tests).
+        internal static int MarkCount => marks.Count;
+
         // Draws an IsoRim mesh and, for own-cell-lit materials, its stencil mark.
         // props: the moving model's floor (RoofClip.FloorBlock), or null.
         public static void DrawLit(Mesh mesh, Matrix4x4 matrix, Material mat, int layer, MaterialPropertyBlock props = null)

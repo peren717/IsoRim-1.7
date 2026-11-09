@@ -125,6 +125,38 @@ namespace IsoRim
         private static readonly ConditionalWeakTable<Material, object> staticMaterials = new ConditionalWeakTable<Material, object>();
         internal static void RegisterStaticMaterial(Material material) => staticMaterials.GetValue(material, _ => new object());
 
+        // (Api 64, Api.ReleaseFigureMaterial) Drops a material's registration and its faded copies; the copies (IsoRim's own) are
+        // added to made, for the caller to destroy a few frames later. Drawn again on a faded floor, the material gets copies
+        // again only where any material would (a shader with a faded form); with a registered-only shader it draws solid.
+        internal static void Release(Material material, List<Material> made)
+        {
+            if (ReferenceEquals(material, null))
+            {
+                return;
+            }
+            staticMaterials.Remove(material);
+            Entry e;
+            if (copies.TryGetValue(material, out e))
+            {
+                copies.Remove(material);
+                foreach (Copy c in e.copies)
+                {
+                    if (c != null && !ReferenceEquals(c.mat, null))
+                    {
+                        made.Add(c.mat);
+                        LiveCopies--;
+                    }
+                }
+            }
+        }
+
+        // (Api 64) Faded copies made and not released (tests).
+        internal static int LiveCopies { get; private set; }
+
+        // (Api 64) Whether IsoRim holds a registration or faded copies for this material (tests).
+        internal static bool Holds(Material material)
+            => !ReferenceEquals(material, null) && (staticMaterials.TryGetValue(material, out _) || copies.TryGetValue(material, out _));
+
         // Vanilla ShaderDefs with a faded twin, and IsoRim's own defs whose fragment stage reads _IsoFade itself.
         private static readonly string[][] Twins =
         {
@@ -197,6 +229,7 @@ namespace IsoRim
             if (c == null)
             {
                 c = e.copies[slot - 1] = new Copy { mat = new Material(to) { name = src.name + "_Fade" + slot } };
+                LiveCopies++;
             }
             int v = src.engineMaterial.Version;
             if (c.version != v || c.keep != Keep[slot - 1] || c.from != FromOf(slot))

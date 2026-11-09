@@ -126,7 +126,8 @@ namespace IsoRim
         // Meshes no longer wanted are destroyed a couple of frames later rather than at once:
         // one may already be queued to draw this frame, and destroying it would make whatever
         // it shows blink out for that frame.
-        private static readonly List<Mesh> retired = new List<Mesh>();
+        // (Api 64) Materials IsoRim made for a released figure material (its light pass, its faded copies) wait here too.
+        private static readonly List<UnityEngine.Object> retired = new List<UnityEngine.Object>();
         private static readonly List<int> retiredAt = new List<int>();
 
         public static void Retire(Mesh mesh)
@@ -138,6 +139,29 @@ namespace IsoRim
             retired.Add(mesh);
             retiredAt.Add(Time.frameCount);
         }
+
+        // (Api 64, Api.ReleaseFigureMaterial) A material IsoRim made, destroyed a couple of frames later like a retired mesh.
+        internal static void RetireMaterial(Material material)
+        {
+            if (material == null)
+            {
+                return;
+            }
+            retired.Add(material);
+            retiredAt.Add(Time.frameCount);
+        }
+
+        // (Api 64) Destroys what has waited long enough (also run by every model draw and figure mesh submit).
+        internal static void SweepRetired()
+        {
+            if (retired.Count > 0)
+            {
+                Sweep();
+            }
+        }
+
+        // (Api 64) Objects waiting to be destroyed (tests).
+        internal static int RetiredCount => retired.Count;
 
         private static void Sweep()
         {

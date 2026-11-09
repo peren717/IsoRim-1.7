@@ -120,7 +120,9 @@ namespace IsoRim
         // StaticModelExtensionsActive: an addon's own normals, tangents and materials for static textured building prints, and its choice of model.
         // 63: ModelDef.barNormal, barMirror (Bars.DrawFillableBar_Prefix): the plane of the fillable bars placed at barAt (a side face, a
         // tilted panel), and the same bar again on the mirrored side; unset: flat and single, as before.
-        public static int Version => 63;
+        // 64: ReleaseFigureMaterial (Api62.cs): ConfigureFigureMaterial's counterpart; IsoGlow.Unmark, FadeFloors.Release, the mark and
+        // faded copies destroyed a few frames later (DynamicModels.RetireMaterial). Nothing changes for a mod that never calls it.
+        public static int Version => 64;
 
         // ---- glass parts (Version 30)
 
