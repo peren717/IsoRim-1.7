@@ -2383,6 +2383,7 @@ namespace IsoRim
 
     public static class ModelBaker
     {
+        // A model's outline: the colour its face is drawn in times this (a textured face's: TextureOutline.Line).
         public const float OutlineShade = 0.25f;
         public const float Inset = 0.1f;   // fraction of the outline width the plain copy sits inside the textured one
         // How far a textured face stands off the plain copy under it, along the face, in model
@@ -2840,6 +2841,8 @@ namespace IsoRim
         // Returns false, having written nothing, if the mesh has no room for it.
         private static LayerSubMesh[] texturedPool = new LayerSubMesh[64];
         private static bool[] lookedPool = new bool[64];
+        private static Color[] slotColourPool = new Color[64];       // each slot's material colour and texture (TextureOutline)
+        private static Texture[] slotTexturePool = new Texture[64];
 
         // While this has any alpha, Bake writes the model as a see-through ghost of this colour
         // (for blueprints and frames) instead of the real thing.
@@ -3041,13 +3044,18 @@ namespace IsoRim
             {
                 texturedPool = new LayerSubMesh[slots * 2];
                 lookedPool = new bool[slots * 2];
+                slotColourPool = new Color[slots * 2];
+                slotTexturePool = new Texture[slots * 2];
             }
             LayerSubMesh[] texturedMeshes = texturedPool;
             bool[] looked = lookedPool;
+            Color[] slotColour = slotColourPool;
+            Texture[] slotTexture = slotTexturePool;
             for (int i = 0; i < slots; i++)
             {
                 texturedMeshes[i] = null;
                 looked[i] = false;
+                slotTexture[i] = null;
             }
             LayerSubMesh plain = null;
             LayerSubMesh round = null;   // (Api 52) the ModelMaterial.round faces, and their smooth normals
@@ -3145,6 +3153,7 @@ namespace IsoRim
 
                 // Find (once per material) where this triangle's textured face goes.
                 LayerSubMesh tm = null;
+                int texSlot = -1;   // tm's slot (not for a decal's face)
                 bool own = textured && m.OwnColour(i);   // its corners carry the colour (Model.OwnColour)
                 ModelDecals.Look decal = decalLooks != null ? decalLooks[mi] : null;
                 if (decal != null)
@@ -3179,6 +3188,8 @@ namespace IsoRim
                         string ownKey = own ? Model.OwnKey : null;
                         Material tmat = mm.runtimeTexture != null ? R3DMaterials.LitTexture(mm.runtimeTexture, mm.runtimeName + ownKey, c, mm.runtimeModelLight ? 0 : 1)
                             : glow ? R3DTextures.MaterialFor(path, c, -1, ownKey) : R3DMaterials.LitTexture(path, c, 0, 0, ownKey);
+                        slotColour[slot] = c;
+                        slotTexture[slot] = tmat != null ? tmat.mainTexture : null;
                         if (customSurface)
                         {
                             tmat = StaticModelExtensions.MaterialFor(m, mi, tmat);
@@ -3186,6 +3197,7 @@ namespace IsoRim
                         texturedMeshes[slot] = tmat != null ? MeshWriter.Sub(layer, tmat) : null;
                     }
                     tm = texturedMeshes[slot];
+                    texSlot = slot;
                     if (tm != null && tm.verts.Count + 3 > MeshWriter.MaxVerts)
                     {
                         tm = null;
@@ -3234,7 +3246,11 @@ namespace IsoRim
                         Vector3 h = turn * (Vector3.Scale(lay * (m.positions[k] + hull) + layLift, scale) + offset);
                         line.tris.Add(line.verts.Count);
                         line.verts.Add(new Vector3(center.x + h.x, baseY + Mathf.Max(lineFloor, h.y) / squash, center.z + h.z));
-                        line.colors.Add(R3DMaterials.Shaded(c, OutlineShade));
+                        // the face's colour as drawn: a textured face's with its texture taken at its mean (TextureOutline;
+                        // a decal's face: the plain colour, its look's texture is made per thing)
+                        Color lc = tm != null && texSlot >= 0
+                            ? TextureOutline.Line(m, mi, slotTexture[texSlot], own ? c : Color.white, slotColour[texSlot], c) : c;
+                        line.colors.Add(R3DMaterials.Shaded(lc, OutlineShade));
                         line.uvs.Add(default);
                         if (tagged)
                         {

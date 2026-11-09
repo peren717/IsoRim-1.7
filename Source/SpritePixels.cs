@@ -133,6 +133,36 @@ namespace IsoRim
             return lv.px;
         }
 
+        // A whole texture's pixels at the first mip level no larger than maxSide (rows bottom first, the texture's stored
+        // values), or null if they cannot be read on the CPU (TextureOutline: a model texture's mean colour). Shared: copy it.
+        public static Color32[] Small(Texture tex, int maxSide, out int w, out int h)
+        {
+            w = 0;
+            h = 0;
+            Vector2 scale = Vector2.one;
+            Vector2 offset = Vector2.zero;
+            Texture2D src = Resolve(tex, ref scale, ref offset);
+            if (src == null || scale != Vector2.one || offset != Vector2.zero)
+            {
+                return null;
+            }
+            int mip = 0;
+            int side = Math.Max(src.width, src.height);
+            while (side > maxSide && mip < src.mipmapCount - 1)
+            {
+                side >>= 1;
+                mip++;
+            }
+            Level lv = LevelOf(src, mip);
+            if (lv == null)
+            {
+                return null;
+            }
+            w = lv.w;
+            h = lv.h;
+            return lv.px;
+        }
+
         public static bool IsSheet(Texture tex)
         {
             return TilesOf(tex) != null;

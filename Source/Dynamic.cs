@@ -789,6 +789,8 @@ namespace IsoRim
             int slots = textured ? m.materials.Length * (m.ownColor != null ? 2 : 1) : 0;
             Lists[] texturedLists = textured ? new Lists[slots] : null;
             bool[] looked = textured ? new bool[slots] : null;
+            Color[] slotColour = textured ? new Color[slots] : null;        // each slot's material colour and texture (TextureOutline)
+            Texture[] slotTexture = textured ? new Texture[slots] : null;
             Vector3[] sn = smooth ? SmoothFigures.NormalsOf(m) : null;
             Lists[] decalLists = looks != null ? new Lists[looks.Length] : null;
             if (sn != null)
@@ -813,6 +815,7 @@ namespace IsoRim
                         dl.Add(m.positions[k], White, ModelDecals.Uv(decal, m.positions[k], m.normals[i]));
                         if (m.hull != null && (m.noOutline == null || !m.noOutline[k]))
                         {
+                            // the plain colour (a look's texture is made per thing and changes: not read for TextureOutline)
                             Color line = m.colors[k];
                             if (m.tinted[k])
                             {
@@ -825,6 +828,7 @@ namespace IsoRim
                 }
 
                 Lists tl = null;
+                int tlSlot = -1;
                 bool own = textured && m.OwnColour(i);   // its corners carry the colour (Model.OwnColour)
                 if (textured && mm != null && mm.texture != null)
                 {
@@ -848,6 +852,8 @@ namespace IsoRim
                             : glow ? R3DTextures.MaterialFor(path, c, -1, ownKey) : R3DMaterials.LitTexture(path, c, 0, 0, ownKey);
                         if (tmat != null)
                         {
+                            slotColour[slot] = c;
+                            slotTexture[slot] = tmat.mainTexture;
                             texturedLists[slot] = new Lists();
                             texturedLists[slot].material = tmat;
                             if (smoothTex && sn != null && !own)
@@ -857,6 +863,7 @@ namespace IsoRim
                         }
                     }
                     tl = texturedLists[slot];
+                    tlSlot = slot;
                 }
 
                 Lists into = glow ? glowing : solid;
@@ -864,7 +871,7 @@ namespace IsoRim
                 {
                     Vector3 hull = m.hull != null ? m.hull[k] : Vector3.zero;
                     Color c = m.colors[k];
-                    Color line = c;   // the outline's colour (TintTextured leaves it untinted)
+                    Color line = c;   // a plain face's outline colour (TintTextured leaves it untinted)
                     if (m.tinted[k])
                     {
                         c *= tint;
@@ -873,6 +880,12 @@ namespace IsoRim
                     else if (TintTextured && mm != null && mm.texture != null && !own)
                     {
                         c *= tint;   // the plain copy of a tinted textured face (what shows with textured models off)
+                    }
+                    if (tl != null)
+                    {
+                        // a textured face's: its colour as drawn, the texture taken at its mean (TextureOutline; with the tint
+                        // where its material takes it, TintTextured included)
+                        line = TextureOutline.Line(m, mi, slotTexture[tlSlot], own ? c : Color.white, slotColour[tlSlot], line);
                     }
                     Vector3 at = tl != null ? m.positions[k] - hull * ModelBaker.Inset : m.positions[k];
                     if (into.normals != null)
