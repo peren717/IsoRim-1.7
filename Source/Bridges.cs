@@ -27,7 +27,7 @@ namespace IsoRim
     //     LiftOverlay, from Floors.CellBool_Postfix; the drawers are re-made when a bridge comes or goes
     //     (TerrainChanged) and on every map rebuild (View3D.RegenerateAllMaps: 3D or this option switched).
     // Ground floor only (ProjectZ's floors have no bridges). With the 3D view or the "3D bridges" option off (Active)
-    // nothing changes: the bridges are the game's own, its props sprite drawn over the 3D water (PropsPostfix).
+    // nothing changes: the bridges are the game's own flat ones (in the 3D view without its props sprite, PropsPostfix).
     // Call sites: Patches (TakePrintFrom prefix/finalizer, ThingPhase, ground layer postfixes, BridgeProps postfix,
     // TerrainChanged_Postfix, CellBool_Postfix), Floors (ThingOffset, ExtraMatrix, DrawnOffset, ThingPhase_Prefix,
     // CellBool_Postfix), Layers (water under bridges, realtime bodies), Cells (TopOf), Ghosts (bridge blueprints).
@@ -441,8 +441,8 @@ namespace IsoRim
             return changed;
         }
 
-        // The game's flat props sprite south of a bridge: with 3D bridges the 3D supports stand in for it. Without them (the
-        // option off) it is kept, moved to a copy of its material drawn after IsoRim's water (Ghosts.OverWater), which hid it.
+        // The game's flat props sprite south of a bridge: left out in the 3D view, with or without 3D bridges (with them
+        // the 3D supports stand in; without them the deck is the game's flat bridge, kept clean of the sprite).
         public static void PropsPostfix(SectionLayer layer)
         {
             if (layer == null || !View3D.Active)
@@ -450,56 +450,12 @@ namespace IsoRim
                 return;
             }
             List<LayerSubMesh> subs = layer.subMeshes;
-            if (Active)
+            for (int i = 0; i < subs.Count; i++)
             {
-                for (int i = 0; i < subs.Count; i++)
+                if (subs[i].verts.Count > 0)
                 {
-                    if (subs[i].verts.Count > 0)
-                    {
-                        subs[i].Clear(MeshParts.All);   // not finalized: not drawn
-                    }
+                    subs[i].Clear(MeshParts.All);   // not finalized: not drawn
                 }
-                return;
-            }
-            if (!IsoRimMod.Settings.waterStyle)
-            {
-                return;   // the game's own water: drawn before the sprite
-            }
-            List<LayerSubMesh> moved = null;
-            int n = subs.Count;   // (the copies come after these)
-            for (int i = 0; i < n; i++)
-            {
-                LayerSubMesh from = subs[i];
-                if (from.verts.Count == 0 || from.material == null || from.material.renderQueue >= Ghosts.OverWaterQueue)
-                {
-                    continue;
-                }
-                LayerSubMesh to = layer.GetSubMesh(Ghosts.OverWater(from.material));
-                if (to == null || to == from)
-                {
-                    continue;
-                }
-                int start = to.verts.Count;
-                to.verts.AddRange(from.verts);
-                to.uvs.AddRange(from.uvs);
-                to.colors.AddRange(from.colors);
-                for (int k = 0; k < from.tris.Count; k++)
-                {
-                    to.tris.Add(from.tris[k] + start);
-                }
-                from.Clear(MeshParts.All);   // not finalized: not drawn
-                if (moved == null)
-                {
-                    moved = new List<LayerSubMesh>();
-                }
-                if (!moved.Contains(to))
-                {
-                    moved.Add(to);
-                }
-            }
-            for (int i = 0; moved != null && i < moved.Count; i++)
-            {
-                moved[i].FinalizeMesh(MeshParts.All);
             }
         }
 
