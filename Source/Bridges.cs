@@ -10,7 +10,8 @@ namespace IsoRim
     // Bridges in 3D: the deck of every bridge terrain (TerrainDef.bridge: Bridge, AncientBridge, HeavyBridge,
     // AncientHeavyBridge and any modded one; on 1.7 it lies in the terrain grid's foundation layer) is raised a little
     // over the water, with the deck's thickness showing along its open sides, posts or piers under those sides, and a
-    // short ramp down onto the land where it meets the bank. Everything standing on the deck stands on it.
+    // short ramp down onto the land where it meets the bank. Everything standing on the deck stands on it, except walls
+    // and doors, which rise from the ground through it (their tops stay level with the walls round them).
     //
     // One height rule, HeightAt (deck cells: Deck; land beside a bridge over water: a ramp down to the ground within
     // RampReach of the deck), read by:
@@ -165,10 +166,11 @@ namespace IsoRim
         }
 
         // How far a thing is lifted (true cells): pawns by where they are drawn (smooth up and down a ramp), anything
-        // else by the cells it covers (the deck if any of them is a deck cell).
+        // else by the cells it covers (the deck if any of them is a deck cell). Doors are not lifted: like the walls
+        // (BeginPrint) they rise from the ground through the deck, so their tops stay level with the walls beside them.
         public static float LiftOf(Thing t)
         {
-            if (t == null || !t.Spawned || !Active)
+            if (t == null || !t.Spawned || !Active || t is Building_Door)
             {
                 return 0f;
             }
