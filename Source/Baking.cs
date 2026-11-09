@@ -706,10 +706,11 @@ namespace IsoRim
 
     public static class MeshWriter
     {
-        // The most corners one piece of a block's mesh may hold. The game's own pieces stop at
+        // The most corners one piece of a block's mesh may hold (2,000,000 since 2026-11-10, was 260,000: a very dense
+        // block (packed storage, many detailed models) can go over that, and models that do not fit are left out; MeshGuard.NoteSize says when a piece gets heavy or full). The game's own pieces stop at
         // 65,535; the ones this mod writes to are switched to the larger index size first (see
         // Sub), so that a block of thick forest still fits.
-        public const int MaxVerts = 260000;
+        public const int MaxVerts = 2000000;
 
         // The piece of a block's mesh drawn with the given material, ready to hold many corners.
         public static LayerSubMesh Sub(SectionLayer layer, Material mat)

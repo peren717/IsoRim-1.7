@@ -62,6 +62,41 @@ namespace IsoRim
             {
                 Drop(sm.mesh, "map layer " + (sm.material != null ? sm.material.name : "?"), why);
             }
+            NoteSize(sm);
+        }
+
+        // A block's mesh piece close to MeshWriter.MaxVerts: models that no longer fit are left out of it without another
+        // word (the writers just skip them), so it is said once per material: a heavy piece (its rebuilds take longer) and a
+        // full one (models may be missing from that block).
+        public const int HeavyAbove = 1000000;
+        private static readonly HashSet<string> sizeNoted = new HashSet<string>();
+
+        private static void NoteSize(LayerSubMesh sm)
+        {
+            if (sm.mesh == null)
+            {
+                return;
+            }
+            int n = sm.verts != null && sm.verts.Count > 0 ? sm.verts.Count : sm.mesh.vertexCount;
+            if (n < HeavyAbove)
+            {
+                return;
+            }
+            string name = sm.material != null ? sm.material.name : "?";
+            bool full = n > MeshWriter.MaxVerts - 50000;
+            if (!sizeNoted.Add((full ? "full:" : "heavy:") + name))
+            {
+                return;
+            }
+            if (full)
+            {
+                Log.Warning("[IsoRim] A map block's mesh (" + name + ") is full: " + n + " of " + MeshWriter.MaxVerts
+                    + " corners. Models that do not fit are left out of that block (very dense storage or many detailed models in one area).");
+            }
+            else
+            {
+                Log.Message("[IsoRim] A map block's mesh (" + name + ") is very large: " + n + " corners. Changes in that block rebuild more slowly.");
+            }
         }
 
         private static string Run(Mesh mesh)
