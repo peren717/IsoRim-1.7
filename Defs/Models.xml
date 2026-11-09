@@ -4181,41 +4181,43 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Sheep</defName>
     <thingDef>Sheep</thingDef>
-    <model>Models/animal_sheep.obj</model>
+    <model>Models/animal_sheep_ram_blob.obj</model>
+    <femaleModel>Models/animal_sheep_ewe_blob.obj</femaleModel>
+    <!-- blob sheep (2026-11-09): fleece cloud, legs carved out of the body, glides; ram with curled horns, ewe (femaleModel);
+         sprite colours baked in SheepRam.png / SheepEwe.png (vanilla is untinted). Vanilla draws lambs of both sexes with
+         SheepFemale: byBodyGraphic gives them the ewe (juvenile rams show the horns, as vanilla). No sheared look (vanilla
+         has none). animal_sheep(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_sheep_leg.obj</legModel>
-    <legs>
-      <li>(-0.119, 0.316, 0.228)</li>
-      <li>(0.119, 0.316, 0.228)</li>
-      <li>(-0.119, 0.316, -0.251)</li>
-      <li>(0.119, 0.316, -0.251)</li>
-    </legs>
-    <legLength>0.316</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.76</stride>
-    <bodyCentre>0.423</bodyCentre>
-    <bodyHalfWidth>0.192</bodyHalfWidth>
-    <bodyHalfLength>0.471</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.44</bodyCentre>
+    <bodyHalfWidth>0.31</bodyHalfWidth>
+    <bodyHalfLength>0.65</bodyHalfLength>
+    <byBodyGraphic>
+      <li><path>Sheep/SheepFemale</path><model>Models/animal_sheep_ewe_blob.obj</model></li>
+    </byBodyGraphic>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Goat</defName>
     <thingDef>Goat</thingDef>
-    <model>Models/animal_goat.obj</model>
+    <model>Models/animal_goat_buck_blob.obj</model>
+    <femaleModel>Models/animal_goat_doe_blob.obj</femaleModel>
+    <!-- blob goat (2026-11-09): box body, legs carved out of the body, glides; buck with horns and the grey markings (1.09 x the
+         doe, as the vanilla draw sizes), doe (femaleModel); sprite colours baked in GoatBuck.png / GoatDoe.png (vanilla is
+         untinted), horns a plain material. Vanilla draws kids of both sexes with GoatFemale: byBodyGraphic gives them the doe
+         (juvenile bucks show the horns, as vanilla). animal_goat(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_goat_leg.obj</legModel>
-    <legs>
-      <li>(-0.087, 0.354, 0.216)</li>
-      <li>(0.087, 0.354, 0.216)</li>
-      <li>(-0.087, 0.354, -0.238)</li>
-      <li>(0.087, 0.354, -0.238)</li>
-    </legs>
-    <legLength>0.354</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.85</stride>
-    <bodyCentre>0.438</bodyCentre>
-    <bodyHalfWidth>0.141</bodyHalfWidth>
-    <bodyHalfLength>0.446</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.27</bodyCentre>
+    <bodyHalfWidth>0.17</bodyHalfWidth>
+    <bodyHalfLength>0.47</bodyHalfLength>
+    <byBodyGraphic>
+      <li><path>Goat/GoatFemale</path><model>Models/animal_goat_doe_blob.obj</model></li>
+    </byBodyGraphic>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4465,21 +4467,22 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Elk</defName>
     <thingDef>Elk</thingDef>
-    <model>Models/animal_elk.obj</model>
+    <model>Models/animal_elk_male_blob.obj</model>
+    <femaleModel>Models/animal_elk_female_blob.obj</femaleModel>
+    <!-- blob elk (2026-11-09): smooth oval body on tapered legs (one mesh), glides; male with antlers, female (femaleModel);
+         sprite colours baked in ElkMale.png / ElkFemale.png (vanilla is untinted). Vanilla draws calves of both sexes with
+         ElkFemale: byBodyGraphic gives them the female (juvenile males show the antlers, as vanilla).
+         animal_elk(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_elk_leg.obj</legModel>
-    <legs>
-      <li>(-0.124, 0.658, 0.348)</li>
-      <li>(0.124, 0.658, 0.348)</li>
-      <li>(-0.124, 0.658, -0.383)</li>
-      <li>(0.124, 0.658, -0.383)</li>
-    </legs>
-    <legLength>0.658</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.58</stride>
-    <bodyCentre>0.786</bodyCentre>
-    <bodyHalfWidth>0.200</bodyHalfWidth>
-    <bodyHalfLength>0.719</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.53</bodyCentre>
+    <bodyHalfWidth>0.25</bodyHalfWidth>
+    <bodyHalfLength>0.81</bodyHalfLength>
+    <byBodyGraphic>
+      <li><path>Elk/ElkFemale</path><model>Models/animal_elk_female_blob.obj</model></li>
+    </byBodyGraphic>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4770,21 +4773,16 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Fox_Red</defName>
     <thingDef>Fox_Red</thingDef>
-    <model>Models/animal_fox_red.obj</model>
+    <model>Models/animal_fox_red_blob.obj</model>
+    <!-- blob red fox (2026-11-09): legs carved out of the body, glides; big bushy tail; sprite colours baked in FoxRed.png
+         (vanilla is untinted). animal_fox_red(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_fox_red_leg.obj</legModel>
-    <legs>
-      <li>(-0.060, 0.251, 0.167)</li>
-      <li>(0.060, 0.251, 0.167)</li>
-      <li>(-0.060, 0.251, -0.184)</li>
-      <li>(0.060, 0.251, -0.184)</li>
-    </legs>
-    <legLength>0.251</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.60</stride>
-    <bodyCentre>0.310</bodyCentre>
-    <bodyHalfWidth>0.096</bodyHalfWidth>
-    <bodyHalfLength>0.346</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.22</bodyCentre>
+    <bodyHalfWidth>0.12</bodyHalfWidth>
+    <bodyHalfLength>0.69</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4825,41 +4823,32 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Wolf_Arctic</defName>
     <thingDef>Wolf_Arctic</thingDef>
-    <model>Models/animal_wolf_arctic.obj</model>
+    <model>Models/animal_wolf_arctic_blob.obj</model>
+    <!-- blob arctic wolf (2026-11-09): the timber wolf's mesh (same vertices, faces and UVs) with its own cream WolfArctic.png
+         (vanilla is untinted). animal_wolf_arctic(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_wolf_arctic_leg.obj</legModel>
-    <legs>
-      <li>(-0.086, 0.428, 0.240)</li>
-      <li>(0.086, 0.428, 0.240)</li>
-      <li>(-0.086, 0.428, -0.264)</li>
-      <li>(0.086, 0.428, -0.264)</li>
-    </legs>
-    <legLength>0.428</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.03</stride>
-    <bodyCentre>0.517</bodyCentre>
-    <bodyHalfWidth>0.138</bodyHalfWidth>
-    <bodyHalfLength>0.496</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.42</bodyCentre>
+    <bodyHalfWidth>0.21</bodyHalfWidth>
+    <bodyHalfLength>0.75</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Warg</defName>
     <thingDef>Warg</thingDef>
-    <model>Models/animal_warg.obj</model>
+    <model>Models/animal_warg_blob.obj</model>
+    <!-- blob warg (2026-11-09): barrel body, legs carved out of the body, glides; white Warg.png (dark mane baked) times the
+         vanilla colour (tintFromGraphic, as the bear). animal_warg(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_warg_leg.obj</legModel>
-    <legs>
-      <li>(-0.146, 0.599, 0.324)</li>
-      <li>(0.146, 0.599, 0.324)</li>
-      <li>(-0.146, 0.599, -0.356)</li>
-      <li>(0.146, 0.599, -0.356)</li>
-    </legs>
-    <legLength>0.599</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.44</stride>
-    <bodyCentre>0.745</bodyCentre>
-    <bodyHalfWidth>0.236</bodyHalfWidth>
-    <bodyHalfLength>0.670</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.52</bodyCentre>
+    <bodyHalfWidth>0.26</bodyHalfWidth>
+    <bodyHalfLength>0.87</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -5686,6 +5675,15 @@
     <defName>R3D_ShieldGeneratorMortar</defName>
     <thingDef>ShieldGeneratorMortar</thingDef>
     <model>Models/mech_high_shield.obj</model>
+    <builtFor>(1, 1)</builtFor>
+  </IsoRim.ModelDef>
+
+  <!-- Mech node (mech cluster lamp, 2026-11-09): a low drum on the ground with a glowing lens (glow_gloom* faces, unlit);
+       the same from every side, so its rotation does not matter. -->
+  <IsoRim.ModelDef>
+    <defName>R3D_Gloomlight</defName>
+    <thingDef>Gloomlight</thingDef>
+    <model>Models/gloomlight.obj</model>
     <builtFor>(1, 1)</builtFor>
   </IsoRim.ModelDef>
 

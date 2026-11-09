@@ -1,0 +1,21 @@
+# IsoRim Gloomlight (mech node, 2026-11-09): fixed colours sampled from the vanilla sprite (divided by the Metal swatch's
+# 0.90 and lifted slightly like the other building colours). glow_gloom* = the lens (unlit; CompGlower glowColor 216,219,67):
+# glow_gloom_core the bright middle, glow_gloom_halo the ring round it.
+newmtl gloom_top
+Kd 0.68 0.68 0.60
+map_Kd IsoRim/Swatches/Metal
+newmtl gloom_bezel
+Kd 0.52 0.53 0.46
+map_Kd IsoRim/Swatches/Metal
+newmtl gloom_groove
+Kd 0.38 0.39 0.30
+map_Kd IsoRim/Swatches/Metal
+newmtl gloom_side
+Kd 0.33 0.33 0.33
+map_Kd IsoRim/Swatches/Metal
+newmtl glow_gloom_halo
+Kd 0.84 0.88 0.90
+map_Kd IsoRim/Swatches/Glow
+newmtl glow_gloom_core
+Kd 1.00 1.00 1.00
+map_Kd IsoRim/Swatches/Glow
