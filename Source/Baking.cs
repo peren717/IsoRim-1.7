@@ -424,8 +424,8 @@ namespace IsoRim
     }
 
     // Plants without a 3D model are stood up as cards facing the camera. A card is baked once,
-    // flat: its four corners sit on its hinge (the middle of the sprite's bottom edge) with where
-    // each corner lay in the flat sprite, relative to the hinge, in texture coordinate 1, drawn with
+    // flat: its four corners sit on its hinge (where the plant grows, see Foot) with where each
+    // corner lay in the flat sprite, relative to the middle of its bottom edge, in texture coordinate 1, drawn with
     // a copy of the plant's material on the IsoRimCardPlant (or, for snow, IsoRimCardSnow) def,
     // whose vertex stage stands it up from the camera's angle (Shaders\IsoRimCard.vert.glsl). So a
     // tilt or a turn rebuilds nothing.
@@ -571,7 +571,9 @@ namespace IsoRim
         }
 
         // Moves the sprite quad just added to sm (its last four corners) into the layer's card piece
-        // for the same material, hinged at pivot and raised by lift (cells).
+        // for the same material, raised by lift (cells). The corners keep where they lay relative to pivot (the
+        // middle of the sprite's bottom edge), less the sink, so the painted foot stays on the ground; the card
+        // stands where the plant grows (Foot), not at the bottom edge of vanilla's 2D sprite.
         public static bool Move(SectionLayer layer, LayerSubMesh sm, Material mat, Vector3 pivot, float lift)
         {
             Material card = For(mat);
@@ -585,7 +587,7 @@ namespace IsoRim
                 return false;
             }
             int n = sm.verts.Count;
-            Vector3 hinge = new Vector3(pivot.x, pivot.y + lift / View3D.Squash, pivot.z);
+            Vector3 hinge = new Vector3(pivot.x, pivot.y + lift / View3D.Squash, Foot(sm, n, pivot));
             float sink = Sink(mat, sm, n);
             float size = SizeOf(PrintContext.thing);
             int start = cs.verts.Count;
@@ -610,6 +612,28 @@ namespace IsoRim
             sm.tris.RemoveRange(sm.tris.Count - 6, 6);
             return true;
         }
+
+        // The world z a plant's card stands on. Vanilla Plant.Print lifts a one-mesh-per-cell plant's sprite north
+        // until its bottom sits on the cell's south edge (the 2D look of a plant growing up out of its cell), and a
+        // sprite's bottom edge is half its height south of where it is printed. So: one mesh per cell (crops,
+        // flowers, trees): the cell centre (vanilla's small x jitter is kept in pivot.x); several meshes per cell
+        // (grass, wild plants, rice): the printed spot, the sprite's centre. A plant's snow sprite is printed at
+        // the same spot and size, so it stands on the same foot. As ShapeCards (the thing's own position).
+        private static float Foot(LayerSubMesh sm, int n, Vector3 pivot)
+        {
+            Plant plant = PrintContext.thing as Plant;
+            if (plant != null && plant.def.plant != null && plant.def.plant.maxMeshCount == 1)
+            {
+                return plant.Position.ToVector3Shifted().z;
+            }
+            float zMin = float.MaxValue, zMax = float.MinValue;
+            for (int i = n - 4; i < n; i++)
+            {
+                zMin = Mathf.Min(zMin, sm.verts[i].z);
+                zMax = Mathf.Max(zMax, sm.verts[i].z);
+            }
+            return pivot.z + (zMax - zMin) * 0.5f;
+        }
     }
     public static class PlaneHandler
     {
@@ -633,7 +657,8 @@ namespace IsoRim
                 case PrintMode.Upright:
                     if (rot == 0f)
                     {
-                        // Hinge along the bottom edge of the sprite; stood up by the card shader.
+                        // Corners measured from the sprite's bottom edge; the card stands where the plant grows
+                        // (UprightCards.Foot), on its grower or bridge (baseHeight); stood up by the card shader.
                         Vector3 pivot = new Vector3(center.x, center.y, center.z - size.y * 0.5f);
                         if (UprightCards.Move(layer, sm, mat, pivot, PrintContext.baseHeight))
                         {
