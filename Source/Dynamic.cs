@@ -585,6 +585,10 @@ namespace IsoRim
                     {
                         continue;
                     }
+                    if (p.mesh == null || p.material == null)
+                    {
+                        FallbackLog.Note(FallbackLog.Reason.MovingMeshGone, "A moving model");   // (diagnostics only: drawn as before)
+                    }
                     if (!Cull.MeshVisible(p.mesh, matrix))
                     {
                         continue;
@@ -731,6 +735,7 @@ namespace IsoRim
             tint = t;
             if (cache.Count > 6000)
             {
+                FallbackLog.CacheCleared("The moving model mesh cache was full and", cache.Count);
                 Forget();
             }
             bool smooth = (FigurePart && SmoothFigures.On) || (AnimalPart && SmoothFigures.AnimalsOn);
@@ -2954,6 +2959,7 @@ namespace IsoRim
             if (look == null)
             {
                 FireFxFailed = true;
+                FallbackLog.FireOff(fire.def);
                 return false;
             }
             if (HiddenByFog(fire))

@@ -1343,6 +1343,7 @@ namespace IsoRim
             catch (Exception e)
             {
                 ModLog.Warn("[IsoRim] Could not read model " + path + ": " + e.Message);
+                FallbackLog.LoadFailed(path, e);
                 model = null;
             }
             byPath[path] = model;
@@ -4186,6 +4187,12 @@ namespace IsoRim
                 }
                 return solid;
             }
+        }
+
+        // (FallbackLog) 0: made, or not tried yet; 1: never made (its shader is missing); 2: made, then destroyed.
+        internal static int SolidState
+        {
+            get { return !tried ? 0 : (object)solid == null ? 1 : solid == null ? 2 : 0; }
         }
 
         // Same as Solid but drawn inside out: only the faces turned away from the camera show.

@@ -121,15 +121,20 @@ namespace IsoRim
         // case the game's sprite must be drawn as usual.
         public static bool Draw(Pawn pawn, Vector3 drawLoc)
         {
-            ModelEntry entry;
+            ModelEntry entry = null;
             if (pawn.def == null || !ModelLibrary.TryGet(pawn.def, out entry) || !(entry.def.mech || entry.def.entity) || !entry.HasModel
                 || (entry.def.entity ? pawn.IsPsychologicallyInvisible() : People.Hidden(pawn)) || (entry.def.entity && !EntityShown(pawn)) || !Corpses.ShownAsModel(pawn))
             {
+                if (entry != null && (entry.def.mech || entry.def.entity) && FallbackLog.Unloaded(pawn.def))
+                {
+                    FallbackLog.Note(FallbackLog.Reason.NoModelLoaded, pawn, true);
+                }
                 return false;
             }
             Rig rig = RigFor(entry, entry.def.entity ? LookOf(pawn, entry.def) : -1);
             if (rig == null || rig.body == null)
             {
+                FallbackLog.Note(FallbackLog.Reason.RigMissing, pawn, true);
                 return false;
             }
             // (Api 62) Another mod's figure drawer may stand in for this figure (FigureDrawers, Api.AddFigureDrawer).

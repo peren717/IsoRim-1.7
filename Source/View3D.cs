@@ -415,6 +415,7 @@ namespace IsoRim
 
             RegenerateIfStateChanged();
             RecachePawnsIfReadyChanged();
+            FallbackLog.Frame();   // diagnostics: flips of the view and model settings, the fallback summary
             Probe.Lap(2);
             MapSections.Process(8);
             Probe.Lap(3);
@@ -1044,6 +1045,7 @@ namespace IsoRim
             ViewPoses.Reset();
             SceneImage.Reset();
             ModelLibrary.ClearOverrides();   // the dev-mode model binder's changes last one game only
+            FallbackLog.NewGame();
             Active = LockedOn || HarnessStartsOn;
             lastActive = false;
             appliedSig = 0;

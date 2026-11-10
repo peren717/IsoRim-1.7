@@ -671,7 +671,10 @@ namespace IsoRim
                             continue;
                         }
                         ThingForm form = Forms.For(t.def);
-                        ModelBaker.Bake(this, t, form.model, Forms.BaseUnder(t, false));
+                        if (!ModelBaker.Bake(this, t, form.model, Forms.BaseUnder(t, false)))
+                        {
+                            FallbackLog.BakeFailed(t, false);   // the tree is left out (its sprite is held back by TakePrintFrom)
+                        }
                     }
                 }
                 CutTags.Finish(this);
@@ -922,6 +925,10 @@ namespace IsoRim
                                 {
                                     itemSpots[t.thingIDNumber] = new Spot { map = map, cell = t.Position, rot = t.Rotation };
                                 }
+                            }
+                            else
+                            {
+                                FallbackLog.BakeFailed(t, true);   // not baked: the game draws its sprite
                             }
                         }
                         finally

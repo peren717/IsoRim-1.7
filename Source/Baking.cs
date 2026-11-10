@@ -32,6 +32,7 @@ namespace IsoRim
         internal WallTopSpec wallTops;  // (Api 11) a Block or Ground with a shaped top (ModelDef.wallTop, WallTops.cs); else null
         internal ModelShape shape;      // (Api 52) ModelShape.Card: drawn by ShapeCards (form Extruded, height the card's)
         internal ModelEntry bound;      // (Api 52) the def's entry when it has one and no model (Card, Raised): its offset, outline, groundShadow
+        internal bool unloaded;         // (FallbackLog) not a model because its binding's model files were not loaded
     }
 
     public static class Forms
@@ -56,6 +57,7 @@ namespace IsoRim
             if (!cache.TryGetValue(def, out f))
             {
                 f = Compute(def);
+                f.unloaded = f.form != Form3D.Model && FallbackLog.Unloaded(def);
                 cache[def] = f;
             }
             return f;
@@ -2536,6 +2538,7 @@ namespace IsoRim
         public static bool Bake(SectionLayer layer, Thing thing, ModelEntry entry, float baseHeight)
         {
             int mark = RoofClip.Mark(layer);
+            FallbackLog.BakeWhy = FallbackLog.Reason.None;
             Floor = entry.def.sinkHole > 0f ? float.NegativeInfinity : 0f;   // a sunk hole reaches below the ground (SinkHoles)
             try
             {
@@ -2584,6 +2587,9 @@ namespace IsoRim
             }
             if (R3DMaterials.Solid == null || m == null)
             {
+                FallbackLog.BakeWhy = R3DMaterials.Solid == null
+                    ? (R3DMaterials.SolidState == 2 ? FallbackLog.Reason.MaterialDestroyed : FallbackLog.Reason.MaterialMissing)
+                    : entry.HasModel ? FallbackLog.Reason.NoModelPicked : FallbackLog.Reason.NoModelLoaded;
                 return false;
             }
             IsoRimSettings st = IsoRimMod.Settings;
@@ -2600,6 +2606,7 @@ namespace IsoRim
                 arm = Crowns.Under(arm, wallTop, false);
                 if (m == null)
                 {
+                    FallbackLog.BakeWhy = FallbackLog.Reason.CutUnderFloor;
                     return false;
                 }
             }
@@ -3015,6 +3022,7 @@ namespace IsoRim
             int n = m.positions.Length;
             if (sm == null || sm.verts.Count + n > MeshWriter.MaxVerts)
             {
+                FallbackLog.BakeWhy = sm == null ? FallbackLog.Reason.NoMeshPiece : FallbackLog.Reason.BlockFull;
                 return false;
             }
             IsoRimSettings st = IsoRimMod.Settings;

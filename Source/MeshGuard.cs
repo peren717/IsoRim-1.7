@@ -124,6 +124,7 @@ namespace IsoRim
         private static void Drop(Mesh mesh, string what, string why)
         {
             Interlocked.Increment(ref Dropped);
+            FallbackLog.Count(FallbackLog.Reason.MeshDropped);   // said below (once per name); counted for the summary
             mesh.Clear();
             CrashTrail.Note("mesh '" + what + "' left out: " + why, false);
             bool first;

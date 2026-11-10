@@ -1761,6 +1761,11 @@ namespace IsoRim
                         {
                             return false;   // a 3D plant replaces the sprite
                         }
+                        FallbackLog.BakeFailed(__0, true);
+                    }
+                    else if (plantForm.unloaded)
+                    {
+                        FallbackLog.Note(FallbackLog.Reason.NoModelLoaded, __0, true);
                     }
                     if (IsoRimMod.Settings.uprightPlants)
                     {
@@ -1777,6 +1782,10 @@ namespace IsoRim
                 }
 
                 ThingForm form = Forms.For(__0);   // (Api 50) per thing: a weapon modelled only for some sprites
+                if (form.unloaded)
+                {
+                    FallbackLog.Note(FallbackLog.Reason.NoModelLoaded, __0, true);
+                }
                 bool item = __0.def.category == ThingCategory.Item;
                 float resting = item ? Forms.BaseUnder(__0, true) : 0f;
 
@@ -1805,6 +1814,7 @@ namespace IsoRim
                         {
                             return false;   // the model replaces the sprite
                         }
+                        FallbackLog.BakeFailed(__0, true);
                         break;
 
                     case Form3D.Block:
