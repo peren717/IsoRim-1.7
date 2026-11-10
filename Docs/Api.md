@@ -121,10 +121,11 @@ if (IsoRim.Api.Version >= 66) { /* camera poses (PushViewPose, BeforeViewUpdate,
 if (IsoRim.Api.Version >= 67) { /* FigureDrawContext.DrawSleeperBlanket: a figure drawer draws IsoRim's sleeper blanket over its own figure (part 46) */ }
 if (IsoRim.Api.Version >= 68) { /* View3DActive (get/set), ControlsLocked, LeaveFirstPerson, KeyHeld, PerspectiveTanHalf, static DrawSleeperBlanket at the caller's placing (part 47) */ }
 if (IsoRim.Api.Version >= 69) { /* ModelDef.smoothShading: a mech model lit by smooth normals, as animals are (part 48) */ }
+if (IsoRim.Api.Version >= 70) { /* WatchCopy, CopyHash: one warning when a method you copied has changed (part 49) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -2718,6 +2719,60 @@ built round (big rounded shells with few faces) opts in:
 
 Version gate: `IsoRim.Api.Version >= 69` (an older IsoRim ignores the field with a config error: add it by version patch, see
 "Gating fields by version" in part M).
+
+## Part 49: a warning when a copied method changes (version 70)
+
+Sometimes an addon has to copy a method of the game or of another mod instead of calling it (a private formula, a loop it
+must change in the middle). When that method later changes, the copy goes stale without a sound. Register the original
+with the hash of the version you copied, and IsoRim logs one warning at start-up once it differs:
+
+```csharp
+// in your Mod constructor (or a static constructor)
+if (IsoRim.Api.Version >= 70)
+{
+    IsoRim.Api.WatchCopy(AccessTools.Method(typeof(SomeClass), "SomeMethod"), "3f9c0a1b2d4e5f60", "My Pack, MyBallistics.RayCast");
+}
+```
+
+```
+[IsoRim] My Pack, MyBallistics.RayCast: SomeNamespace.SomeClass.SomeMethod has changed since this was copied; it may need an update.
+```
+
+| Member | Meaning |
+|---|---|
+| `static void Api.WatchCopy(MethodBase original, string expectedHash, string note)` | Watches `original` against `expectedHash` (its `CopyHash` when you copied it). `note` names your copy in the warning; empty: your assembly's name. |
+| `static string Api.CopyHash(MethodBase method)` | The method's hash now: 16 lowercase hex digits. Null for a null method, one without an IL body (abstract, extern) or one that cannot be read. |
+
+- **Getting the hash:** call `Api.CopyHash` once and log it, or register with any hash and use the dev-mode debug action
+  IsoRim, "Log copied method hashes": it lists every watch with its hash now and the one registered. Paste it as a string.
+  Update both together: when you update your copy, paste the new hash.
+- **When it is checked:** on the main thread, after the game's loading step the registration came in has finished
+  (`LongEventHandler.ExecuteWhenFinished`). Registered in a Mod constructor: after all mods and defs have loaded; in a
+  static constructor (`[StaticConstructorOnStartup]`): after the static constructors ran; later, with no loading step
+  under way (in game): at once.
+- **Warnings:** one line per watch per session, and none when the hash matches. "has changed since this was copied" when it
+  differs; "the method this was copied from was not found" for a null method (your lookup found nothing); "could not be
+  read (...)" when it has no IL body or its IL cannot be read. The same method, hash and note registered twice is one
+  watch. `WatchCopy` never throws.
+- **What is hashed:** the method's IL as compiled (`MethodBody.GetILAsByteArray`), instruction by instruction: the opcode,
+  and its operand. Numbers, local and argument indexes, branch offsets and switch tables as their bytes. Metadata tokens
+  (calls, fields, types, `ldtoken`) as the name of what they refer to: types as namespace and name with generic arguments,
+  nested types after `/`, generic parameters by position, no assembly names or versions; methods with their declaring
+  type, generic arguments, parameter types and return type; fields with their declaring type and field type. Digits in
+  compiler-made names (lambdas, display classes, iterator classes: names with `<`) count as one `#`. String literals as
+  their text; a `calli` signature as a marker only. The hash is the first 8 bytes of a SHA-256 over that text.
+- **So the hash stays the same** for every run and machine with the same build of that assembly, and after a rebuild of
+  the same source that only moves tokens (members added elsewhere in the assembly or class). It changes when the method's
+  body changes (a constant, a call, a branch), or when something it calls changes its name or signature.
+- **Harmony patches** do not change it: the IL as compiled is read, not the patched copy, so a method patched by IsoRim,
+  you or another mod hashes the same as unpatched.
+- **Not covered:** the method's own signature and locals, its exception clauses, and the bodies of lambdas, iterators
+  (`yield`) and `async` methods it uses, which are compiler-made methods of their own. If the logic you copied lives in
+  one, watch that method too (`AccessTools.Method` on the compiler-made class, or `AccessTools.EnumeratorMoveNext`).
+- **Cost:** reading and hashing a method takes well under a millisecond; nothing is patched and nothing runs per frame.
+- **Unchanged:** nothing registered, nothing runs.
+
+Version gate: `IsoRim.Api.Version >= 70`.
 
 ## Part M: model packs (IsoRim.ModelDef)
 

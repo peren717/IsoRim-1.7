@@ -136,7 +136,9 @@ namespace IsoRim
         // (= View3D.DefaultTanHalf), static DrawSleeperBlanket (SleeperBlanket.TryDraw with start and scale; cache key per start/scale).
         // 69: ModelDef.smoothShading: a mech's (or entity's) own model parts lit by smooth normals as an animal's (Mechs.Draw sets
         // DynamicModels.AnimalPart / SmoothTextured around them only); default off, unchanged.
-        public static int Version => 69;
+        // 70: copied method watches (Api70.cs, CopyWatch.cs): WatchCopy (one warning when a copied method's IL hash differs or it is
+        // missing, checked when the loading step it was registered in finishes), CopyHash, the debug action "Log copied method hashes".
+        public static int Version => 70;
 
         // ---- glass parts (Version 30)
 
