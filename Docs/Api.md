@@ -2778,6 +2778,8 @@ public class PatchOperation_IfIsoRimApi : PatchOperation
 
 ## Notes
 
+- Built-in adapters (only when that mod is active, no setting): Flourish - Combat Animations (part 28); Melee Animation
+  (`co.uk.epicguru.meleeanimation`): while the 3D view is on, its idle weapon and its animations are off (`Source/Compat/MeleeAnimOff.cs`).
 - Figure hooks also run for figures another mod draws through IsoRim's internals; attachments then follow that mod's
   placing as well.
 - The test modes for this Api are `Source/ProbeApi8.cs` and `Source/ProbeApi9.cs` / `ProbeApi9Check.cs` (harness only: dev mode, `-isorim3d` and a probe file).

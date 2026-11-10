@@ -729,6 +729,20 @@ namespace IsoRim
                 Log.Warning("[IsoRim] Flourish muzzle adapter off: " + e.Message);
             }
 
+            // Melee Animation: its flat idle weapon and animations off in the 3D view. Only when that mod is loaded; fails
+            // soft on its own (MeleeAnimOff).
+            try
+            {
+                if (MeleeAnimOff.Apply(harmony))
+                {
+                    hooked.Add("MeleeAnimOff (Melee Animation off in the 3D view: idle " + MeleeAnimOff.IdleHooked + ", animations " + MeleeAnimOff.RegisterHooked + ", starting points " + MeleeAnimOff.SourcesHooked + "/6)");
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warning("[IsoRim] Melee Animation adapter off: " + e.Message);
+            }
+
             // The scene depth for ambient occlusion (DepthGrab): patched now, before anything is drawn; fails soft on its own.
             DepthGrab.Hook();
             if (!DepthGrab.Broken)
