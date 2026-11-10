@@ -24,11 +24,16 @@ namespace IsoRim
         internal static People.Look look;
         internal static float ringGround;
         internal static bool lying, crawling, seated, bodyShown;
+        internal static Building_Bed sleptIn;   // (Api 67) the head-only bed People.Draw would draw the blanket of (SleeperBlanket)
+        internal static float ground;           // and the ground it passes with it
         private static Pawn lastPawn;
         private static int lastFrame = -1;
 
-        internal static void Fill(FigurePlacement p, People.Look l, float ring, bool isLying, bool isCrawling, bool isSeated, bool body)
+        internal static void Fill(FigurePlacement p, People.Look l, float ring, bool isLying, bool isCrawling, bool isSeated, bool body,
+            Building_Bed bed, float groundY)
         {
+            sleptIn = bed;
+            ground = groundY;
             result = p;
             look = l;
             ringGround = ring;
@@ -56,6 +61,7 @@ namespace IsoRim
             stride = strideWanted;
             face = faceWanted;
             filled = false;
+            sleptIn = null;
             try
             {
                 People.Draw(pawn, drawLoc, neverAim);

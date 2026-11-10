@@ -91,6 +91,9 @@ namespace IsoRim
         private bool live;
         private int placedState;   // 0 not read, 1 read, -1 none
         private FigurePlacement placed;
+        private Building_Bed sleptIn;   // (Api 67) with the placing read: the head-only bed and ground People.Draw would pass
+        private float sleptGround;
+        private int blanketState;       // 0 not asked in this call, 1 drawn (or waiting), -1 none
         internal bool ringNoted;
 
         internal void Set(Pawn p, Vector3 at, bool never, FigureKinds k)
@@ -103,12 +106,15 @@ namespace IsoRim
             live = true;
             placedState = 0;
             ringNoted = false;
+            sleptIn = null;
+            blanketState = 0;
         }
 
         internal void Clear()
         {
             live = false;
             pawn = null;
+            sleptIn = null;
         }
 
         /// <summary>The pawn (a corpse's inner pawn).</summary>
@@ -150,7 +156,54 @@ namespace IsoRim
             }
             placed = placement;
             placedState = 1;
+            sleptIn = Placing.sleptIn;
+            sleptGround = Placing.ground;
             return true;
+        }
+
+        /// <summary>(Api version 67) Draws IsoRim's own blanket over this person, as IsoRim draws it over its own figure: only when
+        /// the person lies in a bed that hides the sleeper's body (<see cref="FigurePlacement.HeadOnlyInBed"/>), at the placing IsoRim
+        /// worked out for this frame (the last <see cref="ReadPlacement"/> of this call, else IsoRim's own), with the same cache, build
+        /// budget, look and damage flash. True: drawn, or waiting for its build budget (drawn on a later frame's call). False, nothing
+        /// drawn: not in such a bed, the bed gone, no blanket fits it, animals and mechs, outside a drawer call or off the main thread.
+        /// A second call in the same drawer call draws nothing more and answers as the first.</summary>
+        public bool DrawSleeperBlanket()
+        {
+            if (!live || kind != FigureKinds.People || !UnityData.IsInMainThread)
+            {
+                return false;
+            }
+            if (blanketState != 0)
+            {
+                return blanketState > 0;
+            }
+            blanketState = -1;
+            if (placedState == 0)
+            {
+                ReadPlacement(default(FigurePlacementOptions), out _);
+            }
+            if (placedState != 1 || !placed.HeadOnlyInBed || sleptIn == null)
+            {
+                return false;
+            }
+            FigurePlacement p = placed;
+            bool flashWas = HitFlash.Pause();
+            if (flash > 0f)
+            {
+                HitFlash.Begin(pawn);   // (People.Draw draws the blanket inside the figure's flash)
+            }
+            try
+            {
+                if (SleeperBlanket.TryDraw(pawn, sleptIn, p.Position, p.Yaw, p.Size, sleptGround))
+                {
+                    blanketState = 1;
+                }
+            }
+            finally
+            {
+                HitFlash.Resume(flashWas);
+            }
+            return blanketState > 0;
         }
 
         // The placing read last in this call, or IsoRim's own if none was read yet.

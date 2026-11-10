@@ -15,6 +15,7 @@ Gate everything on `IsoRim.Api.Version >= 62`, and keep the old path for older I
 | Skipping IsoRim's hooks, face drawers, wounds, ring note, blob shadow | same by default | A figure you take gets nothing from IsoRim: no blob shadow, no hooks, no held or carried things, as with the prefix. |
 | Other mods' attachments (gene parts, decals, gear) lost on your figure | `ctx.RaiseFigureHooks(position, yaw, headPlace, bodyPlace)` | Optional. Their attachments are drawn in your head and body placings. `ctx.ReadFigureBoxes` gives IsoRim's head and body boxes to fit yours. |
 | Selection ring placed by IsoRim's body | `ctx.NoteSelectionBox(...)` | Optional. Without it the ring goes round IsoRim's placing, which costs the look work. |
+| Calling the internal `SleeperBlanket.Draw(pawn, bed, at, yaw, size, ground)` by reflection for the blanket in a head-only bed | `ctx.DrawSleeperBlanket()` (Api 67, Docs/Api.md part 46; gate on `IsoRim.Api.Version >= 67`) | No arguments: IsoRim passes its own bed, position, yaw, size and bed height for this frame, so the blanket sits exactly where it does on IsoRim's own figure. It draws only when `FigurePlacement.HeadOnlyInBed` is true, at most once per drawer call, and flashes with the figure when hit. Returns true when drawn or waiting for its build budget. |
 
 ## 2. Placing
 

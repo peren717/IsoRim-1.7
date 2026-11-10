@@ -793,7 +793,7 @@ namespace IsoRim
                     Skin = dead ? Corpses.Skin(pawn, pawn.story.SkinColor) : pawn.story.SkinColor,
                     BodyPlace = bodyPlace,
                     HeadPlace = headPlace
-                }, look, seated && !attached ? 0f : ground, lying || proneDown, crawling || proneDown, seated || noLegs, !headOnly);
+                }, look, seated && !attached ? 0f : ground, lying || proneDown, crawling || proneDown, seated || noLegs, !headOnly, sleptIn, ground);
                 return true;
             }
             SelectionRings.NotePerson(pawn, look, at, yaw, seated && !attached ? 0f : ground, bodyPlace, headPlace);

@@ -118,10 +118,11 @@ if (IsoRim.Api.Version >= 63) { /* ModelDef.barNormal, barMirror: the plane of t
 if (IsoRim.Api.Version >= 64) { /* ReleaseFigureMaterial: frees what ConfigureFigureMaterial made for a material no longer used (part 43) */ }
 if (IsoRim.Api.Version >= 65) { /* ModelDef.byBodyGraphic: an animal's model, legs, wings, tint or texture by the body graphic the game shows it with; ReadAnimalModel (part 44) */ }
 if (IsoRim.Api.Version >= 66) { /* camera poses (PushViewPose, BeforeViewUpdate, CurrentViewPose, SetPlayerView) and scene images without the interface (RequestSceneImage) (part 45) */ }
+if (IsoRim.Api.Version >= 67) { /* FigureDrawContext.DrawSleeperBlanket: a figure drawer draws IsoRim's sleeper blanket over its own figure (part 46) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -2273,6 +2274,7 @@ nothing registered every hook leaves at its first check.
 | `ctx.NoteSelectionBox(Vector3 position, float yaw, float ground, Vector3 min, Vector3 max)` | Where the selection ring goes: a box in the figure's space. Without it a person's ring goes round IsoRim's placing of the body. |
 | `ctx.ReadFigureBoxes(out headCentre, out headSize, out bodyCentre, out bodySize)` | IsoRim's head and body boxes in its head and body placings, to fit yours before raising hooks. |
 | `ctx.RaiseFigureHooks(Vector3 position, float yaw, Matrix4x4 headPlace, Matrix4x4 bodyPlace)` | Raises the other mods' figure hooks (part 1) on your figure: their attachments (gene parts, decals, gear) are drawn in your head and body placings (figure space, as `FigurePlacement.HeadPlace`), flashing with it. Returns the `FigureParts` they hide. People only. |
+| `ctx.DrawSleeperBlanket()` | (Version 67, part 46) IsoRim's blanket over a person in a bed that hides the body. |
 
 **Placing**
 
@@ -2524,6 +2526,46 @@ IsoRim.Api.RequestSceneImage(tex =>
   null.
 
 Version gate: `IsoRim.Api.Version >= 66`.
+
+## Part 46: the sleeper blanket on a drawer's figure (version 67)
+
+In a bed that hides the sleeper's body (the game's `bed_showSleeperBody` false, such as the single and double bed),
+IsoRim draws only the head and lays a blanket over the hidden body: the bed's own top pushed up by shoulders, chest, hips
+and legs, built per sleeper and bed. A figure drawer (part 43) takes the whole figure, so that blanket is not drawn for it. A
+drawer that wants it asks for it:
+
+```csharp
+private static bool Draw(IsoRim.FigureDrawContext ctx)
+{
+    if (!ctx.ReadPlacement(default, out IsoRim.FigurePlacement p)) return false;
+    DrawMyFigure(ctx, p);                                   // in a head-only bed: the head (p.HeadOnlyInBed)
+    if (IsoRim.Api.Version >= 67) ctx.DrawSleeperBlanket(); // the blanket, as on IsoRim's own figure
+    return true;
+}
+```
+
+| Member | Meaning |
+|---|---|
+| `bool FigureDrawContext.DrawSleeperBlanket()` | Draws IsoRim's blanket over this person exactly as over IsoRim's own figure: where `FigurePlacement.HeadOnlyInBed` is true, at the placing IsoRim worked out for this frame (position, yaw, size, the bed and the height of its top), with the same cache, the same build budget, the same look and the person's damage flash. You pass nothing. |
+
+- **True:** the blanket was drawn, or it is waiting for its build budget (IsoRim builds at most one new blanket a frame for
+  all sleepers, its own figures included; it is drawn on a later frame's call). Keep calling it every frame the figure is
+  drawn, as IsoRim does for its own figures.
+- **False, nothing drawn:** the person is not lying in a bed that hides the body (standing, sitting, on a sleeping spot or
+  another bed that shows the body, a couch, the ground), the bed is gone, no blanket fits the bed (no top found under the body),
+  an animal or mech, called outside a drawer call or off the main thread.
+- **Placing:** the last `ctx.ReadPlacement` of this call, or IsoRim's own placing if you read none (then this call reads
+  it, which costs IsoRim's look work for that pawn, as the read does). In a bed the options' `Stride` and `Face` change
+  nothing.
+- **Twice in one drawer call:** the second call draws nothing and answers as the first.
+- **Cost:** the same as for IsoRim's own figure: built once per sleeper and kept while the bed, its place, turn, model and
+  colours, the sleeper's spot and size stay the same; afterwards one draw of ready parts a frame. A blanket not drawn for 600
+  frames (the sleeper got up) is thrown away.
+- **Drawn as:** IsoRim's moving model parts (outline, sun shadow, stacked floors and their peek fade, culling); moved or
+  measured with the figure inside `Api.DrawFigure` / `Api.FigureBounds`.
+- **Unchanged:** IsoRim's own figures and their blankets; a drawer that does not call it draws no blanket, as before.
+
+Version gate: `IsoRim.Api.Version >= 67`.
 
 ## Part M: model packs (IsoRim.ModelDef)
 

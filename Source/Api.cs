@@ -129,7 +129,9 @@ namespace IsoRim
         // View3D.ApplyCamera, wins over first person, counts as turning, never writes settings), RemoveViewPoses, BeforeViewUpdate,
         // ViewPoseActive, ViewPoseOwner, CurrentViewPose, SetPlayerView; RequestSceneImage (SceneImageOptions), SceneImageTexture
         // (SceneImage.cs: late grab IsoRimShot at 4990, render-thread blit to RGBA8, deferred readback).
-        public static int Version => 66;
+        // 67: FigureDrawContext.DrawSleeperBlanket (Api62.cs): a figure drawer draws IsoRim's sleeper blanket (SleeperBlanket.TryDraw,
+        // shared with People.Draw) at the placing IsoRim worked out (Placing.sleptIn / ground); IsoRim's own figures unchanged.
+        public static int Version => 67;
 
         // ---- glass parts (Version 30)
 

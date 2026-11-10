@@ -21,8 +21,9 @@ namespace IsoRim
     //
     // Built once per sleeper and kept (Entry) while the bed, its place, turn, model, colours, the sleeper's spot and size stay
     // the same; drawn each frame as ready-made parts through the figure's own path (DynamicModels.DrawParts: outline, sun
-    // shadow, floors and their fade, Api.DrawFigure, culling). Not drawn for a figure another mod draws (Api 62 placing path:
-    // People.Draw returns before anything is drawn). No setting.
+    // shadow, floors and their fade, Api.DrawFigure, culling). Not drawn by itself for a figure another mod draws (Api 62
+    // placing path: People.Draw returns before anything is drawn); that mod's drawer asks for it with
+    // FigureDrawContext.DrawSleeperBlanket (Api 67: the same TryDraw, with the placing People.Draw worked out). No setting.
     internal static class SleeperBlanket
     {
         // ---- the shape (figure units of a size-1 adult; z from the head's middle toward the feet)
@@ -526,9 +527,16 @@ namespace IsoRim
         // Draws the lump of a sleeper in a head-only bed; at, yaw, size and ground as People.Draw places the figure.
         internal static void Draw(Pawn pawn, Building_Bed bed, Vector3 at, float yaw, float size, float ground)
         {
-            if (!On || bed == null || !bed.Spawned)
+            TryDraw(pawn, bed, at, yaw, size, ground);
+        }
+
+        // Draw's work, shared by People.Draw and (Api 67) FigureDrawContext.DrawSleeperBlanket: true when the lump was drawn or
+        // waits for this frame's build budget; false when there is nothing to draw (off, no bed, bed gone, no top found).
+        internal static bool TryDraw(Pawn pawn, Building_Bed bed, Vector3 at, float yaw, float size, float ground)
+        {
+            if (!On || pawn == null || bed == null || !bed.Spawned)
             {
-                return;
+                return false;
             }
             int frame = Time.frameCount;
             Sweep(frame);
@@ -559,7 +567,7 @@ namespace IsoRim
                 }
                 if (budgetUsed >= BuildsPerFrame)
                 {
-                    return;
+                    return true;   // (waits for a later frame's budget)
                 }
                 budgetUsed++;
                 if (e != null && e.parts != null)
@@ -586,10 +594,12 @@ namespace IsoRim
                 cache[pawn.thingIDNumber] = e;
             }
             e.used = frame;
-            if (e.parts != null)
+            if (e.parts == null)
             {
-                DynamicModels.DrawParts(e.parts, at, yaw, Matrix4x4.identity);
+                return false;
             }
+            DynamicModels.DrawParts(e.parts, at, yaw, Matrix4x4.identity);
+            return true;
         }
 
         private static bool Same(Color32 a, Color32 b)
