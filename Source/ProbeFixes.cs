@@ -159,6 +159,43 @@ namespace IsoRim
                     Log.Message("[IsoRim probe] weather " + a[0]);
                     return true;
                 }
+                case "weatherrun":
+                {
+                    // weatherrun=N: the weather's sheets back to their start (SkyOverlay.Reset) and the 3D drops' clock to 0,
+                    // then N game ticks at normal speed (the sheets pan only while the game runs), paused again: the same
+                    // weather frame every run.
+                    List<SkyOverlay> overlays = new List<SkyOverlay>(map.weatherManager.curWeather.Worker.overlays);
+                    foreach (GameCondition gc in map.gameConditionManager.ActiveConditions)
+                    {
+                        List<SkyOverlay> more = gc.SkyOverlays(map);
+                        if (more != null)
+                        {
+                            overlays.AddRange(more);
+                        }
+                    }
+                    foreach (SkyOverlay o in overlays)
+                    {
+                        o.Reset();
+                    }
+                    AccessTools.Field(typeof(Falling), "clock").SetValue(null, 0f);
+                    AccessTools.Field(typeof(Falling), "lastReal").SetValue(null, -1f);
+                    TickManager tm = Find.TickManager;
+                    TimeSpeed was = tm.CurTimeSpeed;
+                    tm.CurTimeSpeed = TimeSpeed.Normal;
+                    int n = Mathf.Clamp(I(a[0]), 1, 900);
+                    for (int i = 0; i < n; i++)
+                    {
+                        tm.DoSingleTick();
+                    }
+                    tm.CurTimeSpeed = was;
+                    foreach (Pawn tp in map.mapPawns.AllPawnsSpawned)
+                    {
+                        tp.Drawer.tweener.ResetTweenedPosToRoot();
+                    }
+                    lastTicks = tm.TicksGame;
+                    Log.Message("[IsoRim probe] weatherrun " + n + " ticks, " + overlays.Count + " sheets reset");
+                    return true;
+                }
                 case "weathercheck":
                 {
                     // How each overlay showing now is drawn in 3D (Falling): kind, sheet and the drops' hue.

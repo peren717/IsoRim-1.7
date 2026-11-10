@@ -101,7 +101,7 @@ namespace IsoRim
         public float fov = 40f;          // perspective: vertical field of view, degrees
         public float viewDistance = 160f; // perspective: how far past the screen centre the map is drawn, cells
         public bool thingLabels = true;  // labels on things lying on the map (stack counts, quality)
-        public bool weather3D = false;   // rain and snow falling in 3D, fog and haze stood up before the camera (Weather); off: the game's flat sheets
+        public bool weather3D = false;   // rain and snow falling in 3D, fog and haze stood up before the camera (Weather); off: the game's own sheets laid over the screen as in 2D
         public float weatherSize = 1f;   // how big rain and snow look on screen
         public float minZoom = 4f;       // how close the camera can zoom in (the game stops at 11)
         public float labelFade = 1.4f;   // perspective: labels fade out past this many times the distance to the screen centre (4 = never)

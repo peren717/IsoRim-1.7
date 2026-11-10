@@ -13,15 +13,19 @@ namespace IsoRim
     // stood up just in front of the camera instead, so the streaks fall down the screen.
     public static class Weather
     {
-        private static Mesh worldCurtain, screenCurtain;
+        private static Mesh worldCurtain, screenCurtain, flatCurtain;
         private static Vector2 worldSpan;
+        private static Vector3[] flatVerts;
+        private static Matrix4x4 flatMatrix;
+        private static int flatFrame = -1;
 
         // The world sheet (MeshPool.wholeMapPlane) repeats its texture every 10 cells, so its drops grow
         // as the camera zooms in. On the curtain they keep one size on screen: this many repeats up the
         // screen at weatherSize 1 (about the game's middle zoom).
         private const float TilesUpScreen = 15f;
 
-        // The option (weather3D, off at first): off, every weather overlay is the game's own, as without the mod.
+        // The option (weather3D, off at first): off, every weather overlay is the game's own sheet, laid over the
+        // screen as in 2D (FlatCurtain).
         public static bool On
         {
             get { return View3D.Ready && IsoRimMod.Settings.weather3D; }
@@ -29,9 +33,14 @@ namespace IsoRim
 
         public static bool DrawWorldOverlay_Prefix(Map __0, Material __1, int __3)
         {
-            if (!On || __0 == null || __1 == null)
+            if (!View3D.Ready || __0 == null || __1 == null)
             {
                 return true;
+            }
+            if (!IsoRimMod.Settings.weather3D)
+            {
+                Graphics.DrawMesh(FlatCurtain(__0), flatMatrix, __1, __3);
+                return false;
             }
             Falling.Kind kind = Falling.KindOf(__1);
             if (kind != Falling.Kind.None)
@@ -66,6 +75,46 @@ namespace IsoRim
             }
             Graphics.DrawMesh(screenCurtain, View3D.CurtainMatrix(), __0, __2);
             return false;
+        }
+
+        // The option off: the game's sheet as the 2D view shows it, on the curtain. Its shaders (RainOverlay, FogOverlay,
+        // GlowOverlay, MovingShadesOverlay) take the texture from the mesh's own XZ position in cells (on the world sheet:
+        // from the map's middle), not from its UV, and pan it by the material's texture offset. So the quad's corners are
+        // the sheet's cells the 2D view would show at the game's zoom (2 x orthographicSize high), round the camera's focus
+        // measured along the screen's right and up on the ground, and the matrix shrinks them to the curtain: the pattern
+        // has the 2D size and pans at the 2D speed and direction on screen, and moves with the map as the view scrolls
+        // (exactly as 2D while the camera is not turned).
+        private static Mesh FlatCurtain(Map map)
+        {
+            if (flatFrame == Time.frameCount && flatCurtain != null)
+            {
+                return flatCurtain;   // a second sheet this frame (foggy rain, torrential rain, blizzard)
+            }
+            flatFrame = Time.frameCount;
+            float h = 2f * View3D.OrthoSize;
+            float w = h * View3D.Aspect;
+            Vector3 focus = (Find.Camera != null ? Find.Camera.transform.position : Vector3.zero) - map.Center.ToVector3Shifted();
+            Vector3 r = new Vector3(View3D.Right.x, 0f, View3D.Right.z);
+            Vector3 u = new Vector3(View3D.Forward.x, 0f, View3D.Forward.z);
+            if (u.sqrMagnitude < 1e-6f)
+            {
+                u = new Vector3(View3D.Up.x, 0f, View3D.Up.z);   // looking straight down
+            }
+            float cx = Vector3.Dot(focus, r.normalized);
+            float cz = Vector3.Dot(focus, u.normalized);
+            if (flatCurtain == null)
+            {
+                flatVerts = new Vector3[4];
+                flatCurtain = Quad(null, Vector2.one);
+            }
+            flatVerts[0] = new Vector3(cx - 0.5f * w, 0f, cz - 0.5f * h);
+            flatVerts[1] = new Vector3(cx - 0.5f * w, 0f, cz + 0.5f * h);
+            flatVerts[2] = new Vector3(cx + 0.5f * w, 0f, cz + 0.5f * h);
+            flatVerts[3] = new Vector3(cx + 0.5f * w, 0f, cz - 0.5f * h);
+            flatCurtain.vertices = flatVerts;
+            flatCurtain.RecalculateBounds();
+            flatMatrix = View3D.CurtainMatrix() * Matrix4x4.Scale(new Vector3(1f / w, 1f, 1f / h)) * Matrix4x4.Translate(new Vector3(-cx, 0f, -cz));
+            return flatCurtain;
         }
 
         // A 1 by 1 quad on the XZ plane facing up (as MeshPool.plane10), seen from both sides,
