@@ -155,9 +155,23 @@ namespace IsoRim
         // height, or on a card in front of it (EffectLift). Called while the game ticks.
         public static void RaiseRound(Vector3 spawn, Vector3 centre, float height, float radius, bool flat, FleckDef fleck)
         {
+            RaiseRound(spawn, centre, height, radius, flat, fleck, Matrix4x4.identity);
+        }
+
+        // The same, on an upper floor (floor: the matrix of what it is round, Floors.ExtraMatrix; BodyFlecks).
+        public static void RaiseRound(Vector3 spawn, Vector3 centre, float height, float radius, bool flat, FleckDef fleck, Matrix4x4 floor)
+        {
             Sweep();
             int lifeTicks = Mathf.CeilToInt((fleck.solidTime + fleck.fadeInTime + fleck.fadeOutTime) * 60f) + 120;
-            puffs[Key(spawn)] = new Puff { height = height, until = Find.TickManager.TicksGame + lifeTicks, round = (byte)(flat ? 1 : 2), centre = centre, radius = radius };
+            puffs[Key(spawn)] = new Puff { height = height, until = Find.TickManager.TicksGame + lifeTicks, round = (byte)(flat ? 1 : 2), centre = centre, radius = radius,
+                floor = floor, onFloor = floor != Matrix4x4.identity };
+        }
+
+        // True if a fleck about to be created at spawn was placed by one of the rules above (and has not faded yet).
+        public static bool Raised(Vector3 spawn)
+        {
+            Puff p;
+            return puffs.Count > 0 && puffs.TryGetValue(Key(spawn), out p) && Find.TickManager != null && Find.TickManager.TicksGame <= p.until;
         }
 
         // The game draws puffs on worker threads, so the puff being drawn is noted per thread and
@@ -219,10 +233,11 @@ namespace IsoRim
                 float a = View3D.Pitch * Mathf.Deg2Rad;
                 Vector3 at = standCentre + Quaternion.Euler(0f, View3D.Yaw, 0f) * Vector3.back * (standRadius * Mathf.Cos(a));
                 float h = standHeight + standRadius * Mathf.Sin(a);
-                return Matrix4x4.Translate(new Vector3(at.x, p.y + h / s, at.z))
+                Matrix4x4 card = Matrix4x4.Translate(new Vector3(at.x, p.y + h / s, at.z))
                     * Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f))
                     * Matrix4x4.Rotate(Quaternion.Euler(View3D.Pitch - 90f, View3D.Yaw, 0f))
                     * Matrix4x4.Translate(-new Vector3(standCentre.x, p.y, standCentre.z)) * matrix;
+                return standOnFloor ? standFloor * card : card;
             }
             Matrix4x4 local = Matrix4x4.Translate(-p) * matrix;
             Matrix4x4 stood = Matrix4x4.Translate(new Vector3(p.x, p.y + standHeight / s, p.z))

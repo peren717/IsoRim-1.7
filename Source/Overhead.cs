@@ -16,12 +16,13 @@ namespace IsoRim
     //     hearts, healing crosses, meditation; any MetaOverlays fleck where a pawn or a pawn's casket is):
     //     OnFleck, drawn stood up by Emitters (Stand)
     // Speech, thought and mood bubbles and the signs thrown off a pawn (motes attached to it) keep their own layout
-    // beside the head (Patches.BubbleOwner); name labels follow the figure in Patches.LabelDrawPosFor_Prefix.
+    // beside the head (Patches.BubbleOwner); name labels follow the figure in Patches.LabelDrawPosFor_Prefix. Effects thrown
+    // at the body (MoteOverhead: breath in the cold) are laid on it by BodyFlecks.
     public static class Overhead
     {
         public const float Gap = 0.2f;             // between the head's top and an icon's middle, in cells
         internal const float LyingTop = 0.38f;     // a lying (downed, sleeping on the ground) figure's top (also PawnLabels)
-        private const float BedTop = 0.55f;        // a figure lying in a bed
+        internal const float BedTop = 0.55f;       // a figure lying in a bed (also BodyFlecks)
 
         // Where the middle of an icon over this pawn stands, in cells above its floor.
         public static float Height(Pawn p)
@@ -49,7 +50,7 @@ namespace IsoRim
         // cell with a pawn in it (or a casket or bed holding one) is drawn standing up over that pawn's head.
         public static void OnFleck(Map map, FleckCreationData data)
         {
-            // (MetaOverlays: the icons; MoteOverhead flecks are impacts, blood and puffs at the pawn's body, left as they are)
+            // (MetaOverlays: the icons; MoteOverhead flecks at the pawn's body, its breath and the like, are BodyFlecks')
             if (Off || !View3D.Ready || map == null || data.def == null || data.def.altitudeLayer != AltitudeLayer.MetaOverlays)
             {
                 return;

@@ -627,6 +627,22 @@ namespace IsoRim
             // Flecks other mods' projectiles spawn in their own DrawAt (trails) follow the projectile as drawn in 3D.
             Patch("projectile trails in 3D", AccessTools.Method(typeof(FleckManager), nameof(FleckManager.CreateFleck), new[] { typeof(FleckCreationData) }),
                 prefix: nameof(ProjectileFleck_Prefix));
+            // Effects thrown at a 3D figure's body (breath in the cold) at the body, not on the ground under it (BodyFlecks).
+            // Last of the CreateFleck prefixes: what the others placed is left to them.
+            Patch("effects at 3D figures' bodies", AccessTools.Method(typeof(FleckManager), nameof(FleckManager.CreateFleck), new[] { typeof(FleckCreationData) }),
+                prefix: nameof(BodyFleck_Prefix));
+            try
+            {
+                // (whose effect a fleck is while an effecter runs)
+                HarmonyMethod bPre = new HarmonyMethod(typeof(BodyFlecks), nameof(BodyFlecks.Effecter_Prefix));
+                HarmonyMethod bFin = new HarmonyMethod(typeof(BodyFlecks), nameof(BodyFlecks.Effecter_Finalizer));
+                harmony.Patch(AccessTools.Method(typeof(Effecter), nameof(Effecter.EffectTick)), prefix: bPre, finalizer: bFin);
+                harmony.Patch(AccessTools.Method(typeof(Effecter), nameof(Effecter.Trigger)), prefix: bPre, finalizer: bFin);
+            }
+            catch (Exception e)
+            {
+                Log.Error("[IsoRim] Patching effects at a figure's body failed: " + e);
+            }
             // Drop pods, shuttles, meteorites and every other skyfaller come down from (or go up into) the sky with a real
             // height, not slid over the ground (Skyfallers).
             Patch("skyfallers from the sky", AccessTools.DeclaredMethod(typeof(Skyfaller), "DrawAt", new[] { typeof(Vector3), typeof(bool) }),
@@ -4915,6 +4931,19 @@ namespace IsoRim
             catch (Exception e)
             {
                 Log.ErrorOnce("[IsoRim] Raising an icon over a figure failed: " + e, 93611580);
+            }
+        }
+
+        [HarmonyPriority(Priority.Last)]
+        public static void BodyFleck_Prefix(FleckManager __instance, ref FleckCreationData fleckData, bool __runOriginal)
+        {
+            try
+            {
+                BodyFlecks.OnFleck(__instance.parent, ref fleckData, __runOriginal);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Laying an effect on a figure's body failed: " + e, 93612131);
             }
         }
 
