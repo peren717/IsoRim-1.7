@@ -633,7 +633,7 @@ namespace IsoRim
             System.IO.Directory.CreateDirectory(dir);
             walkPending = System.IO.Path.Combine(dir, "walk_" + walkTag + "_" + walkFrame.ToString("000") + ".png");
             ScreenCapture.CaptureScreenshot(walkPending);
-            Log.Message("[IsoRim probe] walkfilm " + walkTag + " frame " + walkFrame + " (Unity frame " + Time.frameCount + ", tick " + Find.TickManager.TicksGame + ")" + EntityFilmNote());
+            Log.Message("[IsoRim probe] walkfilm " + walkTag + " frame " + walkFrame + " (Unity frame " + Time.frameCount + ", tick " + Find.TickManager.TicksGame + ")" + EntityFilmNote() + YayoFilmNote());
             walkFrame++;
         }
     }

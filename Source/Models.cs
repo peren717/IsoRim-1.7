@@ -406,7 +406,7 @@ namespace IsoRim
         public bool smoothTextured = false;
         // Body animations other mods give the animal's sprite (BodyAnims: mods patching PawnRenderer.GetBodyPos / BodyAngle,
         // Yayo's Animation for one) put on the whole animal while it stands or walks: the shift as a move along the camera's
-        // right and up, the sprite's turn as a lean (facing east or west: nose down or up; south or north: a roll to the side).
+        // right and up, the sprite's turn as the same turn on screen, about the line toward the camera (SpriteMotion).
         // For legless models (blobs that glide or hop: hop and the mod's sway add up). Off (default): the model keeps only its
         // own animation, with or without such a mod. Opt-in, per model.
         public bool bodyAnims = false;

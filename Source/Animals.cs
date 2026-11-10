@@ -242,7 +242,7 @@ namespace IsoRim
             if (BodyAnims.Active && !lying && !attached && air <= 0f && lift <= 0f && flight <= 0f)
             {
                 Matrix4x4 sway;
-                if (BodyAnims.AnimalSway(pawn, drawLoc, yaw, def.bodyCentre * size, def.bodyAnims, out sway))
+                if (BodyAnims.AnimalSway(pawn, drawLoc, ground, yaw, def.bodyCentre * size, def.bodyAnims, out sway))
                 {
                     bodyPose = sway * bodyPose;
                     legPose = sway * legPose;

@@ -690,7 +690,7 @@ namespace IsoRim
                 }
 
                 // A body animation another mod gives the game's sprite (BodyAnims: none, unless a mod patches it).
-                pose = BodyAnims.Apply(pawn, drawLoc, yaw, size, pose);
+                pose = BodyAnims.Apply(pawn, drawLoc, ground + lift, yaw, size, pose);
                 if (crouched)
                 {
                     pose = pose * Poses.CrouchLean(crouch);   // crouching (Api 45): leaning forward about the feet
@@ -949,7 +949,7 @@ namespace IsoRim
                 return false;
             }
             float yaw = aiming ? aimDrawn : BodyAnims.Facing(pawn).AsAngle;
-            Matrix4x4 pose = BodyAnims.Apply(pawn, drawLoc, yaw, size, Matrix4x4.identity);
+            Matrix4x4 pose = BodyAnims.Apply(pawn, drawLoc, (seated ? seat.Lift : 0f) + lift, yaw, size, Matrix4x4.identity);
             if (crouched)
             {
                 pose = pose * Poses.CrouchLean(crouch);

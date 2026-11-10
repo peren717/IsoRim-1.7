@@ -14,9 +14,11 @@ namespace IsoRim
     // Such mods (Yayo's Animation, for one) patch PawnRenderer.GetBodyPos and PawnRenderer.BodyAngle, which the game uses to
     // place and turn the sprite. For a standing pawn the game's own answers are fixed: the drawn position unchanged and no
     // turn. Whatever a patched method gives on top of that is the mod's animation, read here (not copied: whatever the mod
-    // works out, by whatever means) and put on the figure as the sprite would show it on screen: the shift across the
-    // picture along the camera's right, up the picture as height; the sprite's turn as a lean forward or back along the
-    // figure's own facing (ForwardLean), about the body's middle. Picture units are scaled to the figure's (as its weapon).
+    // works out, by whatever means) and put on the figure as the sprite shows it on screen (SpriteMotion, 2026-11-09): the
+    // shift across the picture along the camera's right, up the picture as height; the sprite's turn, a turn in the picture's
+    // plane, as the same turn of the figure about the line from the body's middle toward the camera, clockwise on screen as
+    // the sprite's, whichever way the figure faces (no reading of what the mod meant per facing). Picture units are scaled
+    // to the figure's (as its weapon).
     // When no other mod patches either method nothing is read at all (Active: decided once, after every mod has loaded).
     public static class BodyAnims
     {
@@ -114,7 +116,7 @@ namespace IsoRim
 
         // The figure's pose (figure space, before its turn by yaw and its size) with the animation put on: pose unchanged
         // when there is none.
-        public static Matrix4x4 Apply(Pawn pawn, Vector3 drawLoc, float yaw, float size, Matrix4x4 pose)
+        public static Matrix4x4 Apply(Pawn pawn, Vector3 drawLoc, float height, float yaw, float size, Matrix4x4 pose)
         {
             if (!Active)
             {
@@ -126,29 +128,23 @@ namespace IsoRim
             {
                 return pose;
             }
+            // (the shift in picture units, scaled to the figure's; the turn about the body's middle)
+            float middle = Middle * size;
+            Matrix4x4 posed = SpriteMotion.Local(yaw, new Vector2(shift.x, shift.z) * (Picture * size), turn, new Vector3(0f, middle, 0f),
+                new Vector3(drawLoc.x, height + middle, drawLoc.z)) * pose;
             if (Probe.On)
             {
-                Probe.LeanSample(pawn, turn, ForwardLean(Facing(pawn), turn));   // (harness: leancheck)
+                Probe.LeanSample(pawn, turn, new Vector3(drawLoc.x, height, drawLoc.z), yaw, size, pose, posed);   // (harness: leancheck)
             }
-            Vector3 right = Quaternion.AngleAxis(View3D.Yaw, Vector3.up) * Vector3.right;
-            float k = Picture * size;
-            Vector3 move = right * (shift.x * k) + Vector3.up * (shift.z * k);
-            float middle = Middle * size;
-            // The sprite's turn is a lean the figure makes along its own facing, forward or back, as much as the sprite
-            // turns (a turn in the camera's view leaned the figure sideways whenever it faced away from the screen's sides).
-            Matrix4x4 lean = Matrix4x4.Translate(new Vector3(0f, middle, 0f)) * Matrix4x4.Rotate(Quaternion.AngleAxis(ForwardLean(Facing(pawn), turn), Vector3.right))
-                * Matrix4x4.Translate(new Vector3(0f, -middle, 0f));
-            Quaternion facing = Quaternion.AngleAxis(yaw, Vector3.up);
-            return Matrix4x4.Rotate(Quaternion.Inverse(facing)) * Matrix4x4.Translate(move) * Matrix4x4.Rotate(facing) * lean * pose;
+            return posed;
         }
 
         // The same for a 3D animal whose model opts in (ModelDef.bodyAnims; Animals.Draw, standing or walking): the whole animal
-        // (pose space: before its turn by yaw, already sized) moved and leaned as the sprite shows it. The shift goes on as it is,
-        // in cells: such mods move an animal's sprite by map cells whatever its size, and the model stands at the sprite's size.
-        // The turn: facing east or west the sprite pitches (nose down for a forward lean, ForwardLean), facing south or north it
-        // tilts sideways (a roll toward the animal's left for a forward lean), about the middle of its trunk (pivot, height).
+        // (pose space: before its turn by yaw, already sized) moved and turned as the sprite shows it (SpriteMotion), about the
+        // middle of its trunk (pivot, height over its ground). The shift goes on as it is, in cells: such mods move an animal's
+        // sprite by map cells whatever its size, and the model stands at the sprite's size.
         // apply false (the model has not opted in): nothing (harness: only noted). False, sway identity, when there is nothing.
-        public static bool AnimalSway(Pawn pawn, Vector3 drawLoc, float yaw, float pivot, bool apply, out Matrix4x4 sway)
+        public static bool AnimalSway(Pawn pawn, Vector3 drawLoc, float ground, float yaw, float pivot, bool apply, out Matrix4x4 sway)
         {
             sway = Matrix4x4.identity;
             if (!Active || (!apply && !Probe.On))
@@ -161,27 +157,21 @@ namespace IsoRim
             {
                 return false;
             }
-            Rot4 facing = Facing(pawn);
-            float lean = ForwardLean(facing, turn);
-            bool pitch = facing.IsHorizontal;
             if (Probe.On)
             {
-                Probe.SwaySample(pawn, shift, turn, lean, pitch, apply);   // (harness: swaycheck)
+                Probe.SwaySample(pawn, shift, turn, apply);   // (harness: swaycheck)
             }
             if (!apply || (shift.sqrMagnitude < 1e-8f && Mathf.Abs(turn) < 0.01f))
             {
                 return false;
             }
-            Vector3 right = Quaternion.AngleAxis(View3D.Yaw, Vector3.up) * Vector3.right;
-            Vector3 move = Quaternion.Inverse(Quaternion.AngleAxis(yaw, Vector3.up)) * (right * shift.x + Vector3.up * shift.z);
-            Quaternion tilt = Quaternion.AngleAxis(lean, pitch ? Vector3.right : Vector3.forward);
-            sway = Matrix4x4.Translate(move + new Vector3(0f, pivot, 0f)) * Matrix4x4.Rotate(tilt) * Matrix4x4.Translate(new Vector3(0f, -pivot, 0f));
+            sway = SpriteMotion.Local(yaw, new Vector2(shift.x, shift.z), turn, new Vector3(0f, pivot, 0f), new Vector3(drawLoc.x, ground + pivot, drawLoc.z));
             return true;
         }
 
         // The facing other mods give a standing pawn's sprite (PawnRenderer.ParallelGetPreRenderResults' rotOverride, set in
         // their prefixes: Patches.PreRenderResults_Prefix notes it, on the game's worker threads, before IsoRim's camera turn),
-        // per pawn with the frame it was noted in. A figure faces it while it lasts (People: standing, not aiming; the lean).
+        // per pawn with the frame it was noted in. A figure faces it while it lasts (People: standing, not aiming).
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, int> facings = new System.Collections.Concurrent.ConcurrentDictionary<int, int>();
 
         public static void NoteFacing(Pawn pawn, Rot4? rot)
@@ -208,14 +198,6 @@ namespace IsoRim
         {
             Rot4 f = Facing(pawn);
             return f != pawn.Rotation ? f.AsAngle : (float?)null;
-        }
-
-        // The sprite's turn (degrees clockwise) as a lean forward (positive) along the pawn's facing. Such mods draw a
-        // pawn facing east as the model: clockwise is a lean forward; facing west the turn is mirrored; facing south and
-        // north the sprite only tilts sideways, mirrored for north (Yayo's Animation: Core.Ani), so the same holds.
-        public static float ForwardLean(Rot4 facing, float turn)
-        {
-            return facing == Rot4.West || facing == Rot4.North ? -turn : turn;
         }
 
         // The same for a crawling pawn (Crawl), whose sprite lies on the ground: what the patched methods add to the game's

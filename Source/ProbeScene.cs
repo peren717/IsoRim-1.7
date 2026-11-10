@@ -2457,6 +2457,7 @@ namespace IsoRim
             CutTick();
             BurstTick();
             WalkFilmTick();
+            YayoSeekTick();
             GhostTick();
             GameGhostTick();
             if (swayStill)
