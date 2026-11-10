@@ -404,6 +404,17 @@ namespace IsoRim
         private const float CarryHeight = 0.36f;  // and the height of its bottom
         private const float HandY = 0.46f;        // where the hands are on the figure (a held weapon, a work tool)
 
+        // In a bed, how far the head lies from the middle of the sleeper's cell, toward the bed's head end, as the game draws it
+        // (PawnRenderer.GetBodyPos): the body goes back from the cell by the head offset plus the body type's bedOffset and the
+        // bed's bed_pawnDrawOffset, and the head forward by the head offset again, so only those two are left. 0 for adults in
+        // the game's beds; a baby (bedOffset -0.08) in a crib (-0.15) lies 0.23 cells toward the head end, its feet inside the crib.
+        private static Vector3 BedHeadShift(Pawn pawn, Building_Bed bed)
+        {
+            float along = -((pawn.story != null && pawn.story.bodyType != null ? pawn.story.bodyType.bedOffset : 0f)
+                + (bed.def.building != null ? bed.def.building.bed_pawnDrawOffset : 0f));
+            return along == 0f ? Vector3.zero : bed.Rotation.FacingCell.ToVector3() * -along;   // (the bed faces its foot end)
+        }
+
         private static readonly Dictionary<int, Look> looks = new Dictionary<int, Look>();
         private static readonly Dictionary<string, Model> models = new Dictionary<string, Model>();
         private static Model head;
@@ -606,6 +617,7 @@ namespace IsoRim
                 {
                     // In a bed the person's place is where their head is, and they lie along the bed.
                     yaw = bed.Rotation.AsAngle;
+                    drawLoc += BedHeadShift(pawn, bed);   // where the game draws the head (a baby in a crib: toward the head end)
                     ground = Poses.SleeperHeight(pawn, bed);   // the bed's surface, or their slot's (Api 28: a bunk's level)
                     headOnly = ground > 0.05f && bed.def.building != null && !bed.def.building.bed_showSleeperBody;
                     sleptIn = headOnly ? bed : null;

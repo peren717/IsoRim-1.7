@@ -959,5 +959,38 @@ namespace IsoRim
             return "blanket " + (has ? "built" : "none") + ", drawn now " + Has(pawn) + ", built " + Built + ", build ms "
                 + (BuildTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency).ToString("0.0");
         }
+
+        // For the harness (probe cribcheck, drawercheck): a hash of IsoRim's own lump of this sleeper (its parts' corners and
+        // where it is placed), to compare builds; "none" without one.
+        internal static string PartsHash(Pawn pawn)
+        {
+            Entry e;
+            if (pawn == null || !cache.TryGetValue(Own(pawn), out e) || e.parts == null)
+            {
+                return "none";
+            }
+            unchecked
+            {
+                int h = 17, n = 0;
+                foreach (DynamicModels.Part part in e.parts)
+                {
+                    if (part.mesh == null)
+                    {
+                        continue;
+                    }
+                    Vector3[] vs = part.mesh.vertices;
+                    n += vs.Length;
+                    foreach (Vector3 v in vs)
+                    {
+                        h = h * 31 + Mathf.RoundToInt(v.x * 10000f);
+                        h = h * 31 + Mathf.RoundToInt(v.y * 10000f);
+                        h = h * 31 + Mathf.RoundToInt(v.z * 10000f);
+                    }
+                }
+                h = h * 31 + Mathf.RoundToInt(e.at.x * 10000f);
+                h = h * 31 + Mathf.RoundToInt(e.at.z * 10000f);
+                return h.ToString("x8") + "/" + e.parts.Count + "p/" + n + "v";
+            }
+        }
     }
 }
