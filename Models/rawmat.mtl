@@ -71,3 +71,13 @@ map_Kd IsoRim/Swatches/Metal
 newmtl rawmat_steelbar_end
 Kd 0.420 0.430 0.460
 map_Kd IsoRim/Swatches/Metal
+
+# --- steel lumps (tools/make_steel2_concept.py) ---
+newmtl rawmat_steellump
+Kd 0.550 0.510 0.470
+map_Kd IsoRim/Swatches/Metal
+
+newmtl rawmat_steellump_rust
+Kd 0.600 0.380 0.210
+map_Kd IsoRim/Swatches/Metal
+# --- end steel lumps ---
