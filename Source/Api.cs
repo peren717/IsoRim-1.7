@@ -131,7 +131,10 @@ namespace IsoRim
         // (SceneImage.cs: late grab IsoRimShot at 4990, render-thread blit to RGBA8, deferred readback).
         // 67: FigureDrawContext.DrawSleeperBlanket (Api62.cs): a figure drawer draws IsoRim's sleeper blanket (SleeperBlanket.TryDraw,
         // shared with People.Draw) at the placing IsoRim worked out (Placing.sleptIn / ground); IsoRim's own figures unchanged.
-        public static int Version => 67;
+        // 68: Api68.cs: View3DActive (get/set View3D.Active as the corner button; not in a cutscene, not off while LockedOn),
+        // ControlsLocked, LeaveFirstPerson (FirstPerson.Leave(null)), KeyHeld (View3D.BindingHeld), PerspectiveTanHalf
+        // (= View3D.DefaultTanHalf), static DrawSleeperBlanket (SleeperBlanket.TryDraw with start and scale; cache key per start/scale).
+        public static int Version => 68;
 
         // ---- glass parts (Version 30)
 

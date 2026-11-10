@@ -23,7 +23,8 @@ namespace IsoRim
     // the same; drawn each frame as ready-made parts through the figure's own path (DynamicModels.DrawParts: outline, sun
     // shadow, floors and their fade, Api.DrawFigure, culling). Not drawn by itself for a figure another mod draws (Api 62
     // placing path: People.Draw returns before anything is drawn); that mod's drawer asks for it with
-    // FigureDrawContext.DrawSleeperBlanket (Api 67: the same TryDraw, with the placing People.Draw worked out). No setting.
+    // FigureDrawContext.DrawSleeperBlanket (Api 67: the same TryDraw, with the placing People.Draw worked out), or with its own
+    // placing, start and scale through Api.DrawSleeperBlanket (Api 68: one lump per sleeper and start/scale, Key). No setting.
     internal static class SleeperBlanket
     {
         // ---- the shape (figure units of a size-1 adult; z from the head's middle toward the feet)
@@ -37,6 +38,8 @@ namespace IsoRim
         private const float RefStart = 0.14f;   // the lump starts here (under the jaw)
         private const float Height = 1.7f;      // the approved height (x the keys below)
         private const int NS = 19, NU = 11;     // rows along and columns across, inner
+        internal const float MinScale = 0.25f, MaxScale = 3f;   // (Api 68) Api.DrawSleeperBlanket's scale is kept within these,
+        internal const float MaxStart = 3f;                      // its start (cells) below this
 
         private static readonly float[] HZ = { RefStart, 0.19f, 0.26f, 0.40f, 0.54f, 0.66f, 0.80f, 0.92f, End };
         private static readonly float[] HH = { 0f, 0.07f, 0.12f, 0.145f, 0.15f, 0.145f, 0.115f, 0.085f, 0f };
@@ -512,8 +515,36 @@ namespace IsoRim
             public List<DynamicModels.Part> parts;   // null: nothing to draw (no top found)
         }
 
-        private static readonly Dictionary<int, Entry> cache = new Dictionary<int, Entry>();
-        private static readonly List<int> stale = new List<int>();
+        // (Api 68) A sleeper's lump per start and scale asked for (Api.DrawSleeperBlanket), so callers asking for different ones
+        // keep a lump each; IsoRim's own (and Api 67's) is (start -1, scale -1).
+        private struct Key : System.IEquatable<Key>
+        {
+            public int pawn;
+            public float start, scale;
+
+            public bool Equals(Key o)
+            {
+                return pawn == o.pawn && start == o.start && scale == o.scale;
+            }
+
+            public override bool Equals(object o)
+            {
+                return o is Key && Equals((Key)o);
+            }
+
+            public override int GetHashCode()
+            {
+                return (pawn * 397) ^ (start.GetHashCode() * 31) ^ scale.GetHashCode();
+            }
+        }
+
+        private static Key Own(Pawn pawn)
+        {
+            return new Key { pawn = pawn.thingIDNumber, start = -1f, scale = -1f };
+        }
+
+        private static readonly Dictionary<Key, Entry> cache = new Dictionary<Key, Entry>();
+        private static readonly List<Key> stale = new List<Key>();
         private static int sweepFrame;
         private const int BuildsPerFrame = 1;
         private static int budgetFrame, budgetUsed;
@@ -534,9 +565,31 @@ namespace IsoRim
         // waits for this frame's build budget; false when there is nothing to draw (off, no bed, bed gone, no top found).
         internal static bool TryDraw(Pawn pawn, Building_Bed bed, Vector3 at, float yaw, float size, float ground)
         {
+            return TryDraw(pawn, bed, at, yaw, size, ground, -1f, -1f);
+        }
+
+        // (Api 68, Api.DrawSleeperBlanket) The same with the lump's start and scale given. start: cells from at (the head's middle)
+        // toward the feet where the lump begins (below 0: IsoRim's, RefStart x size x scale). scale: the lump built as for a body
+        // that many times the size (height, length, width within the bed's, the dips; 1, 0 or below: IsoRim's). Built and drawn
+        // as People.Draw's lump would be for the figure at size x scale, moved along the bed so the lump starts at start: with
+        // both IsoRim's, exactly IsoRim's own lump (the same cache entry, the same parts).
+        internal static bool TryDraw(Pawn pawn, Building_Bed bed, Vector3 at, float yaw, float size, float ground, float start, float scale)
+        {
             if (!On || pawn == null || bed == null || !bed.Spawned)
             {
                 return false;
+            }
+            Key key = Own(pawn);
+            if (scale > 0f && scale != 1f && !float.IsInfinity(scale))
+            {
+                key.scale = Mathf.Clamp(scale, MinScale, MaxScale);
+                size *= key.scale;
+            }
+            if (start >= 0f && !float.IsInfinity(start))
+            {
+                key.start = Mathf.Min(start, MaxStart);
+                Vector3 along = Quaternion.AngleAxis(yaw, Vector3.up) * new Vector3(0f, 0f, key.start - RefStart * size);   // (size x scale)
+                at = new Vector3(at.x + along.x, at.y, at.z + along.z);
             }
             int frame = Time.frameCount;
             Sweep(frame);
@@ -554,7 +607,7 @@ namespace IsoRim
             bool textured = IsoRimMod.Settings.texturedModels;
             int stamp = SmoothFigures.Stamp;
             Entry e;
-            if (!cache.TryGetValue(pawn.thingIDNumber, out e) || e.bedId != bed.thingIDNumber || e.model != modelId || e.rot != bed.Rotation.AsInt
+            if (!cache.TryGetValue(key, out e) || e.bedId != bed.thingIDNumber || e.model != modelId || e.rot != bed.Rotation.AsInt
                 || e.pos != bed.Position || e.stamp != stamp || e.textured != textured || !Same(e.tint, tint) || !Same(e.two, two)
                 || Mathf.Abs(e.size - size) > 0.001f || Mathf.Abs(e.ground - ground) > 0.001f || Mathf.Abs(e.yaw - yaw) > 0.01f
                 || Mathf.Abs(e.at.x - at.x) > 0.001f || Mathf.Abs(e.at.z - at.z) > 0.001f)
@@ -591,7 +644,7 @@ namespace IsoRim
                 }
                 BuildTicks += sw.ElapsedTicks;
                 Built++;
-                cache[pawn.thingIDNumber] = e;
+                cache[key] = e;
             }
             e.used = frame;
             if (e.parts == null)
@@ -616,7 +669,7 @@ namespace IsoRim
             }
             sweepFrame = frame;
             stale.Clear();
-            foreach (KeyValuePair<int, Entry> kv in cache)
+            foreach (KeyValuePair<Key, Entry> kv in cache)
             {
                 if (frame - kv.Value.used > 600)
                 {
@@ -638,7 +691,7 @@ namespace IsoRim
         internal static bool Has(Pawn pawn)
         {
             Entry e;
-            return pawn != null && cache.TryGetValue(pawn.thingIDNumber, out e) && e.parts != null && Time.frameCount - e.used < 5;
+            return pawn != null && cache.TryGetValue(Own(pawn), out e) && e.parts != null && Time.frameCount - e.used < 5;
         }
 
         // ---- building
@@ -902,7 +955,7 @@ namespace IsoRim
         internal static string Report(Pawn pawn)
         {
             Entry e;
-            bool has = pawn != null && cache.TryGetValue(pawn.thingIDNumber, out e) && e.parts != null;
+            bool has = pawn != null && cache.TryGetValue(Own(pawn), out e) && e.parts != null;
             return "blanket " + (has ? "built" : "none") + ", drawn now " + Has(pawn) + ", built " + Built + ", build ms "
                 + (BuildTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency).ToString("0.0");
         }

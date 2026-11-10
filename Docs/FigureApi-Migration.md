@@ -16,6 +16,7 @@ Gate everything on `IsoRim.Api.Version >= 62`, and keep the old path for older I
 | Other mods' attachments (gene parts, decals, gear) lost on your figure | `ctx.RaiseFigureHooks(position, yaw, headPlace, bodyPlace)` | Optional. Their attachments are drawn in your head and body placings. `ctx.ReadFigureBoxes` gives IsoRim's head and body boxes to fit yours. |
 | Selection ring placed by IsoRim's body | `ctx.NoteSelectionBox(...)` | Optional. Without it the ring goes round IsoRim's placing, which costs the look work. |
 | Calling the internal `SleeperBlanket.Draw(pawn, bed, at, yaw, size, ground)` by reflection for the blanket in a head-only bed | `ctx.DrawSleeperBlanket()` (Api 67, Docs/Api.md part 46; gate on `IsoRim.Api.Version >= 67`) | No arguments: IsoRim passes its own bed, position, yaw, size and bed height for this frame, so the blanket sits exactly where it does on IsoRim's own figure. It draws only when `FigurePlacement.HeadOnlyInBed` is true, at most once per drawer call, and flashes with the figure when hit. Returns true when drawn or waiting for its build budget. |
+| The same reflection call with your own placing: `at` moved along the bed so the blanket starts at your figure's neck, `size` times a factor to fit a bigger figure | `Api.DrawSleeperBlanket(pawn, bed, at, yaw, size, ground, start, scale)` (Api 68, Docs/Api.md part 47) | Pass the unmoved `at` (the head's middle), your neck's distance from it toward the feet in cells as `start`, and the factor as `scale`. The blanket is the one the old call drew with `at` moved by `start - 0.14 * size * scale` and size `size * scale` (the same build, rounding aside). `start` and `scale` -1: exactly `SleeperBlanket.Draw` with the same arguments. Like the internal method it draws for any bed it is given (call it only when the bed hides the body), with the same cache, build budget and flash; it also returns false, drawing nothing, while the 3D view is not drawn this frame, for a size not above 0 and off the main thread. Each start/scale pair gets its own cache entry. |
 
 ## 2. Placing
 
@@ -101,7 +102,8 @@ These are fixes. Nothing else should look or behave differently.
 
 ## 8. Not covered by Api 62
 
-- **Camera:** covered by Api 66 (Docs/Api.md part 45), see "Camera (Api 66)" below.
+- **Camera:** covered by Api 66 (Docs/Api.md part 45) and Api 68 (part 47), see "Camera (Api 66)" and "View switch, keys and
+  constants (Api 68)" below.
 - **Patching `ModelBaker.Write` to lift item outline rings out of the ground:** this works round an IsoRim bug. It will be
   fixed in IsoRim itself, after which the patch can go.
 - **Patching `ModelLibrary.LoadAll` to restore ModelDefs:** no Api.
@@ -125,6 +127,19 @@ itself moves over like this (gate on `IsoRim.Api.Version >= 66`):
 | On leaving: writing `freeYaw` so IsoRim's camera keeps facing the same way, and restoring the saved pitch | `Api.SetPlayerView(yaw, null)` and then dispose the handle. Nothing to restore: the player's settings were never touched. |
 | Leaving when first person starts | Optional now: a pushed pose wins over first person, which resumes when the pose goes. |
 | Reading `View3D.EyePosition`, `View3D.ViewDistance` | `Api.CurrentViewPose` (`Eye`, `Far`, `FocusDistance`, `Near`). |
+
+### View switch, keys and constants (Api 68)
+
+Gate on `IsoRim.Api.Version >= 68` (Docs/Api.md part 47):
+
+| Today | With Api 68 |
+|---|---|
+| Reading `View3D.Active` | `Api.View3DActive` (same value). |
+| Writing `View3D.Active = true` / `false` | `Api.View3DActive = true` / `false`: the same switch the player's corner button sets, the rebuild and state following on the next frame as before. Differences: nothing happens off the main thread, outside a game being played, during a gravship cutscene that holds the camera, or when set false while an addon keeps the view on (writing the field did it anyway). |
+| Reading `View3D.ControlsLocked` | `Api.ControlsLocked` (same value). |
+| Calling `FirstPerson.Leave(null)` (after checking `FirstPerson.On`) | `Api.LeaveFirstPerson()`: the same call, true if first person was on. Off the main thread it does nothing and answers false. |
+| Calling `View3D.BindingHeld(def, unboundHeld)` | `Api.KeyHeld(def, unboundHeld)` (same answer: mouse buttons count; false while a window's search box has focus; an unbound binding answers `unboundHeld`). |
+| Reading `View3D.DefaultTanHalf` | `Api.PerspectiveTanHalf` (same value, a const). |
 
 Stays in the camera mod: its own patches on the game's camera driver, input, cursor and jumps (dolly, zoom, pointer locking or
 warping, glides), keeping the game camera ahead of the eye, and remembering places. A camera that also wants a picture of its

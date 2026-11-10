@@ -119,10 +119,11 @@ if (IsoRim.Api.Version >= 64) { /* ReleaseFigureMaterial: frees what ConfigureFi
 if (IsoRim.Api.Version >= 65) { /* ModelDef.byBodyGraphic: an animal's model, legs, wings, tint or texture by the body graphic the game shows it with; ReadAnimalModel (part 44) */ }
 if (IsoRim.Api.Version >= 66) { /* camera poses (PushViewPose, BeforeViewUpdate, CurrentViewPose, SetPlayerView) and scene images without the interface (RequestSceneImage) (part 45) */ }
 if (IsoRim.Api.Version >= 67) { /* FigureDrawContext.DrawSleeperBlanket: a figure drawer draws IsoRim's sleeper blanket over its own figure (part 46) */ }
+if (IsoRim.Api.Version >= 68) { /* View3DActive (get/set), ControlsLocked, LeaveFirstPerson, KeyHeld, PerspectiveTanHalf, static DrawSleeperBlanket at the caller's placing (part 47) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -2566,6 +2567,121 @@ private static bool Draw(IsoRim.FigureDrawContext ctx)
 - **Unchanged:** IsoRim's own figures and their blankets; a drawer that does not call it draws no blanket, as before.
 
 Version gate: `IsoRim.Api.Version >= 67`.
+
+## Part 47: the 3D view switch, keys and the sleeper blanket at your own placing (version 68)
+
+Small members for camera mods and figure mods that today read IsoRim's internals: the 3D view's switch, the cutscene lock,
+leaving first person, a held key binding as IsoRim reads it, the perspective constant, and the sleeper blanket at a placing
+the caller works out itself.
+
+```csharp
+if (IsoRim.Api.Version >= 68)
+{
+    if (!IsoRim.Api.View3DActive) IsoRim.Api.View3DActive = true;   // as the player's 3D view button
+    if (IsoRim.Api.ControlsLocked) return;                          // a gravship cutscene holds the camera
+    IsoRim.Api.LeaveFirstPerson();
+    bool look = IsoRim.Api.KeyHeld(myLookModifier, unboundHeld: true);
+    Vector3 eye = focus - forward * (orthoSize / IsoRim.Api.PerspectiveTanHalf);
+}
+```
+
+| Member | Meaning |
+|---|---|
+| `bool Api.View3DActive { get; set; }` | **Get:** the 3D view is switched on (the player's 3D view key, corner button or options button). **Set:** switches it as the player's corner button does; see below. |
+| `bool Api.ControlsLocked` | A gravship cutscene holds the camera now (the game takes it from the player unless its free-cam option is on). Read-only; the same test IsoRim's own camera uses. |
+| `bool Api.LeaveFirstPerson()` | Ends IsoRim's first person if it is on. True if it was on. |
+| `bool Api.KeyHeld(KeyBindingDef key, bool unboundHeld = false)` | The binding is held now, as IsoRim reads its own held bindings. |
+| `const float Api.PerspectiveTanHalf` | 0.36397 = tan 20 degrees: half of IsoRim's default 40 degree vertical field of view. |
+| `static bool Api.DrawSleeperBlanket(Pawn pawn, Building_Bed bed, Vector3 at, float yaw, float size, float ground, float start = -1f, float scale = -1f)` | IsoRim's sleeper blanket over that person in that bed, at your placing. |
+
+### View3DActive
+
+- **Get** is the switch itself. The first frame after it is turned on, the map is rebuilt for 3D (the game's "Preparing 3D..."
+  screen for a moment on a big base); `Api.ViewReady` is true once a 3D frame has been set up (the frame after the switch).
+- **Set** is exactly the player's corner button: the same switch, and everything else follows it on the next frame as after the
+  player's own key (the rebuild, the camera, first person, IsoRim's state). The key also shows a "3D view on/off" message; the
+  setter shows none.
+- **No effect, no error** when: no game is being played (main menu, loading), it is called off the main thread, a gravship
+  cutscene holds the camera (`ControlsLocked`: the player's 3D key does nothing then either), or it is set false while an addon
+  keeps the 3D view on. Read it back to see whether it took.
+- **A new or loaded game starts flat**, as now (unless an addon keeps the view on). Nothing is saved.
+
+### ControlsLocked
+
+The same value IsoRim's own camera uses, so a camera mod follows IsoRim if the rule changes. While it is true IsoRim's view
+keys, look drag, first person key and 3D view key do nothing, and its turn, tilt and 3D state stay as they were when the
+cutscene started. A camera mod should leave the camera alone too.
+
+### LeaveFirstPerson
+
+Ends first person the way IsoRim ends it for a gravship launch: the game camera is put over the colonist (when they are still
+on the shown map), no message. The player's first person key leaves the same way and also shows "first person off". Returns
+true if first person was on, false if it was off (nothing done) or when called off the main thread.
+
+### KeyHeld
+
+- True while either of the two keys bound to the binding in the game's keyboard options is down. **Mouse buttons count**:
+  a binding set to Mouse0-Mouse6 is read from the mouse (the game's `KeyBindingDef.IsDown` reads keys only).
+- **False** for a null binding, before the key settings are loaded, and while the search box of an open window has focus (the
+  game's own rule for its key bindings). Other text fields are not checked: test `GUIUtility.keyboardControl != 0` yourself
+  if typing should block it (IsoRim's own view keys do).
+- **unboundHeld:** a binding with no key in either slot answers `unboundHeld`, even while a search box has focus. True suits
+  a modifier the player may unbind to mean "not needed" (IsoRim's look modifier works this way); false suits an action key.
+
+### PerspectiveTanHalf
+
+Tan of half IsoRim's default vertical field of view. A perspective eye at `focus - forward * (orthoSize / PerspectiveTanHalf)`
+with a 40 degree field of view shows the ground at the focus at the same scale as the flat camera of that `orthoSize`; IsoRim
+reports the flat camera's height (its altitude for silhouettes) with it. A const: it is compiled into your mod. IsoRim's own
+perspective camera uses the player's field of view option (`Api.FieldOfView`), which is 40 degrees by default.
+
+### DrawSleeperBlanket (static)
+
+The blanket IsoRim lays over a sleeper in a bed that hides the body (the single and double bed): the bed's own top pushed up by
+shoulders, chest, hips and legs, with IsoRim's cache, build budget, look and the person's damage flash. `FigureDrawContext.DrawSleeperBlanket()`
+(part 46) draws it at IsoRim's own placing; this one draws it where you say, for a figure that is not IsoRim's shape.
+
+```csharp
+// in a figure drawer (part 43), with IsoRim's placing:
+if (p.HeadOnlyInBed && p.Holder is Building_Bed bed)
+    IsoRim.Api.DrawSleeperBlanket(ctx.Pawn, bed, p.Position, p.Yaw, p.Size, p.Position.y - p.Lift,
+        start: myNeck, scale: 1.25f);   // starts at my figure's neck, made as for a body 1.25 times as big
+```
+
+| Argument | Meaning (IsoRim's own values in brackets) |
+|---|---|
+| `at` | The sleeper's head: x, z the middle of the head in map cells, y the height of the bed's top plus any lift (`FigurePlacement.Position`: the pawn's spot in the bed). The blanket's parts are drawn at this point. |
+| `yaw` | Degrees clockwise from north; turned by it, +z runs from the head toward the feet (`FigurePlacement.Yaw`: the bed's rotation angle). |
+| `size` | The body's size, 1 for an adult (`FigurePlacement.Size`: smaller for children, the race's scale). Must be above 0. |
+| `ground` | The height of the top the sleeper lies on over the floor, cells (`FigurePlacement.Position.y - FigurePlacement.Lift`; a bunk's level for an upper bunk). The bed's top is looked for at most 0.25 cells above it. |
+| `start` | Where the blanket begins, in cells from `at` toward the feet. Below 0: IsoRim's, `0.14 * size * scale` (just under the jaw of IsoRim's figure; 0.14 at size 1). At most 3. |
+| `scale` | The blanket made as for a body this many times bigger: taller hump, longer, and wider as far as the bed allows, deeper dips under the bed's top. 1, 0 or below: IsoRim's. Kept within 0.25-3. |
+
+- **How start and scale work together:** the blanket is built exactly as IsoRim builds it for its own figure of size
+  `size * scale`, moved along the bed so that it begins at `start`. Its far end still stops short of the bed's foot (by a margin
+  that grows with scale), so a later start makes the blanket shorter, not longer, and a bigger scale is mainly taller: the width
+  is already as wide as the bed allows at scale 1. A figure with a big head and a low neck: `start` at the neck, `scale` for a
+  bulkier body.
+- **With both left at -1** the blanket is exactly IsoRim's own at that placing (the same parts, the same cache entry as IsoRim's
+  own figure and `ctx.DrawSleeperBlanket()`).
+- **Which beds:** it draws for any bed it is given, as IsoRim's own figure asks for it only in a bed that hides the body. Call it
+  only when the bed hides the body (`FigurePlacement.HeadOnlyInBed`, or the bed def's `building.bed_showSleeperBody` false) and
+  draw your head there, every frame the figure is drawn.
+- **True:** drawn, or waiting for its build budget (IsoRim builds at most one new blanket a frame for all sleepers; it is drawn
+  on a later frame's call).
+- **False, nothing drawn:** pawn or bed null, the bed not spawned, no blanket fits the bed (no top found under the body: a
+  sleeping spot, a bed without a model or raised sprite), `size` not above 0, the 3D view not drawn this frame
+  (`Api.ViewReady` false), or called off the main thread.
+- **Cache:** one blanket per pawn and per `start` and `scale` asked for, so callers asking for different values keep one each.
+  A blanket is rebuilt when the bed, its place, turn, model or colours change, or when its own placing (`at`, `yaw`, `size`,
+  `ground`) changes; drawing the same pawn at two placings with the same `start` and `scale` rebuilds it every frame. A
+  blanket not drawn for 600 frames is thrown away.
+- **Flash:** drawn with the person's damage flash, as on IsoRim's own figure (none inside `Api.DrawFigure`).
+- **Drawn as:** IsoRim's moving model parts (outline, sun shadow, stacked floors and their peek fade, culling); moved or
+  measured with the figure inside `Api.DrawFigure` / `Api.FigureBounds`.
+- **Unchanged:** `ctx.DrawSleeperBlanket()` (part 46) and IsoRim's own figures and blankets.
+
+Version gate: `IsoRim.Api.Version >= 68`.
 
 ## Part M: model packs (IsoRim.ModelDef)
 
