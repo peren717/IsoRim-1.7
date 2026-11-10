@@ -1,3 +1,5 @@
+# IsoRim centipede (remake). worker_* as before (shared look with the other worker-family mechs);
+# centipede_* added by tools/make_centipede2_concept.py (2026-11-10).
 newmtl worker_shell
 Kd 0.66 0.68 0.59
 newmtl worker_edge
@@ -20,3 +22,16 @@ newmtl worker_steel
 Kd 0.80 0.82 0.76
 newmtl worker_medical
 Kd 0.49 0.65 0.65
+newmtl centipede_head
+Kd 1.00 1.00 1.00
+map_Kd IsoRim/Mechs/Centipede
+newmtl centipede_mark
+Kd 0.80 0.82 0.76
+newmtl centipede_fang
+Kd 0.34 0.37 0.36
+newmtl centipede_taupe
+Kd 0.58 0.53 0.47
+newmtl centipede_gold
+Kd 0.74 0.57 0.22
+newmtl centipede_core
+Kd 0.66 0.80 0.86

@@ -120,10 +120,11 @@ if (IsoRim.Api.Version >= 65) { /* ModelDef.byBodyGraphic: an animal's model, le
 if (IsoRim.Api.Version >= 66) { /* camera poses (PushViewPose, BeforeViewUpdate, CurrentViewPose, SetPlayerView) and scene images without the interface (RequestSceneImage) (part 45) */ }
 if (IsoRim.Api.Version >= 67) { /* FigureDrawContext.DrawSleeperBlanket: a figure drawer draws IsoRim's sleeper blanket over its own figure (part 46) */ }
 if (IsoRim.Api.Version >= 68) { /* View3DActive (get/set), ControlsLocked, LeaveFirstPerson, KeyHeld, PerspectiveTanHalf, static DrawSleeperBlanket at the caller's placing (part 47) */ }
+if (IsoRim.Api.Version >= 69) { /* ModelDef.smoothShading: a mech model lit by smooth normals, as animals are (part 48) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -2683,6 +2684,41 @@ if (p.HeadOnlyInBed && p.Holder is Building_Bed bed)
 
 Version gate: `IsoRim.Api.Version >= 68`.
 
+## Part 48: smooth shading on mechs (version 69)
+
+IsoRim lights animals by smooth normals (the "smooth shading on animals" setting): at each corner the normals of the faces
+meeting there are averaged, so round shapes read round. Mechs are lit per face, which suits their hard plates. A mech model
+built round (big rounded shells with few faces) opts in:
+
+```xml
+<IsoRim.ModelDef>
+  <defName>MyPack_RoundMech</defName>
+  <thingDef>MyRoundMech</thingDef>
+  <model>Models/round_mech.obj</model>
+  <mech>true</mech>
+  <smoothShading>true</smoothShading>      <!-- version 69 -->
+  <smoothTextured>true</smoothTextured>    <!-- optional: its textured faces too -->
+  ...
+</IsoRim.ModelDef>
+```
+
+| Field | Meaning |
+|---|---|
+| `smoothShading` | The binding's body model and all its `mechParts` (fixed, legs, wheels, head, upper body, guns, turrets) lit by smooth normals, worked out as for animals: the same method and the same crease (the smooth crease setting, 70 degrees by default), so faces meeting at more than the crease keep a hard edge. Default false: lit per face, as before. |
+| `smoothTextured` | With `smoothShading`: the textured (`map_Kd`) faces lit by the same smooth normals too, as on animals. Without `smoothShading` it does nothing on a mech. |
+
+- **Setting:** follows the player's "smooth shading on animals" setting; with it off the model is lit per face.
+- **What it covers:** every pose the mech is drawn in (standing, walking, working, aiming, downed, dead and its corpse, held on a
+  platform, `Api.DrawFigure`). Bindings with `entity` (drawn the same way) may use it too.
+- **What it leaves alone:** the outline, ground and sun shadows, the damage flash, the faction colour of `factionMaterials`
+  and worn looks. A gun the mech holds that its model has no part for (drawn as that gun's own form), and what it carries,
+  are lit as they always are.
+- **Cost:** the smooth normals are worked out once per model when its meshes are made; nothing per frame.
+- **Unchanged:** every binding without it, and animals and people.
+
+Version gate: `IsoRim.Api.Version >= 69` (an older IsoRim ignores the field with a config error: add it by version patch, see
+"Gating fields by version" in part M).
+
 ## Part M: model packs (IsoRim.ModelDef)
 
 A model pack is an XML-only mod (or a mod with a small DLL) that adds `IsoRim.ModelDef`s binding OBJ models to other
@@ -2722,6 +2758,7 @@ mods' things.
 | `holdAsBuilt`, `carryStand`, `carryLean`, `bakedItem` (54) | Weapons: held as built, carried standing in front of the figure, an item with a drawing of its own baked as its model (part 38). |
 | `effectHeight`, `effectRadius`, `cardState`, `spinAlways` (55) | A body in the air: the thing's effects go round it, the game's sprite on a card in a state, a spin part that always turns (part 39). |
 | `tubeColor` (58) | With `shape` `Tube`: the tube's colour (part 41). |
+| `smoothShading` (69) | Mechs: the model and its parts lit by smooth normals as animals are; with `smoothTextured` its textured faces too (part 48). Default false: as before. |
 | `wallTop` (11), `cutaway` (20), `backHeight` (13), wing fields (14), `doorLeafModel`, `doorLeafGather` (18), `crownTop`, `doorLeafRise` (6) | See their parts. |
 
 The numbers in brackets are the Api version a field needs; fields without one are there from version 2.

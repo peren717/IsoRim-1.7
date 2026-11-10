@@ -16,7 +16,8 @@ namespace IsoRim
     // derivatives. Nothing is done per frame. The outline shells (Model.hull) are not touched.
     // Animals (setting smoothAnimals, on by default, the same crease): every model part an animal is drawn with (body, legs,
     // wings; Animals.Draw: standing, walking, asleep, downed, dead, flying, carried) while DynamicModels.AnimalPart is set.
-    // Insects too; mechanoids (and entities, Mechs.Draw) not.
+    // Insects too; mechanoids (and entities, Mechs.Draw) not, unless their ModelDef opts in (Api 69, smoothShading: the same
+    // flag and setting, set around the mech's own parts only).
     // Everything else (weapons, furniture, mechs, buildings) is lit as before.
     public static class SmoothFigures
     {

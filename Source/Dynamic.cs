@@ -493,7 +493,8 @@ namespace IsoRim
         // the setting is on (SmoothFigures). Their ready-made meshes are kept apart.
         internal static bool FigurePart;
 
-        // The same for the parts of an animal (Animals.Draw: not a mechanoid), by the animals' setting.
+        // The same for the parts of an animal (Animals.Draw: not a mechanoid), by the animals' setting; also a mech's own parts
+        // when its ModelDef has smoothShading (Api 69, Mechs.Draw).
         internal static bool AnimalPart;
 
         // While set (Animals.Draw: ModelDef.smoothTextured), smooth meshes light their textured faces by the smooth normals too.

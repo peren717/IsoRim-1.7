@@ -134,7 +134,9 @@ namespace IsoRim
         // 68: Api68.cs: View3DActive (get/set View3D.Active as the corner button; not in a cutscene, not off while LockedOn),
         // ControlsLocked, LeaveFirstPerson (FirstPerson.Leave(null)), KeyHeld (View3D.BindingHeld), PerspectiveTanHalf
         // (= View3D.DefaultTanHalf), static DrawSleeperBlanket (SleeperBlanket.TryDraw with start and scale; cache key per start/scale).
-        public static int Version => 68;
+        // 69: ModelDef.smoothShading: a mech's (or entity's) own model parts lit by smooth normals as an animal's (Mechs.Draw sets
+        // DynamicModels.AnimalPart / SmoothTextured around them only); default off, unchanged.
+        public static int Version => 69;
 
         // ---- glass parts (Version 30)
 

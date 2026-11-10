@@ -121,6 +121,42 @@ namespace IsoRim
         // case the game's sprite must be drawn as usual.
         public static bool Draw(Pawn pawn, Vector3 drawLoc)
         {
+            // (Api 69) ModelDef.smoothShading sets the smooth flags around its own parts only (SmoothOn / SmoothOff);
+            // whatever happens, they are as before afterwards.
+            bool partWas = DynamicModels.AnimalPart;
+            bool texWas = DynamicModels.SmoothTextured;
+            try
+            {
+                return DrawRig(pawn, drawLoc);
+            }
+            finally
+            {
+                DynamicModels.AnimalPart = partWas;
+                DynamicModels.SmoothTextured = texWas;
+            }
+        }
+
+        // (Api 69) The mech's own model parts lit by smooth normals, as an animal's (DynamicModels.AnimalPart: the
+        // smooth-animals setting and crease). Returns the flags as they were, for SmoothOff.
+        private static int SmoothOn(ModelDef def)
+        {
+            int was = (DynamicModels.AnimalPart ? 1 : 0) | (DynamicModels.SmoothTextured ? 2 : 0);
+            if (def.smoothShading)
+            {
+                DynamicModels.AnimalPart = true;
+                DynamicModels.SmoothTextured = def.smoothTextured;
+            }
+            return was;
+        }
+
+        private static void SmoothOff(int was)
+        {
+            DynamicModels.AnimalPart = (was & 1) != 0;
+            DynamicModels.SmoothTextured = (was & 2) != 0;
+        }
+
+        private static bool DrawRig(Pawn pawn, Vector3 drawLoc)
+        {
             ModelEntry entry = null;
             if (pawn.def == null || !ModelLibrary.TryGet(pawn.def, out entry) || !(entry.def.mech || entry.def.entity) || !entry.HasModel
                 || (entry.def.entity ? pawn.IsPsychologicallyInvisible() : People.Hidden(pawn)) || (entry.def.entity && !EntityShown(pawn)) || !Corpses.ShownAsModel(pawn))
@@ -279,6 +315,7 @@ namespace IsoRim
 
             int worn = def.mech && OtherLook(pawn) ? (pawn.thingIDNumber & 0x7FFFFFFF) % WornVariants : -1;
             HitFlash.Begin(pawn);   // the body and its moving pieces; not its guns, which the game draws apart
+            int smoothWas = SmoothOn(def);   // (Api 69) its own parts only: not other guns' forms, carried things
             DynamicModels.DrawLocal(Corpses.Body(pawn, Pick(rig, def, null, worn, marked)), at, yaw, whole, mark, null);
 
             // Each moving piece, placed in the body's space (after its parent's movement).
@@ -384,7 +421,10 @@ namespace IsoRim
                         // Some other gun: drawn as that gun's own 3D form, at the mount.
                         Vector3 mount = WorldPoint(at, yaw, whole * places[i], p.def.pivot);
                         bool flashWas = HitFlash.Pause();
+                        int ownSmooth = SmoothOn(def);
+                        SmoothOff(smoothWas);
                         Patches.HeldWeapon3D(gun, mount, aim);
+                        SmoothOff(ownSmooth);
                         HitFlash.Resume(flashWas);
                         continue;
                     }
@@ -411,6 +451,7 @@ namespace IsoRim
                 }
             }
             HitFlash.End();
+            SmoothOff(smoothWas);
             if (showGun && !gunDrawn)
             {
                 // A gun the model has no mount for: held in front, half way up.

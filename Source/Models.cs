@@ -404,6 +404,11 @@ namespace IsoRim
         // Textured faces (map_Kd) lit by the same smooth normals as the rest of the body while the smooth-animals setting is
         // on (SmoothFigures; DynamicModels.Build). Off (default): textured faces are lit per face, as before. Opt-in, per model.
         public bool smoothTextured = false;
+        // (Api 69) Mechs (and entities, Mechs.Draw): the body and every model part (fixed, legs, head, guns) lit by smooth
+        // normals as animals are (SmoothFigures: the same method and crease, the same smooth-animals setting); faces meeting
+        // at more than the crease keep their hard edge. With smoothTextured also on, its textured faces too. Outline, shadow,
+        // hit flash and faction colour as before. Off (default): lit per face, as before. Opt-in, per model.
+        public bool smoothShading = false;
         // Body animations other mods give the animal's sprite (BodyAnims: mods patching PawnRenderer.GetBodyPos / BodyAngle,
         // Yayo's Animation for one) put on the whole animal while it stands or walks: the shift as a move along the camera's
         // right and up, the sprite's turn as the same turn on screen, about the line toward the camera (SpriteMotion).

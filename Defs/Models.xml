@@ -6942,29 +6942,18 @@
     <model>Models/centipede.obj</model>
     <mech>true</mech>
     <stride>0.7</stride>
+    <smoothShading>true</smoothShading>
+    <smoothTextured>true</smoothTextured>
     <factionMaterials>
-      <li>worker_lens</li>
+      <li>centipede_mark</li>
     </factionMaterials>
     <mechParts>
       <li><model>Models/centipede_segment_2.obj</model><motion>fixed</motion></li>
       <li><model>Models/centipede_segment_3.obj</model><motion>fixed</motion></li>
       <li><model>Models/centipede_segment_4.obj</model><motion>fixed</motion></li>
       <li><model>Models/centipede_segment_5.obj</model><motion>fixed</motion></li>
-      <li><model>Models/centipede_segment_6.obj</model><motion>fixed</motion></li>
-      <li><model>Models/centipede_legs_left_1.obj</model><motion>leg</motion><pivot>(-0.481, 0.35, 0.4)</pivot><beat>0</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_1.obj</model><motion>leg</motion><pivot>(0.481, 0.35, 0.4)</pivot><beat>0.5</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_left_2.obj</model><motion>leg</motion><pivot>(-0.455, 0.35, 0.06)</pivot><beat>0.167</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_2.obj</model><motion>leg</motion><pivot>(0.455, 0.35, 0.06)</pivot><beat>0.667</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_left_3.obj</model><motion>leg</motion><pivot>(-0.429, 0.35, -0.28)</pivot><beat>0.333</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_3.obj</model><motion>leg</motion><pivot>(0.429, 0.35, -0.28)</pivot><beat>0.833</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_left_4.obj</model><motion>leg</motion><pivot>(-0.403, 0.35, -0.62)</pivot><beat>0.5</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_4.obj</model><motion>leg</motion><pivot>(0.403, 0.35, -0.62)</pivot><beat>0</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_left_5.obj</model><motion>leg</motion><pivot>(-0.377, 0.35, -0.94)</pivot><beat>0.667</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_5.obj</model><motion>leg</motion><pivot>(0.377, 0.35, -0.94)</pivot><beat>0.167</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_left_6.obj</model><motion>leg</motion><pivot>(-0.351, 0.35, -1.23)</pivot><beat>0.833</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_6.obj</model><motion>leg</motion><pivot>(0.351, 0.35, -1.23)</pivot><beat>0.333</beat><swing>14</swing></li>
-      <li><model>Models/centipede_gunner_head.obj</model><motion>head</motion><pivot>(0, 0.75, 0.52)</pivot><maxTurn>30</maxTurn></li>
-      <li><model>Models/centipede_gunner_weapon.obj</model><motion>weapon</motion><pivot>(0, 0.48, 0.53)</pivot><weapon>Gun_Minigun</weapon></li>
+      <li><model>Models/centipede_gunner_head.obj</model><motion>fixed</motion></li>
+      <li><model>Models/centipede_gunner_weapon.obj</model><motion>weapon</motion><pivot>(-0.58, 0.26, 0.80)</pivot><weapon>Gun_Minigun</weapon></li>
     </mechParts>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
@@ -6973,29 +6962,18 @@
     <model>Models/centipede.obj</model>
     <mech>true</mech>
     <stride>0.7</stride>
+    <smoothShading>true</smoothShading>
+    <smoothTextured>true</smoothTextured>
     <factionMaterials>
-      <li>worker_lens</li>
+      <li>centipede_mark</li>
     </factionMaterials>
     <mechParts>
       <li><model>Models/centipede_segment_2.obj</model><motion>fixed</motion></li>
       <li><model>Models/centipede_segment_3.obj</model><motion>fixed</motion></li>
       <li><model>Models/centipede_segment_4.obj</model><motion>fixed</motion></li>
       <li><model>Models/centipede_segment_5.obj</model><motion>fixed</motion></li>
-      <li><model>Models/centipede_segment_6.obj</model><motion>fixed</motion></li>
-      <li><model>Models/centipede_legs_left_1.obj</model><motion>leg</motion><pivot>(-0.481, 0.35, 0.4)</pivot><beat>0</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_1.obj</model><motion>leg</motion><pivot>(0.481, 0.35, 0.4)</pivot><beat>0.5</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_left_2.obj</model><motion>leg</motion><pivot>(-0.455, 0.35, 0.06)</pivot><beat>0.167</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_2.obj</model><motion>leg</motion><pivot>(0.455, 0.35, 0.06)</pivot><beat>0.667</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_left_3.obj</model><motion>leg</motion><pivot>(-0.429, 0.35, -0.28)</pivot><beat>0.333</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_3.obj</model><motion>leg</motion><pivot>(0.429, 0.35, -0.28)</pivot><beat>0.833</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_left_4.obj</model><motion>leg</motion><pivot>(-0.403, 0.35, -0.62)</pivot><beat>0.5</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_4.obj</model><motion>leg</motion><pivot>(0.403, 0.35, -0.62)</pivot><beat>0</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_left_5.obj</model><motion>leg</motion><pivot>(-0.377, 0.35, -0.94)</pivot><beat>0.667</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_5.obj</model><motion>leg</motion><pivot>(0.377, 0.35, -0.94)</pivot><beat>0.167</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_left_6.obj</model><motion>leg</motion><pivot>(-0.351, 0.35, -1.23)</pivot><beat>0.833</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_6.obj</model><motion>leg</motion><pivot>(0.351, 0.35, -1.23)</pivot><beat>0.333</beat><swing>14</swing></li>
-      <li><model>Models/centipede_blaster_head.obj</model><motion>head</motion><pivot>(0, 0.75, 0.52)</pivot><maxTurn>30</maxTurn></li>
-      <li><model>Models/centipede_blaster_weapon.obj</model><motion>weapon</motion><pivot>(0, 0.48, 0.53)</pivot><weapon>Gun_ChargeBlasterHeavy</weapon></li>
+      <li><model>Models/centipede_blaster_head.obj</model><motion>fixed</motion></li>
+      <li><model>Models/centipede_blaster_weapon.obj</model><motion>weapon</motion><pivot>(-0.58, 0.26, 0.80)</pivot><weapon>Gun_ChargeBlasterHeavy</weapon></li>
     </mechParts>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
@@ -7004,29 +6982,18 @@
     <model>Models/centipede.obj</model>
     <mech>true</mech>
     <stride>0.7</stride>
+    <smoothShading>true</smoothShading>
+    <smoothTextured>true</smoothTextured>
     <factionMaterials>
-      <li>worker_lens</li>
+      <li>centipede_mark</li>
     </factionMaterials>
     <mechParts>
       <li><model>Models/centipede_segment_2.obj</model><motion>fixed</motion></li>
       <li><model>Models/centipede_segment_3.obj</model><motion>fixed</motion></li>
       <li><model>Models/centipede_segment_4.obj</model><motion>fixed</motion></li>
       <li><model>Models/centipede_segment_5.obj</model><motion>fixed</motion></li>
-      <li><model>Models/centipede_segment_6.obj</model><motion>fixed</motion></li>
-      <li><model>Models/centipede_legs_left_1.obj</model><motion>leg</motion><pivot>(-0.481, 0.35, 0.4)</pivot><beat>0</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_1.obj</model><motion>leg</motion><pivot>(0.481, 0.35, 0.4)</pivot><beat>0.5</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_left_2.obj</model><motion>leg</motion><pivot>(-0.455, 0.35, 0.06)</pivot><beat>0.167</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_2.obj</model><motion>leg</motion><pivot>(0.455, 0.35, 0.06)</pivot><beat>0.667</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_left_3.obj</model><motion>leg</motion><pivot>(-0.429, 0.35, -0.28)</pivot><beat>0.333</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_3.obj</model><motion>leg</motion><pivot>(0.429, 0.35, -0.28)</pivot><beat>0.833</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_left_4.obj</model><motion>leg</motion><pivot>(-0.403, 0.35, -0.62)</pivot><beat>0.5</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_4.obj</model><motion>leg</motion><pivot>(0.403, 0.35, -0.62)</pivot><beat>0</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_left_5.obj</model><motion>leg</motion><pivot>(-0.377, 0.35, -0.94)</pivot><beat>0.667</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_5.obj</model><motion>leg</motion><pivot>(0.377, 0.35, -0.94)</pivot><beat>0.167</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_left_6.obj</model><motion>leg</motion><pivot>(-0.351, 0.35, -1.23)</pivot><beat>0.833</beat><swing>14</swing></li>
-      <li><model>Models/centipede_legs_right_6.obj</model><motion>leg</motion><pivot>(0.351, 0.35, -1.23)</pivot><beat>0.333</beat><swing>14</swing></li>
-      <li><model>Models/centipede_burner_head.obj</model><motion>head</motion><pivot>(0, 0.75, 0.52)</pivot><maxTurn>30</maxTurn></li>
-      <li><model>Models/centipede_burner_weapon.obj</model><motion>weapon</motion><pivot>(0, 0.48, 0.53)</pivot><weapon>Gun_InfernoCannon</weapon></li>
+      <li><model>Models/centipede_burner_head.obj</model><motion>fixed</motion></li>
+      <li><model>Models/centipede_burner_weapon.obj</model><motion>weapon</motion><pivot>(-0.58, 0.26, 0.80)</pivot><weapon>Gun_InfernoCannon</weapon></li>
     </mechParts>
   </IsoRim.ModelDef>
   <!-- Coop batch 6 class B: Anomaly entities on the mechs' path (Mechs.cs, entity = true): nociosphere shells open by CompNociosphere.segScale, devourer mouth by digesting, chimera / sightstealer / gorehulk by the alternate graphic the game picked, fleshmass nucleus by activity stage -->
