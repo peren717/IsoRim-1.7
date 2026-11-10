@@ -456,10 +456,15 @@ void main()
             // Stacked floors (Floors.GlowFloors): an upper floor is drawn over the ground rows, but its cells and
             // their light are rows further north. What is at or above floor k's height takes the light of floor k's
             // cell over that spot (the ground's walls end 0.02 below the first floor; nothing reaches through a floor).
+            // A moving model given its floor per draw (_IsoOwnerFloor, RoofClip.FloorBlock) takes that floor's light all
+            // the way up: a colonist on a chair or a tall animal reaching past the storey height stays in its own cell's
+            // light instead of the floor above's (as the roof clip in IsoRim.vert.glsl / IsoRimTex.vert.glsl).
             vec4 fg = uMaterial._IsoFloorGlow;
             if (fg.x > 0.5 && fg.y > 0.0)
             {
-                xz.y += clamp(floor((p.y + 0.01) / fg.y), 0.0, fg.x) * fg.z;
+                float k = uMaterial._IsoOwnerFloor > 0.5 ? clamp(uMaterial._IsoOwnerFloor - 1.0, 0.0, fg.x)
+                    : clamp(floor((p.y + 0.01) / fg.y), 0.0, fg.x);
+                xz.y += k * fg.z;
             }
             vec4 gm = uMaterial._IsoGlowMap;
             vec2 uv = vec2((xz.x - gm.x + 0.5) * gm.z, 1.0 - (xz.y - gm.y + 0.5) * gm.w);
