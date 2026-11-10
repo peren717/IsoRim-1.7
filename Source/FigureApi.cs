@@ -407,6 +407,10 @@ namespace IsoRim
 
         internal static Box Body(People.Look look)
         {
+            if (look.swaddle != null)
+            {
+                return Of(look.swaddle);   // a swaddled baby: the swaddle drawn in place of the body (People.DrawSwaddle, unscaled)
+            }
             Box u = Of(look.upper);
             Box l = Of(look.lower);
             Vector3 lo = Vector3.Min(u.centre - u.size * 0.5f, l.centre - l.size * 0.5f);

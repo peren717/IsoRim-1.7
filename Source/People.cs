@@ -117,6 +117,11 @@ namespace IsoRim
             // when a part asks for it (furskin: the face in the fur colour).
             public List<GeneParts.Placed> genes;
             public GeneTint? geneHeadTint;
+            // A swaddled baby (Biotech, Pawn.SwaddleBaby): the swaddle model drawn in place of the body and all worn on it
+            // (DrawSwaddle), in the game's swaddle colour; swaddled: the game's state when this look was worked out.
+            public bool swaddled;
+            public Model swaddle;
+            public Color swaddleColor = Color.white;
 
             public bool SameGear(Look o)
             {
@@ -165,6 +170,7 @@ namespace IsoRim
                     && overCoat == o.overCoat && overCoatColor == o.overCoatColor
                     && shield == o.shield && shieldColor == o.shieldColor && shieldBinding == o.shieldBinding && bindHides == o.bindHides && bindShows == o.bindShows && flames == o.flames
                     && GeneParts.Same(genes, o.genes) && geneHeadTint == o.geneHeadTint && HeadDecals.Same(headDecals, o.headDecals)
+                    && swaddled == o.swaddled && swaddle == o.swaddle && swaddleColor == o.swaddleColor
                     && (alien == null ? o.alien == null : alien.SameAs(o.alien));
             }
 
@@ -834,7 +840,16 @@ namespace IsoRim
                     hidden |= FigureParts.Face;   // another mod drew the face (Api 21): IsoRim's own left out (already out when hidden)
                 }
             }
-            if (!headOnly)
+            if (!headOnly && look.swaddle != null)
+            {
+                // A swaddled baby: the swaddle in place of the body and all on it, as the game draws it over them (where the
+                // bed hides the body, neither: the head and the blanket, as before)
+                if ((hidden & FigureParts.Body) == 0)
+                {
+                    DrawSwaddle(look, at, yaw, bodyPlace);
+                }
+            }
+            else if (!headOnly)
             {
                 DynamicModels.DrawParts(Merged(look, false, dead, turned, null, noLegs || (hidden & FigureParts.Legs) != 0, hidden), at, yaw, bodyPlace);
                 if (look.decals != null && (hidden & FigureParts.Clothes) == 0)
@@ -855,9 +870,10 @@ namespace IsoRim
             {
                 FaceDecal.Draw(pawn, head, at, yaw, headLocal);
             }
-            // The game's wounds, bandages and scars on the body and head (WoundMarks; a body without legs keeps none).
+            // The game's wounds, bandages and scars on the body and head (WoundMarks; a body without legs keeps none, nor one
+            // in a swaddle: they are on the body inside it, as the game draws its wounds under the swaddle).
             WoundMarks.DrawPerson(pawn, look, at, yaw, bodyPlace, headPlace,
-                !headOnly && !noLegs && (hidden & (FigureParts.Body | FigureParts.Legs)) == 0, !look.headHidden && (hidden & FigureParts.Head) == 0);
+                !headOnly && !noLegs && look.swaddle == null && (hidden & (FigureParts.Body | FigureParts.Legs)) == 0, !look.headHidden && (hidden & FigureParts.Head) == 0);
             HitFlash.End();
             if (look.flames && !dead)
             {
@@ -1225,7 +1241,9 @@ namespace IsoRim
                 }
             }
             // Worked out again at once on getting into or out of a bed that hides headgear.
-            if (looks.TryGetValue(pawn.thingIDNumber, out look) && frame - look.frame < RefreshFrames && look.bedHidesHat == BedHidesHeadgear(pawn))
+            // And on being swaddled or no longer (into a growth vat, grown out of a baby).
+            if (looks.TryGetValue(pawn.thingIDNumber, out look) && frame - look.frame < RefreshFrames && look.bedHidesHat == BedHidesHeadgear(pawn)
+                && look.swaddled == (look.alien == null && Swaddled(pawn)))
             {
                 return look;
             }
@@ -1405,7 +1423,92 @@ namespace IsoRim
             {
                 AlienFigures.Finish(pawn, look, alien);   // its own models, eyes, addon models and cards (Api 25)
             }
+            else if (Swaddled(pawn))
+            {
+                // A swaddled baby: the swaddle in place of the body (DrawSwaddle), in the game's colour for it
+                look.swaddled = true;
+                look.swaddle = Part("person_swaddle");
+                look.swaddleColor = SwaddleColour(pawn);
+            }
             return look;
+        }
+
+        // Whether the game draws the baby swaddled (Biotech: a living humanlike baby, not in a growth vat).
+        private static bool Swaddled(Pawn pawn)
+        {
+            return SwaddleOn && ModsConfig.BiotechActive && pawn.SwaddleBaby();
+        }
+
+        internal static bool SwaddleOn = true;   // harness: swaddle3d=0 draws a swaddled baby's body as before (ProbeSwaddle)
+
+        // The swaddle's colour as the game gives it: its own swaddle node's (PawnRenderNode_Swaddle.ColorFor, so a mod that
+        // changes it is followed); the same rule if the pawn's render tree has none (yet).
+        private static Color SwaddleColour(Pawn pawn)
+        {
+            try
+            {
+                PawnRenderTree tree = pawn.Drawer != null && pawn.Drawer.renderer != null ? pawn.Drawer.renderer.renderTree : null;
+                if (tree != null && !tree.Resolved)
+                {
+                    tree.EnsureInitialized(PawnRenderFlags.None);   // (never drawn as a sprite yet, as FaceDecal)
+                }
+                if (tree != null && tree.rootNode != null)
+                {
+                    Stack<PawnRenderNode> open = new Stack<PawnRenderNode>();
+                    open.Push(tree.rootNode);
+                    while (open.Count > 0)
+                    {
+                        PawnRenderNode n = open.Pop();
+                        if (n == null)
+                        {
+                            continue;
+                        }
+                        if (n is PawnRenderNode_Swaddle)
+                        {
+                            return n.ColorFor(pawn);
+                        }
+                        if (n.children != null)
+                        {
+                            foreach (PawnRenderNode c in n.children)
+                            {
+                                open.Push(c);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Can't read the game's swaddle colour: " + e.Message, 93611131);
+            }
+            // (the game's rule, PawnRenderTreeDefs Swaddle: brightness 0.6 to 0.89, each channel 0.1 either way)
+            Rand.PushState(pawn.thingIDNumber);
+            float bright = Rand.Range(0.6f, 0.89f);
+            float r = Rand.Range(-0.1f, 0.1f);
+            float g = Rand.Range(-0.1f, 0.1f);
+            float b = Rand.Range(-0.1f, 0.1f);
+            Rand.PopState();
+            return new Color(bright + r, bright + g, bright + b);
+        }
+
+        // A swaddled baby's body (People.Draw): the swaddle model on the body placing, textured and tinted by the game's colour
+        // (its "stuff" material takes the tint; with textured models off the plain copy shows it without the wrap lines), lit as
+        // a figure's part. It goes through DynamicModels, so outline, shadow, floors, cull and hit flash follow it as the body.
+        private static void DrawSwaddle(Look look, Vector3 at, float yaw, Matrix4x4 bodyPlace)
+        {
+            bool partWas = DynamicModels.FigurePart;
+            bool texWas = DynamicModels.SmoothTextured;
+            DynamicModels.FigurePart = true;   // (smooth shading on people: SmoothFigures)
+            DynamicModels.SmoothTextured = true;
+            try
+            {
+                DynamicModels.DrawParts(DynamicModels.PartsFor(look.swaddle, look.swaddleColor, null), at, yaw, bodyPlace);
+            }
+            finally
+            {
+                DynamicModels.FigurePart = partWas;
+                DynamicModels.SmoothTextured = texWas;
+            }
         }
 
         // Gene parts (Api 35, GeneParts): the person's active genes' models. Head parts only on IsoRim's own head (not under a

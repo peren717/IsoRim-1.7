@@ -1,0 +1,7 @@
+# IsoRim baby swaddle (Claude, tools/make_swaddle_concept.py). stuff_swaddle: a "stuff" name, so the textured
+# face is multiplied by the per-draw tint (the vanilla PawnRenderNode_Swaddle.ColorFor colour); Kd 0.926 x
+# TextureLift 1.08 = 1, so the white base shows the tint as is. The picture: white with grey wrap lines laid out
+# after the vanilla Swaddled_Child sprites.
+newmtl stuff_swaddle
+Kd 0.926 0.926 0.926
+map_Kd IsoRim/People/Swaddle
