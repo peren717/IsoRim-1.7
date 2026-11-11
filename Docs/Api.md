@@ -124,6 +124,7 @@ if (IsoRim.Api.Version >= 69) { /* ModelDef.smoothShading: a mech model lit by s
 if (IsoRim.Api.Version >= 70) { /* WatchCopy, CopyHash: one warning when a method you copied has changed (part 49) */ }
 if (IsoRim.Api.Version >= 71) { /* FirstPersonOn: first person is on, also while a camera pose holds the view (part 50) */ }
 if (IsoRim.Api.Version >= 72) { /* HarnessSeed: the -isorimseed=N of a test harness, null without it (part 51) */ }
+if (IsoRim.Api.Version >= 73) { /* glass colour sources: a negative alpha = the bound ModelDef's opacity; GlassOpacity(thing) (part 19) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
@@ -1239,6 +1240,10 @@ its frame): a window, or a vac barrier's field.
 - `AddGlassColor(Func<Thing, Color?> source)`, `RemoveGlassColor(source)`: a colour source, asked each frame for each
   thing whose glass part is drawn. Return r, g, b = tint and a = opacity (0 = not drawn), or null to leave the thing to
   its def. The first source that answers wins. Keep it cheap; an exception is logged once and the source is left out.
+- (Version 73) A source that sets only the tint answers a negative alpha (`Api.GlassOpacityFromModel`, -1): the glass is
+  drawn in its tint at the opacity of the thing's bound ModelDef (`glassOpacity`, else IsoRim's 0.4), whichever pack's
+  ModelDef that is, with no def lookup of its own. `Api.GlassOpacity(thing)` is that opacity (NaN: no model with a glass
+  part). A non-negative alpha is drawn as before.
 - Things with none of these keep IsoRim's one glass look exactly. With the 3D view off the game's sprites stand.
 
 ```csharp
@@ -1246,6 +1251,9 @@ if (IsoRim.Api.Version >= 30)
 {
     IsoRim.Api.AddGlassColor(t => t is MyRecolourableBarrier b ? new Color(b.colour.r, b.colour.g, b.colour.b, 0.35f) : (Color?)null);
 }
+// version 73: the tint only, the opacity from the bound ModelDef
+//     ... new Color(b.colour.r, b.colour.g, b.colour.b, IsoRim.Api.GlassOpacityFromModel) ...
+// (on an older IsoRim a negative alpha is not an opacity: answer a real one there)
 ```
 
 An older IsoRim ignores these fields and a door's `glassModel` (no error); the model binder's export gates them on version 30.

@@ -44,9 +44,20 @@ namespace IsoRim
             sources.Remove(source);
         }
 
+        // The opacity of def's glass part: its glassOpacity (0 to 1), else IsoRim's own (Opacity).
+        internal static float OpacityOf(ModelDef def) => def.glassOpacity >= 0f ? Mathf.Clamp01(def.glassOpacity) : Opacity;
+
+        // (Api 73) The opacity t's glass part gets from its bound ModelDef (the model table's entry for its def, as the glass
+        // and door drawers use it); NaN when it has no model with a glass part.
+        internal static float BoundOpacity(Thing t)
+        {
+            ModelEntry entry;
+            return t != null && ModelLibrary.TryGet(t.def, out entry) && entry.glass != null && entry.HasModel && entry.def != null ? OpacityOf(entry.def) : float.NaN;
+        }
+
         // The look of t's glass part when it is not IsoRim's one glass look: a colour source's answer (rgb tint, a opacity;
-        // the first that answers), else the def's glassTint / glassOpacity, else fallback (a field's own sprite colour) at the
-        // def's or IsoRim's opacity. False: IsoRim's own glass, exactly as before.
+        // the first that answers; a negative a, Api 73: the def's opacity), else the def's glassTint / glassOpacity, else
+        // fallback (a field's own sprite colour) at the def's or IsoRim's opacity. False: IsoRim's own glass, exactly as before.
         internal static bool CustomLook(Thing t, ModelDef def, Color? fallback, out Color c)
         {
             for (int i = 0; i < sources.Count; i++)
@@ -62,6 +73,10 @@ namespace IsoRim
                     if (r.HasValue)
                     {
                         c = r.Value;
+                        if (c.a < 0f)
+                        {
+                            c.a = OpacityOf(def);   // (Api 73) the bound def's opacity
+                        }
                         return true;
                     }
                 }
@@ -78,7 +93,7 @@ namespace IsoRim
                 return false;
             }
             Color rgb = tintSet ? def.glassTint : (fallback ?? Tint);
-            c = new Color(rgb.r, rgb.g, rgb.b, def.glassOpacity >= 0f ? Mathf.Clamp01(def.glassOpacity) : Opacity);
+            c = new Color(rgb.r, rgb.g, rgb.b, OpacityOf(def));
             return true;
         }
 

@@ -141,6 +141,7 @@ namespace IsoRim
 
         private static void FwStart(IEnumerator<int> script)
         {
+            fwScript?.Dispose();   // a script replaced before its end still runs its finally blocks (its clean-up)
             fwSigStart = FwSettingsSig();
             fwScript = script;
             fwScriptWait = Time.frameCount;

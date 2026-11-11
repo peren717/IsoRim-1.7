@@ -142,14 +142,17 @@ namespace IsoRim
         // gated on ViewReady); FirstPerson.Update leaves through the same property.
         // 72: Api72.cs: HarnessSeed (N of a test harness's -isorimseed=N, null without it; QuickTestSeed.cs seeds the quick test's
         // world, generation seeds and start of play from it and keeps sounds and music out of Rand).
-        public static int Version => 72;
+        // 73: Api73.cs: a glass colour source's negative alpha (GlassOpacityFromModel) = the bound ModelDef's glassOpacity (else
+        // IsoRim's own), Glass.CustomLook; GlassOpacity(thing) = that opacity.
+        public static int Version => 73;
 
         // ---- glass parts (Version 30)
 
         /// <summary>
         /// Adds a colour source for glass parts (ModelDef.glassModel; Api version 30): asked each frame for each thing whose
-        /// glass part is drawn; return its colour (r, g, b = tint, a = opacity, 0 = not drawn) or null to leave it to the
-        /// def's glassTint / glassOpacity (else IsoRim's own glass look). The first source that answers wins. Main thread;
+        /// glass part is drawn; return its colour (r, g, b = tint, a = opacity, 0 = not drawn; since version 73 a negative a =
+        /// the bound ModelDef's glassOpacity, see Api73.cs) or null to leave it to the def's glassTint / glassOpacity (else
+        /// IsoRim's own glass look). The first source that answers wins. Main thread;
         /// an exception is logged once and the source is left out. Adding the same delegate twice adds it once.
         /// </summary>
         public static void AddGlassColor(Func<Thing, Color?> source) => Glass.AddSource(source);
