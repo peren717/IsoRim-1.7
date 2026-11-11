@@ -102,8 +102,8 @@ These are fixes. Nothing else should look or behave differently.
 
 ## 8. Not covered by Api 62
 
-- **Camera:** covered by Api 66 (Docs/Api.md part 45) and Api 68 (part 47), see "Camera (Api 66)" and "View switch, keys and
-  constants (Api 68)" below.
+- **Camera:** covered by Api 66 (Docs/Api.md part 45), Api 68 (part 47) and Api 71 (part 50), see "Camera (Api 66)", "View
+  switch, keys and constants (Api 68)" and "First person on (Api 71)" below.
 - **Patching `ModelBaker.Write` to lift item outline rings out of the ground:** this works round an IsoRim bug. It will be
   fixed in IsoRim itself, after which the patch can go.
 - **Patching `ModelLibrary.LoadAll` to restore ModelDefs:** no Api.
@@ -125,7 +125,7 @@ itself moves over like this (gate on `IsoRim.Api.Version >= 66`):
 | A `HandleLook` prefix and clearing `lookDragging` | `ViewPoseOptions.BlockPlayerCamera` (default true): IsoRim's look drag, turn, tilt and reset keys wait while the pose holds the view. |
 | Relying on `Turning` being true so nothing is rebuilt while flying | `ViewPoseOptions.CountsAsTurning` (default true): the same, by rule. One rebuild of the facing-built parts after the camera gives the view back, as before. |
 | On leaving: writing `freeYaw` so IsoRim's camera keeps facing the same way, and restoring the saved pitch | `Api.SetPlayerView(yaw, null)` and then dispose the handle. Nothing to restore: the player's settings were never touched. |
-| Leaving when first person starts | Optional now: a pushed pose wins over first person, which resumes when the pose goes. |
+| Leaving when first person starts | Optional now: a pushed pose wins over first person, which resumes when the pose goes. To step aside as soon as it starts, watch `Api.FirstPersonOn` (Api 71, below). |
 | Reading `View3D.EyePosition`, `View3D.ViewDistance` | `Api.CurrentViewPose` (`Eye`, `Far`, `FocusDistance`, `Near`). |
 
 ### View switch, keys and constants (Api 68)
@@ -140,6 +140,23 @@ Gate on `IsoRim.Api.Version >= 68` (Docs/Api.md part 47):
 | Calling `FirstPerson.Leave(null)` (after checking `FirstPerson.On`) | `Api.LeaveFirstPerson()`: the same call, true if first person was on. Off the main thread it does nothing and answers false. |
 | Calling `View3D.BindingHeld(def, unboundHeld)` | `Api.KeyHeld(def, unboundHeld)` (same answer: mouse buttons count; false while a window's search box has focus; an unbound binding answers `unboundHeld`). |
 | Reading `View3D.DefaultTanHalf` | `Api.PerspectiveTanHalf` (same value, a const). |
+
+### First person on (Api 71)
+
+Gate on `IsoRim.Api.Version >= 71` (Docs/Api.md part 50):
+
+| Today | With Api 71 |
+|---|---|
+| Reading `FirstPerson.On` | `Api.FirstPersonOn`: also true while a pose holds the view (then `Api.FirstPersonPawn` is null). One difference: it is false as soon as the 3D view's switch is off, while `FirstPerson.On` stays true until IsoRim leaves first person on the next frame. |
+| Copying the first person key's selection check (one selected, spawned person on the shown map) to predict whether the key will start first person behind your pose | Not needed: let the key run and watch `Api.FirstPersonOn`. |
+
+How a pose gives way to first person: keep your pose up while the player presses keys, and check `Api.FirstPersonOn` once a
+frame (in an `Api.BeforeViewUpdate` handler or your camera's own update). When it turns true while your pose holds the view,
+first person has really started: hand the view over (`Api.SetPlayerView` if the player's camera should keep your angles, then
+dispose the pose). When the key did not start first person (nobody or several selected, an animal, someone on another map),
+`FirstPersonOn` stays false and your camera carries on. IsoRim's own rules for who can be followed stay in IsoRim, so a
+change to them needs no change in your mod. Without the check nothing breaks either: first person waits under the pose and
+is shown when it goes.
 
 Stays in the camera mod: its own patches on the game's camera driver, input, cursor and jumps (dolly, zoom, pointer locking or
 warping, glides), keeping the game camera ahead of the eye, and remembering places. A camera that also wants a picture of its

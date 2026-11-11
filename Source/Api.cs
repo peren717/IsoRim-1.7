@@ -138,7 +138,9 @@ namespace IsoRim
         // DynamicModels.AnimalPart / SmoothTextured around them only); default off, unchanged.
         // 70: copied method watches (Api70.cs, CopyWatch.cs): WatchCopy (one warning when a copied method's IL hash differs or it is
         // missing, checked when the loading step it was registered in finishes), CopyHash, the debug action "Log copied method hashes".
-        public static int Version => 70;
+        // 71: Api71.cs: FirstPersonOn (FirstPerson.Engaged: first person on with the 3D view switched on; true under a pose, not
+        // gated on ViewReady); FirstPerson.Update leaves through the same property.
+        public static int Version => 71;
 
         // ---- glass parts (Version 30)
 

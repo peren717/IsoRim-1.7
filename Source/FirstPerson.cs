@@ -34,6 +34,14 @@ namespace IsoRim
             get { return pawn; }
         }
 
+        // First person is on and the 3D view's switch is on: what the player sees whenever no external camera pose (Api 66)
+        // holds the view, from the first 3D frame on (also while the map is still being prepared for 3D). With the switch
+        // off first person ends at the next Update. Api 71 (Api.FirstPersonOn) reads this.
+        public static bool Engaged
+        {
+            get { return pawn != null && View3D.Active; }
+        }
+
         // The camera is in the colonist's head this frame: first person is on and no external camera pose (Api 66) holds
         // the view. What depends on the camera being in the head (the colonist and their label hidden, no tilt-shift, the
         // rain box round the eye) asks this; first person itself (following the colonist, its look) carries on underneath.
@@ -137,7 +145,7 @@ namespace IsoRim
             {
                 return;
             }
-            if (!View3D.Active || pawn.Destroyed || !pawn.Spawned || pawn.Map != Find.CurrentMap || pawn.Dead)
+            if (!Engaged || pawn.Destroyed || !pawn.Spawned || pawn.Map != Find.CurrentMap || pawn.Dead)
             {
                 Leave("R3D_Msg_FirstPersonOff".Translate());
                 return;

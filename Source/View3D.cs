@@ -583,7 +583,7 @@ namespace IsoRim
         public static bool LookHeld()
         {
             IsoRimSettings st = IsoRimMod.Settings;
-            if (FirstPerson.On && Active)
+            if (FirstPerson.Engaged)
             {
                 // Nothing to drag the map for in first person: the drag button alone looks round.
                 return Input.GetMouseButton(st.lookMode == 1 ? 1 : 2);

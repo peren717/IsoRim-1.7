@@ -122,10 +122,11 @@ if (IsoRim.Api.Version >= 67) { /* FigureDrawContext.DrawSleeperBlanket: a figur
 if (IsoRim.Api.Version >= 68) { /* View3DActive (get/set), ControlsLocked, LeaveFirstPerson, KeyHeld, PerspectiveTanHalf, static DrawSleeperBlanket at the caller's placing (part 47) */ }
 if (IsoRim.Api.Version >= 69) { /* ModelDef.smoothShading: a mech model lit by smooth normals, as animals are (part 48) */ }
 if (IsoRim.Api.Version >= 70) { /* WatchCopy, CopyHash: one warning when a method you copied has changed (part 49) */ }
+if (IsoRim.Api.Version >= 71) { /* FirstPersonOn: first person is on, also while a camera pose holds the view (part 50) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -2489,7 +2490,7 @@ pose holds the view; the 3D view, isometric, first person and roof keys, and the
 - **Giving it back:** when the last pose is gone (or every pose returns null) the view is the player's camera exactly as the
   player left it, the same frame. To hand the pose's angles to the player's camera call `SetPlayerView` before disposing.
 - **First person:** a pose wins over IsoRim's first person while pushed (the colonist is drawn again and `FirstPersonPawn` is
-  null); first person carries on underneath and is back when the pose goes.
+  null); first person carries on underneath and is back when the pose goes. `FirstPersonOn` (version 71, part 50) stays true meanwhile.
 - **Limits:** only while the 3D view is on (a pose does not switch it on); a new game removes every pose; the pose callback runs
   on the main thread before the camera is set, so it should be cheap. A pose callback or `BeforeViewUpdate` handler that throws,
   or a pose that is not a number: one warning, removed.
@@ -2773,6 +2774,49 @@ if (IsoRim.Api.Version >= 70)
 - **Unchanged:** nothing registered, nothing runs.
 
 Version gate: `IsoRim.Api.Version >= 70`.
+
+## Part 50: first person on (version 71)
+
+Whether IsoRim's first person is on, also while a camera pose (part 45) holds the view. `FirstPersonPawn` answers "is the
+camera in a head now" and is null under a pose; this one answers "is the first person mode on". A camera that pushes a pose
+and should give way to first person watches it, instead of predicting what the player's first person key will do.
+
+```csharp
+static readonly bool hasFirstPersonOn = IsoRim.Api.Version >= 71;
+
+void EachFrame()   // while my camera holds the view with a pose
+{
+    if (myPose != null && hasFirstPersonOn && FirstPersonOn())
+    {
+        myPose.Dispose();   // first person came on behind the pose: step aside, the view is in the colonist's head next frame
+        myPose = null;
+    }
+}
+
+[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+static bool FirstPersonOn() => IsoRim.Api.FirstPersonOn;   // called only on version 71 or later
+```
+
+| Member | Meaning |
+|---|---|
+| `bool Api.FirstPersonOn` | First person is on and the 3D view's switch is on. Read-only. |
+
+- **True** from the moment first person starts (the player's key, with one colonist selected) until it ends, whoever holds
+  the view: also while a pose is pushed, when `FirstPersonPawn` is null and the colonist is drawn.
+- **Not gated on `ViewReady`:** when first person starts from the flat view, the key also switches the 3D view on and the
+  map is prepared for 3D first; `FirstPersonOn` is true at once, `FirstPersonPawn` from the first 3D frame.
+- **False** once first person ends (the key, `LeaveFirstPerson`, a gravship launch, the colonist gone from the shown map or
+  dead, a map change, a new game) and as soon as the 3D view's switch is off (`View3DActive` false): first person itself
+  ends on the next frame then.
+- **So** `FirstPersonPawn` not null always means `FirstPersonOn` is true; the other way round only without a pose and with
+  the view ready.
+- **Giving way without copying the key's rules:** the key starts first person only for one selected, spawned person on the
+  shown map, and those rules may change. Don't predict them: let the key run and look at the result. Check `FirstPersonOn`
+  each frame (in `BeforeViewUpdate` or your camera's update) and, when it turns true while your pose holds the view, hand
+  over (`SetPlayerView` if you like, then dispose the pose). A key press that did not start first person changes nothing.
+- **Cost:** two field reads.
+
+Version gate: `IsoRim.Api.Version >= 71`.
 
 ## Part M: model packs (IsoRim.ModelDef)
 
