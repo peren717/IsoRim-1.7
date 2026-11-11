@@ -40,19 +40,9 @@ namespace IsoRim
             {
                 return;
             }
+            // With -isorimseed=N (QuickTestSeed) the setup runs under a fixed Rand state: the same world and tile every run.
             h.Patch(HarmonyLib.AccessTools.Method(typeof(Root_Play), nameof(Root_Play.SetupForQuickTestPlay)),
-                prefix: new HarmonyLib.HarmonyMethod(typeof(Probe), nameof(BiomePrefix)),
                 postfix: new HarmonyLib.HarmonyMethod(typeof(Probe), nameof(BiomePostfix)) { priority = HarmonyLib.Priority.Last });
-        }
-
-        // -isorimseed=N with it: the same world, tile and map every run (the quick test's world seed is drawn from Rand).
-        public static void BiomePrefix()
-        {
-            string seed;
-            if (GenCommandLine.TryGetCommandLineArg("isorimseed", out seed))
-            {
-                Rand.Seed = int.Parse(seed);
-            }
         }
 
         public static void BiomePostfix()

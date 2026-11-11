@@ -123,10 +123,11 @@ if (IsoRim.Api.Version >= 68) { /* View3DActive (get/set), ControlsLocked, Leave
 if (IsoRim.Api.Version >= 69) { /* ModelDef.smoothShading: a mech model lit by smooth normals, as animals are (part 48) */ }
 if (IsoRim.Api.Version >= 70) { /* WatchCopy, CopyHash: one warning when a method you copied has changed (part 49) */ }
 if (IsoRim.Api.Version >= 71) { /* FirstPersonOn: first person is on, also while a camera pose holds the view (part 50) */ }
+if (IsoRim.Api.Version >= 72) { /* HarnessSeed: the -isorimseed=N of a test harness, null without it (part 51) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`), version 72 part 51 (`HarnessSeed`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -2817,6 +2818,42 @@ static bool FirstPersonOn() => IsoRim.Api.FirstPersonOn;   // called only on ver
 - **Cost:** two field reads.
 
 Version gate: `IsoRim.Api.Version >= 71`.
+
+## Part 51: the harness seed (version 72)
+
+For test runners. A test harness starts the game with `-quicktest -isorimseed=N`; players never pass it. With it IsoRim makes
+the quick test deterministic, and an addon's test runner reads the same N instead of an argument of its own, so one value
+seeds the whole run:
+
+```csharp
+// in the test runner, once the game runs (any time after the mods have loaded)
+int seed = IsoRim.Api.Version >= 72 ? HarnessSeedOrNull() ?? MyDefault : MyDefault;
+
+[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+static int? HarnessSeedOrNull() => IsoRim.Api.HarnessSeed;   // called only on version 72 or later
+```
+
+| Member | Meaning |
+|---|---|
+| `int? Api.HarnessSeed` | N of `-isorimseed=N`; null without the argument (or when N is not a whole number). Read-only, the same all session. |
+
+What `-isorimseed=N` does (only with the argument; without it nothing is patched):
+- **World setup:** `Root_Play.SetupForQuickTestPlay` runs under the random state N (pushed first, popped after every mod's
+  postfix): the world, every mod's pick of the starting tile and the colonists are the same every run. The rest of the new
+  game's loading (the colonists' needs, the scenario, the map) then runs from another fixed state derived from N.
+- **Generation seeds:** the few vanilla random blocks seeded with `System.HashCode.Combine` (random per process: shrines and
+  other generated structures differed every launch) use the same inputs mixed by the game's `Gen.HashCombineInt`:
+  `Map.NextGenSeed`, `LayoutWorker.FillAllRooms`, `Gravship.ConstantRandSeed`, `Building_Trap.KnowsOfTrap`.
+- **Start of play:** when the quick test's game has loaded, the random state is set to a fixed state derived from N and the
+  game is paused before its first tick (no free ticks before your runner starts). This runs as a
+  `LongEventHandler.ExecuteWhenFinished` callback queued at the end of `Game.InitNewGame`, so after every callback queued
+  earlier during the new game's loading: a runner's own callback from that time that unpauses or seeds is overridden. Start
+  your runner from its first frame of play instead.
+- **Sounds and music** leave the random state as they found it (they draw at real-time moments and on mouse-over).
+- **Not covered:** after the first tick, keep your own checks deterministic as before (a fixed state per stage or per tick):
+  plain play can still take a different random path between runs.
+
+Version gate: `IsoRim.Api.Version >= 72`.
 
 ## Part M: model packs (IsoRim.ModelDef)
 

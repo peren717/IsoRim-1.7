@@ -140,7 +140,9 @@ namespace IsoRim
         // missing, checked when the loading step it was registered in finishes), CopyHash, the debug action "Log copied method hashes".
         // 71: Api71.cs: FirstPersonOn (FirstPerson.Engaged: first person on with the 3D view switched on; true under a pose, not
         // gated on ViewReady); FirstPerson.Update leaves through the same property.
-        public static int Version => 71;
+        // 72: Api72.cs: HarnessSeed (N of a test harness's -isorimseed=N, null without it; QuickTestSeed.cs seeds the quick test's
+        // world, generation seeds and start of play from it and keeps sounds and music out of Rand).
+        public static int Version => 72;
 
         // ---- glass parts (Version 30)
 

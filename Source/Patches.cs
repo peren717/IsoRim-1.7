@@ -40,6 +40,14 @@ namespace IsoRim
         public static void ApplyAll()
         {
             harmony = new Harmony(HarmonyId);
+            try
+            {
+                QuickTestSeed.Apply(harmony);   // harness only (-isorimseed=); a failure there never stops the patches below
+            }
+            catch (Exception e)
+            {
+                Log.Error("[IsoRim] -isorimseed could not be applied: " + e);
+            }
             Probe.BiomeHook(harmony);   // harness only (-isorimbiome=)
 
             Patch("camera", AccessTools.Method(typeof(CameraDriver), "Update"),
