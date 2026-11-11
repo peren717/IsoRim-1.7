@@ -2849,9 +2849,35 @@ What `-isorimseed=N` does (only with the argument; without it nothing is patched
   `LongEventHandler.ExecuteWhenFinished` callback queued at the end of `Game.InitNewGame`, so after every callback queued
   earlier during the new game's loading: a runner's own callback from that time that unpauses or seeds is overridden. Start
   your runner from its first frame of play instead.
-- **Sounds and music** leave the random state as they found it (they draw at real-time moments and on mouse-over).
-- **Not covered:** after the first tick, keep your own checks deterministic as before (a fixed state per stage or per tick):
-  plain play can still take a different random path between runs.
+- **Sounds, music and fish shadows** leave the random state as they found it (they draw at real-time moments, on mouse-over,
+  or, for the fish flecks, at ticks timed by a hash that differs per launch).
+- **Frames:** each `Game.UpdatePlay` (the game's ticks, every map's and component's update and drawing, and a runner driven
+  from it) runs under a fixed state for the game tick it starts at (`TicksGame`). Frames with no tick in between (the game
+  paused, a wait on a screenshot file or on real time) share one state, so how many there were changes nothing; frames of a
+  running game differ by their tick.
+- **Ticks:** each `TickManager.DoSingleTick` runs under a fixed state for its tick number, pushed by a `Priority.First`
+  prefix and popped by a finalizer, so other mods' prefixes and postfixes run under it too. **Your explicit state wins:** if
+  you push a random state around your own ticks (`Rand.PushState(seed)`, then `DoSingleTick`), the tick runs under your
+  state and nothing is pushed (the test: Rand's state stack is deeper than after IsoRim's own frame, tick or load push, or
+  than 0 outside them).
+- **Ticks per frame:** while the game runs (any speed), each frame advances a fixed number of game ticks, the game's own
+  speed multiplier rounded (`TickManager.TickRateMultiplier` is the source; for example Normal 1, Fast 3), instead of as
+  many as real time allows. Vanilla's own loop (`TickManager.TickManagerUpdate`) runs: only its frame time and its
+  real-time budget (a slow frame ending its ticks early) are replaced; if the game's loop ever changes so the swap does not
+  fit, it is left as it is (warned once) and ticks follow real time again. Paused stays paused, also a pause forced while a
+  frame ticks. Ticks your runner steps itself (`DoSingleTick`) are not counted or limited: a runner that steps a fixed
+  count per frame keeps doing that (if it also unpauses the game, those frames get the speed's ticks on top), and a runner
+  that only unpauses and waits whole frames now gets the same ticks every run without a tick loop of its own. With the
+  game's dev tweak `UltraSpeedBoost` (thousands of ticks per frame) there is no budget at all and the count may drift by
+  a tick.
+- **Loads:** each `Game.LoadGame` runs under a fixed state for its load number in the session: what the load draws starts
+  from the same state (what it loads still depends on the save).
+- **So** a runner that waits whole frames (with the game running or stepping its own ticks) sees the same ticks and random
+  numbers every run, also after the first tick, without random states or a tick loop of its own. Push a state of your own
+  around ticks where a check needs rolls that do not depend on what ran before (a fixture of its own): it wins inside those
+  ticks. What a runner must still do: pause the game around waits on real time (a file to appear, seconds passing, a tick
+  loop with a time budget). Paused frames are free (they share a state and tick nothing); a running game's frames tick, so
+  their number must not depend on real time.
 
 Version gate: `IsoRim.Api.Version >= 72`.
 

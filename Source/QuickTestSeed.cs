@@ -24,10 +24,31 @@ namespace IsoRim
     //      target is watched (Api.WatchCopy) because the swap relies on its body, and its count of swapped calls is checked.
     //   3. Start of play: once the quick test's new game has finished loading, Rand is set to a fixed state, StateFor(PlayStart),
     //      and the game is paused before its first tick, so a test runner starts from the same state.
-    //   4. Sounds and music leave Rand's state as they found it (SoundEntries): they draw at real-time moments (sustainer
-    //      samples, the next song), on mouse-over and under the sound slots' real-time limits, so they shifted the game's
-    //      random stream by a different amount every run (seen: a mouse-over sound before the first tick). Only on the main
-    //      thread while the game is not waiting for a loading event (the state is saved and restored, the stack untouched).
+    //   4. Work that draws from Rand at moments that differ per run leaves Rand's state as it found it (saved and restored,
+    //      the stack untouched). Sounds and music (SoundEntries: real-time sustainer samples and songs, mouse-over sounds, the
+    //      sound slots' real-time limits; seen: a mouse-over sound before the first tick): on the main thread while the game
+    //      is not waiting for a loading event. The fish shadow flecks (FishEntry: FishShadowComponent.MapComponentTick, timed
+    //      by WaterBody.GetHashCode, which differs per launch): on the main thread, also inside a loading event.
+    //   5. Frames: each Game.UpdatePlay (the game's ticks, every map's and component's once-a-frame update and drawing, and
+    //      test runners driven from it) runs under StateFor(Frame, TicksGame at the frame's start), pushed and popped: what
+    //      the frame draws no longer depends on how far the shared state was moved outside it (UI, frame timing). Keyed on the
+    //      game tick, not on a frame count: frames with no tick in between (paused, waiting on a screenshot file or on real
+    //      time) share one state, so how many of them there were changes nothing; a running game's frames differ by tick.
+    //   6. Ticks: each TickManager.DoSingleTick runs under StateFor(Tick, TicksGame), pushed by a Priority.First prefix and
+    //      popped by a finalizer, so other mods' prefixes and postfixes run under it too. A runner's explicit state wins:
+    //      when Rand's stack is deeper than after our innermost push (ownDepth, 0 outside our pushes), someone pushed a state
+    //      around the tick on purpose and nothing is pushed. A tick's randomness then depends on N, the tick number and the
+    //      game state (or on the runner's state), not on how the ticks fell into frames.
+    //   7. Loads: each Game.LoadGame runs under StateFor(Load, load number this session), pushed and popped: what a load
+    //      draws starts from the same state every run.
+    //   8. Ticks per frame: while the game runs, each frame advances TicksPerFrame game ticks (the game's own speed multiplier,
+    //      TickRateMultiplier, rounded), not as many as real time allows. Vanilla's TickManager.TickManagerUpdate is the one
+    //      place real time becomes ticks and keeps its own loop: a transpiler swaps its two Time.deltaTime reads for
+    //      FixedFrameTime(this) and its real-time budget (clock.ElapsedMilliseconds) for none, and a prefix clears the time
+    //      carried over from the last frame, so the loop runs exactly TicksPerFrame ticks. All or nothing: if the expected
+    //      calls are not all found, the loop is left as it is (warned once). Paused stays paused (vanilla's own checks, also a
+    //      pause forced mid-loop). Ticks a runner steps itself (DoSingleTick) are not counted or limited.
+    // Each part is patched on its own (PatchPart): a missing method skips that part with a warning, not the rest.
     // The parsed argument alone, so reading it runs nothing else. QuickTestSeed has no static initialisers: what it looks up is
     // resolved lazily, only once the argument was given.
     internal static class QuickTestSeedArg
@@ -59,6 +80,20 @@ namespace IsoRim
         // What the fixed states after the world setup are derived from (with N, StateFor).
         internal const string NewGame = "new game";
         internal const string PlayStart = "play start";
+        internal const string Frame = "frame";
+        internal const string Tick = "tick";
+        internal const string Load = "load";
+
+        // Fixed ticks per frame (8): the frame time given is this much of a tick short of TicksPerFrame ticks, so the loop's
+        // float sums never round to one tick more or less.
+        private const float TickMargin = 0.5f;
+
+        // TickManager.TickManagerUpdate (8): its CopyHash when the swap was written (game 1.7.5005), and how many calls the
+        // swap replaces (Time.deltaTime twice, the budget's Stopwatch.ElapsedMilliseconds once). Not a copy: vanilla's loop
+        // runs; watched so a change is noticed.
+        internal const string TickLoopHash = "b6229658ac9d7002";
+        internal const int TickLoopDeltaCalls = 2;
+        internal const int TickLoopBudgetCalls = 1;
 
         private const int SetStateWarningKey = 0x15E3D7;   // Log.WarningOnce key of SetState's warning
 
@@ -79,10 +114,23 @@ namespace IsoRim
         private static MethodInfo combine2, combine3;
         private static Action<ulong> setRandState;
         private static Func<ulong> getRandState;
+        private static Stack<ulong> randStack;   // Rand's private stateStack (static readonly: the same instance all session)
         private static bool randResolved;
 
         private static bool setupPushed;
         private static bool quickTestStarting;
+        private static int loads;      // Game.LoadGame calls this session
+        private static int ownDepth;   // Rand's stack depth right after our innermost frame, tick or load push (0 outside them)
+        private static AccessTools.FieldRef<TickManager, float> carriedRealTime;   // TickManager.realTimeToTickThrough
+        private static Func<TickManager, float> timePerTick;                       // TickManager.CurTimePerTick
+        private static MethodInfo deltaTimeGetter, elapsedGetter, fixedFrameTime, noBudget;
+        private static bool tickLoopActive;   // the transpiler swapped every expected call (else the prefix does nothing)
+        private static bool tickLoopWarned;
+
+        internal static bool TickLoopActive => tickLoopActive;
+
+        // A pushed-state finalizer's __state when the prefix pushed nothing (any other value: ownDepth before the push).
+        private const int NotPushed = -1;
 
         internal static Target[] Targets => targets ?? (targets = new[]
         {
@@ -104,19 +152,23 @@ namespace IsoRim
                 method = AccessTools.Method(typeof(Building_Trap), nameof(Building_Trap.KnowsOfTrap), new[] { typeof(Pawn) }) },
         });
 
-        // The entry points of sounds and music (4): one-shots, new sustainers, the per-frame sound update, the music.
-        private static MethodBase[] SoundEntries()
+        // The sound work kept out of the random stream (4): one-shot sounds, new sustainers, the per-frame sound update, the
+        // music. The fish shadow flecks (FishEntry) have their own gate.
+        private static (string, MethodBase)[] SoundEntries()
         {
-            return new MethodBase[]
+            return new (string, MethodBase)[]
             {
-                AccessTools.Method(typeof(Verse.Sound.SoundStarter), nameof(Verse.Sound.SoundStarter.PlayOneShot), new[] { typeof(SoundDef), typeof(Verse.Sound.SoundInfo) }),
-                AccessTools.Method(typeof(Verse.Sound.SoundStarter), nameof(Verse.Sound.SoundStarter.TrySpawnSustainer), new[] { typeof(SoundDef), typeof(Verse.Sound.SoundInfo) }),
-                AccessTools.Method(typeof(Verse.Sound.SoundRoot), nameof(Verse.Sound.SoundRoot.Update), Type.EmptyTypes),
-                AccessTools.Method(typeof(MusicManagerPlay), nameof(MusicManagerPlay.MusicUpdate), Type.EmptyTypes),
+                ("SoundStarter.PlayOneShot", AccessTools.Method(typeof(Verse.Sound.SoundStarter), nameof(Verse.Sound.SoundStarter.PlayOneShot), new[] { typeof(SoundDef), typeof(Verse.Sound.SoundInfo) })),
+                ("SoundStarter.TrySpawnSustainer", AccessTools.Method(typeof(Verse.Sound.SoundStarter), nameof(Verse.Sound.SoundStarter.TrySpawnSustainer), new[] { typeof(SoundDef), typeof(Verse.Sound.SoundInfo) })),
+                ("SoundRoot.Update", AccessTools.Method(typeof(Verse.Sound.SoundRoot), nameof(Verse.Sound.SoundRoot.Update), Type.EmptyTypes)),
+                ("MusicManagerPlay.MusicUpdate", AccessTools.Method(typeof(MusicManagerPlay), nameof(MusicManagerPlay.MusicUpdate), Type.EmptyTypes)),
             };
         }
 
-        // Rand's private StateCompressed (seed and iterations) as delegates, looked up once; null when it cannot be found.
+        private static MethodBase FishEntry => AccessTools.Method(typeof(FishShadowComponent), nameof(FishShadowComponent.MapComponentTick), Type.EmptyTypes);
+
+        // Rand's private StateCompressed (seed and iterations) as delegates and its state stack, looked up once; null when
+        // they cannot be found.
         private static void ResolveRand()
         {
             if (randResolved)
@@ -126,6 +178,14 @@ namespace IsoRim
             randResolved = true;
             setRandState = RandStateAccessor<Action<ulong>>(AccessTools.PropertySetter(typeof(Rand), "StateCompressed"));
             getRandState = RandStateAccessor<Func<ulong>>(AccessTools.PropertyGetter(typeof(Rand), "StateCompressed"));
+            randStack = AccessTools.Field(typeof(Rand), "stateStack")?.GetValue(null) as Stack<ulong>;
+        }
+
+        // Rand's state stack depth now; null when the stack cannot be read.
+        internal static int? RandDepth()
+        {
+            ResolveRand();
+            return randStack?.Count;
         }
 
         private static MethodInfo Combine2 => combine2 ?? (combine2 = AccessTools.FirstMethod(typeof(QuickTestSeed), m => m.Name == nameof(Combine) && m.GetGenericArguments().Length == 2));
@@ -135,6 +195,12 @@ namespace IsoRim
         internal static int StateFor(string purpose)
         {
             return Gen.HashCombineInt(Value.GetValueOrDefault(), GenText.StableStringHash(purpose));
+        }
+
+        // The n-th of a series of seeds for one purpose (frames, ticks, loads): mixed with n, so neighbours are unrelated.
+        internal static int StateFor(string purpose, int n)
+        {
+            return Gen.HashCombineInt(StateFor(purpose), n);
         }
 
         // Rand's state set to StateFor(purpose), as Rand.Seed would (that seed, no iterations) but without touching the state
@@ -157,38 +223,74 @@ namespace IsoRim
             {
                 return;
             }
-            MethodBase setup = AccessTools.Method(typeof(Root_Play), nameof(Root_Play.SetupForQuickTestPlay), Type.EmptyTypes);
-            h.Patch(setup, prefix: new HarmonyMethod(typeof(QuickTestSeed), nameof(Setup_Prefix)) { priority = Priority.First },
-                finalizer: new HarmonyMethod(typeof(QuickTestSeed), nameof(Setup_Finalizer)));
-            h.Patch(AccessTools.Method(typeof(Game), nameof(Game.InitNewGame), Type.EmptyTypes),
-                postfix: new HarmonyMethod(typeof(QuickTestSeed), nameof(InitNewGame_Postfix)) { priority = Priority.Last });
-            HarmonyMethod swap = new HarmonyMethod(typeof(QuickTestSeed), nameof(StableSeeds_Transpiler));
+            // Each part on its own: a part whose method is missing (or fails to patch) is skipped with a warning, the rest applies.
+            PatchPart(h, "world setup", AccessTools.Method(typeof(Root_Play), nameof(Root_Play.SetupForQuickTestPlay), Type.EmptyTypes),
+                prefix: Hook(nameof(Setup_Prefix), Priority.First), finalizer: Hook(nameof(Setup_Finalizer)));
+            PatchPart(h, "start of play", AccessTools.Method(typeof(Game), nameof(Game.InitNewGame), Type.EmptyTypes),
+                postfix: Hook(nameof(InitNewGame_Postfix), Priority.Last));
             foreach (Target t in Targets)
             {
                 Api.WatchCopy(t.method, t.hash, "IsoRim -" + Arg + ", the stable seed in " + t.name);
-                if (t.method != null)
-                {
-                    h.Patch(t.method, transpiler: swap);
-                }
+                PatchPart(h, "the stable seed in " + t.name, t.method, transpiler: Hook(nameof(StableSeeds_Transpiler)));
             }
             ResolveRand();
-            if (getRandState != null && setRandState != null)
+            if (randStack == null)
             {
-                HarmonyMethod keep = new HarmonyMethod(typeof(QuickTestSeed), nameof(Sound_Prefix)) { priority = Priority.First };
-                HarmonyMethod restore = new HarmonyMethod(typeof(QuickTestSeed), nameof(Sound_Finalizer));
-                foreach (MethodBase m in SoundEntries())
-                {
-                    if (m != null)
-                    {
-                        h.Patch(m, prefix: keep, finalizer: restore);
-                    }
-                }
+                Log.Warning("[IsoRim] -" + Arg + ": Rand's state stack cannot be read; every tick is seeded, also inside a runner's own state.");
+            }
+            PatchPart(h, "frames", AccessTools.Method(typeof(Game), nameof(Game.UpdatePlay), Type.EmptyTypes),
+                prefix: Hook(nameof(Frame_Prefix), Priority.First), finalizer: Hook(nameof(Pushed_Finalizer)));
+            PatchPart(h, "ticks", AccessTools.Method(typeof(TickManager), nameof(TickManager.DoSingleTick), Type.EmptyTypes),
+                prefix: Hook(nameof(Tick_Prefix), Priority.First), finalizer: Hook(nameof(Pushed_Finalizer)));
+            PatchPart(h, "loads", AccessTools.Method(typeof(Game), nameof(Game.LoadGame), Type.EmptyTypes),
+                prefix: Hook(nameof(Load_Prefix), Priority.First), finalizer: Hook(nameof(Pushed_Finalizer)));
+            MethodBase tickLoop = TickLoop;
+            Api.WatchCopy(tickLoop, TickLoopHash, "IsoRim -" + Arg + ", fixed ticks per frame in TickManager.TickManagerUpdate");
+            if (ResolveTickLoop())
+            {
+                PatchPart(h, "fixed ticks per frame", tickLoop, prefix: Hook(nameof(TickLoop_Prefix)), transpiler: Hook(nameof(TickLoop_Transpiler)));
             }
             else
             {
-                Log.Warning("[IsoRim] -" + Arg + ": Rand's state cannot be read or set; sounds and music are not kept out of it.");
+                Log.Warning("[IsoRim] -" + Arg + ": TickManager's carried time or time per tick, Time.deltaTime or Stopwatch.ElapsedMilliseconds not found; ticks per frame follow real time.");
             }
-            Log.Message("[IsoRim] -" + Arg + "=" + Value.Value + ": quick test seeded (world, generation seeds, start of play; sounds kept out of the random stream).");
+            if (getRandState != null && setRandState != null)
+            {
+                foreach ((string name, MethodBase m) in SoundEntries())
+                {
+                    PatchPart(h, "keeping " + name + " out of the random stream", m, prefix: Hook(nameof(Keep_Prefix), Priority.First), finalizer: Hook(nameof(Keep_Finalizer)));
+                }
+                PatchPart(h, "keeping the fish shadows out of the random stream", FishEntry, prefix: Hook(nameof(KeepFish_Prefix), Priority.First), finalizer: Hook(nameof(Keep_Finalizer)));
+            }
+            else
+            {
+                Log.Warning("[IsoRim] -" + Arg + ": Rand's state cannot be read or set; sounds, music and fish shadows are not kept out of it.");
+            }
+            Log.Message("[IsoRim] -" + Arg + "=" + Value.Value + ": quick test seeded (world, generation seeds, start of play, frames, ticks, loads, fixed ticks per frame; sounds and fish shadows kept out of the random stream).");
+        }
+
+        private static HarmonyMethod Hook(string name, int priority = -1)
+        {
+            return new HarmonyMethod(typeof(QuickTestSeed), name) { priority = priority };
+        }
+
+        // One part of Apply: patched, or skipped with a warning when its method is missing or the patch fails.
+        private static void PatchPart(Harmony h, string part, MethodBase method, HarmonyMethod prefix = null, HarmonyMethod postfix = null,
+            HarmonyMethod transpiler = null, HarmonyMethod finalizer = null)
+        {
+            if (method == null)
+            {
+                Log.Warning("[IsoRim] -" + Arg + ": the method for " + part + " was not found; that part is skipped.");
+                return;
+            }
+            try
+            {
+                h.Patch(method, prefix, postfix, transpiler, finalizer);
+            }
+            catch (Exception e)
+            {
+                Log.Warning("[IsoRim] -" + Arg + ": " + part + " could not be patched (" + e.Message + "); that part is skipped.");
+            }
         }
 
         public static void Setup_Prefix()
@@ -246,19 +348,181 @@ namespace IsoRim
             }
         }
 
-        // ---- sounds and music (4)
+        // Rand's state now (seed in the low half, iterations in the high half), null when it cannot be read (the probe's seedstate).
+        internal static ulong? RandStateNow()
+        {
+            ResolveRand();
+            return getRandState?.Invoke();
+        }
 
-        public static void Sound_Prefix(out ulong? __state)
+        // ---- frames, ticks, loads (5, 6, 7): pushed in the prefix (PushOwn), popped by Pushed_Finalizer
+
+        // Pushes one of our states and records the stack depth after it (ownDepth); returns the ownDepth to restore.
+        private static int PushOwn(int seed)
+        {
+            int before = ownDepth;
+            Rand.PushState(seed);
+            ownDepth = randStack?.Count ?? 0;
+            return before;
+        }
+
+        // Keyed on the game tick the frame starts at, not on a frame count: frames without ticks in between (paused, waiting
+        // on a file or on real time) share one state, so how many there were changes nothing.
+        public static void Frame_Prefix(Game __instance, out int __state)
+        {
+            __state = PushOwn(StateFor(Frame, __instance.tickManager.TicksGame));
+        }
+
+        // A runner's own state wins: when Rand's stack is deeper than after our innermost push (0 outside our pushes), someone
+        // pushed a state around this tick on purpose, and the tick runs under it. Otherwise StateFor(Tick, TicksGame).
+        public static void Tick_Prefix(TickManager __instance, out int __state)
+        {
+            if (randStack != null && randStack.Count > ownDepth)
+            {
+                __state = NotPushed;
+                return;
+            }
+            __state = PushOwn(StateFor(Tick, __instance.TicksGame));
+        }
+
+        public static void Load_Prefix(out int __state)
+        {
+            __state = PushOwn(StateFor(Load, loads++));
+        }
+
+        public static void Pushed_Finalizer(int __state)
+        {
+            if (__state != NotPushed)
+            {
+                Rand.PopState();
+                ownDepth = __state;
+            }
+        }
+
+        // ---- kept out of the random stream (4)
+
+        // Sounds: on the main thread, not while a loading event runs (its own sounds belong to it).
+        public static void Keep_Prefix(out ulong? __state)
         {
             __state = UnityData.IsInMainThread && !LongEventHandler.ShouldWaitForEvent ? getRandState() : (ulong?)null;
         }
 
-        public static void Sound_Finalizer(ulong? __state)
+        // Fish shadow flecks: a map component tick, also inside a loading event's ticks; only the main thread's state is
+        // shared, so the main thread is the one gate.
+        public static void KeepFish_Prefix(out ulong? __state)
+        {
+            __state = UnityData.IsInMainThread ? getRandState() : (ulong?)null;
+        }
+
+        public static void Keep_Finalizer(ulong? __state)
         {
             if (__state.HasValue)
             {
                 setRandState(__state.Value);
             }
+        }
+
+        // ---- fixed ticks per frame (8)
+
+        internal static MethodBase TickLoop => AccessTools.Method(typeof(TickManager), nameof(TickManager.TickManagerUpdate), Type.EmptyTypes);
+
+        // TickManager's carried real time (realTimeToTickThrough) and time per tick (CurTimePerTick, private), looked up once;
+        // false when either is missing (then nothing is patched).
+        private static bool ResolveTickLoop()
+        {
+            if (AccessTools.Field(typeof(TickManager), "realTimeToTickThrough")?.FieldType == typeof(float))
+            {
+                carriedRealTime = AccessTools.FieldRefAccess<TickManager, float>("realTimeToTickThrough");
+            }
+            MethodInfo perTick = AccessTools.PropertyGetter(typeof(TickManager), "CurTimePerTick");
+            timePerTick = perTick?.ReturnType == typeof(float)
+                ? (Func<TickManager, float>)Delegate.CreateDelegate(typeof(Func<TickManager, float>), perTick) : null;
+            return carriedRealTime != null && timePerTick != null && DeltaTimeGetter != null && ElapsedGetter != null;
+        }
+
+        // The calls the tick loop's swap replaces, and what replaces them (resolved once; the parity probe compares these).
+        internal static MethodInfo DeltaTimeGetter => deltaTimeGetter ?? (deltaTimeGetter = AccessTools.PropertyGetter(typeof(UnityEngine.Time), nameof(UnityEngine.Time.deltaTime)));
+        internal static MethodInfo ElapsedGetter => elapsedGetter ?? (elapsedGetter = AccessTools.PropertyGetter(typeof(System.Diagnostics.Stopwatch), nameof(System.Diagnostics.Stopwatch.ElapsedMilliseconds)));
+        internal static MethodInfo FixedFrameTimeMethod => fixedFrameTime ?? (fixedFrameTime = AccessTools.Method(typeof(QuickTestSeed), nameof(FixedFrameTime)));
+        internal static MethodInfo NoBudgetMethod => noBudget ?? (noBudget = AccessTools.Method(typeof(QuickTestSeed), nameof(NoBudget)));
+
+        // Game ticks per frame while the game runs: the game's own speed multiplier, TickManager.TickRateMultiplier (ticks per
+        // 1/60 s of play; for example Normal 1, Fast 3), rounded, at least one. The one place this rule lives.
+        internal static int TicksPerFrame(TickManager tm)
+        {
+            return Math.Max(1, (int)Math.Round(tm.TickRateMultiplier));
+        }
+
+        // The frame time TickManagerUpdate adds instead of Time.deltaTime (both reads: its "close to one tick" test and the sum):
+        // TicksPerFrame ticks of the game's own time per tick, less TickMargin, so its loop (tick while time is left) runs
+        // exactly TicksPerFrame times. tm: the TickManager whose update runs (the swap passes it, ldarg.0).
+        public static float FixedFrameTime(TickManager tm)
+        {
+            return (TicksPerFrame(tm) - TickMargin) * timePerTick(tm);
+        }
+
+        // Instead of the loop's real-time budget (clock.ElapsedMilliseconds, which ends a frame's ticks early on a slow frame):
+        // no time spent, so the budget never ends the loop.
+        public static long NoBudget(System.Diagnostics.Stopwatch clock)
+        {
+            return 0L;
+        }
+
+        // Each frame starts from no carried time (vanilla keeps a remainder from the last frame's real time). Only when the
+        // transpiler swapped every expected call: otherwise vanilla's loop runs untouched.
+        public static void TickLoop_Prefix(TickManager __instance)
+        {
+            if (tickLoopActive)
+            {
+                carriedRealTime(__instance) = 0f;
+            }
+        }
+
+        // All or nothing: with every expected call found the swapped body, otherwise the original instructions, untouched.
+        public static IEnumerable<CodeInstruction> TickLoop_Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            List<CodeInstruction> original = new List<CodeInstruction>(instructions);
+            List<CodeInstruction> swapped = SwapTickLoop(original, out int delta, out int budget);
+            tickLoopActive = delta == TickLoopDeltaCalls && budget == TickLoopBudgetCalls;
+            if (tickLoopActive)
+            {
+                return swapped;
+            }
+            if (!tickLoopWarned)
+            {
+                tickLoopWarned = true;
+                Log.Warning("[IsoRim] -" + Arg + ": TickManager.TickManagerUpdate has " + delta + " Time.deltaTime and " + budget
+                    + " budget reads, " + TickLoopDeltaCalls + " and " + TickLoopBudgetCalls + " expected; left as it is, ticks per frame follow real time.");
+            }
+            return original;
+        }
+
+        // A new list with each Time.deltaTime read replaced by ldarg.0 (the TickManager; it takes over the call's labels) and
+        // a call of FixedFrameTime, and each Stopwatch.ElapsedMilliseconds read by a call of NoBudget (the Stopwatch the
+        // instance call took becomes its argument). The given list and its instructions are left unchanged.
+        internal static List<CodeInstruction> SwapTickLoop(List<CodeInstruction> list, out int delta, out int budget)
+        {
+            List<CodeInstruction> result = new List<CodeInstruction>(list.Count + TickLoopDeltaCalls);
+            delta = budget = 0;
+            foreach (CodeInstruction ci in list)
+            {
+                if (ci.opcode == OpCodes.Call && ci.operand is MethodInfo m && m == DeltaTimeGetter)
+                {
+                    result.Add(new CodeInstruction(OpCodes.Ldarg_0) { labels = new List<Label>(ci.labels), blocks = new List<ExceptionBlock>(ci.blocks) });
+                    result.Add(new CodeInstruction(OpCodes.Call, FixedFrameTimeMethod));
+                    delta++;
+                }
+                else if ((ci.opcode == OpCodes.Callvirt || ci.opcode == OpCodes.Call) && ci.operand is MethodInfo e && e == ElapsedGetter)
+                {
+                    result.Add(new CodeInstruction(OpCodes.Call, NoBudgetMethod) { labels = new List<Label>(ci.labels), blocks = new List<ExceptionBlock>(ci.blocks) });
+                    budget++;
+                }
+                else
+                {
+                    result.Add(ci);
+                }
+            }
+            return result;
         }
 
         // ---- stable generation seeds
