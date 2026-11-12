@@ -1,0 +1,459 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <R3D_Binder_Title>모델 편집기</R3D_Binder_Title>
+  <R3D_Binder_Gizmo>개발자: 모델 편집기</R3D_Binder_Gizmo>
+  <R3D_Binder_PickThing>건물 또는 물품을 클릭하세요</R3D_Binder_PickThing>
+  <R3D_Binder_OnlyThings>건물과 물품만 지원합니다.</R3D_Binder_OnlyThings>
+  <R3D_Binder_NeedView>먼저 3D 보기를 켜세요.</R3D_Binder_NeedView>
+  <R3D_Binder_NoDoors>문은 지원하지 않습니다.</R3D_Binder_NoDoors>
+  <R3D_Binder_NoTurrets>포탑은 지원하지 않습니다.</R3D_Binder_NoTurrets>
+  <R3D_Binder_NoStyles>외형이 적용된 물체는 지원하지 않습니다.</R3D_Binder_NoStyles>
+  <R3D_Binder_Shared>해당 모델은 공유 중입니다 ({0}).</R3D_Binder_Shared>
+  <R3D_Binder_NoModel>아직 모델이 없습니다</R3D_Binder_NoModel>
+  <R3D_Binder_HasModel>{0}의 모델</R3D_Binder_HasModel>
+  <R3D_Binder_Live>실시간으로 변경됨 (되돌리기로 취소)</R3D_Binder_Live>
+  <R3D_Binder_File>파일</R3D_Binder_File>
+  <R3D_Binder_Pick>선택</R3D_Binder_Pick>
+  <R3D_Binder_Reload>새로 고침</R3D_Binder_Reload>
+  <R3D_Binder_Search>검색</R3D_Binder_Search>
+  <R3D_Binder_Workspace>작업 공간</R3D_Binder_Workspace>
+  <R3D_Binder_NoFile>.obj 파일을 선택하세요</R3D_Binder_NoFile>
+  <R3D_Binder_BadFile>이 파일을 읽을 수 없습니다</R3D_Binder_BadFile>
+  <R3D_Binder_Readout>{0}개 삼각형, {1} x {2} x {3}</R3D_Binder_Readout>
+  <R3D_Binder_BelowGround>지면 아래로 뻗어 있습니다</R3D_Binder_BelowGround>
+  <R3D_Binder_Overhang>바닥 면적보다 넓습니다</R3D_Binder_Overhang>
+  <R3D_Binder_StuffOnStuffless>재료가 없는 물체에 재료 표면이 적용되어 있습니다</R3D_Binder_StuffOnStuffless>
+  <R3D_Binder_NotDrawn>현재 설정에서는 모델로 표시되지 않습니다</R3D_Binder_NotDrawn>
+  <R3D_Binder_BuiltFor>적용 대상</R3D_Binder_BuiltFor>
+  <R3D_Binder_Offset>위치 조정</R3D_Binder_Offset>
+  <R3D_Binder_Rotation>회전</R3D_Binder_Rotation>
+  <R3D_Binder_PerFacing>방향별 설정</R3D_Binder_PerFacing>
+  <R3D_Binder_Turn>회전</R3D_Binder_Turn>
+  <R3D_Binder_NoRoom>회전할 공간이 없습니다.</R3D_Binder_NoRoom>
+  <R3D_Binder_Yaw>회전: {0}</R3D_Binder_Yaw>
+  <R3D_Binder_Scale>크기 조정</R3D_Binder_Scale>
+  <R3D_Binder_Surface>표면 높이</R3D_Binder_Surface>
+  <R3D_Binder_Seat>좌석 높이</R3D_Binder_Seat>
+  <R3D_Binder_Bedding>침구 윗면</R3D_Binder_Bedding>
+  <R3D_Binder_WallFit>벽면 맞춤</R3D_Binder_WallFit>
+  <R3D_Binder_WallMounted>벽면 설치</R3D_Binder_WallMounted>
+  <R3D_Binder_MountHeight>설치 높이</R3D_Binder_MountHeight>
+  <R3D_Binder_Linked>연결됨</R3D_Binder_Linked>
+  <R3D_Binder_Cutaway>내부 절개 표시</R3D_Binder_Cutaway>
+  <R3D_Binder_OverArt>게임 원본 그래픽 위에 표시</R3D_Binder_OverArt>
+  <R3D_Binder_LayFlat>바닥에 눕히기</R3D_Binder_LayFlat>
+  <R3D_Binder_Outline>윤곽선</R3D_Binder_Outline>
+  <R3D_Binder_GroundShadow>바닥 그림자</R3D_Binder_GroundShadow>
+  <R3D_Binder_Copy>기존 모델에서 복사</R3D_Binder_Copy>
+  <R3D_Binder_ThisThing>이 물체</R3D_Binder_ThisThing>
+  <R3D_Binder_Revert>되돌리기</R3D_Binder_Revert>
+  <R3D_Binder_Pack>묶음</R3D_Binder_Pack>
+  <R3D_Binder_Export>내보내기</R3D_Binder_Export>
+  <R3D_Binder_BadPack>묶음 이름을 입력하세요 (영문자, 숫자).</R3D_Binder_BadPack>
+  <R3D_Binder_Exported>{0}에 저장됨</R3D_Binder_Exported>
+  <R3D_Binder_ExportFailed>내보내기 실패: {0}</R3D_Binder_ExportFailed>
+  <R3D_Coverage_Title>모델 적용 현황</R3D_Coverage_Title>
+  <R3D_Coverage_Mod>{0}: 모델이 없는 건물 {1}/{2}개, 물품 {3}/{4}개</R3D_Coverage_Mod>
+  <R3D_Coverage_Building>건물</R3D_Coverage_Building>
+  <R3D_Coverage_Item>물품</R3D_Coverage_Item>
+  <R3D_Coverage_Apparel>의류</R3D_Coverage_Apparel>
+  <R3D_Coverage_Weapon>무기</R3D_Coverage_Weapon>
+  <R3D_Coverage_sprite>스프라이트</R3D_Coverage_sprite>
+  <R3D_Coverage_extruded>입체화된 스프라이트</R3D_Coverage_extruded>
+  <R3D_Coverage_block>입체 벽돌</R3D_Coverage_block>
+  <R3D_Coverage_worn>착용 모습</R3D_Coverage_worn>
+  <R3D_Coverage_ground>지면 형태</R3D_Coverage_ground>
+  <R3D_Coverage_model>모델</R3D_Coverage_model>
+  <R3D_Coverage_door>3D 문</R3D_Coverage_door>
+  <R3D_Binder_Shape>형태</R3D_Binder_Shape>
+  <R3D_Binder_ShapeModel>모델</R3D_Binder_ShapeModel>
+  <R3D_Binder_ShapeRaised>입체화</R3D_Binder_ShapeRaised>
+  <R3D_Binder_ShapeCard>평면판</R3D_Binder_ShapeCard>
+  <R3D_Binder_ShapeBox>상자</R3D_Binder_ShapeBox>
+  <R3D_Binder_Height>높이</R3D_Binder_Height>
+  <R3D_Binder_TopInset>윗면 안쪽 여백</R3D_Binder_TopInset>
+  <R3D_Binder_Faces>면</R3D_Binder_Faces>
+  <R3D_Binder_FaceTop>윗면</R3D_Binder_FaceTop>
+  <R3D_Binder_FaceNorth>북쪽 면</R3D_Binder_FaceNorth>
+  <R3D_Binder_FaceEast>동쪽 면</R3D_Binder_FaceEast>
+  <R3D_Binder_FaceSouth>남쪽 면</R3D_Binder_FaceSouth>
+  <R3D_Binder_FaceWest>서쪽 면</R3D_Binder_FaceWest>
+  <R3D_Binder_FaceTagTop>위</R3D_Binder_FaceTagTop>
+  <R3D_Binder_FaceTagNorth>북</R3D_Binder_FaceTagNorth>
+  <R3D_Binder_FaceTagEast>동</R3D_Binder_FaceTagEast>
+  <R3D_Binder_FaceTagSouth>남</R3D_Binder_FaceTagSouth>
+  <R3D_Binder_FaceTagWest>서</R3D_Binder_FaceTagWest>
+  <R3D_Binder_FaceModeSprite>스프라이트</R3D_Binder_FaceModeSprite>
+  <R3D_Binder_FaceModeSpriteNorth>북쪽 스프라이트</R3D_Binder_FaceModeSpriteNorth>
+  <R3D_Binder_FaceModeSpriteEast>동쪽 스프라이트</R3D_Binder_FaceModeSpriteEast>
+  <R3D_Binder_FaceModeSpriteSouth>남쪽 스프라이트</R3D_Binder_FaceModeSpriteSouth>
+  <R3D_Binder_FaceModeSpriteWest>서쪽 스프라이트</R3D_Binder_FaceModeSpriteWest>
+  <R3D_Binder_FaceModeMeanColour>평균 색상</R3D_Binder_FaceModeMeanColour>
+  <R3D_Binder_FaceModeNone>없음</R3D_Binder_FaceModeNone>
+  <R3D_Binder_FaceMirror>대칭</R3D_Binder_FaceMirror>
+  <R3D_Binder_FaceAllSides>측면에 적용</R3D_Binder_FaceAllSides>
+  <R3D_Binder_SpriteTint>스프라이트 색상</R3D_Binder_SpriteTint>
+  <R3D_Binder_Templates>서식</R3D_Binder_Templates>
+  <R3D_Binder_Template_slab>판</R3D_Binder_Template_slab>
+  <R3D_Binder_Template_cylinder>원기둥</R3D_Binder_Template_cylinder>
+  <R3D_Binder_Template_cone>원뿔</R3D_Binder_Template_cone>
+  <R3D_Binder_Template_dome>반구</R3D_Binder_Template_dome>
+  <R3D_Binder_Template_sphere>구</R3D_Binder_Template_sphere>
+  <R3D_Binder_Template_pyramid>피라미드</R3D_Binder_Template_pyramid>
+  <R3D_Binder_Template_wedge>쐐기</R3D_Binder_Template_wedge>
+  <R3D_Binder_Template_table>탁자</R3D_Binder_Template_table>
+  <R3D_Binder_Template_shelf>선반</R3D_Binder_Template_shelf>
+  <R3D_Binder_Template_cabinet>수납장</R3D_Binder_Template_cabinet>
+  <R3D_Binder_Template_crate>나무 상자</R3D_Binder_Template_crate>
+  <R3D_Binder_Template_barrel>통</R3D_Binder_Template_barrel>
+  <R3D_Binder_Template_pillar>기둥</R3D_Binder_Template_pillar>
+  <R3D_Binder_Template_lamp>램프</R3D_Binder_Template_lamp>
+  <R3D_Binder_Template_machine>기계</R3D_Binder_Template_machine>
+  <R3D_Binder_Template_vat>대형 통</R3D_Binder_Template_vat>
+  <R3D_Binder_Template_tank>탱크</R3D_Binder_Template_tank>
+  <R3D_Binder_Template_console>제어 장치</R3D_Binder_Template_console>
+  <R3D_Binder_Template_pipe>파이프</R3D_Binder_Template_pipe>
+  <R3D_Binder_Template_stool>걸상</R3D_Binder_Template_stool>
+  <R3D_Binder_FaceModeEdge>모서리</R3D_Binder_FaceModeEdge>
+  <R3D_Settings_ViewIsOn>3D 보기가 켜져 있습니다</R3D_Settings_ViewIsOn>
+  <R3D_Settings_ViewIsOff>3D 보기가 꺼져 있습니다</R3D_Settings_ViewIsOff>
+  <R3D_Settings_TurnStep>카메라 회전 각도: {0}</R3D_Settings_TurnStep>
+  <R3D_Settings_TurnViewOn>3D 보기 켜기</R3D_Settings_TurnViewOn>
+  <R3D_Settings_TurnViewOff>3D 보기 끄기</R3D_Settings_TurnViewOff>
+  <R3D_Settings_AlwaysOnWith>{0} 사용 시 항상 켜기</R3D_Settings_AlwaysOnWith>
+  <R3D_Settings_ResetAll>모두 초기화</R3D_Settings_ResetAll>
+  <R3D_Settings_ResetAllConfirm>모든 IsoRim 설정을 기본값으로 되돌리시겠습니까?</R3D_Settings_ResetAllConfirm>
+  <R3D_Settings_TabView>시점 및 카메라</R3D_Settings_TabView>
+  <R3D_Settings_TabSeeThrough>투시 효과</R3D_Settings_TabSeeThrough>
+  <R3D_Settings_TabColour>색상 및 조명</R3D_Settings_TabColour>
+  <R3D_Settings_TabWorld>지면, 물, 지붕</R3D_Settings_TabWorld>
+  <R3D_Settings_TabObjects>3D 표시 대상</R3D_Settings_TabObjects>
+  <R3D_Settings_TabGraphics>그래픽</R3D_Settings_TabGraphics>
+  <R3D_Settings_Cells>{0}칸</R3D_Settings_Cells>
+  <R3D_Settings_DegPerPixel>{0}°/픽셀</R3D_Settings_DegPerPixel>
+  <R3D_Settings_Never>사용 안 함</R3D_Settings_Never>
+  <R3D_Settings_Flat>평면</R3D_Settings_Flat>
+  <R3D_Settings_MiddleButton>가운데 버튼</R3D_Settings_MiddleButton>
+  <R3D_Settings_RightButton>오른쪽 버튼</R3D_Settings_RightButton>
+  <R3D_Settings_Camera>카메라</R3D_Settings_Camera>
+  <R3D_Settings_CameraNote>3D 보기가 켜져 있을 때 지도를 보는 방식입니다.</R3D_Settings_CameraNote>
+  <R3D_Settings_Isometric>등각 투영 시점</R3D_Settings_Isometric>
+  <R3D_Settings_IsometricTip>등각 투영 방식의 게임처럼 카메라를 45도 회전하고 아래로 기울입니다. 끄면 북쪽이 위쪽을 향합니다.</R3D_Settings_IsometricTip>
+  <R3D_Settings_Snap45>45° 단위로 회전</R3D_Settings_Snap45>
+  <R3D_Settings_Snap45Tip>Q와 E를 누르면 카메라가 45도씩 회전합니다. 끄면 90도씩 회전합니다.</R3D_Settings_Snap45Tip>
+  <R3D_Settings_InstantTurn>카메라 즉시 회전</R3D_Settings_InstantTurn>
+  <R3D_Settings_InstantTurnTip>Q와 E를 누르면 회전 동작 없이 새로운 각도로 즉시 전환합니다. 시점 회전으로 어지러움을 느끼는 경우 도움이 될 수 있습니다.</R3D_Settings_InstantTurnTip>
+  <R3D_Settings_FreeLook>자유 시점</R3D_Settings_FreeLook>
+  <R3D_Settings_FreeLookTip>마우스를 드래그하여 카메라를 자유롭게 회전하고 기울일 수 있습니다(5°~89°). Q와 E를 누르면 다음 각도로 전환합니다. 기본값으로 지정되지 않은 카메라 초기화 키를 게임의 키보드 구성에서 지정할 수 있습니다.</R3D_Settings_FreeLookTip>
+  <R3D_Settings_LookMiddle>자유 시점: 가운데 버튼</R3D_Settings_LookMiddle>
+  <R3D_Settings_LookMiddleTip>{0}(을)를 누른 채로 드래그하세요. 누르고 있을 키는 게임의 키보드 구성에서 지정할 수 있습니다.</R3D_Settings_LookMiddleTip>
+  <R3D_Settings_LookMiddleTipNoKey>누르고 있을 키는 게임의 키보드 구성에서 지정할 수 있습니다.</R3D_Settings_LookMiddleTipNoKey>
+  <R3D_Settings_LookRight>자유 시점: 오른쪽 버튼</R3D_Settings_LookRight>
+  <R3D_Settings_LookRightTip>선택된 대상이 없을 때 드래그하세요.</R3D_Settings_LookRightTip>
+  <R3D_Settings_LookSpeed>자유 시점 회전 속도</R3D_Settings_LookSpeed>
+  <R3D_Settings_InvertY>상하 방향 반전</R3D_Settings_InvertY>
+  <R3D_Settings_InvertYTip>위쪽으로 드래그하면 카메라가 위에서 내려다보는 방향으로 기울어집니다.</R3D_Settings_InvertYTip>
+  <R3D_Settings_FpFov>1인칭 시야각</R3D_Settings_FpFov>
+  <R3D_Settings_FpFovTip>인물 한 명을 선택한 상태에서 {0}(을)를 누르면 해당 인물의 눈높이에서 바라봅니다. 마우스 {1}으로 드래그하여 주변을 둘러볼 수 있습니다.</R3D_Settings_FpFovTip>
+  <R3D_Settings_FpEyeHeight>1인칭 눈높이</R3D_Settings_FpEyeHeight>
+  <R3D_Settings_MinZoom>최대 확대 배율</R3D_Settings_MinZoom>
+  <R3D_Settings_MinZoomTip>마우스 휠로 카메라를 얼마나 가까이 확대할 수 있는지 설정합니다. 게임 자체 제한은 11입니다.</R3D_Settings_MinZoomTip>
+  <R3D_Settings_Weather3D>3D 비와 눈</R3D_Settings_Weather3D>
+  <R3D_Settings_Weather3DTip>비와 눈은 카메라 주변에 빗방울과 눈송이 형태로 내리며, 안개 및 옅은 안개는 카메라 앞에 표시됩니다.</R3D_Settings_Weather3DTip>
+  <R3D_Settings_WeatherSize>  비와 눈 크기</R3D_Settings_WeatherSize>
+  <R3D_Settings_WeatherSizeTip>화면에 표시되는 빗방울과 눈송이의 크기입니다. 카메라를 확대해도 크기가 커지지 않습니다.</R3D_Settings_WeatherSizeTip>
+  <R3D_Settings_ThingLabels>물품 이름표</R3D_Settings_ThingLabels>
+  <R3D_Settings_ThingLabelsTip>지도에 놓인 물체의 이름표를 표시합니다(겹쳐진 수량, 품질 등). 인물 위에 표시되는 이름에는 영향을 주지 않습니다.</R3D_Settings_ThingLabelsTip>
+  <R3D_Settings_LabelsAboveHeads>머리 위에 이름표 표시</R3D_Settings_LabelsAboveHeads>
+  <R3D_Settings_LabelsAboveHeadsTip>인물의 이름을 발밑이 아닌 머리 위에 표시합니다.</R3D_Settings_LabelsAboveHeadsTip>
+  <R3D_Settings_LabelHeight>  이름표 높이</R3D_Settings_LabelHeight>
+  <R3D_Settings_Perspective>원근감</R3D_Settings_Perspective>
+  <R3D_Settings_PerspectiveTip>실제 원근법을 적용한 카메라입니다. Rim3D처럼 멀리 있는 물체가 작게 보입니다. 끄면 평면적인 직교 투영 시점으로 표시됩니다.</R3D_Settings_PerspectiveTip>
+  <R3D_Settings_Fov>시야각</R3D_Settings_Fov>
+  <R3D_Settings_FovTip>시야각을 넓히면 화면 가장자리의 더 많은 부분이 보이고 깊이감이 강해집니다.</R3D_Settings_FovTip>
+  <R3D_Settings_ViewDistance>시야 거리</R3D_Settings_ViewDistance>
+  <R3D_Settings_ViewDistanceTip>카메라가 낮을 때 화면 중앙을 기준으로 지도에서 얼마나 멀리까지 표시할지 설정합니다. 거리가 멀수록 프레임 처리 시간이 증가합니다.</R3D_Settings_ViewDistanceTip>
+  <R3D_Settings_Sky>하늘</R3D_Settings_Sky>
+  <R3D_Settings_SkyTip>지도 뒤편에 태양과 달이 있는 하늘을 표시하며, 시간대와 날씨에 따라 변화합니다.</R3D_Settings_SkyTip>
+  <R3D_Settings_SkyStyle>하늘 표현: {0}</R3D_Settings_SkyStyle>
+  <R3D_Settings_Sky_Painted>회화풍</R3D_Settings_Sky_Painted>
+  <R3D_Settings_Sky_Classic>고전풍</R3D_Settings_Sky_Classic>
+  <R3D_Settings_DistanceFog>안개 거리</R3D_Settings_DistanceFog>
+  <R3D_Settings_DistanceFogTip>먼 곳의 지도가 지평선으로 갈수록 희미해져 표시 영역의 경계가 드러나지 않습니다.</R3D_Settings_DistanceFogTip>
+  <R3D_Settings_FogStart>안개 표시 거리</R3D_Settings_FogStart>
+  <R3D_Settings_FogStartTip>화면 중앙과 시야 거리 사이에서 안개가 표시되는 위치입니다.</R3D_Settings_FogStartTip>
+  <R3D_Settings_FogStrength>안개 강도</R3D_Settings_FogStrength>
+  <R3D_Settings_FogStrengthTip>100%로 설정하면 시야 거리에서 완전히 불투명해져 표시 영역의 경계를 가립니다.</R3D_Settings_FogStrengthTip>
+  <R3D_Settings_LabelFade>먼 거리의 이름표 희미해지는 시점</R3D_Settings_LabelFade>
+  <R3D_Settings_LabelFadeTip>이름표(수량, 품질, 이름 등)가 화면 중앙까지의 거리보다 몇 배 더 먼 곳부터 희미해질지 설정합니다. 정착민의 이름은 계속 표시됩니다.</R3D_Settings_LabelFadeTip>
+  <R3D_Settings_IsoPitch>등각 투영 카메라 각도</R3D_Settings_IsoPitch>
+  <R3D_Settings_IsoPitchTip>35도가 정확한 등각 투영 각도입니다.</R3D_Settings_IsoPitchTip>
+  <R3D_Settings_Pitch>카메라 각도</R3D_Settings_Pitch>
+  <R3D_Settings_PitchTip>90도에서는 수직으로 내려다봅니다.</R3D_Settings_PitchTip>
+  <R3D_Settings_WallHeight>벽 높이</R3D_Settings_WallHeight>
+  <R3D_Settings_FixedBy>{0}에서 수정됨.</R3D_Settings_FixedBy>
+  <R3D_Settings_Keys>단축키</R3D_Settings_Keys>
+  <R3D_Settings_KeysNote>환경설정 &gt; 키보드 구성 &gt; IsoRim에서 변경할 수 있습니다.</R3D_Settings_KeysNote>
+  <R3D_Settings_KeyToggleView>3D 보기 켜기/끄기</R3D_Settings_KeyToggleView>
+  <R3D_Settings_KeyIsometric>등각 투영 또는 정면 시점</R3D_Settings_KeyIsometric>
+  <R3D_Settings_KeyTurnLeft>카메라 왼쪽으로 회전</R3D_Settings_KeyTurnLeft>
+  <R3D_Settings_KeyTurnRight>카메라 오른쪽으로 회전</R3D_Settings_KeyTurnRight>
+  <R3D_Settings_KeyTiltDown>카메라 시점 낮추기</R3D_Settings_KeyTiltDown>
+  <R3D_Settings_KeyTiltUp>카메라 시점 올리기</R3D_Settings_KeyTiltUp>
+  <R3D_Settings_KeyToggleRoofs>지붕 표시 켜기/끄기</R3D_Settings_KeyToggleRoofs>
+  <R3D_Settings_FreeLookKeys>자유 시점: {0}.</R3D_Settings_FreeLookKeys>
+  <R3D_Settings_LookKeysRight>선택된 대상이 없을 때 마우스 오른쪽 버튼으로 드래그하세요</R3D_Settings_LookKeysRight>
+  <R3D_Settings_LookKeysDrag>{0}으로 드래그하세요</R3D_Settings_LookKeysDrag>
+  <R3D_Settings_LookKeysHoldDrag>{0}을 누른 채 마우스 {1}으로 드래그하세요</R3D_Settings_LookKeysHoldDrag>
+  <R3D_Settings_CornerButtonsNote>3D 보기와 지붕 표시 기능은 화면 오른쪽 아래 모서리의 게임 기본 버튼 옆에도 있습니다.</R3D_Settings_CornerButtonsNote>
+  <R3D_Settings_NightSky>밤하늘</R3D_Settings_NightSky>
+  <R3D_Settings_NightSkyNote>지도 위도에 따라 정해진 축을 중심으로 시간의 흐름에 맞춰 하늘이 회전합니다.</R3D_Settings_NightSkyNote>
+  <R3D_Settings_Stars>별</R3D_Settings_Stars>
+  <R3D_Settings_StarsTip>반짝이는 수천 개의 별을 표시하며, 지평선 부근에서 더 많이 나타납니다. 비, 눈, 안개가 있을 때는 보이지 않습니다.</R3D_Settings_StarsTip>
+  <R3D_Settings_MilkyWay>은하수</R3D_Settings_MilkyWay>
+  <R3D_Settings_MilkyWayTip>어두운 성간 먼지 띠와 밝은 중심부가 있는 은하수 띠를 하늘에 표시합니다.</R3D_Settings_MilkyWayTip>
+  <R3D_Settings_Planets>행성 (현실적)</R3D_Settings_Planets>
+  <R3D_Settings_PlanetsTip>하늘을 가로질러 날마다 위치가 달라지는 세 개의 고정된 빛을 표시합니다.</R3D_Settings_PlanetsTip>
+  <R3D_Settings_GasGiant>고리가 있는 가스 행성 (공상 과학)</R3D_Settings_GasGiant>
+  <R3D_Settings_GasGiantTip>태양빛을 받아 위상이 변하는 거대한 고리 행성을 하늘 높이 표시합니다. 낮에는 희미하게 보입니다.</R3D_Settings_GasGiantTip>
+  <R3D_Settings_GasGiantSize>가스 행성 크기</R3D_Settings_GasGiantSize>
+  <R3D_Settings_LowSky>태양, 달, 가스 행성을 낮은 위치에 표시</R3D_Settings_LowSky>
+  <R3D_Settings_LowSkyTip>지도를 바라보는 카메라는 위쪽을 볼 수 없으므로, 천체를 실제 높이의 약 3분의 1 위치에 표시합니다. 조명과 그림자는 변하지 않습니다. 끄면 1인칭 시점에서 실제 위치에 표시됩니다.</R3D_Settings_LowSkyTip>
+  <R3D_Settings_MoonPhases>달의 위상 변화</R3D_Settings_MoonPhases>
+  <R3D_Settings_MoonPhasesTip>달이 한 분기(15일) 동안 삭에서 보름달까지 차올랐다가 다시 줄어듭니다. 끄면 항상 보름달로 표시됩니다.</R3D_Settings_MoonPhasesTip>
+  <R3D_Settings_StarBrightness>밤하늘 밝기</R3D_Settings_StarBrightness>
+  <R3D_Settings_StarBrightnessTip>별, 은하수, 행성의 밝기를 설정합니다.</R3D_Settings_StarBrightnessTip>
+  <R3D_Settings_Advanced>고급 설정</R3D_Settings_Advanced>
+  <R3D_Settings_FeetOffset>평면 스프라이트 발 위치</R3D_Settings_FeetOffset>
+  <R3D_Settings_FeetOffsetTip>여전히 평면 스프라이트로 표시되는 인물과 동물에만 적용됩니다.</R3D_Settings_FeetOffsetTip>
+  <R3D_Settings_Squash>레이어 밀착</R3D_Settings_Squash>
+  <R3D_Settings_SquashTip>게임의 평면 그래픽 레이어를 얼마나 밀착시킬지 설정합니다. 깜빡임이 발생하지 않는다면 변경하지 않는 것이 좋습니다.</R3D_Settings_SquashTip>
+  <R3D_Settings_Walls>벽</R3D_Settings_Walls>
+  <R3D_Settings_WallsNote>벽을 낮춰 뒤에 있는 물체를 보고 클릭할 수 있도록 합니다. 자연 암석에는 적용되지 않습니다.</R3D_Settings_WallsNote>
+  <R3D_Settings_CutHover>마우스 포인터 주변의 벽 낮추기</R3D_Settings_CutHover>
+  <R3D_Settings_DissolveRadius>마우스 포인터 주변 적용 범위</R3D_Settings_DissolveRadius>
+  <R3D_Settings_CutFrontOnly>마우스 포인터 앞쪽의 벽만 낮추기</R3D_Settings_CutFrontOnly>
+  <R3D_Settings_CutFrontOnlyTip>카메라와 마우스 포인터 사이에 있는 벽만 낮춥니다. 포인터 뒤쪽의 벽은 그대로 유지됩니다.</R3D_Settings_CutFrontOnlyTip>
+  <R3D_Settings_CutWholeWall>모든 층의 벽 낮추기</R3D_Settings_CutWholeWall>
+  <R3D_Settings_CutWholeWallTip>여러 층이 겹쳐 있는 경우, 낮아진 벽은 표시되는 모든 층에서 낮아집니다.</R3D_Settings_CutWholeWallTip>
+  <R3D_Settings_BuildSee>건설 중 투시 효과 적용</R3D_Settings_BuildSee>
+  <R3D_Settings_BuildSeeTip>건설 또는 작업 지시 도구를 들고 있을 때 마우스 포인터 주변의 물체가 투명해집니다.</R3D_Settings_BuildSeeTip>
+  <R3D_Settings_SeeStrength>투시 효과 강도</R3D_Settings_SeeStrength>
+  <R3D_Settings_SeeStrengthTip>마우스 포인터 주변의 물체를 얼마나 숨길지 설정합니다. 100%에서는 완전히 숨겨집니다.</R3D_Settings_SeeStrengthTip>
+  <R3D_Settings_SeeRadius>투시 효과 적용 범위</R3D_Settings_SeeRadius>
+  <R3D_Settings_MineXray>채굴 중 위아래 층 표시</R3D_Settings_MineXray>
+  <R3D_Settings_MineXrayTip>채굴 도구를 사용할 때 위아래 층의 빈 지면과 인물을 윤곽선으로 표시합니다. 계단이 있는 경우 위층도 표시합니다.</R3D_Settings_MineXrayTip>
+  <R3D_Settings_MineCrosshair>채굴 조준선</R3D_Settings_MineCrosshair>
+  <R3D_Settings_MineCrosshairTip>층이 있는 지도에서 채굴 도구를 사용하면 마우스 포인터가 위치한 행과 열을 표시합니다.</R3D_Settings_MineCrosshairTip>
+  <R3D_Settings_CutNearColonists>정착민 주변의 벽 낮추기</R3D_Settings_CutNearColonists>
+  <R3D_Settings_CutNearColonistsTip>카메라와 각 정착민 사이에 있는 벽을 정착민이 이동하는 곳마다 낮춥니다. 정착민이 이동할수록 처리 비용이 조금 증가합니다.</R3D_Settings_CutNearColonistsTip>
+  <R3D_Settings_ColonistRadius>각 정착민 주변 적용 범위</R3D_Settings_ColonistRadius>
+  <R3D_Settings_CutRooms>모든 방 앞쪽의 벽 낮추기</R3D_Settings_CutRooms>
+  <R3D_Settings_CutRoomsTip>카메라와 지붕이 있는 방 사이의 벽을 항상 낮춰서 표시합니다.</R3D_Settings_CutRoomsTip>
+  <R3D_Settings_CutRock>  ...산에 파낸 방 앞쪽의 암석도 낮추기</R3D_Settings_CutRock>
+  <R3D_Settings_CutRockTip>카메라와 방 사이에 있는 최대 세 칸의 암석을 낮춥니다. 나머지 산은 그대로 유지됩니다.</R3D_Settings_CutRockTip>
+  <R3D_Settings_CutHeight>낮아진 벽의 남은 높이</R3D_Settings_CutHeight>
+  <R3D_Settings_Trees>나무</R3D_Settings_Trees>
+  <R3D_Settings_TreesNote>아래에 보아야 할 대상이 있으면 나무의 잎을 떨어뜨립니다.</R3D_Settings_TreesNote>
+  <R3D_Settings_TreesNearPointer>마우스 포인터 주변의 나무를 희미하게 표시</R3D_Settings_TreesNearPointer>
+  <R3D_Settings_TreesNearColonists>정착민 주변의 나무를 희미하게 표시</R3D_Settings_TreesNearColonists>
+  <R3D_Settings_TreeRadius>적용 범위</R3D_Settings_TreeRadius>
+  <R3D_Settings_Roofs>지붕</R3D_Settings_Roofs>
+  <R3D_Settings_SeeThroughRoofsNote>지붕이 표시된 경우에만 적용됩니다.</R3D_Settings_SeeThroughRoofsNote>
+  <R3D_Settings_RoofHover>마우스 포인터 아래 방의 지붕 들어 올리기</R3D_Settings_RoofHover>
+  <R3D_Settings_RoofOverColonists>정착민이 있는 방의 지붕 들어 올리기</R3D_Settings_RoofOverColonists>
+  <R3D_Settings_ColourLook>색상 스타일</R3D_Settings_ColourLook>
+  <R3D_Settings_ColourLookNote>3D 보기에 색상 보정을 적용합니다. 인터페이스에는 영향을 주지 않습니다.</R3D_Settings_ColourLookNote>
+  <R3D_Settings_Grade>색상 보정 켜기</R3D_Settings_Grade>
+  <R3D_Settings_LookButton>색상 스타일: {0}</R3D_Settings_LookButton>
+  <R3D_Settings_LutNote>모드의 LUT 폴더에서 색상 변환 테이블을 불러옵니다. 직접 제작한 1024 x 32 크기의 색상 띠도 해당 폴더에 넣을 수 있습니다.</R3D_Settings_LutNote>
+  <R3D_Settings_Strength>강도</R3D_Settings_Strength>
+  <R3D_Settings_ColourKept>색상 유지</R3D_Settings_ColourKept>
+  <R3D_Settings_Brightness>밝기</R3D_Settings_Brightness>
+  <R3D_Settings_PreviewTip>위쪽: 원래 색상. 아래쪽: 해당 스타일을 적용한 모습.</R3D_Settings_PreviewTip>
+  <R3D_Settings_Look_Gentle>은은함</R3D_Settings_Look_Gentle>
+  <R3D_Settings_Look_Gentle_Desc>색상과 밝기를 약간 낮춥니다. 모드의 기본 색상 스타일입니다.</R3D_Settings_Look_Gentle_Desc>
+  <R3D_Settings_Look_WarmAfternoon>따뜻한 오후</R3D_Settings_Look_WarmAfternoon>
+  <R3D_Settings_Look_WarmAfternoon_Desc>황금빛 하이라이트와 따뜻한 그림자를 표현합니다.</R3D_Settings_Look_WarmAfternoon_Desc>
+  <R3D_Settings_Look_CoolMorning>서늘한 아침</R3D_Settings_Look_CoolMorning>
+  <R3D_Settings_Look_CoolMorning_Desc>색감을 약간 낮춘 산뜻한 청록빛 조명을 표현합니다.</R3D_Settings_Look_CoolMorning_Desc>
+  <R3D_Settings_Look_Filmic>영화풍</R3D_Settings_Look_Filmic>
+  <R3D_Settings_Look_Filmic_Desc>필름 사진처럼 더 짙은 그림자와 부드러운 색상, 은은한 따뜻한 색조를 표현합니다.</R3D_Settings_Look_Filmic_Desc>
+  <R3D_Settings_Look_Bleak>황량함</R3D_Settings_Look_Bleak>
+  <R3D_Settings_Look_Bleak_Desc>바랜 듯 차갑고 거친 분위기를 표현합니다. 변방에서의 삶처럼.</R3D_Settings_Look_Bleak_Desc>
+  <R3D_Settings_Look_Vivid>선명함</R3D_Settings_Look_Vivid>
+  <R3D_Settings_Look_Vivid_Desc>대비를 강화하고 밝기를 약간 높입니다.</R3D_Settings_Look_Vivid_Desc>
+  <R3D_Settings_Look_Autumn>가을</R3D_Settings_Look_Autumn>
+  <R3D_Settings_Look_Autumn_Desc>호박색 조명과 풍부하고 자연스러운 색조를 표현합니다.</R3D_Settings_Look_Autumn_Desc>
+  <R3D_Settings_Look_Moonlight>달빛</R3D_Settings_Look_Moonlight>
+  <R3D_Settings_Look_Moonlight_Desc>모든 사물에 차가운 푸른빛의 밤 조명을 적용합니다.</R3D_Settings_Look_Moonlight_Desc>
+  <R3D_Settings_Look_Toxic>유독함</R3D_Settings_Look_Toxic>
+  <R3D_Settings_Look_Toxic_Desc>병든 듯한 녹색 안개를 표현합니다.</R3D_Settings_Look_Toxic_Desc>
+  <R3D_Settings_Look_Sepia>세피아</R3D_Settings_Look_Sepia>
+  <R3D_Settings_Look_Sepia_Desc>오래된 사진처럼 갈색 계열의 색조를 적용합니다.</R3D_Settings_Look_Sepia_Desc>
+  <R3D_Settings_Look_Noir>누아르</R3D_Settings_Look_Noir>
+  <R3D_Settings_Look_Noir_Desc>강한 대비를 적용한 흑백 화면입니다.</R3D_Settings_Look_Noir_Desc>
+  <R3D_Settings_Look_Custom>사용자 지정</R3D_Settings_Look_Custom>
+  <R3D_Settings_Look_Custom_Desc>아래의 두 슬라이더로 색상과 밝기를 직접 설정합니다.</R3D_Settings_Look_Custom_Desc>
+  <R3D_Settings_Shadows>그림자</R3D_Settings_Shadows>
+  <R3D_Settings_GroundShadows>모든 물체 아래에 부드러운 그림자 표시</R3D_Settings_GroundShadows>
+  <R3D_Settings_TreeShadows>나무의 햇빛 그림자 표시</R3D_Settings_TreeShadows>
+  <R3D_Settings_TreeShadowLength>나무 그림자 길이</R3D_Settings_TreeShadowLength>
+  <R3D_Settings_Light>조명</R3D_Settings_Light>
+  <R3D_Settings_LightingFix>입체화된 물체에 밤과 실내의 어둠 적용</R3D_Settings_LightingFix>
+  <R3D_Settings_FogLid>미탐험 지역을 불투명한 덮개로 표시</R3D_Settings_FogLid>
+  <R3D_Settings_SunMoves>하루 동안 태양 이동</R3D_Settings_SunMoves>
+  <R3D_Settings_SunMovesTip>태양은 동쪽에서 떠서 정오에는 남쪽에 위치하고 서쪽으로 집니다. 벽, 지붕, 가구에 비치는 햇빛도 하루에 몇 차례 이동합니다. 끄면 오전 중반의 위치에 고정됩니다. 카메라를 회전해도 조명은 변하지 않습니다.</R3D_Settings_SunMovesTip>
+  <R3D_Settings_Ground>지면</R3D_Settings_Ground>
+  <R3D_Settings_GroundNote>화면 표시만 변경되며, 3D 보기가 켜져 있을 때만 적용됩니다.</R3D_Settings_GroundNote>
+  <R3D_Settings_GroundStyle>모드 스타일의 자연 지형</R3D_Settings_GroundStyle>
+  <R3D_Settings_GrassSoil>비옥한 토양에 무성한 풀 표시</R3D_Settings_GrassSoil>
+  <R3D_Settings_GrassSoilTip>비옥한 토양에는 더 짙고 무성하게 자란 풀을 표시하여 다른 지면과 구분되도록 합니다.</R3D_Settings_GrassSoilTip>
+  <R3D_Settings_FloorStyle>모드 스타일의 건설 바닥</R3D_Settings_FloorStyle>
+  <R3D_Settings_Water>물</R3D_Settings_Water>
+  <R3D_Settings_WaterStyle>물 표현 개선</R3D_Settings_WaterStyle>
+  <R3D_Settings_Bridges3D>3D 다리</R3D_Settings_Bridges3D>
+  <R3D_Settings_Bridges3DTip>다리 상판이 기둥 위에 놓여 수면보다 약간 높게 표시됩니다. 끄면 기본 게임 방식으로 표시됩니다.</R3D_Settings_Bridges3DTip>
+  <R3D_Settings_WaterStyleTip>물가에서 깊은 곳으로 갈수록 층층이 달라지는 색상, 물가를 따라 생기는 거품, 강물의 물결무늬와 반짝이는 효과를 표현합니다.</R3D_Settings_WaterStyleTip>
+  <R3D_Settings_RoofsNote>건설된 지붕은 방 위에 슬레이트 덮개처럼, 암석 지붕은 동굴 위에 표시합니다.</R3D_Settings_RoofsNote>
+  <R3D_Settings_ShowRoofs>지붕 표시</R3D_Settings_ShowRoofs>
+  <R3D_Settings_ShowRoofsTip>모든 지붕을 표시하거나 숨깁니다. 지붕을 끄면 실내를 볼 수 있습니다.</R3D_Settings_ShowRoofsTip>
+  <R3D_Settings_RoofColour>지붕 스타일: {0}</R3D_Settings_RoofColour>
+  <R3D_Settings_Roof_Slate>슬레이트</R3D_Settings_Roof_Slate>
+  <R3D_Settings_Roof_Terracotta>테라코타</R3D_Settings_Roof_Terracotta>
+  <R3D_Settings_Roof_Thatch>초가</R3D_Settings_Roof_Thatch>
+  <R3D_Settings_Roof_Tin>양철</R3D_Settings_Roof_Tin>
+  <R3D_Settings_Roof_FlatSteel>평평한 지붕 (강철)</R3D_Settings_Roof_FlatSteel>
+  <R3D_Settings_Roof_FlatMarble>평평한 지붕 (대리석)</R3D_Settings_Roof_FlatMarble>
+  <R3D_Settings_Roof_FlatGranite>평평한 지붕 (화강암)</R3D_Settings_Roof_FlatGranite>
+  <R3D_Settings_RoofShapeNote>건설된 지붕은 모서리에서 중앙의 용마루까지 경사지도록 표시됩니다. 화면 오른쪽 아래 모서리에 해당 기능을 위한 버튼이 있으며, 단축키도 지정할 수 있습니다.</R3D_Settings_RoofShapeNote>
+  <R3D_Settings_BuildingsNature>건물 및 자연물</R3D_Settings_BuildingsNature>
+  <R3D_Settings_BuildingsNatureNote>문제가 발생하는 항목은 끄세요.</R3D_Settings_BuildingsNatureNote>
+  <R3D_Settings_Walls3D>벽과 암석을 입체적으로 표시</R3D_Settings_Walls3D>
+  <R3D_Settings_TexturedWalls>벽에 모드의 질감 적용</R3D_Settings_TexturedWalls>
+  <R3D_Settings_RuggedRock>암석 가장자리를 거칠고 경사지게 표시</R3D_Settings_RuggedRock>
+  <R3D_Settings_Doors3D>문</R3D_Settings_Doors3D>
+  <R3D_Settings_Models3D>수작업으로 제작된 모델</R3D_Settings_Models3D>
+  <R3D_Settings_Models3DTip>가구, 기계, 잔해, 인물, 동물 및 방어구를 표시합니다.</R3D_Settings_Models3DTip>
+  <R3D_Settings_Trees3D>나무</R3D_Settings_Trees3D>
+  <R3D_Settings_SmallPlants3D>풀과 야생 식물</R3D_Settings_SmallPlants3D>
+  <R3D_Settings_SmallPlants3DTip>넓은 지도에 이러한 식물이 수천 개 표시되면 메모리를 많이 사용합니다. 성능이 저하되면 끄세요.</R3D_Settings_SmallPlants3DTip>
+  <R3D_Settings_Crops3D>작물</R3D_Settings_Crops3D>
+  <R3D_Settings_AutoExtrude>그 외 모든 물체를 스프라이트로 입체화</R3D_Settings_AutoExtrude>
+  <R3D_Settings_ThickItems>물품에 약간의 두께 적용</R3D_Settings_ThickItems>
+  <R3D_Settings_ItemThickness>  물품 두께</R3D_Settings_ItemThickness>
+  <R3D_Settings_ItemThicknessTip>바닥에 놓인 물품, 무기, 의류의 두께를 조절합니다. 최솟값으로 설정하면 바닥에 평평하게 놓입니다.</R3D_Settings_ItemThicknessTip>
+  <R3D_Settings_ItemsFromArt>게임 원본 그래픽으로 물품 표시</R3D_Settings_ItemsFromArt>
+  <R3D_Settings_ItemsFromArtTip>게임의 원본 스프라이트를 입체화하여 물품을 림월드 고유의 모습으로 표시합니다. 끄면 모드에서 직접 제작한 물품 모델을 사용합니다. 무기와 의류에는 별도의 설정이 있습니다.</R3D_Settings_ItemsFromArtTip>
+  <R3D_Settings_RawModels>3D 원자재</R3D_Settings_RawModels>
+  <R3D_Settings_RawModelsTip>강철, 목재, 벽돌, 천, 가죽 및 기타 자원을 겹쳐진 수량에 따라 3D 모델로 표시합니다.</R3D_Settings_RawModelsTip>
+  <R3D_Settings_UprightPlants>다른 식물을 똑바로 세워 표시</R3D_Settings_UprightPlants>
+  <R3D_Settings_PlantCardSize>  스프라이트로 표시되는 식물의 크기</R3D_Settings_PlantCardSize>
+  <R3D_Settings_PlantCardSizeTip>3D 모델이 없는 덤불, 가시덤불, 풀, 꽃에 적용됩니다(나무 크기는 유지됩니다). 게임의 스프라이트는 위에서 내려다본 상태로 한 칸을 채우므로, 세워서 표시하면 너무 커 보일 수 있습니다.</R3D_Settings_PlantCardSizeTip>
+  <R3D_Settings_MapEdge3D>지면을 잘라낸 듯한 지도 가장자리</R3D_Settings_MapEdge3D>
+  <R3D_Settings_MapEdge3DTip>디오라마처럼 지도 가장자리에 토양과 암석의 층을 표시합니다.</R3D_Settings_MapEdge3DTip>
+  <R3D_Settings_CreaturesEffects>생물 및 효과</R3D_Settings_CreaturesEffects>
+  <R3D_Settings_Pawns3D>정착민 및 기타 인물</R3D_Settings_Pawns3D>
+  <R3D_Settings_Animals3D>동물</R3D_Settings_Animals3D>
+  <R3D_Settings_Mechs3D>메카노이드</R3D_Settings_Mechs3D>
+  <R3D_Settings_HeldWeapons3D>손에 든 무기</R3D_Settings_HeldWeapons3D>
+  <R3D_Settings_WeaponModels3D>무기를 3D 모델로 표시</R3D_Settings_WeaponModels3D>
+  <R3D_Settings_WeaponModels3DTip>3D 모델이 있는 무기는 바닥, 선반, 거치대 및 손에 들고 있을 때 해당 모델로 표시됩니다.</R3D_Settings_WeaponModels3DTip>
+  <R3D_Settings_ApparelModels3D>의류를 3D 모델로 표시</R3D_Settings_ApparelModels3D>
+  <R3D_Settings_ApparelModels3DTip>바닥, 선반, 벨트에 놓인 의류를 정착민이 착용하는 3D 의류 모델로 표시합니다. 끄면 게임의 스프라이트를 입체화하여 표시합니다.</R3D_Settings_ApparelModels3DTip>
+  <R3D_Settings_AimSide>조준 위치: 어깨 좌우</R3D_Settings_AimSide>
+  <R3D_Settings_AimHeight>조준 위치: 어깨 높이</R3D_Settings_AimHeight>
+  <R3D_Settings_AimReach>조준 위치: 앞뒤 거리</R3D_Settings_AimReach>
+  <R3D_Settings_AimTip>원거리 무기를 조준할 때 개머리판이 놓이는 위치입니다.</R3D_Settings_AimTip>
+  <R3D_Settings_WorkAnimations>도구를 사용하는 작업 애니메이션</R3D_Settings_WorkAnimations>
+  <R3D_Settings_WorkAnimationsTip>정착민이 작업할 때 도끼, 곡괭이, 망치, 낫, 괭이, 빗자루를 사용하는 모습을 표시합니다.</R3D_Settings_WorkAnimationsTip>
+  <R3D_Settings_SelectionRings>선택 표시 원</R3D_Settings_SelectionRings>
+  <R3D_Settings_SelectionRingsTip>선택된 폰의 발밑에 색상이 있는 원을 표시합니다.</R3D_Settings_SelectionRingsTip>
+  <R3D_Settings_Ghosts3D>청사진에 완성된 구조물 모양 표시</R3D_Settings_Ghosts3D>
+  <R3D_Settings_Ghosts3DTip>청사진, 건설 중인 구조물, 배치 미리보기를 투명한 3D 모델로 표시합니다.</R3D_Settings_Ghosts3DTip>
+  <R3D_Settings_Damage3D>건물의 손상 흔적</R3D_Settings_Damage3D>
+  <R3D_Settings_Effects3D>불꽃, 연기, 증기 및 반짝임</R3D_Settings_Effects3D>
+  <R3D_Settings_CollapseDebris>붕괴 잔해</R3D_Settings_CollapseDebris>
+  <R3D_Settings_CollapseDebrisTip>지붕과 바닥이 무너질 때 조각으로 부서져 떨어집니다.</R3D_Settings_CollapseDebrisTip>
+  <R3D_Settings_UprightPawns>스프라이트를 똑바로 세워 표시</R3D_Settings_UprightPawns>
+  <R3D_Settings_UprightPawnsTip>모델이 없는 인물과 동물에 적용됩니다.</R3D_Settings_UprightPawnsTip>
+  <R3D_Settings_HairUnderHats>  모자 아래에 머리카락 표시</R3D_Settings_HairUnderHats>
+  <R3D_Settings_HairUnderHatsTip>챙이 있는 모자와 모자 아래로 머리카락이 자연스럽게 드러나도록 표시합니다.</R3D_Settings_HairUnderHatsTip>
+  <R3D_Settings_GeneParts3D>  3D 유전자 신체 부위</R3D_Settings_GeneParts3D>
+  <R3D_Settings_GeneParts3DTip>유전자로 결정되는 귀, 뿔, 꼬리, 털을 표시합니다.</R3D_Settings_GeneParts3DTip>
+  <R3D_Settings_SmoothPeople>  인물에 부드러운 음영 적용</R3D_Settings_SmoothPeople>
+  <R3D_Settings_SmoothPeopleTip>3D 인물과 의상 거치대에 더 둥글고 부드러운 조명을 적용합니다.</R3D_Settings_SmoothPeopleTip>
+  <R3D_Settings_SmoothAnimals>  동물에 부드러운 음영 적용</R3D_Settings_SmoothAnimals>
+  <R3D_Settings_SmoothAnimalsTip>3D 동물에 더 둥글고 부드러운 조명을 적용합니다.</R3D_Settings_SmoothAnimalsTip>
+  <R3D_Settings_SmoothCrease>  날카로운 모서리 각도</R3D_Settings_SmoothCrease>
+  <R3D_Settings_SmoothCreaseTip>이 각도보다 크게 만나는 면에는 날카로운 모서리를 유지합니다.</R3D_Settings_SmoothCreaseTip>
+  <R3D_Settings_KeepAsPaper>평면 형태 유지</R3D_Settings_KeepAsPaper>
+  <R3D_Settings_KeepAsPaperTip>평면 형태를 유지하는 외계 종족입니다.</R3D_Settings_KeepAsPaperTip>
+  <R3D_AlienTune_Title>외계 종족 설정 조정</R3D_AlienTune_Title>
+  <R3D_AlienTune_Pick>외계 종족 폰 선택</R3D_AlienTune_Pick>
+  <R3D_AlienTune_Copy>XML 복사</R3D_AlienTune_Copy>
+  <R3D_AlienTune_Copied>복사했습니다.</R3D_AlienTune_Copied>
+  <R3D_AlienTune_Reset>초기화</R3D_AlienTune_Reset>
+  <R3D_Settings_FaceDecal>  3D 머리에 Facial Animation 얼굴 적용</R3D_Settings_FaceDecal>
+  <R3D_Settings_FaceDecalTip>IsoRim의 눈 대신 Facial Animation의 애니메이션 눈, 눈썹, 입을 3D 머리 앞면에 적용합니다.</R3D_Settings_FaceDecalTip>
+  <R3D_Settings_FaceDecalSize>    얼굴 크기</R3D_Settings_FaceDecalSize>
+  <R3D_Settings_FaceDecalHeight>    얼굴 높이 (칸)</R3D_Settings_FaceDecalHeight>
+  <R3D_Settings_FaceDecalMouth>    입 크기</R3D_Settings_FaceDecalMouth>
+  <R3D_Settings_FaceDecalMouthHeight>    입 높이 (칸)</R3D_Settings_FaceDecalMouthHeight>
+  <R3D_Settings_FaceDecalAddApparel>    의류별 위치 설정 추가...</R3D_Settings_FaceDecalAddApparel>
+  <R3D_Settings_FaceDecalRemove>제거</R3D_Settings_FaceDecalRemove>
+  <R3D_Settings_FullPawnDraw>  스프라이트를 항상 전체 크기로 표시</R3D_Settings_FullPawnDraw>
+  <R3D_Settings_FullPawnDrawTip>화면을 축소하면 게임은 캐시된 이미지로 인물을 표시하며, 이 경우 Facial Animation의 얼굴이 움직이지 않습니다. 인물이 많을수록 성능 부담이 증가합니다.</R3D_Settings_FullPawnDrawTip>
+  <R3D_Settings_ModelStyle>모델 스타일</R3D_Settings_ModelStyle>
+  <R3D_Settings_TexturedModels>모델에 질감 적용</R3D_Settings_TexturedModels>
+  <R3D_Settings_Outlines>모델에 어두운 윤곽선 적용</R3D_Settings_Outlines>
+  <R3D_Settings_SteppedLight>모델에 단계적 조명 적용</R3D_Settings_SteppedLight>
+  <R3D_Settings_SteppedLightTip>게임 원본 그래픽처럼 모델에 햇빛을 몇 단계의 단순한 색조로 표현합니다.</R3D_Settings_SteppedLightTip>
+  <R3D_Settings_SteppedBands>  색조 단계</R3D_Settings_SteppedBands>
+  <R3D_Settings_SteppedBandsTip>2단계는 강렬한 느낌을, 3단계는 더 부드러운 형태를 표현합니다.</R3D_Settings_SteppedBandsTip>
+  <R3D_Settings_RimLight>모델에 테두리 조명 적용</R3D_Settings_RimLight>
+  <R3D_Settings_RimLightTip>그림자가 드리워진 면의 가장자리에 희미한 빛을 적용하여 인물과 물체가 지면에서 두드러지도록 합니다.</R3D_Settings_RimLightTip>
+  <R3D_Settings_RimStrength>  강도</R3D_Settings_RimStrength>
+  <R3D_Settings_AO>환경광 차폐</R3D_Settings_AO>
+  <R3D_Settings_AOTip>모서리, 벽 아래쪽, 물체와 벽이 맞닿는 부분에 부드러운 그림자를 적용합니다.</R3D_Settings_AOTip>
+  <R3D_Settings_AOUnavailable>현재 게임 버전에서는 사용할 수 없습니다.</R3D_Settings_AOUnavailable>
+  <R3D_Settings_AOStrength>  강도</R3D_Settings_AOStrength>
+  <R3D_Settings_AOSteps>  색조 단계</R3D_Settings_AOSteps>
+  <R3D_Settings_AOStepsTip>부드러운 음영 또는 단계적 조명처럼 2단계나 3단계의 단순한 색조를 적용합니다.</R3D_Settings_AOStepsTip>
+  <R3D_Settings_AOSmooth>부드러운 음영</R3D_Settings_AOSmooth>
+  <R3D_Settings_SSS>화면 공간 그림자</R3D_Settings_SSS>
+  <R3D_Settings_SSSStrength>  강도</R3D_Settings_SSSStrength>
+  <R3D_Settings_SSSTip>3D 장면의 햇빛 그림자를 지면, 벽, 가구, 인물에 적용합니다.</R3D_Settings_SSSTip>
+  <R3D_Settings_Image>이미지</R3D_Settings_Image>
+  <R3D_Settings_AntiAlias>계단 현상 방지 (FXAA)</R3D_Settings_AntiAlias>
+  <R3D_Settings_AntiAliasTip>벽과 모델의 거친 가장자리를 부드럽게 처리합니다.</R3D_Settings_AntiAliasTip>
+  <R3D_Settings_AntiAliasStrength>가장자리 부드럽게 하기</R3D_Settings_AntiAliasStrength>
+  <R3D_Settings_Sharpen>선명하게 표시</R3D_Settings_Sharpen>
+  <R3D_Settings_SharpenTip>특히 화면을 축소했을 때 이미지를 더 선명하게 표시합니다.</R3D_Settings_SharpenTip>
+  <R3D_Settings_SharpenStrength>선명도</R3D_Settings_SharpenStrength>
+  <R3D_Settings_TiltShift>미니어처 효과</R3D_Settings_TiltShift>
+  <R3D_Settings_TiltShiftTip>화면의 위쪽과 아래쪽을 흐리게 만들어 미니어처처럼 보이게 합니다.</R3D_Settings_TiltShiftTip>
+  <R3D_Settings_TiltStrength>강도</R3D_Settings_TiltStrength>
+  <R3D_Settings_TiltCentre>초점 위치</R3D_Settings_TiltCentre>
+  <R3D_Settings_TiltWidth>초점 범위</R3D_Settings_TiltWidth>
+  <R3D_Settings_TiltPop>색상 강조</R3D_Settings_TiltPop>
+  <R3D_Settings_TiltPopTip>틸트 시프트 효과와 함께 색상을 약간 더 풍부하게 표현합니다.</R3D_Settings_TiltPopTip>
+  <R3D_Settings_Textures>질감</R3D_Settings_Textures>
+  <R3D_Settings_Aniso>비등방성 필터링</R3D_Settings_Aniso>
+  <R3D_Settings_AnisoTip>낮은 각도에서 지면을 더 선명하게 표시합니다.</R3D_Settings_AnisoTip>
+  <R3D_Settings_Off>끄기</R3D_Settings_Off>
+  <R3D_Msg_ViewOn>IsoRim: 3D 보기 켜짐</R3D_Msg_ViewOn>
+  <R3D_Preparing3D>3D화 준비 중</R3D_Preparing3D>
+  <R3D_Msg_ViewOff>IsoRim: 3D 보기 꺼짐</R3D_Msg_ViewOff>
+  <R3D_Msg_AlwaysOnWith>IsoRim: {0} 사용 시 3D 보기가 항상 켜집니다</R3D_Msg_AlwaysOnWith>
+  <R3D_Msg_Isometric>IsoRim: 등각 투영 시점</R3D_Msg_Isometric>
+  <R3D_Msg_StraightOn>IsoRim: 정면 시점</R3D_Msg_StraightOn>
+  <R3D_Msg_CameraReset>IsoRim: 카메라 초기화</R3D_Msg_CameraReset>
+  <R3D_Msg_SelectOnePerson>IsoRim: 1인칭 시점을 사용하려면 인물 한 명을 선택하세요</R3D_Msg_SelectOnePerson>
+  <R3D_Msg_FirstPersonWith>IsoRim: {0}의 1인칭 시점</R3D_Msg_FirstPersonWith>
+  <R3D_Msg_FirstPersonOff>IsoRim: 1인칭 시점 꺼짐</R3D_Msg_FirstPersonOff>
+  <R3D_Msg_ViewButton>IsoRim: 3D 보기 ({0})</R3D_Msg_ViewButton>
+  <R3D_Msg_ViewButtonLocked>IsoRim: 3D 보기 ({0} 사용 시 항상 켜짐)</R3D_Msg_ViewButtonLocked>
+  <R3D_Msg_RoofsButton>IsoRim: 지붕 표시 ({0})</R3D_Msg_RoofsButton>
+  <R3D_Msg_NoKeySet>지정된 키 없음</R3D_Msg_NoKeySet>
+</LanguageData>
