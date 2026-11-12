@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using Verse;
 
 namespace IsoRim
 {
@@ -100,7 +102,8 @@ namespace IsoRim
         // (Bars.DrawFillableBar_Prefix lifts skip for each): a model stands in for the sprite, not for its gauge.
         public static bool skipKeepsBars;
 
-        private static readonly Dictionary<MethodInfo, MethodInfo> replacements = new Dictionary<MethodInfo, MethodInfo>();
+        // The stand-ins found per class (DrawHook, CardDraw) for each Graphics.DrawMesh overload (ReplacementIn).
+        private static readonly Dictionary<Type, Dictionary<MethodInfo, MethodInfo>> replacements = new Dictionary<Type, Dictionary<MethodInfo, MethodInfo>>();
 
         public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer)
         {
@@ -305,8 +308,20 @@ namespace IsoRim
         // The stand-in with the same parameter list as the given Graphics.DrawMesh overload, or null.
         public static MethodInfo ReplacementFor(MethodInfo original)
         {
+            return ReplacementIn(typeof(DrawHook), original);
+        }
+
+        // The stand-in in host (DrawHook, or CardDraw: card draws only) with the same parameter list, or null.
+        internal static MethodInfo ReplacementIn(Type host, MethodInfo original)
+        {
+            Dictionary<MethodInfo, MethodInfo> ofHost;
+            if (!replacements.TryGetValue(host, out ofHost))
+            {
+                ofHost = new Dictionary<MethodInfo, MethodInfo>();
+                replacements[host] = ofHost;
+            }
             MethodInfo found;
-            if (replacements.TryGetValue(original, out found))
+            if (ofHost.TryGetValue(original, out found))
             {
                 return found;
             }
@@ -317,9 +332,111 @@ namespace IsoRim
             {
                 types[i] = ps[i].ParameterType;
             }
-            found = typeof(DrawHook).GetMethod("DrawMesh", BindingFlags.Public | BindingFlags.Static, null, types, null);
-            replacements[original] = found;
+            found = host.GetMethod("DrawMesh", BindingFlags.Public | BindingFlags.Static, null, types, null);
+            ofHost[original] = found;
             return found;
+        }
+    }
+
+    // Stand-ins for UnityEngine.Graphics.DrawMesh in other mods' own weapon drawing (CardWeapons: their patches on the game's
+    // weapon drawing and the helpers those call; Api 54's fallback, FigureWeapons.DrawOrCatchWeapon). While a pawn is stood up
+    // as a 2D card they are DrawHook's own draws (up with the card, onto its floor); anything else (a 3D figure, whose weapon
+    // catch stays with the game's own draws and Api 54; the 2D view; any other drawing) goes to Graphics.DrawMesh exactly as
+    // the mod wrote it. The same overloads as DrawHook (Patches.IsRedirectable; CheckOverloads). Public because other mods'
+    // rewritten code calls it; not Api.
+    public static class CardDraw
+    {
+        // Once, before the card scan: every DrawHook.DrawMesh overload has its twin here (one warning naming any missing: those
+        // calls then stay as drawn, RedirectDraws keeps a call it has no stand-in for).
+        internal static void CheckOverloads()
+        {
+            foreach (MethodInfo m in typeof(DrawHook).GetMethods(BindingFlags.Public | BindingFlags.Static))
+            {
+                if (m.Name != nameof(DrawHook.DrawMesh))
+                {
+                    continue;
+                }
+                Type[] types = m.GetParameters().Select(p => p.ParameterType).ToArray();
+                if (typeof(CardDraw).GetMethod(nameof(DrawMesh), BindingFlags.Public | BindingFlags.Static, null, types, null) == null)
+                {
+                    Log.Warning("[IsoRim] Card weapons: CardDraw has no DrawMesh(" + string.Join(", ", types.Select(t => t.Name)) + ") like DrawHook's.");
+                }
+            }
+        }
+
+        // A pawn is being stood up as a card now (Patches.DrawingCard), and no 3D figure's weapon is being caught.
+        public static bool OnCard => Patches.DrawingCard && !FigureWeapons.Capturing;
+
+        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer)
+        {
+            if (OnCard)
+            {
+                DrawHook.DrawMesh(mesh, matrix, material, layer);
+            }
+            else
+            {
+                Graphics.DrawMesh(mesh, matrix, material, layer);
+            }
+        }
+
+        public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer)
+        {
+            if (OnCard)
+            {
+                DrawHook.DrawMesh(mesh, position, rotation, material, layer);
+            }
+            else
+            {
+                Graphics.DrawMesh(mesh, position, rotation, material, layer);
+            }
+        }
+
+        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties)
+        {
+            if (OnCard)
+            {
+                DrawHook.DrawMesh(mesh, matrix, material, layer, camera, submeshIndex, properties);
+            }
+            else
+            {
+                Graphics.DrawMesh(mesh, matrix, material, layer, camera, submeshIndex, properties);
+            }
+        }
+
+        public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties)
+        {
+            if (OnCard)
+            {
+                DrawHook.DrawMesh(mesh, position, rotation, material, layer, camera, submeshIndex, properties);
+            }
+            else
+            {
+                Graphics.DrawMesh(mesh, position, rotation, material, layer, camera, submeshIndex, properties);
+            }
+        }
+
+        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex)
+        {
+            if (OnCard)
+            {
+                DrawHook.DrawMesh(mesh, matrix, material, layer, camera, submeshIndex);
+            }
+            else
+            {
+                Graphics.DrawMesh(mesh, matrix, material, layer, camera, submeshIndex);
+            }
+        }
+
+        public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, Camera camera, int submeshIndex)
+        {
+            if (OnCard)
+            {
+                DrawHook.DrawMesh(mesh, position, rotation, material, layer, camera, submeshIndex);
+            }
+            else
+            {
+                Graphics.DrawMesh(mesh, position, rotation, material, layer, camera, submeshIndex);
+            }
         }
     }
 }
