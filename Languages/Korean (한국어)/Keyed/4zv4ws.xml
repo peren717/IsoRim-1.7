@@ -301,7 +301,7 @@
   <R3D_Settings_TreeShadowLength>나무 그림자 길이</R3D_Settings_TreeShadowLength>
   <R3D_Settings_Light>조명</R3D_Settings_Light>
   <R3D_Settings_LightingFix>입체화된 물체에 밤과 실내의 어둠 적용</R3D_Settings_LightingFix>
-  <R3D_Settings_FogLid>미탐험 지역을 불투명한 덮개로 표시</R3D_Settings_FogLid>
+  <R3D_Settings_FogLid>미탐험 지역을 불투명한 안개로 표시</R3D_Settings_FogLid>
   <R3D_Settings_SunMoves>하루 동안 태양 이동</R3D_Settings_SunMoves>
   <R3D_Settings_SunMovesTip>태양은 동쪽에서 떠서 정오에는 남쪽에 위치하고 서쪽으로 집니다. 벽, 지붕, 가구에 비치는 햇빛도 하루에 몇 차례 이동합니다. 끄면 오전 중반의 위치에 고정됩니다. 카메라를 회전해도 조명은 변하지 않습니다.</R3D_Settings_SunMovesTip>
   <R3D_Settings_Ground>지면</R3D_Settings_Ground>
