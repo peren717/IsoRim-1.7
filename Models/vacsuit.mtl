@@ -1,0 +1,15 @@
+# IsoRim vacsuit + helmet (Claude, tools/make_vacsuit.py, 2026-11-11). stuff_*: multiplied by the item's colour
+# (the vacsuit is untinted: white undyed), like vanilla's untinted sprites. Kd sampled from the vanilla sprites.
+# Also uses isorim.mtl stuff_plain (white: shells, pads, back plate) and stuff_plain_deep (0.6: the filter cans' core).
+newmtl stuff_vac_suit
+Kd 0.280 0.280 0.280
+newmtl stuff_vac_hole
+Kd 0.180 0.180 0.180
+newmtl stuff_vac_line
+Kd 0.090 0.090 0.090
+newmtl stuff_vac_port
+Kd 0.400 0.400 0.400
+# the small details (valves) as a texture: Kd 0.926 x TextureLift 1.08 = 1, so the white around them meets stuff_plain
+newmtl stuff_vac_decal
+Kd 0.926 0.926 0.926
+map_Kd IsoRim/People/VacsuitDecals
