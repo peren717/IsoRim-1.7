@@ -21,6 +21,55 @@ namespace IsoRim
         public List<DynamicModels.Part>[] smokes;   // FireFx.SmokeSteps: dark and thick to light and thin
     }
 
+    // The regular icosahedron, the one table of it (fire smoke, blood drops, the explosions' balls): its 12 corners (not unit
+    // length) and 20 faces (three corner indices each, in the winding FireFx and HitFx have always used).
+    internal static class Icosahedron
+    {
+        private static readonly float G = (1f + Mathf.Sqrt(5f)) / 2f;
+
+        internal static readonly Vector3[] Corners =
+        {
+            new Vector3(-1, G, 0), new Vector3(1, G, 0), new Vector3(-1, -G, 0), new Vector3(1, -G, 0),
+            new Vector3(0, -1, G), new Vector3(0, 1, G), new Vector3(0, -1, -G), new Vector3(0, 1, -G),
+            new Vector3(G, 0, -1), new Vector3(G, 0, 1), new Vector3(-G, 0, -1), new Vector3(-G, 0, 1),
+        };
+
+        internal static readonly int[] Faces = { 0,11,5, 0,5,1, 0,1,7, 0,7,10, 0,10,11, 1,5,9, 5,11,4, 11,10,2, 10,7,6, 7,1,8,
+                                                 3,9,4, 3,4,2, 3,2,6, 3,6,8, 3,8,9, 4,9,5, 2,4,11, 6,2,10, 8,6,7, 9,8,1 };
+
+        // A unit sphere (radius 1 round 0): the icosahedron split `split` times, corners three per face, each face wound so it
+        // faces out (a front face's Cross(b - a, c - a) points at the viewer in Unity), as the models' faces.
+        internal static List<Vector3> Sphere(int split)
+        {
+            List<Vector3> tris = new List<Vector3>();
+            for (int i = 0; i < Faces.Length; i++)
+            {
+                tris.Add(Corners[Faces[i]].normalized);
+            }
+            for (int s = 0; s < split; s++)
+            {
+                List<Vector3> next = new List<Vector3>(tris.Count * 4);
+                for (int i = 0; i + 2 < tris.Count; i += 3)
+                {
+                    Vector3 a = tris[i], b = tris[i + 1], c = tris[i + 2];
+                    Vector3 ab = (a + b).normalized, bc = (b + c).normalized, ca = (c + a).normalized;
+                    next.AddRange(new[] { a, ab, ca, ab, b, bc, ca, bc, c, ab, bc, ca });
+                }
+                tris = next;
+            }
+            List<Vector3> outward = new List<Vector3>(tris.Count);
+            for (int i = 0; i + 2 < tris.Count; i += 3)
+            {
+                Vector3 n = Vector3.Cross(tris[i + 1] - tris[i], tris[i + 2] - tris[i]);
+                bool flip = Vector3.Dot(n, tris[i] + tris[i + 1] + tris[i + 2]) < 0f;
+                outward.Add(tris[i]);
+                outward.Add(flip ? tris[i + 2] : tris[i + 1]);
+                outward.Add(flip ? tris[i + 1] : tris[i + 2]);
+            }
+            return outward;
+        }
+    }
+
     // Burning fires in 3D as small low-poly particles (Effects.BurningFire draws one with Draw, every frame it is drawn):
     // slender flame tongues born at the base of the fire that rise, cool from yellow-white through orange to red and die out
     // by shrinking to nothing (never darkening), a hot heart at the foot, sparks that fly up with the wind and twinkle out,
@@ -64,6 +113,21 @@ namespace IsoRim
             new Color(0.98f, 0.27f, 0.05f),
         };
 
+        private static readonly Color StandardSmokeColour = new Color(0.44f, 0.43f, 0.42f);
+
+        // How a flame piece shrinks away over its life u (size (1 - u)^ShrinkPower), and a smoke shade at u (0 thick and dark ..
+        // 1 thin and light): FireFx's rules, shared with the 3D explosions (ExplosionFx).
+        internal const float ShrinkPower = 1.5f;
+
+        internal static Color SmokeShade(Color smoke, float u)
+        {
+            return Color.Lerp(Color.Lerp(smoke, Color.white, 0.25f), Color.Lerp(smoke, Color.white, 0.6f), u);
+        }
+
+        // IsoRim's own fire colours (hottest to coldest) and smoke shade, for the 3D explosions (ExplosionFx).
+        internal static Color[] StandardFlame => StandardRamp;
+        internal static Color StandardSmoke => StandardSmokeColour;
+
         // (Api 46) A fire def's own colours.
         internal static void SetLook(ThingDef def, Color[] flame, Color spark, Color smoke)
         {
@@ -90,7 +154,7 @@ namespace IsoRim
             }
             if (standard == null)
             {
-                standard = new FireLook { flame = StandardRamp, spark = new Color(1f, 0.78f, 0.30f), smoke = new Color(0.44f, 0.43f, 0.42f) };
+                standard = new FireLook { flame = StandardRamp, spark = new Color(1f, 0.78f, 0.30f), smoke = StandardSmokeColour };
             }
             return Ready(standard) ? standard : null;
         }
@@ -147,7 +211,7 @@ namespace IsoRim
                     for (int i = 0; i < SmokeSteps; i++)
                     {
                         float u = i / (float)(SmokeSteps - 1);
-                        Color c = Color.Lerp(Color.Lerp(l.smoke, Color.white, 0.25f), Color.Lerp(l.smoke, Color.white, 0.6f), u);
+                        Color c = SmokeShade(l.smoke, u);
                         l.smokes[i] = One(SmokeMesh(c, Mathf.Lerp(0.38f, 0.05f, u)), blend);
                         l.smokes[i][0].alone = true;
                     }
@@ -251,15 +315,8 @@ namespace IsoRim
         // each), the outer ones fainter, so it thickens toward its middle and its edge melts away. alpha: the middle's.
         internal static Mesh SmokeMesh(Color c, float alpha)
         {
-            float g = (1f + Mathf.Sqrt(5f)) / 2f;
-            Vector3[] p =
-            {
-                new Vector3(-1, g, 0), new Vector3(1, g, 0), new Vector3(-1, -g, 0), new Vector3(1, -g, 0),
-                new Vector3(0, -1, g), new Vector3(0, 1, g), new Vector3(0, -1, -g), new Vector3(0, 1, -g),
-                new Vector3(g, 0, -1), new Vector3(g, 0, 1), new Vector3(-g, 0, -1), new Vector3(-g, 0, 1),
-            };
-            int[] f = { 0,11,5, 0,5,1, 0,1,7, 0,7,10, 0,10,11, 1,5,9, 5,11,4, 11,10,2, 10,7,6, 7,1,8,
-                        3,9,4, 3,4,2, 3,2,6, 3,6,8, 3,8,9, 4,9,5, 2,4,11, 6,2,10, 8,6,7, 9,8,1 };
+            Vector3[] p = Icosahedron.Corners;
+            int[] f = Icosahedron.Faces;
             float[] radius = { 0.5f, 0.38f, 0.24f };
             float[] share = { 0.12f, 0.22f, 0.36f };   // each shell is crossed twice through the middle
             Vector3 up = new Vector3(0f, 0.5f, 0f);
@@ -510,7 +567,7 @@ namespace IsoRim
                     foot.y + rise,
                     foot.z + Mathf.Sin(ang) * rad * pull + jz + WindDir.z * drift);
                 float grow = Mathf.Clamp01(u / 0.12f);
-                float fade = Mathf.Pow(1f - u, 1.5f);   // dies out by shrinking to nothing, never darkening
+                float fade = Mathf.Pow(1f - u, ShrinkPower);   // dies out by shrinking to nothing, never darkening
                 float w = W * (heart ? 1.5f : 0.7f + 0.6f * r4) * grow * fade * (1f + 0.3f * (1f - u));
                 if (w < 0.012f)
                 {

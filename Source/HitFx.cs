@@ -274,15 +274,8 @@ namespace IsoRim
         // A droplet one unit across, round its middle: an icosahedron, its faces flat.
         private static Mesh DropMesh(Color c)
         {
-            float g = (1f + Mathf.Sqrt(5f)) / 2f;
-            Vector3[] p =
-            {
-                new Vector3(-1, g, 0), new Vector3(1, g, 0), new Vector3(-1, -g, 0), new Vector3(1, -g, 0),
-                new Vector3(0, -1, g), new Vector3(0, 1, g), new Vector3(0, -1, -g), new Vector3(0, 1, -g),
-                new Vector3(g, 0, -1), new Vector3(g, 0, 1), new Vector3(-g, 0, -1), new Vector3(-g, 0, 1),
-            };
-            int[] f = { 0,11,5, 0,5,1, 0,1,7, 0,7,10, 0,10,11, 1,5,9, 5,11,4, 11,10,2, 10,7,6, 7,1,8,
-                        3,9,4, 3,4,2, 3,2,6, 3,6,8, 3,8,9, 4,9,5, 2,4,11, 6,2,10, 8,6,7, 9,8,1 };
+            Vector3[] p = Icosahedron.Corners;
+            int[] f = Icosahedron.Faces;
             Color32 k = R3DMaterials.Shaded(c, 1f);
             List<Vector3> v = new List<Vector3>();
             List<Color32> col = new List<Color32>();

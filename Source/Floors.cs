@@ -1337,6 +1337,11 @@ namespace IsoRim
         // from the sky whose matrix may reach far past its impact cell's rows, which must not be read as another floor).
         public static bool InDrawnSpace;
 
+        // With InDrawnSpace: the stacked floor a moving model's parts belong to (0 the ground), for what a part takes from its
+        // floor (roof clip, peek fade: DynamicModels.EnterFloor); -1 (the default): worked out from the rows as without
+        // InDrawnSpace. Set and put back by DynamicModels.SubmitParts with a floor.
+        internal static int DrawnSpaceFloor = -1;
+
         public static bool Single_Prefix(ref Matrix4x4 matrix)
         {
             return !On || InDrawnSpace || Drawn(ref matrix);
@@ -1384,7 +1389,7 @@ namespace IsoRim
 
         public static bool InstancedArray_Prefix(ref Matrix4x4[] matrices, ref int count)
         {
-            if (!On || matrices == null)
+            if (!On || InDrawnSpace || matrices == null)
             {
                 return true;
             }
@@ -1418,7 +1423,7 @@ namespace IsoRim
 
         public static bool InstancedList_Prefix(ref List<Matrix4x4> matrices)
         {
-            if (!On || matrices == null || ReferenceEquals(matrices, instanceList))
+            if (!On || InDrawnSpace || matrices == null || ReferenceEquals(matrices, instanceList))
             {
                 return true;
             }

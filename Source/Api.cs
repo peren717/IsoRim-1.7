@@ -144,7 +144,9 @@ namespace IsoRim
         // world, generation seeds and start of play from it and keeps sounds and music out of Rand).
         // 73: Api73.cs: a glass colour source's negative alpha (GlassOpacityFromModel) = the bound ModelDef's glassOpacity (else
         // IsoRim's own), Glass.CustomLook; GlassOpacity(thing) = that opacity.
-        public static int Version => 73;
+        // 74: Api74.cs, ExplosionFx.cs: ordinary explosions in 3D (setting explosions3D, default off): AddExplosionLook,
+        // SkipExplosionFx, AddExplosionFxFilter (opted out: the game's flat explosion, nothing held back or drawn), DrawExplosion3D.
+        public static int Version => 74;
 
         // ---- glass parts (Version 30)
 

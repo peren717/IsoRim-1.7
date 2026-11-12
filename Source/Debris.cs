@@ -71,7 +71,7 @@ namespace IsoRim
     public static class CollapseDebris
     {
         public const int MaxChunks = 400;
-        private const float Gravity = 18f;          // cells / s^2 (true space)
+        internal const float Gravity = 18f;         // cells / s^2 (true space); also the 3D explosions' debris (ExplosionFx)
         private const float Restitution = 0.3f;
         private const float SettleTime = 0.25f;
         private const float ShrinkTime = 0.8f;

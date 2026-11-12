@@ -139,6 +139,7 @@ namespace IsoRim
         public float smoothCrease = 70f;     // degrees: faces meeting at more than this keep a hard edge (SmoothFigures)
         public List<string> keepPaper = new List<string>();   // races (ThingDef defNames) kept as cards although an alien pack makes them 3D (Api 25, AlienFigures)
         public bool effects3D = true;
+        public bool explosions3D;   // ordinary explosions as 3D fireballs and smoke (ExplosionFx, Api 74); new: off by default
         public bool collapseDebris = true;
         public bool groundShadows = true;
         public bool treeShadows = true;
@@ -292,6 +293,7 @@ namespace IsoRim
                 keepPaper = new List<string>();
             }
             Scribe_Values.Look(ref effects3D, "effects3D", true);
+            Scribe_Values.Look(ref explosions3D, "explosions3D", false);
             Scribe_Values.Look(ref collapseDebris, "collapseDebris", true);
             Scribe_Values.Look(ref cutHeight, "cutHeight", 0.5f);
             Scribe_Values.Look(ref dissolveRadius, "dissolveRadius", 3.5f);
@@ -1214,6 +1216,7 @@ namespace IsoRim
                 Check(r, "R3D_Settings_Ghosts3D".Translate(), ref st.ghosts3D, "R3D_Settings_Ghosts3DTip".Translate());
                 Check(r, "R3D_Settings_Damage3D".Translate(), ref st.damage3D);
                 Check(r, "R3D_Settings_Effects3D".Translate(), ref st.effects3D);
+                Check(r, "R3D_Settings_Explosions3D".Translate(), ref st.explosions3D);
                 Check(r, "R3D_Settings_CollapseDebris".Translate(), ref st.collapseDebris, "R3D_Settings_CollapseDebrisTip".Translate());
                 Check(r, "R3D_Settings_UprightPawns".Translate(), ref st.uprightPawns, "R3D_Settings_UprightPawnsTip".Translate());
                 if (st.uprightPawns && ModsConfig.IsActive("Nals.FacialAnimation"))

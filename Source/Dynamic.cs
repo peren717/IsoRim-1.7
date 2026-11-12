@@ -422,10 +422,23 @@ namespace IsoRim
         internal static List<Part> PartsFromCorners(KeyValuePair<List<Vector3>, List<Color32>> lit, KeyValuePair<List<Vector3>, List<Color32>> glow,
             KeyValuePair<List<Vector3>, List<Color32>> line)
         {
+            return PartsFromCorners(lit, null, glow, line);
+        }
+
+        // (Api 74) The same with smooth normals for the lit faces (one per corner, or null: lit by the face; ExplosionFx's smoke and
+        // dust): lit as a figure's smooth parts (SmoothFigures.Bit). An empty list (default) leaves that part out.
+        internal static List<Part> PartsFromCorners(KeyValuePair<List<Vector3>, List<Color32>> lit, List<Vector3> litNormals,
+            KeyValuePair<List<Vector3>, List<Color32>> glow, KeyValuePair<List<Vector3>, List<Color32>> line)
+        {
             List<Part> parts = new List<Part>();
-            AddPart(parts, ListsOf(lit), R3DMaterials.LitModel, false);
-            AddPart(parts, ListsOf(glow), R3DMaterials.Solid, false);
-            AddPart(parts, ListsOf(line), R3DMaterials.OutlineMoving, true);
+            Lists l = lit.Key != null ? ListsOf(lit) : null;
+            if (l != null && litNormals != null && litNormals.Count == l.verts.Count)
+            {
+                l.normals = new List<Vector3>(litNormals);
+            }
+            AddPart(parts, l, R3DMaterials.LitModel, false);
+            AddPart(parts, glow.Key != null ? ListsOf(glow) : null, R3DMaterials.Solid, false);
+            AddPart(parts, line.Key != null ? ListsOf(line) : null, R3DMaterials.OutlineMoving, true);
             return parts;
         }
 
@@ -555,6 +568,29 @@ namespace IsoRim
             }
         }
 
+        // (Api 74) Ready-made parts with a matrix already in drawn space (moved onto its floor by the caller) and the floor they
+        // belong to: every part of one whole on that floor, whatever rows a part reaches (ExplosionFx: a burst on its floor).
+        internal static void SubmitParts(List<Part> parts, Matrix4x4 drawnMatrix, int floor)
+        {
+            if (parts == null || parts.Count == 0)
+            {
+                return;
+            }
+            bool was = Floors.InDrawnSpace;
+            int wasFloor = Floors.DrawnSpaceFloor;
+            Floors.InDrawnSpace = true;
+            Floors.DrawnSpaceFloor = floor;
+            try
+            {
+                Submit(parts, drawnMatrix);
+            }
+            finally
+            {
+                Floors.InDrawnSpace = was;
+                Floors.DrawnSpaceFloor = wasFloor;
+            }
+        }
+
         // Ready-made parts with a whole matrix of their own (drawn space, before the floor shift): the fire particles (FireFx).
         internal static void SubmitParts(List<Part> parts, Matrix4x4 matrix)
         {
@@ -624,7 +660,14 @@ namespace IsoRim
         // (Floors.Fade_Prefix), and PartBatches leaves the draw to be made at once (it only batches solid draws).
         internal static int EnterFloor(ref Matrix4x4 matrix, out int floor)
         {
-            matrix = Floors.DrawnMatrix(matrix, out floor);   // a thing on an upper floor: before culling, tested where it shows
+            if (Floors.InDrawnSpace && Floors.DrawnSpaceFloor >= 0)
+            {
+                floor = Floors.DrawnSpaceFloor;   // already moved onto its floor by the caller (SubmitParts with a floor)
+            }
+            else
+            {
+                matrix = Floors.DrawnMatrix(matrix, out floor);   // a thing on an upper floor: before culling, tested where it shows
+            }
             int fadeWas = Floors.FadeSlot;
             if (fadeWas == 0 && floor > 0)
             {

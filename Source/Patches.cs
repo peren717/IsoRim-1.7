@@ -651,6 +651,17 @@ namespace IsoRim
             {
                 Log.Error("[IsoRim] Patching effects at a figure's body failed: " + e);
             }
+            // Ordinary explosions in 3D (ExplosionFx, Api 74): the game's own explosion visuals (DamageWorker.ExplosionStart,
+            // ExplosionAffectCell) are scoped; inside them the flecks a covered explosion makes itself (not its effecters':
+            // BodyFlecks.InEffecter) are recorded and replaced (the first CreateFleck prefix; the cell squares are kept).
+            Patch("3D explosions", AccessTools.Method(typeof(DamageWorker), nameof(DamageWorker.ExplosionStart)),
+                prefix: nameof(ExplosionStart_Prefix), finalizer: nameof(ExplosionScope_Finalizer));
+            Patch("3D explosions", AccessTools.Method(typeof(DamageWorker), nameof(DamageWorker.ExplosionAffectCell)),
+                prefix: nameof(ExplosionCell_Prefix), finalizer: nameof(ExplosionScope_Finalizer));
+            Patch("3D explosions", AccessTools.Method(typeof(FleckManager), nameof(FleckManager.CreateFleck), new[] { typeof(FleckCreationData) }),
+                prefix: nameof(ExplosionFleck_Prefix));
+            // (whether an explosive's own explosionEffect look comes with the explosion starting now: no 3D smoke for it)
+            Patch("3D explosions", AccessTools.Method(typeof(CompExplosive), "Detonate"), prefix: nameof(ExplosiveDetonate_Prefix), finalizer: nameof(ExplosiveDetonate_Finalizer));
             // Drop pods, shuttles, meteorites and every other skyfaller come down from (or go up into) the sky with a real
             // height, not slid over the ground (Skyfallers).
             Patch("skyfallers from the sky", AccessTools.DeclaredMethod(typeof(Skyfaller), "DrawAt", new[] { typeof(Vector3), typeof(bool) }),
@@ -839,6 +850,7 @@ namespace IsoRim
         public static Exception CullThings_Finalizer(Exception __exception)
         {
             HitFx.Draw();
+            ExplosionFx.Draw();
             Cull.ThingsEnd();
             PartBatches.Flush();
             return __exception;
@@ -4939,6 +4951,57 @@ namespace IsoRim
             catch (Exception e)
             {
                 Log.ErrorOnce("[IsoRim] Raising an icon over a figure failed: " + e, 93611580);
+            }
+        }
+
+        // (ExplosionFx) The game's own explosion visuals: their scope, and the effecters inside them.
+        internal static void ExplosionStart_Prefix(DamageWorker __instance, Explosion explosion, out ExplosionFx.Scope __state)
+        {
+            ExplosionFx.Start_Prefix(__instance, explosion, out __state);
+        }
+
+        internal static void ExplosionCell_Prefix(Explosion explosion, IntVec3 c, out ExplosionFx.Scope __state)
+        {
+            ExplosionFx.Cell_Prefix(explosion, c, out __state);
+        }
+
+        internal static Exception ExplosionScope_Finalizer(Exception __exception, ExplosionFx.Scope __state)
+        {
+            ExplosionFx.Scope_Finalizer(__state);
+            return __exception;
+        }
+
+        public static void ExplosiveDetonate_Prefix(CompExplosive __instance, out bool __state)
+        {
+            __state = __instance?.Props?.explosionEffect != null;
+            if (__state)
+            {
+                ExplosionFx.detonatingOwnLook++;
+            }
+        }
+
+        public static Exception ExplosiveDetonate_Finalizer(Exception __exception, bool __state)
+        {
+            if (__state)
+            {
+                ExplosionFx.detonatingOwnLook--;
+            }
+            return __exception;
+        }
+
+        // First of the CreateFleck prefixes: a covered explosion's own fleck is recorded, and the replaced ones made already
+        // at the end of their life (the game's CreateFleck always runs: its random draws stay the game's).
+        [HarmonyPriority(Priority.First)]
+        public static void ExplosionFleck_Prefix(ref FleckCreationData fleckData)
+        {
+            ExplosionFx.OwnFleck = false;
+            try
+            {
+                ExplosionFx.Hold(ref fleckData);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Replacing an explosion's flat effect failed: " + e, 93613302);
             }
         }
 

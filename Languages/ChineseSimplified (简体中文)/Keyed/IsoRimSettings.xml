@@ -279,6 +279,7 @@
   <R3D_Settings_Ghosts3DTip>蓝图、建造框架和放置预览显示为半透明 3D 模型。</R3D_Settings_Ghosts3DTip>
   <R3D_Settings_Damage3D>建筑上的损伤痕迹</R3D_Settings_Damage3D>
   <R3D_Settings_Effects3D>火焰、烟雾、蒸汽和火花</R3D_Settings_Effects3D>
+  <R3D_Settings_Explosions3D>3D 爆炸</R3D_Settings_Explosions3D>
   <R3D_Settings_CollapseDebris>坍塌碎块</R3D_Settings_CollapseDebris>
   <R3D_Settings_CollapseDebrisTip>坍塌的屋顶和楼板碎成块落下。</R3D_Settings_CollapseDebrisTip>
   <R3D_Settings_UprightPawns>贴图竖立</R3D_Settings_UprightPawns>

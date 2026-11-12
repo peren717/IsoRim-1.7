@@ -26,7 +26,8 @@ namespace IsoRim
     //     (Overhead.Floor)
     //   - left alone: what another rule placed already (Emitters.Raised: shots and their trails, turret flashes, the
     //     effects round a lifted model, blood's small puffs and food bits at a mouth, smoke and steam from nozzles), a fleck
-    //     the shield dome holds back (ShieldHits), puffs of a steam sprayer, what an effecter makes for something else than
+    //     the shield dome holds back (ShieldHits), an explosion's own flecks (ExplosionFx.OwnFleck: the flash, smoke, cell flecks
+    //     and their dust that DamageWorker.ExplosionStart / ExplosionAffectCell make themselves; 2026-11-11), puffs of a steam sprayer, what an effecter makes for something else than
     //     that pawn (its first target: another pawn, a cell) or at the work the pawn does (its second target a thing that is
     //     not a pawn: the frame being built, the rock being mined; Effecter_Prefix), and what starts at the feet (below
     //     Feet up the picture: it lies on the ground in the picture too). Other altitudes (footprints, splashes and ripples
@@ -104,6 +105,9 @@ namespace IsoRim
 
         private static EffecterScope effecter;
 
+        // Inside an effecter's EffectTick or Trigger now (also used by ExplosionFx: an effecter's flecks are never an explosion's own).
+        internal static bool InEffecter => effecter.on;
+
         public static void Effecter_Prefix(TargetInfo A, TargetInfo B, out EffecterScope __state)
         {
             __state = effecter;
@@ -143,6 +147,10 @@ namespace IsoRim
             if (Emitters.Raised(data.spawnPosition))
             {
                 return "placed by another rule";
+            }
+            if (ExplosionFx.OwnFleck)
+            {
+                return "an explosion's own";   // its flash, smoke, cell flecks and dust lie round the blast, not on a body near it
             }
             if (Emitters.sprayer != null)
             {

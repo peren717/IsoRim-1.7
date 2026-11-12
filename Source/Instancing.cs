@@ -100,7 +100,9 @@ namespace IsoRim
             return true;
         }
 
-        // DrawDynamicThings ends (Patches.CullThings_Finalizer): every collected part drawn, with its mark.
+        // DrawDynamicThings ends (Patches.CullThings_Finalizer): every collected part drawn, with its mark. The matrices are in
+        // drawn space already (DynamicModels.Submit moved each onto its floor before Add): drawn where they are
+        // (Floors.InDrawnSpace), not moved again by their rows (a part past its band's north edge would be).
         public static void Flush()
         {
             collecting = false;
@@ -109,30 +111,39 @@ namespace IsoRim
                 return;
             }
             bool ready = View3D.Ready;
-            for (int i = 0; i < order.Count; i++)
+            bool wasDrawn = Floors.InDrawnSpace;
+            Floors.InDrawnSpace = true;
+            try
             {
-                Group g = order[i];
-                if (g.mesh != null && g.material != null)
+                for (int i = 0; i < order.Count; i++)
                 {
-                    MaterialPropertyBlock props = RoofClip.FloorBlock(g.floor);
-                    if (g.count == 1)
+                    Group g = order[i];
+                    if (g.mesh != null && g.material != null)
                     {
-                        IsoGlow.DrawLit(g.mesh, g.matrices[0], g.material, 0, props);
-                    }
-                    else
-                    {
-                        Graphics.DrawMeshInstanced(g.mesh, 0, g.material, g.matrices, g.count, props, UnityEngine.Rendering.ShadowCastingMode.Off, false, 0);
-                        Material mark = ready ? IsoGlow.MarkFor(g.material) : null;
-                        if (mark != null)
+                        MaterialPropertyBlock props = RoofClip.FloorBlock(g.floor);
+                        if (g.count == 1)
                         {
-                            Graphics.DrawMeshInstanced(g.mesh, 0, mark, g.matrices, g.count, props, UnityEngine.Rendering.ShadowCastingMode.Off, false, 0);
+                            IsoGlow.DrawLit(g.mesh, g.matrices[0], g.material, 0, props);
+                        }
+                        else
+                        {
+                            Graphics.DrawMeshInstanced(g.mesh, 0, g.material, g.matrices, g.count, props, UnityEngine.Rendering.ShadowCastingMode.Off, false, 0);
+                            Material mark = ready ? IsoGlow.MarkFor(g.material) : null;
+                            if (mark != null)
+                            {
+                                Graphics.DrawMeshInstanced(g.mesh, 0, mark, g.matrices, g.count, props, UnityEngine.Rendering.ShadowCastingMode.Off, false, 0);
+                            }
                         }
                     }
+                    g.mesh = null;
+                    g.material = null;
+                    g.count = 0;
+                    pool.Push(g);
                 }
-                g.mesh = null;
-                g.material = null;
-                g.count = 0;
-                pool.Push(g);
+            }
+            finally
+            {
+                Floors.InDrawnSpace = wasDrawn;
             }
             order.Clear();
             groups.Clear();

@@ -125,10 +125,11 @@ if (IsoRim.Api.Version >= 70) { /* WatchCopy, CopyHash: one warning when a metho
 if (IsoRim.Api.Version >= 71) { /* FirstPersonOn: first person is on, also while a camera pose holds the view (part 50) */ }
 if (IsoRim.Api.Version >= 72) { /* HarnessSeed: the -isorimseed=N of a test harness, null without it (part 51) */ }
 if (IsoRim.Api.Version >= 73) { /* glass colour sources: a negative alpha = the bound ModelDef's opacity; GlassOpacity(thing) (part 19) */ }
+if (IsoRim.Api.Version >= 74) { /* 3D explosions: SkipExplosionFx, AddExplosionFxFilter (keep yours flat), AddExplosionLook, DrawExplosion3D (part 52) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`), version 72 part 51 (`HarnessSeed`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`), version 72 part 51 (`HarnessSeed`), version 73 part 19 (`GlassOpacityFromModel`, `GlassOpacity`), version 74 part 52 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -2888,6 +2889,62 @@ What `-isorimseed=N` does (only with the argument; without it nothing is patched
   their number must not depend on real time.
 
 Version gate: `IsoRim.Api.Version >= 72`.
+
+## Part 52: 3D explosions (version 74)
+
+With the player's option "3D explosions" on (off by default), IsoRim draws ordinary explosions as 3D fireballs: a few round
+outlined volumes in the fire's colours that swell with the blast front, shrink and cool, then grey outlined smoke puffs that
+rise, drift and shrink away, a ring of dust on the ground and a few debris chunks. Each explosion picks one of three looks of
+the same burst by a stable hash of its cell, tick and map.
+
+**Which explosions.** One with visual effects (`Explosion.doVisualEffects`) whose damage def is explosive
+(`DamageDef.isExplosive`) and whose worker draws the game's standard explosion: no class between it and `DamageWorker`
+overrides `ExplosionStart`, `ExplosionVisualEffectCenter` or `ExplosionAffectCell`. In the game: Bomb, BombSuper, Thump.
+Flame, EMP, Stun, gas and the like stay flat.
+
+**What changes.** While the game's own `DamageWorker.ExplosionStart` and `ExplosionAffectCell` run for such an explosion,
+the flecks they make themselves (not an effecter's) drive the 3D burst: every `ExplosionFlash` and `Smoke` fleck of
+`ExplosionStart` (also a def's own centre fleck if it is one of those) and the `DustPuff` thrown with each cell's fleck are
+replaced by it (the game still makes them, already at the end of their life, so its random draws stay the same); the def's
+own `explosionCellFleck` on each cell hit stays the game's, under the burst, so players still see which cells were hit. The
+burst's front follows every `Explosion.AffectCell` on its floor, at the game's own tick for each cell. Places, sizes,
+speeds and timing are the game's. A def's other centre and interior flecks, its effecters, a projectile's
+`explosionEffect`, sounds, the camera shake and the blast mark stay the game's. The 3D smoke is shorter than the game's flat smoke (it shrinks away over 3 s); a flat
+explosion keeps the game's smoke.
+
+An explosion whose source brings an effecter look of its own (its projectile's or its `CompExplosive`'s `explosionEffect`;
+in the game only the antigrain warhead's GiantExplosion) keeps that effecter and gets the fireball, dust ring and debris but
+no 3D smoke; the game's flat explosion smoke is left out for it all the same.
+
+**Colours.** IsoRim's fire colours are the 3D form of the game's standard explosion colour (the Bomb def's
+`explosionColorCenter`). A def with another centre colour gets them turned to its hue (a blue blast is blue); the dust takes
+the def's `explosionColorEdge`. Set your own with `AddExplosionLook`.
+
+**Keeping your mod's explosion flat.** If your mod has its own explosion look (effecters, flecks, a shader), opt out: that
+explosion is then exactly the game's, as without IsoRim (no fleck held back, nothing drawn by IsoRim).
+
+```csharp
+// once at startup (main thread), after IsoRim has loaded
+if (IsoRim.Api.Version >= 74) OptOut();
+
+[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+static void OptOut()   // called only on version 74 or later
+{
+    IsoRim.Api.SkipExplosionFx(MyDefOf.PlasmaBlast);                            // every explosion of this damage def
+    IsoRim.Api.AddExplosionFxFilter(e => e.weapon == MyDefOf.Gun_MyLauncher);   // or decide per explosion
+}
+```
+
+| Member | Meaning |
+|---|---|
+| `void Api.SkipExplosionFx(DamageDef def)` | Explosions of this def always stay the game's flat ones. |
+| `void Api.AddExplosionFxFilter(Func<Explosion, bool> skip)` | Asked for each explosion IsoRim would draw in 3D, as it starts (main thread, while the game ticks); true keeps it flat. A filter that throws is warned about once and ignored from then on (counts as false). |
+| `void Api.AddExplosionLook(DamageDef def, Color[] fire, Color smoke, Color dust)` | The def's 3D colours: fire hottest to coldest (at least one), the smoke's darkest shade, the dust ring and debris. A second call replaces the first. |
+| `bool Api.DrawExplosion3D(Map map, IntVec3 cell, float radius, DamageDef def)` | For an explosion of your own that does not run the game's `DamageWorker.ExplosionStart`: IsoRim's fireball and dust ring at full size at once, on the cell's floor (no stair or bridge rise; no smoke or debris: your own flecks stay yours). Main thread only (call it where your explosion starts, while the game ticks). False, and nothing drawn, with the option or the 3D view off, on a map not shown, with a null map or def, a radius of 0 or less, a skipped def, 48 bursts already alive, or after the 3D explosions failed (logged once). |
+| `Api.Dev.ExplosionBursts`, `ExplosionFlecksHeld`, `ExplosionsOptedOut`, `ExplosionBurstsLive`, `ExplosionPartsDrawn` | For tests (not part of the version promise). |
+
+Call the registration members at startup (main thread); `SkipExplosionFx` and `AddExplosionFxFilter` throw for a null
+argument, `AddExplosionLook` for a null def or no fire colour. Version gate: `IsoRim.Api.Version >= 74`.
 
 ## Part M: model packs (IsoRim.ModelDef)
 
