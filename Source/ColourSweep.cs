@@ -94,7 +94,7 @@ namespace IsoRim
             float stuffArea = 0f;
             bool missing = false;
             List<string> missingNames = new List<string>();
-            bool textured = IsoRimMod.Settings.texturedModels && m.materials != null && m.uvs != null && m.material != null;
+            bool textured = TexturedFaces.On(m);
             for (int i = 0; i + 2 < m.positions.Length; i += 3)
             {
                 Vector3 a = m.positions[i], b = m.positions[i + 1], c = m.positions[i + 2];

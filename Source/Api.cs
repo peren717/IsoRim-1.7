@@ -146,7 +146,11 @@ namespace IsoRim
         // IsoRim's own), Glass.CustomLook; GlassOpacity(thing) = that opacity.
         // 74: Api74.cs, ExplosionFx.cs: ordinary explosions in 3D (setting explosions3D, default off): AddExplosionLook,
         // SkipExplosionFx, AddExplosionFxFilter (opted out: the game's flat explosion, nothing held back or drawn), DrawExplosion3D.
-        public static int Version => 74;
+        // 75: TexturedFaces.cs: textured faces (MTL map_Kd) on a person's merged figure parts (apparel, headgear, worn gear, anything
+        // put together by DynamicModels.BuildMerged: also outfit stands) drawn with their texture by the one rule of every textured
+        // model writer (TexturedFaces: baked, moving, merged), tinted as their plain faces; "{stuff}" textures keep their plain
+        // colour there. No new member.
+        public static int Version => 75;
 
         // ---- glass parts (Version 30)
 

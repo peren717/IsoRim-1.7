@@ -57,7 +57,7 @@ namespace IsoRim
         private static readonly List<Matrix4x4> partLocals = new List<Matrix4x4>();
         private static readonly List<Color> partTints = new List<Color>();
 
-        private static int smoothStampSeen;   // SmoothFigures.Stamp the made meshes are for (0: off, as at start)
+        private static int smoothStampSeen;   // DynamicModels.MergedStamp the made meshes are for (0: as at start)
 
         private static FieldInfo skipHeadField;
         private static MethodInfo bodyTypeGetter;
@@ -77,10 +77,10 @@ namespace IsoRim
             {
                 return false;
             }
-            if (smoothStampSeen != SmoothFigures.Stamp)
+            if (smoothStampSeen != DynamicModels.MergedStamp)
             {
-                // Smooth shading on people switched or its crease changed: the dressed parts are made again, as a colonist's.
-                smoothStampSeen = SmoothFigures.Stamp;
+                // Smooth shading on people switched or its crease changed (or textured models, Api 75): the dressed parts are made again, as a colonist's.
+                smoothStampSeen = DynamicModels.MergedStamp;
                 ForgetMeshes();
             }
             ModelDef def = entry.def;

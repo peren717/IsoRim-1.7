@@ -1219,11 +1219,11 @@ namespace IsoRim
                     l.frame = int.MinValue / 2;
                 }
             }
-            if (smoothStampSeen != SmoothFigures.Stamp)
+            if (smoothStampSeen != DynamicModels.MergedStamp)
             {
-                // Smooth shading on people was switched or its crease angle changed: every figure's meshes made again
-                // (the look itself is the same, so the made meshes are thrown away here), and the attachments' too.
-                smoothStampSeen = SmoothFigures.Stamp;
+                // Smooth shading on people was switched or its crease angle changed, or (Api 75) textured models: every figure's
+                // meshes made again (the look itself is the same, so the made meshes are thrown away here), and the attachments' too.
+                smoothStampSeen = DynamicModels.MergedStamp;
                 foreach (Look l in looks.Values)
                 {
                     l.Forget();
@@ -1684,7 +1684,7 @@ namespace IsoRim
 
         private static bool hairUnderHatsSeen;
         private static int geneStampSeen = int.MinValue;
-        private static int smoothStampSeen;   // SmoothFigures.Stamp (0: off, as at start)
+        private static int smoothStampSeen;   // DynamicModels.MergedStamp (0: as at start)
 
         // Option hairUnderHats: hair is shown (and tucked in, HairTuck) although the game hides it, when every worn item
         // that hides it does so only by the game's default for headgear on the upper head. Items with their own skip
@@ -2571,7 +2571,7 @@ namespace IsoRim
         internal static readonly HashSet<string> PaintedHats = new HashSet<string>
         {
             "Apparel_ArmorMarineHelmetPrestige", "Apparel_ArmorHelmetCataphractPrestige", "Apparel_ArmorHelmetReconPrestige",
-            "Apparel_VacsuitHelmet", "Apparel_GasMask",   // dyefix: their shell / rubber is stuff_* (masks.mtl), visor and bands fixed
+            "Apparel_VacsuitHelmet", "Apparel_GasMask",   // dyefix: their shell / rubber is stuff_*; the gas mask's (masks.mtl) visor and bands fixed, the vacsuit helmet (vacsuit.mtl, 2026-11-11 remake) all stuff_*
         };
 
         internal static bool PaintedZones(string name)

@@ -361,7 +361,6 @@ namespace IsoRim
             float foot = Mathf.Max(max.x - min.x, max.z - min.z) * size;
             shape.fit = size * (foot > MaxFoot ? MaxFoot / foot : 1f);
 
-            bool textures = IsoRimMod.Settings.texturedModels;
             List<Model> slow = new List<Model>();
             List<int> slowPart = new List<int>();
             corners.Clear();
@@ -369,7 +368,7 @@ namespace IsoRim
             for (int i = 0; i < models.Count; i++)
             {
                 Matrix4x4 t = settle * pose * locals[i];
-                if (textures && Textured(models[i]))
+                if (TexturedFaces.Shows(models[i]))
                 {
                     slow.Add(PosedCopy(models[i], t));
                     slowPart.Add(i);
@@ -384,23 +383,6 @@ namespace IsoRim
             corners.Clear();
             cornerGlow.Clear();
             return shape;
-        }
-
-        private static bool Textured(Model m)
-        {
-            if (m.materials == null || m.uvs == null || m.material == null)
-            {
-                return false;
-            }
-            for (int i = 0; i + 2 < m.material.Length; i += 3)
-            {
-                ModelMaterial mm = m.materials[m.material[i]];
-                if (mm != null && mm.texture != null)
-                {
-                    return true;   // a face drawn with a texture (the material library may hold others it never uses)
-                }
-            }
-            return false;
         }
 
         // The corners of model m moved by t, with their colours as ModelBaker.Write takes them (tinted by part's tint where the

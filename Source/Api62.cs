@@ -531,12 +531,7 @@ namespace IsoRim
         /// <summary>A tint rounded as IsoRim's model parts round theirs (so a mesh of yours matches a model drawn in that tint).</summary>
         public static Color RoundTint(Color tint)
         {
-            Color32 t = tint;
-            t.r = (byte)(t.r & 0xF8);
-            t.g = (byte)(t.g & 0xF8);
-            t.b = (byte)(t.b & 0xF8);
-            t.a = 255;
-            return t;
+            return DynamicModels.RoundTint(tint);
         }
 
         /// <summary>The vertex colour IsoRim gives a model's solid (or outline) faces of this tint.</summary>

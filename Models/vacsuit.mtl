@@ -9,7 +9,7 @@ newmtl stuff_vac_line
 Kd 0.090 0.090 0.090
 newmtl stuff_vac_port
 Kd 0.400 0.400 0.400
-# the small details (valves) as a texture: Kd 0.926 x TextureLift 1.08 = 1, so the white around them meets stuff_plain
+# the small details (valves) as a texture on the white they sit on: Kd = that white (stuff_plain), texels = wanted / (Kd x 1.08)
 newmtl stuff_vac_decal
-Kd 0.926 0.926 0.926
+Kd 1.000 1.000 1.000
 map_Kd IsoRim/People/VacsuitDecals

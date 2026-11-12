@@ -253,11 +253,32 @@ namespace IsoRim
             parts.Clear();
         }
 
+        // The one rounding of a tint for made meshes and materials (each channel down to a multiple of 8, opaque), so the endless
+        // shades of clothes, smoke and dyes share meshes and materials instead of each making its own: moving models (PartsFor,
+        // PartsWithDecals), a figure's textured materials (BuildMerged, Api 75), sheet colours (ObjLoader.SheetTinted) and
+        // Api.RoundTint.
+        internal static Color32 RoundTint(Color tint)
+        {
+            Color32 t = tint;
+            t.r = (byte)(t.r & 0xF8);
+            t.g = (byte)(t.g & 0xF8);
+            t.b = (byte)(t.b & 0xF8);
+            t.a = 255;
+            return t;
+        }
+
+        // The settings merged figure meshes (BuildMerged) are made under: smooth shading on people (SmoothFigures.Stamp) and,
+        // (Api 75) the textured models setting. Their keepers (People, Stands) make them again when it changes. 0: smooth
+        // shading off and textured models on (the value the keepers start from, as before Api 75).
+        internal static int MergedStamp => SmoothFigures.Stamp * 2 + (IsoRimMod.Settings.texturedModels ? 0 : 1);
+
         // Several plain-coloured models, each with its own placing and colour, put together into
         // one solid mesh and one outline mesh: one draw each instead of one per model. The solid
         // mesh is lit per pixel by the shader (glowing parts go into a separate unlit mesh), so it
         // does not depend on the light or on which way the whole is turned (turned is unused).
-        // Textures are left off.
+        // (Api 75) Textured faces (map_Kd) are drawn with their texture over their plain copy, as a moving model's (Build, by
+        // TexturedFaces): one more part per textured material of the whole figure; a figure without any has the parts it had.
+        // A "{stuff}" texture keeps its plain colour (a figure has no swatch).
         // mono (a statue's subject): every colour carved in that one colour (Statues.Carved), nothing glowing.
         public static List<Part> BuildMerged(List<Model> models, List<Matrix4x4> locals, List<Color> tints, int turned, Color? mono = null)
         {
@@ -291,6 +312,7 @@ namespace IsoRim
             Lists solid = new Lists();
             Lists glowing = new Lists();
             Lists outline = new Lists();
+            List<Lists> texturedLayers = null;   // (Api 75) one per textured material of the figure, in the order first met
             bool anyRound = false;
             if (smooth)
             {
@@ -315,6 +337,22 @@ namespace IsoRim
                     Vector3[] sn = smooth ? SmoothFigures.NormalsOf(m) : null;
                     Matrix4x4 normalPlace = smooth ? NormalMatrix(local) : Matrix4x4.identity;
                     bool isRound = anyRound && k < round.Count && round[k];
+                    // (Api 75) The model's textured faces (map_Kd) drawn with their texture, by the one rule of every textured
+                    // writer (TexturedFaces): per slot (material, and its own-colour faces apart) the material once; the faces go to
+                    // one textured layer per material for the whole figure. Not on a carved statue (mono: one colour).
+                    // A model that shows textured faces takes its tint rounded (RoundTint) for all its faces, as a moving model's
+                    // parts are (PartsFor): endless dye shades share its textured materials, and its textured and plain faces
+                    // keep the same colour. Models without textured faces keep the exact tint, as before.
+                    bool textured = !mono.HasValue && TexturedFaces.Shows(m);
+                    if (textured)
+                    {
+                        tint = RoundTint(tint);
+                    }
+                    int slots = textured ? m.materials.Length * (m.ownColor != null ? 2 : 1) : 0;
+                    Lists[] slotLists = textured ? new Lists[slots] : null;
+                    bool[] looked = textured ? new bool[slots] : null;
+                    Color[] slotColour = textured ? new Color[slots] : null;
+                    Texture[] slotTexture = textured ? new Texture[slots] : null;
                     for (int i = 0; i + 2 < n; i += 3)
                     {
                         if (clipBelow > float.NegativeInfinity
@@ -324,7 +362,29 @@ namespace IsoRim
                         }
                         int mi = m.material != null ? m.material[i] : 0;
                         ModelMaterial mm = m.materials != null ? m.materials[mi] : null;
-                        Lists into = mm != null && mm.glow && !mono.HasValue ? glowing : solid;
+                        bool glow = mm != null && mm.glow && !mono.HasValue;
+                        Lists into = glow ? glowing : solid;
+                        Lists tl = null;
+                        int slot = -1;
+                        bool own = textured && m.OwnColour(i);
+                        if (textured && mm != null && mm.texture != null && !TexturedFaces.NeedsSwatch(mm))
+                        {
+                            slot = own ? m.materials.Length + mi : mi;
+                            if (!looked[slot])
+                            {
+                                looked[slot] = true;
+                                // a figure's part: only "stuff" materials take its tint, as its plain faces; no second colour
+                                Color sc = TexturedFaces.Colour(mm, own, tint, false, Color.white);
+                                Material tmat = TexturedFaces.MaterialFor(mm, own, glow, sc, null, 0);
+                                if (tmat != null)
+                                {
+                                    slotColour[slot] = sc;
+                                    slotTexture[slot] = tmat.mainTexture;
+                                    slotLists[slot] = TexturedLayer(ref texturedLayers, tmat, smooth && !own, anyRound);
+                                }
+                            }
+                            tl = slotLists[slot];
+                        }
                         for (int v = i; v < i + 3; v++)
                         {
                             Color c = m.colors[v];
@@ -336,21 +396,45 @@ namespace IsoRim
                             {
                                 c = Statues.Carved(c, mono.Value);
                             }
+                            Color line = tl != null ? TextureOutline.Line(m, mi, slotTexture[slot], own ? c : Color.white, slotColour[slot], c) : c;
+                            Vector3 at = tl != null && m.hull != null ? TexturedFaces.Under(m.positions[v], m.hull[v]) : m.positions[v];
                             if (into.round != null)
                             {
-                                into.Add(local.MultiplyPoint3x4(m.positions[v]), R3DMaterials.Shaded(c, 1f), Vector2.zero, PlaceNormal(normalPlace, sn, v), isRound);
+                                into.Add(local.MultiplyPoint3x4(at), R3DMaterials.Shaded(c, 1f), Vector2.zero, PlaceNormal(normalPlace, sn, v), isRound);
                             }
                             else if (into.normals != null)
                             {
-                                into.Add(local.MultiplyPoint3x4(m.positions[v]), R3DMaterials.Shaded(c, 1f), Vector2.zero, PlaceNormal(normalPlace, sn, v));
+                                into.Add(local.MultiplyPoint3x4(at), R3DMaterials.Shaded(c, 1f), Vector2.zero, PlaceNormal(normalPlace, sn, v));
                             }
                             else
                             {
-                                into.Add(local.MultiplyPoint3x4(m.positions[v]), R3DMaterials.Shaded(c, 1f), Vector2.zero);
+                                into.Add(local.MultiplyPoint3x4(at), R3DMaterials.Shaded(c, 1f), Vector2.zero);
                             }
                             if (m.hull != null && (m.noOutline == null || !m.noOutline[v]))
                             {
-                                outline.Add(local.MultiplyPoint3x4(m.positions[v] + m.hull[v]), R3DMaterials.Shaded(c, ModelBaker.OutlineShade), Vector2.zero);
+                                outline.Add(local.MultiplyPoint3x4(m.positions[v] + m.hull[v]), R3DMaterials.Shaded(line, ModelBaker.OutlineShade), Vector2.zero);
+                            }
+                            if (tl != null)
+                            {
+                                if (tl.normals != null)
+                                {
+                                    // lit by the figure's smooth normals as its plain faces (and the swaddle), lifted along them; a
+                                    // round model's (head, hair, gene parts) left out of stepped light as its plain faces are
+                                    Vector3 sm = PlaceNormal(Matrix4x4.identity, sn, v);
+                                    Vector3 lifted = local.MultiplyPoint3x4(TexturedFaces.Over(m.positions[v], sm));
+                                    if (tl.round != null)
+                                    {
+                                        tl.Add(lifted, White, m.uvs[v], PlaceNormal(normalPlace, sn, v), isRound);
+                                    }
+                                    else
+                                    {
+                                        tl.Add(lifted, White, m.uvs[v], PlaceNormal(normalPlace, sn, v));
+                                    }
+                                }
+                                else
+                                {
+                                    tl.Add(local.MultiplyPoint3x4(TexturedFaces.Over(m.positions[v], m.normals[i])), own ? R3DMaterials.Shaded(c, 1f) : White, m.uvs[v]);
+                                }
                             }
                         }
                     }
@@ -359,12 +443,41 @@ namespace IsoRim
                 AddPart(parts, glowing, solidMat, false);
                 AddPart(parts, outline, R3DMaterials.OutlineMoving, true);
                 AddBeams(parts, models, locals, mono.HasValue);
+                for (int i = 0; texturedLayers != null && i < texturedLayers.Count; i++)
+                {
+                    AddPart(parts, texturedLayers[i], texturedLayers[i].material, false);
+                }
             }
             catch (Exception e)
             {
                 Log.ErrorOnce("[IsoRim] Putting a figure together failed: " + e, 93611031);
             }
             return parts;
+        }
+
+        // (Api 75) The figure's textured layer for material (made the first time; smooth: its corners carry smooth normals;
+        // with round too, each corner whether it is left out of stepped light, as the solid faces: SmoothFigures.RoundBit).
+        private static Lists TexturedLayer(ref List<Lists> layers, Material material, bool smooth, bool round)
+        {
+            layers ??= new List<Lists>();
+            for (int i = 0; i < layers.Count; i++)
+            {
+                if (layers[i].material == material)
+                {
+                    return layers[i];
+                }
+            }
+            Lists l = new Lists { material = material };
+            if (smooth)
+            {
+                l.normals = new List<Vector3>();
+                if (round)
+                {
+                    l.round = new List<bool>();
+                }
+            }
+            layers.Add(l);
+            return l;
         }
 
         // The matrix that takes a model's normals where local takes its corners (the inverse transpose; local itself if it
@@ -742,12 +855,8 @@ namespace IsoRim
         internal static List<Part> PartsWithDecals(Model m, Color tint, string swatch, ModelDecals.Look[] looks)
         {
             List<Part> parts = new List<Part>();
-            bool textured = IsoRimMod.Settings.texturedModels && m.materials != null && m.uvs != null && m.material != null;
-            Color32 t = tint;
-            t.r = (byte)(t.r & 0xF8);
-            t.g = (byte)(t.g & 0xF8);
-            t.b = (byte)(t.b & 0xF8);
-            t.a = 255;
+            bool textured = TexturedFaces.On(m);
+            Color32 t = RoundTint(tint);
             try
             {
                 Build(m, t, swatch, textured, parts, false, false, looks);
@@ -764,16 +873,14 @@ namespace IsoRim
         // them), so they serve every light and every way the model is turned.
         internal static List<Part> PartsFor(Model m, Color tint, string swatch)
         {
-            bool textured = IsoRimMod.Settings.texturedModels && m.materials != null && m.uvs != null && m.material != null;
+            bool textured = TexturedFaces.On(m);
 
-            // Colours are rounded a little, so that people's clothes and drifting smoke, which
+            // Colours are rounded a little (RoundTint), so that people's clothes and drifting smoke, which
             // come in endless shades, share ready-made meshes instead of each needing its own.
             Color32 t = tint;
             if (!TintTextured)
             {
-                t.r = (byte)(t.r & 0xF8);
-                t.g = (byte)(t.g & 0xF8);
-                t.b = (byte)(t.b & 0xF8);
+                t = RoundTint(tint);
             }
             t.a = 255;
             tint = t;
@@ -885,20 +992,9 @@ namespace IsoRim
                     if (!looked[slot])
                     {
                         looked[slot] = true;
-                        Color c = Model.OwnBase;
-                        if (!own)
-                        {
-                            c = mm.color * ModelBaker.TextureLift;
-                            if (mm.tinted || TintTextured)
-                            {
-                                c *= tint;
-                            }
-                        }
-                        string ownKey = own ? Model.OwnKey : null;
-                        string path = mm.texture.Replace("{stuff}", swatch);
+                        Color c = TexturedFaces.Colour(mm, own, tint, TintTextured, Color.white);   // (no second colour here)
                         // (Api 62) a texture made at run time (Api.CreateModel), lit as a model
-                        Material tmat = mm.runtimeTexture != null ? R3DMaterials.LitTexture(mm.runtimeTexture, mm.runtimeName + ownKey, c, 0)
-                            : glow ? R3DTextures.MaterialFor(path, c, -1, ownKey) : R3DMaterials.LitTexture(path, c, 0, 0, ownKey);
+                        Material tmat = TexturedFaces.MaterialFor(mm, own, glow, c, swatch, 0);
                         if (tmat != null)
                         {
                             slotColour[slot] = c;
@@ -936,7 +1032,7 @@ namespace IsoRim
                         // where its material takes it, TintTextured included)
                         line = TextureOutline.Line(m, mi, slotTexture[tlSlot], own ? c : Color.white, slotColour[tlSlot], line);
                     }
-                    Vector3 at = tl != null ? m.positions[k] - hull * ModelBaker.Inset : m.positions[k];
+                    Vector3 at = tl != null ? TexturedFaces.Under(m.positions[k], hull) : m.positions[k];
                     if (into.normals != null)
                     {
                         into.Add(at, R3DMaterials.Shaded(c, 1f), Vector2.zero, PlaceNormal(Matrix4x4.identity, sn, k));
@@ -956,11 +1052,11 @@ namespace IsoRim
                             // smoothTex: lifted along the corner's smooth normal (shared by the faces meeting there: no seams
                             // between them, as a lift along each face's own normal leaves); lit by it (IsoRimTex.vert.glsl)
                             Vector3 sm = PlaceNormal(Matrix4x4.identity, sn, k);
-                            tl.Add(m.positions[k] + sm * ModelBaker.FaceLift, White, m.uvs[k], sm);
+                            tl.Add(TexturedFaces.Over(m.positions[k], sm), White, m.uvs[k], sm);
                         }
                         else
                         {
-                            tl.Add(m.positions[k] + m.normals[i] * ModelBaker.FaceLift, own ? R3DMaterials.Shaded(c, 1f) : White, m.uvs[k]);
+                            tl.Add(TexturedFaces.Over(m.positions[k], m.normals[i]), own ? R3DMaterials.Shaded(c, 1f) : White, m.uvs[k]);
                         }
                     }
                 }

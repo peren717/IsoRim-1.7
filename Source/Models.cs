@@ -755,6 +755,12 @@ namespace IsoRim
                                            // path, named runtimeName; texture is then only a placeholder
         public string runtimeName;
         public bool runtimeModelLight;   // (Api 62) a run-time texture of a model made in code (Api.CreateModel): lit on the model curve, not the wall curve
+
+        // A copy with every field (a derived model changing a material without touching its source).
+        internal ModelMaterial Copy()
+        {
+            return (ModelMaterial)MemberwiseClone();
+        }
     }
 
     // One entry of ModelDef.byAppearance: <li><appearance>Planks</appearance><model>Models/x.obj</model></li>
@@ -2053,6 +2059,8 @@ namespace IsoRim
         // A copy of a model in which the faces of the named materials take the colour it is drawn with
         // (white, tinted) and no other face does (a mechanoid's faction marks); the source colour of
         // the first such material goes to baseColor. Null if the model uses none of them.
+        // (Api 75 review) Its materials say the same as its corners: a marked one white and tinted, any other untinted, so
+        // their textured faces (TexturedFaces, read by material) take the tint exactly where the plain copy does.
         public static Model Marked(Model src, List<string> names, out Color baseColor)
         {
             baseColor = Color.white;
@@ -2086,7 +2094,20 @@ namespace IsoRim
             m.maxX = src.maxX;
             m.minZ = src.minZ;
             m.maxZ = src.maxZ;
-            m.materials = src.materials;
+            m.materials = new ModelMaterial[src.materials.Length];
+            for (int i = 0; i < src.materials.Length; i++)
+            {
+                ModelMaterial o = src.materials[i];
+                if (!marked[i] && !o.tinted)
+                {
+                    m.materials[i] = o;
+                    continue;
+                }
+                ModelMaterial c = o.Copy();
+                c.tinted = marked[i];
+                c.color = marked[i] ? Color.white : o.color;
+                m.materials[i] = c;
+            }
             m.material = src.material;
             m.colors = (Color[])src.colors.Clone();
             m.tinted = new bool[src.tinted.Length];
@@ -2124,7 +2145,7 @@ namespace IsoRim
             lit.name = "glow_entity";
             lit.glow = true;
             lit.color = Color.white;
-            List<ModelMaterial> mats = new List<ModelMaterial>(src.materials);
+            List<ModelMaterial> mats = new List<ModelMaterial>(m.materials);   // (Marked's, agreeing with the corners)
             mats.Add(lit);
             int to = mats.Count - 1;
             m.materials = mats.ToArray();
@@ -2483,10 +2504,7 @@ namespace IsoRim
             {
                 return src;   // (white: the sheet faces keep their own colour)
             }
-            Color32 t = two;
-            t.r = (byte)(t.r & 0xF8);
-            t.g = (byte)(t.g & 0xF8);
-            t.b = (byte)(t.b & 0xF8);
+            Color32 t = DynamicModels.RoundTint(two);
             long key = ((long)src.id << 24) | (uint)((t.r << 16) | (t.g << 8) | t.b);
             Model m;
             if (sheetTinted.TryGetValue(key, out m))

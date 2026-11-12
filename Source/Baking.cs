@@ -3038,7 +3038,7 @@ namespace IsoRim
                 }
             }
 
-            bool textured = st.texturedModels && m.materials != null && m.uvs != null && m.material != null;
+            bool textured = st.texturedModels && TexturedFaces.Has(m);
             string swatch = textured ? R3DTextures.ModelSwatch(thing) : null;
             // (Api 53) Parts another mod prints decals on: their faces are written as textured faces with that look, textured models or not.
             ModelDecals.Look[] decalLooks = ModelDecals.Count > 0 ? ModelDecals.For(thing, m) : null;
@@ -3180,23 +3180,8 @@ namespace IsoRim
                     if (!looked[slot])
                     {
                         looked[slot] = true;
-                        Color c = Model.OwnBase;
-                        if (!own)
-                        {
-                            c = mm.color * TextureLift;
-                            if (mm.tinted)
-                            {
-                                c *= tint;
-                            }
-                            if (mm.sheet)
-                            {
-                                c *= sheetTint;
-                            }
-                        }
-                        string path = mm.texture.Replace("{stuff}", swatch);
-                        string ownKey = own ? Model.OwnKey : null;
-                        Material tmat = mm.runtimeTexture != null ? R3DMaterials.LitTexture(mm.runtimeTexture, mm.runtimeName + ownKey, c, mm.runtimeModelLight ? 0 : 1)
-                            : glow ? R3DTextures.MaterialFor(path, c, -1, ownKey) : R3DMaterials.LitTexture(path, c, 0, 0, ownKey);
+                        Color c = TexturedFaces.Colour(mm, own, tint, false, sheetTint);
+                        Material tmat = TexturedFaces.MaterialFor(mm, own, glow, c, swatch, mm.runtimeModelLight ? 0 : 1);
                         slotColour[slot] = c;
                         slotTexture[slot] = tmat != null ? tmat.mainTexture : null;
                         if (customSurface)
@@ -3229,7 +3214,7 @@ namespace IsoRim
                     // 1. plain copy, pulled in a hair when a textured face will sit over it (a decal's face stands in for it, Api 53)
                     if (decal == null || tm == null)
                     {
-                        Vector3 inside = tm != null ? m.positions[k] - hull * Inset : m.positions[k];
+                        Vector3 inside = tm != null ? TexturedFaces.Under(m.positions[k], hull) : m.positions[k];
                         Vector3 p = turn * (Vector3.Scale(lay * inside + layLift, scale) + offset);
                         pm.tris.Add(pm.verts.Count);
                         pm.verts.Add(new Vector3(center.x + p.x, baseY + Mathf.Max(Floor, p.y) / squash, center.z + p.z));
@@ -3270,7 +3255,7 @@ namespace IsoRim
                     // 3. textured face
                     if (tm != null)
                     {
-                        Vector3 q = turn * (Vector3.Scale(lay * (decal != null ? m.positions[k] : m.positions[k] + m.normals[i] * FaceLift) + layLift, scale) + offset);
+                        Vector3 q = turn * (Vector3.Scale(lay * (decal != null ? m.positions[k] : TexturedFaces.Over(m.positions[k], m.normals[i])) + layLift, scale) + offset);
                         Vector2 uv = decal != null ? ModelDecals.Uv(decal, m.positions[k], m.normals[i]) : m.uvs[k];
                         tm.tris.Add(tm.verts.Count);
                         tm.verts.Add(new Vector3(center.x + q.x, baseY + Mathf.Max(Floor, q.y) / squash, center.z + q.z));

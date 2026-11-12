@@ -11,6 +11,8 @@
 // It is turned into true (unsquashed) space as IsoRim.vert.glsl does for untextured smooth figures and handed to
 // IsoRimSolid.frag.glsl in vColor: rgb = the normal, a = 4 + the corner's alpha (the faces are white: the material colour
 // and the texture give their colour). vUv stays the texture coordinate. Every other textured mesh is drawn as before.
+// (Api 75 review) With flag 262144 as well (SmoothFigures.RoundBit: a textured face on a head, its hair or another round
+// figure part) a = 8 + the corner's alpha: left out of the stepped light, as the plain round faces (IsoRim.vert.glsl).
 
 layout(location = 0) in vec3 inPosition; // @vertex Position required
 layout(location = 1) in vec3 inNormal;   // @vertex Normal optional @default = vec4(0.0, 1.0, 0.0, 0.0)
@@ -218,6 +220,6 @@ void main()
         vec3 nt = mat3(cross(t[1], t[2]), cross(t[2], t[0]), cross(t[0], t[1])) * inNormal;
         float len = length(nt);
         nt = len > 1e-12 ? nt / len : vec3(0.0, 1.0, 0.0);
-        vColor = vec4(nt, 4.0 + inColor.a);
+        vColor = vec4(nt, ((int(inUv1.z + 0.5) & 262144) != 0 ? 8.0 : 4.0) + inColor.a);
     }
 }

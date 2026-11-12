@@ -289,7 +289,7 @@ namespace IsoRim
                 }
                 bed.tint = entry.def.spriteTint ? SpriteColors.MeanFor(b) : R3DTextures.ModelTint(b);
                 bed.two = R3DTextures.HasSheet(m) ? R3DTextures.SheetTint(b) : Color.white;
-                bed.textured = IsoRimMod.Settings.texturedModels && m.materials != null && m.uvs != null && m.material != null;
+                bed.textured = TexturedFaces.On(m);
                 bed.swatch = bed.textured ? R3DTextures.ModelSwatch(b) : null;
                 bed.cells = CellsOf(m);
                 return bed;

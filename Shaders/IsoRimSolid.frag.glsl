@@ -28,7 +28,8 @@
 // and not snapped, turned to the side of the face it is on; its alpha is the material's.
 // Smooth textured faces (USE_TEXTURE; ModelDef.smoothTextured, IsoRimTex.vert.glsl): vColor.a > 3 marks them; vColor.rgb is
 // then the smooth normal (true space) and vColor.a - 4 the corner's alpha; their colour is white * _Color * texture. They
-// are lit like the untextured smooth faces. Every other textured face (vColor.a <= 1) is drawn as before.
+// are lit like the untextured smooth faces. Every other textured face (vColor.a <= 1) is drawn as before. vColor.a > 7: a
+// round one (SmoothFigures.RoundBit, IsoRimTex.vert.glsl), its alpha vColor.a - 8, left out of the stepped light.
 
 layout(location = 0) in vec4 vColor;
 layout(location = 1) in vec2 vUv;
@@ -397,6 +398,7 @@ void main()
 #endif
 #ifdef USE_TEXTURE
     bool smoothTex = vColor.a > 3.0;
+    bool roundTex = vColor.a > 7.0;
     if (uMaterial._IsoToon.x > 1.5)
     {
         vec3 sn = vColor.rgb * inversesqrt(max(1e-12, dot(vColor.rgb, vColor.rgb)));
@@ -420,7 +422,7 @@ void main()
         discard;
 
 #ifdef USE_TEXTURE
-    vec4 color = smoothTex ? vec4(1.0, 1.0, 1.0, vColor.a - 4.0) * uMaterial._Color : vColor * uMaterial._Color;
+    vec4 color = smoothTex ? vec4(1.0, 1.0, 1.0, vColor.a - (roundTex ? 8.0 : 4.0)) * uMaterial._Color : vColor * uMaterial._Color;
 #else
     vec4 color = vColor * uMaterial._Color;
 #endif
@@ -518,7 +520,7 @@ void main()
 #ifndef USE_TEXTURE
             bool round = vUv.x > 2048.0;   // a head's skin, the hair (SmoothFigures.RoundBit): smooth, never stepped
 #else
-            bool round = false;
+            bool round = roundTex;   // a textured face on a round figure part (Api 75 review)
 #endif
             if (toon.x > 1.5 && !round)
             {

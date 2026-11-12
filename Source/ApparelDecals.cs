@@ -258,7 +258,10 @@ namespace IsoRim
         // ---- the projected meshes
 
         // How far each decal stands out from the garment's surface (cells, along its normals), the first and each one over it.
-        private const float Lift = 0.004f;
+        // (Api 75 review) On a garment that shows textured faces (TexturedFaces.Shows) the first stands clear of its textured
+        // layer instead (DecalLift.Clear: Lift is ModelBaker.FaceLift's 0.004, where a print would fight those faces); every
+        // other garment's prints stay where they were.
+        private const float Lift = ModelBaker.FaceLift;
         private const float LiftStep = 0.002f;
         // A face takes a decal when its normal points that way at least this much (z of a unit normal); a wrapping decal
         // takes every face on its side (Front: z >= 0, Back: z < 0).
@@ -268,7 +271,8 @@ namespace IsoRim
 
         private static Mesh MeshFor(Model garment, People.Look look, BodyTypeDef type, DecalSide side, Vector2 centre, Vector2 size, bool wrap, int layer)
         {
-            string key = string.Concat(garment.id.ToString(CultureInfo.InvariantCulture), ",", look.upper != null ? look.upper.id.ToString(CultureInfo.InvariantCulture) : "-", ",",
+            bool clear = TexturedFaces.Shows(garment);   // (Api 75) over a textured layer: DecalLift.Clear
+            string key = string.Concat(clear ? "T" : "", garment.id.ToString(CultureInfo.InvariantCulture), ",", look.upper != null ? look.upper.id.ToString(CultureInfo.InvariantCulture) : "-", ",",
                 look.lower != null ? look.lower.id.ToString(CultureInfo.InvariantCulture) : "-", ",", type != null ? type.defName : "-", ",",
                 F(look.bodyScale.x), ",", F(look.bodyScale.y), ",", F(look.bodyScale.z), ",", side == DecalSide.Front ? "F" : "B", ",", F(centre.x), ",", F(centre.y), ",", F(size.x), ",", F(size.y), ",", wrap ? "W" : "-", ",", layer.ToString(CultureInfo.InvariantCulture));
             Mesh mesh;
@@ -286,7 +290,7 @@ namespace IsoRim
             }
             try
             {
-                mesh = Build(garment, look, type, side, centre, size, wrap, Lift + LiftStep * layer);
+                mesh = Build(garment, look, type, side, centre, size, wrap, (clear ? DecalLift.Clear : Lift) + LiftStep * layer);
             }
             catch (Exception e)
             {

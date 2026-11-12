@@ -33,8 +33,14 @@ namespace IsoRim
     public static class DecalLift
     {
         public const float Lift = 0.006f;
-        private const double WindowLow = 0.0025 - 1e-5;    // the fight window, a true gap (tools\zfight_scan.py PT_LO, PT_HI);
-        private const double WindowHigh = 0.0046 + 1e-5;   // the margin is for corners written with four decimals
+        internal const double FightLow = 0.0025, FightHigh = 0.0046;   // the fight window, a true gap (tools\zfight_scan.py PT_LO, PT_HI)
+        private const double WindowLow = FightLow - 1e-5;   // the margin is for corners written with four decimals
+        private const double WindowHigh = FightHigh + 1e-5;
+        // The true gap a face drawn over a surface that may carry a textured layer keeps from that surface: the smallest one a
+        // lifted plain face gets (FightLow + Lift = 0.0085), 0.0045 clear of the textured layer (ModelBaker.FaceLift) and past
+        // its fight window. (Api 75 review) Api 10 apparel prints start there (ApparelDecals), so they never fight a garment's
+        // textured faces.
+        internal const float Clear = (float)(FightLow + Lift);
         private const double SamePlane = 1e-4;
         private const double MinOverlap = 1e-6;            // cells², as the scan
         private const float MitreLimit = 1.5f;

@@ -265,8 +265,8 @@ namespace IsoRim
         // line of corners along it at each step of the profile on both sides.
         private static Mesh StripFor(Color colour)
         {
-            Color32 k = colour;
-            int key = (k.r & 0xF8) << 16 | (k.g & 0xF8) << 8 | (k.b & 0xF8);
+            Color32 k = DynamicModels.RoundTint(colour);
+            int key = k.r << 16 | k.g << 8 | k.b;
             if (strips.TryGetValue(key, out Mesh m) && m != null)
             {
                 return m;

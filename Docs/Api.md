@@ -126,10 +126,11 @@ if (IsoRim.Api.Version >= 71) { /* FirstPersonOn: first person is on, also while
 if (IsoRim.Api.Version >= 72) { /* HarnessSeed: the -isorimseed=N of a test harness, null without it (part 51) */ }
 if (IsoRim.Api.Version >= 73) { /* glass colour sources: a negative alpha = the bound ModelDef's opacity; GlassOpacity(thing) (part 19) */ }
 if (IsoRim.Api.Version >= 74) { /* 3D explosions: SkipExplosionFx, AddExplosionFxFilter (keep yours flat), AddExplosionLook, DrawExplosion3D (part 52) */ }
+if (IsoRim.Api.Version >= 75) { /* textured faces (map_Kd) on people's models: apparel, gear, gene parts, races (part 53); no member */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`), version 72 part 51 (`HarnessSeed`), version 73 part 19 (`GlassOpacityFromModel`, `GlassOpacity`), version 74 part 52 (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`), version 72 part 51 (`HarnessSeed`), version 73 part 19 (`GlassOpacityFromModel`, `GlassOpacity`), version 74 part 52 (3D explosions), version 75 part 53 (textured faces on people) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -307,7 +308,7 @@ older IsoRim adds these defs through a patch operation of its own that checks `I
 
 Colours are as for other IsoRim models: faces under a material whose name starts with `stuff` take the item's colour (its
 stuff, its dye or the colour its mod gives it, as the game tints the sprite); the others keep their own `Kd`. Faces under a
-`flame...` material are taken out and burn with IsoRim's live flame (a torch).
+`flame...` material are taken out and burn with IsoRim's live flame (a torch). Version 75: faces with a textured material (`map_Kd`) show their texture (part 53).
 
 Slots and frames (the file's axes as IsoRim's `person_*.obj`: one unit = one cell, +y up, the figure faces -z of the file):
 
@@ -2945,6 +2946,71 @@ static void OptOut()   // called only on version 74 or later
 
 Call the registration members at startup (main thread); `SkipExplosionFx` and `AddExplosionFxFilter` throw for a null
 argument, `AddExplosionLook` for a null def or no fire colour. Version gate: `IsoRim.Api.Version >= 74`.
+
+## Part 53: textured faces on people's models (version 75)
+
+Models drawn as part of a person's figure can carry texture details: valves, badges, stitching, panel lines. A face whose
+`.mtl` material has a `map_Kd` texture is drawn with that texture over its plain colour, as IsoRim's buildings, items,
+weapons and animals already are. This covers everything IsoRim puts together into the figure's body and head meshes:
+apparel models (`ApparelModelDef`, every slot except `Shield`), worn packs and belts (`WornGearDef`, `Belt` bindings),
+gene parts (part 24), a race's own models (part 16), and the same outfits on outfit stands. Shields and attachments
+(part 7) are drawn as models of their own and were textured before. On an older IsoRim these faces are drawn in their
+plain colour (`Kd`, tinted as below), so the same files work on both. No member is needed; check `Api.Version >= 75` only
+if your code wants to know.
+
+```
+# my_vest.mtl (next to my_vest_male.obj, ... ; the .obj names it with "mtllib my_vest.mtl")
+newmtl stuff_myvest_body
+Kd 1.000 1.000 1.000
+newmtl stuff_myvest_badge          # tinted with the vest: the texture x Kd x 1.08 x the item's colour
+Kd 1.000 1.000 1.000               # the colour of the surface the badges sit on (the vest's)
+map_Kd MyMod/People/MyVestDetails  # Textures/MyMod/People/MyVestDetails.png in your mod
+newmtl myvest_gold_trim            # no "stuff": a fixed colour, whatever the vest's colour
+Kd 0.710 0.600 0.243               # the gold the trim's details sit on
+map_Kd MyMod/People/MyVestTrim
+```
+
+- **Texture path:** the game content path under your mod's `Textures/` folder, no extension (`MyMod/People/MyVestDetails`
+  for `Textures/MyMod/People/MyVestDetails.png`). A path Blender writes (absolute, with `Textures\` in it and `.png`) is cut to
+  the same. Several materials may share one texture (an atlas); materials that come out in the same texture and colour
+  share one draw.
+- **UVs:** every face of a textured material needs texture coordinates (`vt`, faces as `f v/vt`), the usual OBJ way (v = 0 at
+  the bottom of the image). The texture repeats outside 0..1 and is filtered smoothly (mipmapped), so leave a few texels of
+  margin round each detail in an atlas.
+- **Colour:** drawn colour = texture × `Kd` × 1.08 (the lift every textured face gets) × the tint where the material takes it.
+  Set `Kd` to the colour of the surface the detail sits on, and paint each texel as the colour you want divided by
+  `Kd` × 1.08: texel = wanted / (`Kd` × 1.08). The surface itself is then texel 236 (255 / 1.08) in every channel, so the
+  textured face shows exactly `Kd`, the same as its plain neighbours and its own plain copy (no lighter or darker patch, no
+  seam along the patch's edges), and with textures off or on an older IsoRim the detail simply goes and the surface stays.
+  A wanted colour brighter than `Kd` × 1.08 in some channel cannot be reached (the texel clips at 255): keep details darker
+  than the surface, or put bright ones on their own material with a lighter `Kd`.
+  A material whose name starts with `stuff` takes the item's colour (its stuff, its dye, or the colour its mod gives it) exactly
+  as its plain `stuff` faces do, so dyed apparel dyes its details too; any other name keeps its own colour on every item.
+  `spriteColour` bindings tint with the sprite's mean colour, as their plain faces. Worn gear's `tintMaterials`
+  (`WornGearDef`) and a mechanoid's `factionMaterials` take the dye or faction colour on their textured faces too. Such a
+  marked material's `Kd` is ignored: it is drawn white, and the colour comes from the dye or faction colour (undyed worn
+  gear: the marked material's own `Kd` as the tint). In a model with `tintMaterials` or `factionMaterials`, its other
+  `stuff*` materials do not take that colour: only the named materials do. Faces whose corners have colours of their
+  own (`v x y z r g b`) take those colours times the texture.
+- **See-through texels:** texels with alpha below 0.5 are cut out and show the face's plain copy under them (`Kd`, tinted the
+  same way): paint only the details, leave the rest clear, or paint the base colour too.
+- **Plain copy:** every textured face also has its plain copy under it, which is all players see with "Textured models"
+  off and on an older IsoRim. Give the material a `Kd` that looks right alone.
+- **Light and outline:** lit as the rest of the figure (smooth when smooth shading on people is on), at night by the same
+  light; `glow...` materials are unlit. The outline round a textured face takes the face's colour with the texture at its
+  mean, as on IsoRim's other models.
+- **Limits:**
+  - `{stuff}` in a texture path is not resolved on a person (the figure has no build material swatch): such faces keep
+    their plain colour there. It is resolved for the same apparel lying on the ground.
+  - Each textured material (per texture and colour) adds two draw calls per figure part (body, head) per frame (the
+    textured layer and its light pass); untextured figures cost what they did. Put a garment's details in one material and one atlas texture; a handful of figures with two
+    or three textured materials each is cheap, many textured materials on every colonist is not.
+  - Keep textures small: 256 to 512 px per garment atlas is plenty at play zoom (a figure is 40 to 120 px tall). There is
+    no hard size limit (the game's texture loader), but every texture stays in video memory.
+  - A changed texture needs a game restart (a changed `.obj` doesn't).
+  - A carved statue of the person shows the plain faces in the statue's colour.
+
+Version gate: `IsoRim.Api.Version >= 75` (nothing to call: older versions draw the plain colour).
 
 ## Part M: model packs (IsoRim.ModelDef)
 
