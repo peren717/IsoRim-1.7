@@ -152,7 +152,7 @@ namespace IsoRim
         }
 
         /// <summary>The game's render skip flags for the head as the person is now (each worn apparel's renderSkipFlags,
-        /// the game's FullHead/UpperHead rules; none in a bed that hides headgear). Test with
+        /// the game's FullHead/UpperHead rules; none in a bed that hides headgear, nor while the person swims). Test with
         /// <c>(frame.SkipFlags &amp; RenderSkipFlagDefOf.Hair) != 0</c>. Worked out on first read.</summary>
         public ulong SkipFlags
         {
@@ -191,7 +191,8 @@ namespace IsoRim
         /// <summary>How high the figure is lifted off its ground in cells (carried, jumping, flying in); 0 otherwise.</summary>
         public float Lift => lift;
 
-        /// <summary>The body is drawn (false in a bed that shows only the head).</summary>
+        /// <summary>The body is drawn (false in a bed that shows only the head, and while the person swims: the game draws no body
+        /// then, and IsoRim shows the figure sunk to its shoulders).</summary>
         public bool BodyShown => bodyShown;
 
         /// <summary>The middle of the head in the head frame (the head model's box, widened by <see cref="HeadWidth"/>;

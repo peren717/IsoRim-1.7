@@ -192,8 +192,9 @@ namespace IsoRim
                 return at;
             }
             Crouch c;
-            // crouching or face down (Api 45): the head comes down (in mid-jump or carried the pawn is not spawned: none)
-            headRise = Crouched(pawn, out c) ? c.HeadRise(Patches.DrawnAsModel(pawn)) : 0f;
+            // crouching or face down (Api 45): the head comes down (in mid-jump or carried the pawn is not spawned: none);
+            // swimming (Swimming): the figure sunk to its shoulders
+            headRise = Crouched(pawn, out c) ? c.HeadRise(Patches.DrawnAsModel(pawn)) : -People.SwimDepth(pawn);
             return at;
         }
 

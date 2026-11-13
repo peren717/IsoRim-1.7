@@ -84,6 +84,92 @@ namespace IsoRim
                 round.Add(isRound);
             }
 
+            // (Swimming) Cut at a plane: what lies where dot(plane.xyz, corner) + plane.w < 0 is left out, a triangle across the
+            // plane is cut along it (its new corners' colour, uv and normal taken along the edge, the round flag from the corner kept),
+            // so the cut edge lies exactly on the plane.
+            public void Cut(Vector4 plane)
+            {
+                int n = verts.Count;
+                if (n == 0)
+                {
+                    return;
+                }
+                List<Vector3> v0 = verts;
+                List<Color32> c0 = colors;
+                List<Vector2> u0 = uvs;
+                List<Vector3> n0 = normals;
+                List<bool> r0 = round;
+                verts = new List<Vector3>(n);
+                colors = new List<Color32>(n);
+                uvs = new List<Vector2>(n);
+                tris = new List<int>(n);
+                normals = n0 != null ? new List<Vector3>(n) : null;
+                round = r0 != null ? new List<bool>(n) : null;
+                Vector3 p = new Vector3(plane.x, plane.y, plane.z);
+                int[] ca = new int[4], cb = new int[4];
+                float[] ct = new float[4];
+                for (int i = 0; i + 2 < n; i += 3)
+                {
+                    float d0 = Vector3.Dot(p, v0[i]) + plane.w, d1 = Vector3.Dot(p, v0[i + 1]) + plane.w, d2 = Vector3.Dot(p, v0[i + 2]) + plane.w;
+                    if (d0 >= 0f && d1 >= 0f && d2 >= 0f)
+                    {
+                        for (int k = i; k < i + 3; k++)
+                        {
+                            Corner(v0, c0, u0, n0, r0, k, k, 0f);
+                        }
+                        continue;
+                    }
+                    if (d0 < 0f && d1 < 0f && d2 < 0f)
+                    {
+                        continue;
+                    }
+                    // The part on the kept side, as a polygon of 3 or 4 corners (each on a corner or along an edge).
+                    int m = 0;
+                    for (int e = 0; e < 3; e++)
+                    {
+                        int a = i + e, b = i + (e + 1) % 3;
+                        float da = e == 0 ? d0 : e == 1 ? d1 : d2;
+                        float db = e == 0 ? d1 : e == 1 ? d2 : d0;
+                        if (da >= 0f)
+                        {
+                            ca[m] = a;
+                            cb[m] = a;
+                            ct[m] = 0f;
+                            m++;
+                        }
+                        if ((da >= 0f) != (db >= 0f))
+                        {
+                            ca[m] = a;
+                            cb[m] = b;
+                            ct[m] = da / (da - db);
+                            m++;
+                        }
+                    }
+                    for (int k = 1; k + 1 < m; k++)
+                    {
+                        Corner(v0, c0, u0, n0, r0, ca[0], cb[0], ct[0]);
+                        Corner(v0, c0, u0, n0, r0, ca[k], cb[k], ct[k]);
+                        Corner(v0, c0, u0, n0, r0, ca[k + 1], cb[k + 1], ct[k + 1]);
+                    }
+                }
+            }
+
+            private void Corner(List<Vector3> v0, List<Color32> c0, List<Vector2> u0, List<Vector3> n0, List<bool> r0, int a, int b, float t)
+            {
+                tris.Add(verts.Count);
+                verts.Add(Vector3.LerpUnclamped(v0[a], v0[b], t));
+                colors.Add(Color32.Lerp(c0[a], c0[b], t));
+                uvs.Add(Vector2.LerpUnclamped(u0[a], u0[b], t));
+                if (normals != null)
+                {
+                    normals.Add(a == b ? n0[a] : Vector3.LerpUnclamped(n0[a], n0[b], t).normalized);
+                }
+                if (round != null)
+                {
+                    round.Add(r0[a]);
+                }
+            }
+
             public Mesh ToMesh()
             {
                 Mesh mesh = new Mesh();
@@ -302,6 +388,14 @@ namespace IsoRim
         public static List<Part> BuildMerged(List<Model> models, List<Matrix4x4> locals, List<Color> tints, int turned, Color? mono, float clipBelow, bool smooth,
             List<bool> round)
         {
+            return BuildMerged(models, locals, tints, turned, mono, clipBelow, smooth, round, null);
+        }
+
+        // cut (Swimming: a swimmer's figure under the water line): every part cut at that plane (Lists.Cut: kept where
+        // dot(cut.xyz, corner) + cut.w >= 0), the solid, glowing, outline and textured faces alike; the models' beam parts left out.
+        internal static List<Part> BuildMerged(List<Model> models, List<Matrix4x4> locals, List<Color> tints, int turned, Color? mono, float clipBelow, bool smooth,
+            List<bool> round, Vector4? cut)
+        {
             List<Part> parts = new List<Part>();
             Material solidMat = R3DMaterials.Solid;
             Material litMat = R3DMaterials.LitModel;
@@ -439,10 +533,23 @@ namespace IsoRim
                         }
                     }
                 }
+                if (cut.HasValue)
+                {
+                    solid.Cut(cut.Value);
+                    glowing.Cut(cut.Value);
+                    outline.Cut(cut.Value);
+                    for (int i = 0; texturedLayers != null && i < texturedLayers.Count; i++)
+                    {
+                        texturedLayers[i].Cut(cut.Value);
+                    }
+                }
                 AddPart(parts, solid, litMat, false);
                 AddPart(parts, glowing, solidMat, false);
                 AddPart(parts, outline, R3DMaterials.OutlineMoving, true);
-                AddBeams(parts, models, locals, mono.HasValue);
+                if (!cut.HasValue)
+                {
+                    AddBeams(parts, models, locals, mono.HasValue);
+                }
                 for (int i = 0; texturedLayers != null && i < texturedLayers.Count; i++)
                 {
                     AddPart(parts, texturedLayers[i], texturedLayers[i].material, false);

@@ -64,6 +64,7 @@ namespace IsoRim
             public bool femaleEyes;   // a Female_* head type: vanilla draws its eyes with the longer upturned lash
             public bool headHidden;   // the game leaves out the whole head (skip flag Head, the burka): its covering (hat) instead
             public bool bedHidesHat;  // in a bed that hides headgear when this look was worked out (People.BedHidesHeadgear)
+            public bool swimming;     // swimming when this look was worked out (Pawn.Swimming: the game's headgear rule, Swimming)
             public Color skin = Color.white;
             public Color hairColor = Color.white;
             public Color upperColor = Color.white;
@@ -196,8 +197,11 @@ namespace IsoRim
             | FigureParts.EyeWear | FigureParts.MouthWear);
         private const int BodyHides = (int)(FigureParts.Body | FigureParts.Clothes | FigureParts.Gear);
 
+        // swim (Swimming): cut at the water line (a set of its own, key bit 30).
+        private const int SwimKey = 1 << 30;
+
         private static List<DynamicModels.Part> Merged(Look look, bool headPart, bool dead, int turned, Color? mono = null, bool noLegs = false,
-            FigureParts hidden = FigureParts.None)
+            FigureParts hidden = FigureParts.None, bool swim = false)
         {
             // The meshes carry no shading (the shader lights them), so one set serves every light and turn.
             // A statue's subject (mono: the statue colour) has its own set, made again when the statue is repainted.
@@ -206,7 +210,8 @@ namespace IsoRim
             // (a race's head in a bed that hides the body: its parts below the chin left out, as its body is, Api 25)
             noLegs &= (!headPart || look.alien != null) && !mono.HasValue;
             int hide = mono.HasValue ? 0 : (int)hidden & (headPart ? HeadHides : BodyHides);
-            int key = (headPart ? 2 : 0) + (dead ? 1 : 0) + (mono.HasValue ? 4 : 0) + (noLegs ? 8 : 0) + (hide << 4);
+            swim &= !mono.HasValue;
+            int key = (headPart ? 2 : 0) + (dead ? 1 : 0) + (mono.HasValue ? 4 : 0) + (noLegs ? 8 : 0) + (hide << 4) + (swim ? SwimKey : 0);
             List<DynamicModels.Part> parts;
             if (mono.HasValue && look.statueTint != mono.Value)
             {
@@ -365,7 +370,8 @@ namespace IsoRim
             long buildStart = System.Diagnostics.Stopwatch.GetTimestamp();
             parts = DynamicModels.BuildMerged(mergeModels, mergeLocals, mergeTints, turned, mono,
                 noLegs ? (headPart ? AlienFigures.ChinClip(look) : Attachments.Hips * look.bodyScale.y) : float.NegativeInfinity, SmoothFigures.On,
-                mono.HasValue ? null : mergeRound);
+                mono.HasValue ? null : mergeRound,
+                swim ? Swimming.Cut(look, headPart && look.alien != null ? look.alien.head : Matrix4x4.identity) : (Vector4?)null);
             if (plainHead && look.headDecals != null && !mono.HasValue && (hide & (int)FigureParts.Headgear) == 0)
             {
                 HeadDecals.AddParts(parts, look, head, headPlace);   // worn head decals (Api 47), drawn as the head is
@@ -536,6 +542,10 @@ namespace IsoRim
             {
                 lying = false;
             }
+            // Swimming (Swimming): standing in the water, sunk to its shoulders, the body under the water line not drawn. Not for a
+            // placing read (Api 62) nor a figure drawn for another mod elsewhere (Api.DrawFigure, FigureBounds): whole, as before.
+            bool swim = !Placing.active && !FigureScope.Active && !dead && !lying && !attached && !seated && !crouched && gibbet == null && vat == null && lift <= 0f
+                && Swimming.On(pawn);
             float size = look.size * (gibbet != null ? GibbetScale : 1f);
             float rise = 0f;
             if (vat != null)
@@ -689,6 +699,11 @@ namespace IsoRim
                 Vector3 c = gibbet.TrueCenter();
                 drawLoc = new Vector3(c.x, drawLoc.y, c.z);
             }
+            else if (swim)
+            {
+                // Swimming: still, so the water line stays on the shoulders (sunk below); nothing held, no work.
+                pose = Matrix4x4.identity;
+            }
             else
             {
                 // A little waddle and bounce in step.
@@ -715,7 +730,8 @@ namespace IsoRim
                 }
             }
 
-            Vector3 at = new Vector3(drawLoc.x, ground + lift, drawLoc.z);
+            Vector3 at = new Vector3(drawLoc.x, ground + lift - (swim ? Swimming.Depth(look, size) : 0f), drawLoc.z);
+            bool bodyShown = !headOnly && !swim;   // for other mods' parts and the extras: a swimmer's body is not drawn, as the game's
             Matrix4x4 whole = pose * Matrix4x4.Scale(new Vector3(size, size, size));
             // Seated or crouching (Api 45): the body squashed down, the head (and the hands) come down by as much.
             float squash = seated ? seat.Squash : crouched ? crouch.BodySquash : 1f;
@@ -826,7 +842,7 @@ namespace IsoRim
             {
                 // Other mods' attachments (Api.AddFigureHook), placed in this head and body; before the figure is drawn, as
                 // they may hide its own parts (Api 21).
-                hidden = FigureHooks.Raise(pawn, look, at, yaw, headPlace, bodyPlace, size, lift, lying || proneDown, crawling || proneDown, seated || noLegs, dead, !headOnly);
+                hidden = FigureHooks.Raise(pawn, look, at, yaw, headPlace, bodyPlace, size, lift, lying || proneDown, crawling || proneDown, seated || noLegs, dead, bodyShown);
             }
             // (a race: where its face goes, Api 25; an Own race's face on its own head at the face anchor)
             Matrix4x4 headLocal = look.alien != null ? headPlace * look.alien.face : headPlace * Matrix4x4.Scale(new Vector3(look.headWide, 1f, 1f));
@@ -851,20 +867,20 @@ namespace IsoRim
             }
             else if (!headOnly)
             {
-                DynamicModels.DrawParts(Merged(look, false, dead, turned, null, noLegs || (hidden & FigureParts.Legs) != 0, hidden), at, yaw, bodyPlace);
-                if (look.decals != null && (hidden & FigureParts.Clothes) == 0)
+                DynamicModels.DrawParts(Merged(look, false, dead, turned, null, noLegs || (hidden & FigureParts.Legs) != 0, hidden, swim), at, yaw, bodyPlace);
+                if (look.decals != null && (hidden & FigureParts.Clothes) == 0 && bodyShown)
                 {
                     ApparelDecals.Draw(look, at, yaw, bodyPlace);   // other mods' decals on the body garments (Api 10)
                 }
             }
-            DynamicModels.DrawParts(Merged(look, true, dead, turned, null, headOnly && look.alien != null, hidden), at, yaw, headPlace);
+            DynamicModels.DrawParts(Merged(look, true, dead, turned, null, headOnly && look.alien != null, hidden, swim), at, yaw, headPlace);
             if (sleptIn != null)
             {
                 SleeperBlanket.Draw(pawn, sleptIn, at, yaw, size, ground);   // the blanket over the hidden body
             }
             if (look.alien != null)
             {
-                AlienCards.Draw(look, at, yaw, headPlace, bodyPlace, hidden, !headOnly, lying || proneDown, crawling || proneDown);   // a race's addons as cards (Api 25)
+                AlienCards.Draw(look, at, yaw, headPlace, bodyPlace, hidden, bodyShown, lying || proneDown, crawling || proneDown);   // a race's addons as cards (Api 25)
             }
             if (look.faceDecal && !look.headHidden && look.skull == null && (hidden & (FigureParts.Head | FigureParts.Face)) == 0)
             {
@@ -873,12 +889,12 @@ namespace IsoRim
             // The game's wounds, bandages and scars on the body and head (WoundMarks; a body without legs keeps none, nor one
             // in a swaddle: they are on the body inside it, as the game draws its wounds under the swaddle).
             WoundMarks.DrawPerson(pawn, look, at, yaw, bodyPlace, headPlace,
-                !headOnly && !noLegs && look.swaddle == null && (hidden & (FigureParts.Body | FigureParts.Legs)) == 0, !look.headHidden && (hidden & FigureParts.Head) == 0);
+                bodyShown && !noLegs && look.swaddle == null && (hidden & (FigureParts.Body | FigureParts.Legs)) == 0, !look.headHidden && (hidden & FigureParts.Head) == 0);
             HitFlash.End();
             if (look.flames && !dead)
             {
                 // A bound model's flame* parts (a torch belt): IsoRim's live flame (ApparelModels).
-                ApparelModels.DrawFlames(look, pawn.thingIDNumber, at, yaw, headPlace, bodyPlace, !headOnly, hidden);
+                ApparelModels.DrawFlames(look, pawn.thingIDNumber, at, yaw, headPlace, bodyPlace, bodyShown, hidden);
             }
             if (workTool != null)
             {
@@ -888,7 +904,7 @@ namespace IsoRim
                 DynamicModels.DrawLocal(workTool, at, yaw, hands * workLocal, Color.white, "Wood");
             }
 
-            if (ground <= 0f && lift <= 0f)
+            if (ground <= 0f && lift <= 0f && !swim)
             {
                 GroundShadows.Blob(at, yaw, (lying || proneDown ? 0.30f : 0.34f) * size * look.bodyScale.x, (lying || proneDown ? 0.70f : 0.30f * look.bodyScale.z) * size);
             }
@@ -913,6 +929,22 @@ namespace IsoRim
                     // game drew its worn picture).
                     ApparelModels.DrawShield(look, at, yaw, hands);
                 }
+            }
+            if (Swimming.Reporting && !FigureScope.Active)
+            {
+                // (harness, ProbeSwim) what this frame drew of the figure
+                float lo = float.MaxValue, hi = float.MinValue;
+                if (!headOnly && look.swaddle == null)
+                {
+                    Swimming.Span(Merged(look, false, dead, turned, null, noLegs || (hidden & FigureParts.Legs) != 0, hidden, swim), at, yaw, bodyPlace, ref lo, ref hi);
+                }
+                Swimming.Span(Merged(look, true, dead, turned, null, headOnly && look.alien != null, hidden, swim), at, yaw, headPlace, ref lo, ref hi);
+                Swimming.drawn[pawn.thingIDNumber] = new Swimming.Drawn
+                {
+                    frame = Time.frameCount, swim = swim, waterLine = swim ? Swimming.WaterLine(look) : 0f, lowest = lo, highest = hi,
+                    hat = look.hat != null && (hidden & FigureParts.Headgear) == 0, held = standing, shadow = ground <= 0f && lift <= 0f && !swim,
+                    bodyShown = bodyShown,
+                };
             }
             return true;
         }
@@ -1006,6 +1038,18 @@ namespace IsoRim
         // Where the mouth is on the figure: between the eyes (person_face, 0.91 to 0.99) and the chin (person_head's bottom,
         // 0.74), where Facial Animation's mouth lands too (FaceDecal: pixel row ~80, 0.84).
         private const float MouthY = 0.83f;
+
+        // (Swimming) How far the person's figure is drawn sunk now, true cells (Poses.DrawnSpot): the water line at its size while the
+        // game says it swims and it is drawn as a 3D figure; 0 otherwise (one Pawn.Swimming read).
+        internal static float SwimDepth(Pawn pawn)
+        {
+            if (!Swimming.On(pawn) || !Patches.DrawnAsModel(pawn) || Statues.Colour(pawn).HasValue)
+            {
+                return 0f;
+            }
+            Look look = LookOf(pawn);
+            return look != null && look.upper != null ? Swimming.Depth(look, look.size) : 0f;
+        }
 
         // How high the mouth of the person's figure is now, cells over its floor, posed as Draw poses it: standing, seated
         // (the seat's lift and the body squashed: Poses.Seated), crouching (Api 45), standing or sitting on a host (Api 13),
@@ -1240,9 +1284,10 @@ namespace IsoRim
                     l.frame = int.MinValue / 2;
                 }
             }
-            // Worked out again at once on getting into or out of a bed that hides headgear.
+            // Worked out again at once on getting into or out of a bed that hides headgear, and into or out of swimming (Swimming).
             // And on being swaddled or no longer (into a growth vat, grown out of a baby).
             if (looks.TryGetValue(pawn.thingIDNumber, out look) && frame - look.frame < RefreshFrames && look.bedHidesHat == BedHidesHeadgear(pawn)
+                && look.swimming == Swimming.On(pawn)
                 && look.swaddled == (look.alien == null && Swaddled(pawn)))
             {
                 return look;
@@ -1266,6 +1311,8 @@ namespace IsoRim
                     {
                         old.decals = look.decals;   // (asked anew each time: ApparelDecals)
                         old.alien = look.alien;       // (the same placing; its addon cards anew: AlienCards)
+                        old.bedHidesHat = look.bedHidesHat;   // the states the refresh test above reads (not part of SameAs), as now:
+                        old.swimming = look.swimming;         // else the kept look is worked out again every frame
                         look = old;   // nothing has changed: keep the meshes already made
                     }
                     else
@@ -1326,6 +1373,7 @@ namespace IsoRim
             // Headgear is left out where the game leaves it out (in a bed that hides the sleeper's body); then
             // hair, beard and eyes show under it exactly when the game draws them (its own skip flags).
             look.bedHidesHat = BedHidesHeadgear(pawn);
+            look.swimming = Swimming.On(pawn);   // (DrawParms: the game's render flags while swimming)
             PawnDrawParms parms = DrawParms(pawn);
             if (!PawnRenderNodeWorker_Apparel_Head.HeadgearVisible(parms))
             {
@@ -1607,7 +1655,7 @@ namespace IsoRim
         }
 
         // The game's draw parameters that matter for headgear (PawnRenderer.GetDrawParms on the map): the person,
-        // dead or not, posture and the bed they lie in, facing south.
+        // dead or not, posture and the bed they lie in, facing south; swimming, its render flags (Swimming.GameFlags).
         private static PawnDrawParms DrawParms(Pawn pawn)
         {
             PawnDrawParms parms = PawnDrawParms.Default;
@@ -1615,6 +1663,7 @@ namespace IsoRim
             parms.dead = pawn.Dead;
             parms.posture = pawn.GetPosture();
             parms.bed = pawn.CurrentBed();
+            Swimming.GameFlags(pawn, ref parms);   // swimming: no headgear, no clothes, no body
             return parms;
         }
 
