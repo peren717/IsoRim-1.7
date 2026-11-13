@@ -307,7 +307,7 @@ namespace IsoRim
 
         private static readonly ConditionalWeakTable<Section, SectionBox> boxes = new ConditionalWeakTable<Section, SectionBox>();
         private static readonly AccessTools.FieldRef<Section, List<SectionLayer>> layersOf = AccessTools.FieldRefAccess<Section, List<SectionLayer>>("layers");
-        private static readonly AccessTools.FieldRef<Section, bool> anyDirtyOf = AccessTools.FieldRefAccess<Section, bool>("anyLayerDirty");
+        internal static readonly AccessTools.FieldRef<Section, bool> anyDirtyOf = AccessTools.FieldRefAccess<Section, bool>("anyLayerDirty");
         private static readonly Dictionary<Waylith.Rendering.Shader, Shift> shifts = new Dictionary<Waylith.Rendering.Shader, Shift>();
         private static readonly HashSet<string> unknownSeen = new HashSet<string>();
 

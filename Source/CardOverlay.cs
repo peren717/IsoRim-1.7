@@ -69,6 +69,19 @@ namespace IsoRim
         }
 
         private static readonly Dictionary<Pawn, Card> cards = new Dictionary<Pawn, Card>();
+        // (Api 76) While a photo's draws are made its cards are kept apart: the shown view's stay as they were drawn.
+        private static readonly Dictionary<Pawn, Card> photoCards = new Dictionary<Pawn, Card>();
+
+        private static Dictionary<Pawn, Card> Now
+        {
+            get { return View3D.InPhoto ? photoCards : cards; }
+        }
+
+        // A photo's draws start (Photos.Shoot): none of a former photo's cards is kept.
+        public static void BeginPhoto()
+        {
+            photoCards.Clear();
+        }
         private static readonly List<Pawn> stale = new List<Pawn>();
         private static int pruned;
 
@@ -80,10 +93,11 @@ namespace IsoRim
                 return;
             }
             Card c;
-            cards.TryGetValue(pawn, out c);
+            Dictionary<Pawn, Card> set = Now;
+            set.TryGetValue(pawn, out c);
             c.frame = Time.frameCount;
             c.upright = false;
-            cards[pawn] = c;
+            set[pawn] = c;
             Prune();
         }
 
@@ -94,7 +108,7 @@ namespace IsoRim
             {
                 return;
             }
-            cards[pawn] = new Card
+            Now[pawn] = new Card
             {
                 frame = Time.frameCount,
                 upright = true,
@@ -108,7 +122,7 @@ namespace IsoRim
             xform = extra = Matrix4x4.identity;
             Card c = default(Card);
             if (pawn == null || !View3D.Ready || !pawn.Spawned || pawn.Map != Find.CurrentMap || pawn.IsHiddenFromPlayer()
-                || !cards.TryGetValue(pawn, out c) || !c.upright || Time.frameCount - c.frame > 1)
+                || !Now.TryGetValue(pawn, out c) || !c.upright || Time.frameCount - c.frame > 1)
             {
                 return false;
             }

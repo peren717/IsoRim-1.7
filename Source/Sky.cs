@@ -146,7 +146,25 @@ namespace IsoRim
         private static readonly Color SpaceBlack = new Color(0.004f, 0.005f, 0.01f);
         private static readonly Color SpaceSun = new Color(1f, 0.97f, 0.92f);
 
-        // Called from View3D.ApplyCamera's frame, with the perspective camera's basis.
+        // A photo's sky (Api 76, Photos): every value goes into this block of the photo's draws instead of the materials.
+        // A material's values are read when the frame ends, so a photo writing them would change the shown view's sky.
+        private static MaterialPropertyBlock photoProps;
+        private static MaterialPropertyBlock photoBlock;
+
+        private static void Set(Material m, int id, Vector4 v)
+        {
+            if (photoProps != null)
+            {
+                photoProps.SetVector(id, v);
+            }
+            else
+            {
+                m.SetVector(id, v);
+            }
+        }
+
+        // Called from View3D.ApplyCamera's frame, with the perspective camera's basis (and for a perspective photo's frame,
+        // View3D.DrawPhotoSky, while its draws are made).
         // tanX and tanY are the tangents of half the field of view across and up the screen.
         public static void Draw(Camera cam, Vector3 fwd, Vector3 right, Vector3 up, float tanX, float tanY,
             float near, float far, float fogStart, float fogEnd)
@@ -164,6 +182,12 @@ namespace IsoRim
             if (map == null || !OpenSky(map))
             {
                 return;
+            }
+            if (View3D.InPhoto)
+            {
+                photoBlock = photoBlock ?? new MaterialPropertyBlock();
+                photoBlock.Clear();
+                photoProps = photoBlock;
             }
             try
             {
@@ -189,7 +213,10 @@ namespace IsoRim
                     // Space: the drawn sections just short of the far end, the terrain cells at their real depth
                     // (SectionLayer_IsoRimSpaceDepth), the void left open to the sky.
                     Graphics.DrawMesh(SpacePlane(map), Matrix4x4.identity, voidMat, 0, cam);
-                    spaceDepthFrame = Time.frameCount;
+                    if (photoProps == null)
+                    {
+                        spaceDepthFrame = Time.frameCount;   // (the shown view's own stamp: a photo's sky leaves it)
+                    }
                 }
                 else if (planeMat != null)
                 {
@@ -198,10 +225,10 @@ namespace IsoRim
 
                 if (st.distanceFog && fogMat != null && !space)
                 {
-                    fogMat.SetVector(fogColorId, new Vector4(horizon.r, horizon.g, horizon.b, 1f));
-                    fogMat.SetVector(fogDepthId, new Vector4(near, far, fogStart, Mathf.Max(fogEnd, fogStart + 1f)));
-                    fogMat.SetVector(fogShapeId, new Vector4(1.6f, FogLayers, Mathf.Clamp01(st.fogStrength), 0f));
-                    Graphics.DrawMesh(fogMesh, Matrix4x4.identity, fogMat, 0, cam);
+                    Set(fogMat, fogColorId, new Vector4(horizon.r, horizon.g, horizon.b, 1f));
+                    Set(fogMat, fogDepthId, new Vector4(near, far, fogStart, Mathf.Max(fogEnd, fogStart + 1f)));
+                    Set(fogMat, fogShapeId, new Vector4(1.6f, FogLayers, Mathf.Clamp01(st.fogStrength), 0f));
+                    Graphics.DrawMesh(fogMesh, Matrix4x4.identity, fogMat, 0, cam, 0, photoProps);
                 }
 
                 Material mat = painted ? paintMat : skyMat;
@@ -237,37 +264,37 @@ namespace IsoRim
                     }
                     Color sunColor = space ? SpaceSun : Color.Lerp(new Color(1f, 0.55f, 0.3f), new Color(1f, 0.95f, 0.82f), Mathf.Clamp01(sun.y * 2.5f));
 
-                    mat.SetVector(fwdId, fwd);
-                    mat.SetVector(rightId, right * tanX);
-                    mat.SetVector(upId, up * tanY);
-                    mat.SetVector(zenithId, (Vector4)zenith);
-                    mat.SetVector(horizonId, (Vector4)horizon);
-                    mat.SetVector(sunId, new Vector4(sun.x, sun.y, sun.z, sunShow));
-                    mat.SetVector(sunColorId, (Vector4)sunColor);
-                    mat.SetVector(moonId, new Vector4(moon.x, moon.y, moon.z, moonShow));
+                    Set(mat, fwdId, fwd);
+                    Set(mat, rightId, right * tanX);
+                    Set(mat, upId, up * tanY);
+                    Set(mat, zenithId, (Vector4)zenith);
+                    Set(mat, horizonId, (Vector4)horizon);
+                    Set(mat, sunId, new Vector4(sun.x, sun.y, sun.z, sunShow));
+                    Set(mat, sunColorId, (Vector4)sunColor);
+                    Set(mat, moonId, new Vector4(moon.x, moon.y, moon.z, moonShow));
                     NightSky(mat, map, hour, grey, space);
                     // x: space, y: the planet below, z: the glow of its air along the limb (lit by day), w: the sine of
                     // the limb's angle below the horizontal (OrbitPlanet: the game's globe seen from close above; 0: the
                     // game's flat backdrop, straight at the horizon).
                     float rim = space && PlanetBelow ? Mathf.Lerp(0.15f, 1f, Mathf.InverseLerp(0.1f, 0.6f, GenCelestial.CurCelestialSunGlow(map))) : 0f;
                     bool globe = space && OrbitPlanet.For(map);
-                    if (globe)
+                    if (globe && photoProps == null)   // (a photo keeps the shown view's globe: not in photos)
                     {
                         OrbitPlanet.Frame(map, fwd, up, View3D.FieldOfView, zenith);
                     }
-                    mat.SetVector(spaceId, new Vector4(space ? 1f : 0f, space && PlanetBelow ? 1f : 0f, rim, globe ? OrbitPlanet.LimbSin : 0f));
-                    mat.SetVector(dimId, new Vector4(1f, 1f, 1f, 0f));
+                    Set(mat, spaceId, new Vector4(space ? 1f : 0f, space && PlanetBelow ? 1f : 0f, rim, globe ? OrbitPlanet.LimbSin : 0f));
+                    Set(mat, dimId, new Vector4(1f, 1f, 1f, 0f));
                     if (painted)
                     {
                         // w: how big the clouds are drawn, from the zoom (see CloudZoom).
-                        mat.SetVector(midId, new Vector4(paint.mid.r, paint.mid.g, paint.mid.b, CloudZoom()));
-                        mat.SetVector(cloudLitId, (Vector4)paint.cloudLit);
-                        mat.SetVector(cloudShadeId, (Vector4)paint.cloudShade);
+                        Set(mat, midId, new Vector4(paint.mid.r, paint.mid.g, paint.mid.b, CloudZoom()));
+                        Set(mat, cloudLitId, (Vector4)paint.cloudLit);
+                        Set(mat, cloudShadeId, (Vector4)paint.cloudShade);
                         // Drift: game time, so the clouds stop when the game is paused (wrapped to keep the noise precise).
                         float drift = Mathf.Repeat(Find.TickManager.TicksAbs / 60000f * CloudDrift, 2048f);
-                        mat.SetVector(cloudId, new Vector4(space ? 0f : paint.cover, drift, drift * 0.35f, paint.overcast));
+                        Set(mat, cloudId, new Vector4(space ? 0f : paint.cover, drift, drift * 0.35f, paint.overcast));
                     }
-                    Graphics.DrawMesh(quad, Matrix4x4.identity, mat, 0, cam);
+                    Graphics.DrawMesh(quad, Matrix4x4.identity, mat, 0, cam, 0, photoProps);
                     for (int i = 0; i < ExtraDraws; i++)
                     {
                         Graphics.DrawMesh(quad, Matrix4x4.identity, mat, 0, cam);   // harness only (probe skygpu=N): times the sky on the GPU
@@ -275,17 +302,27 @@ namespace IsoRim
                     if (space && PlanetBelow && dimMat != null)
                     {
                         // The planet backdrop past the drawn map, as dark as the game's light overlay makes it on the map.
-                        dimMat.CopyPropertiesFromMaterial(mat);
+                        if (photoProps == null)
+                        {
+                            dimMat.CopyPropertiesFromMaterial(mat);   // a photo's block already holds the sky's values
+                        }
                         Color sky = IsoGlow.SkyFor(map);
-                        dimMat.SetVector(dimId, new Vector4(Mathf.Min(sky.r, 1.5f), Mathf.Min(sky.g, 1.5f), Mathf.Min(sky.b, 1.5f), 1f));
-                        Graphics.DrawMesh(quad, Matrix4x4.identity, dimMat, 0, cam);
-                        dimFrame = Time.frameCount;
+                        Set(dimMat, dimId, new Vector4(Mathf.Min(sky.r, 1.5f), Mathf.Min(sky.g, 1.5f), Mathf.Min(sky.b, 1.5f), 1f));
+                        Graphics.DrawMesh(quad, Matrix4x4.identity, dimMat, 0, cam, 0, photoProps);
+                        if (photoProps == null)
+                        {
+                            dimFrame = Time.frameCount;
+                        }
                     }
                 }
             }
             catch (Exception e)
             {
                 Log.ErrorOnce("[IsoRim] Drawing the sky failed: " + e, 93611951);
+            }
+            finally
+            {
+                photoProps = null;
             }
         }
 
@@ -328,12 +365,12 @@ namespace IsoRim
 
             // w: where the gas giant stands (azimuth, height; GiantDir).
             Vector2 giantAt = GiantDir(days, st.lowSky);
-            mat.SetVector(celAId, new Vector4(a.x, a.y, a.z, giantAt.x));
-            mat.SetVector(celBId, new Vector4(b.x, b.y, b.z, giantAt.y));
-            mat.SetVector(celPId, new Vector4(pole.x, pole.y, pole.z, st.lowSky ? LowSky : 1f));
-            mat.SetVector(nightId, new Vector4(stars, milky, planets, giant));
-            mat.SetVector(miscId, new Vector4(days, st.gasGiantSize, Time.realtimeSinceStartup % 600f, daylight));
-            mat.SetVector(trueSunId, new Vector4(sun.x, sun.y, sun.z, phase));
+            Set(mat, celAId, new Vector4(a.x, a.y, a.z, giantAt.x));
+            Set(mat, celBId, new Vector4(b.x, b.y, b.z, giantAt.y));
+            Set(mat, celPId, new Vector4(pole.x, pole.y, pole.z, st.lowSky ? LowSky : 1f));
+            Set(mat, nightId, new Vector4(stars, milky, planets, giant));
+            Set(mat, miscId, new Vector4(days, st.gasGiantSize, Time.realtimeSinceStartup % 600f, daylight));
+            Set(mat, trueSunId, new Vector4(sun.x, sun.y, sun.z, phase));
         }
 
         // The gas giant's place in the sky: azimuth and height, radians. The drawn sun only ever stands between azimuths

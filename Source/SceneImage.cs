@@ -246,7 +246,7 @@ namespace IsoRim
                     armed = armed + 1;
                     Graphics.DrawMesh(quad, Matrix4x4.identity, material, 0);
                     GrabDraws++;
-                    drawnSaturation = Current.ColorCorrectionCurves != null ? Current.ColorCorrectionCurves.saturation : 1f;
+                    drawnSaturation = CompositeSaturation;
                     phase = Phase.Drawn;
                     phaseFrame = now;
                     return;
@@ -344,14 +344,32 @@ namespace IsoRim
 
         private static Texture2D Read()
         {
-            int w = rt.width, h = rt.height;
+            return ReadOut(rt, "IsoRim_SceneImage", drawnSaturation);
+        }
+
+        // The saturation the engine's final composite gives the map view now (the sky's, from the game's ColorCorrectionCurves).
+        internal static float CompositeSaturation
+        {
+            get { return Current.ColorCorrectionCurves != null ? Current.ColorCorrectionCurves.saturation : 1f; }
+        }
+
+        // A picture of the map view on the GPU (R8G8B8A8) read back into a new opaque RGBA32 texture as the screen gets it: the
+        // engine's final saturation applied (sat: CompositeSaturation on the frame it was drawn). Scene images and photos (Api 76).
+        internal static Texture2D ReadOut(RenderTexture from, string name, float sat)
+        {
+            int w = from.width, h = from.height;
             Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
-            tex.name = "IsoRim_SceneImage";
+            tex.name = name;
             RenderTexture prev = RenderTexture.active;
             try
             {
-                RenderTexture.active = rt;
+                RenderTexture.active = from;
                 tex.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+            }
+            catch
+            {
+                UnityEngine.Object.Destroy(tex);   // not handed out: not left behind either
+                throw;
             }
             finally
             {
@@ -361,7 +379,6 @@ namespace IsoRim
             // the game's ColorCorrectionCurves, round Unity's gamma-space luminance), so the picture looks as it did on screen.
             // The scene's alpha is working data of the screen passes (AO keeps its occlusion there): the picture is opaque.
             Color32[] px = tex.GetPixels32();
-            float sat = drawnSaturation;
             bool tint = Mathf.Abs(sat - 1f) > 1e-4f;
             for (int i = 0; i < px.Length; i++)
             {

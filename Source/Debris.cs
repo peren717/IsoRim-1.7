@@ -1369,7 +1369,7 @@ namespace IsoRim
             }
         }
 
-        private static void Draw()
+        internal static void Draw()
         {
             float s = View3D.Squash;
             Vector3 squash = new Vector3(1f, 1f / s, 1f);

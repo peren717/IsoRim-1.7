@@ -753,6 +753,16 @@ namespace IsoRim
                 Log.Error("[IsoRim] Could not hook bound shields: " + e);
             }
 
+            // (Api 76) Photos: the public draw entry points take a photo's draws to its own layer (a flag test otherwise).
+            try
+            {
+                Photos.HookDraws(new Harmony(Photos.HarmonyId));
+            }
+            catch (Exception e)
+            {
+                Log.Error("[IsoRim] Could not hook the draws for photos (Api.CaptureView): " + e);
+            }
+
             // Beams and streams drawn in 3D from one end to the other, on one floor and between stacked floors (FloorSprays).
             try
             {
@@ -872,6 +882,10 @@ namespace IsoRim
 
         public static void DrawMapMesh_Prefix()
         {
+            if (View3D.InPhoto)
+            {
+                return;   // (Api 76) a photo's draws use what the shown view's pass handed the shaders this frame (no second step)
+            }
             try
             {
                 IsoGlow.BeginFrame(Find.CurrentMap);

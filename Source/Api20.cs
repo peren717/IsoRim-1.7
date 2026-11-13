@@ -274,7 +274,7 @@ namespace IsoRim
         {
             get
             {
-                if (checkedFrame != Time.frameCount)
+                if (checkedFrame != Time.frameCount && !View3D.InPhoto)   // (Api 76: a photo's draws keep the shown view's version)
                 {
                     checkedFrame = Time.frameCount;
                     bool r = View3D.Ready;

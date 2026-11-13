@@ -2204,6 +2204,7 @@ namespace IsoRim
         private static bool tried;
         private static Model rotor;
         private static readonly Dictionary<int, float> spin = new Dictionary<int, float>();
+        private static readonly Dictionary<int, int> spunAt = new Dictionary<int, int>();
 
         // comp is the turbine's power component. Returns false if nothing was drawn.
         public static bool Draw(ThingComp comp)
@@ -2233,11 +2234,18 @@ namespace IsoRim
 
             float angle;
             spin.TryGetValue(parent.thingIDNumber, out angle);
-            CompPowerTrader power = comp as CompPowerTrader;
-            float making = power != null ? Mathf.Clamp(Mathf.Abs(power.PowerOutput) / 2300f, 0f, 1.6f) : 0.5f;
-            float gameSpeed = Find.TickManager != null ? Find.TickManager.TickRateMultiplier : 1f;
-            angle = Mathf.Repeat(angle + Time.deltaTime * gameSpeed * making * 220f, 360f);
-            spin[parent.thingIDNumber] = angle;
+            // Turned on once a frame, however often it is drawn in it (a photo's draws, Api 76, draw it again).
+            int frame = Time.frameCount;
+            int last;
+            if (!spunAt.TryGetValue(parent.thingIDNumber, out last) || last != frame)
+            {
+                CompPowerTrader power = comp as CompPowerTrader;
+                float making = power != null ? Mathf.Clamp(Mathf.Abs(power.PowerOutput) / 2300f, 0f, 1.6f) : 0.5f;
+                float gameSpeed = Find.TickManager != null ? Find.TickManager.TickRateMultiplier : 1f;
+                angle = Mathf.Repeat(angle + Time.deltaTime * gameSpeed * making * 220f, 360f);
+                spin[parent.thingIDNumber] = angle;
+                spunAt[parent.thingIDNumber] = frame;
+            }
 
             float size = entry.def.scale;
             Vector3 at = parent.DrawPos;

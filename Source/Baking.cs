@@ -567,9 +567,20 @@ namespace IsoRim
         // The camera's angle for the card shader (global _IsoCard), every frame while the 3D view is on.
         public static void SetCamera(float pitch, float yaw)
         {
+            Shader.SetGlobalVector(isoCardId, CardVector(pitch, yaw));
+        }
+
+        // The _IsoCard value of a camera at this pitch and yaw (also handed to a photo's draws, Api 76).
+        internal static Vector4 CardVector(float pitch, float yaw)
+        {
             float a = (pitch - 90f) * Mathf.Deg2Rad;
             float y = yaw * Mathf.Deg2Rad;
-            Shader.SetGlobalVector(isoCardId, new Vector4(Mathf.Sin(a), Mathf.Cos(a), Mathf.Sin(y), Mathf.Cos(y)));
+            return new Vector4(Mathf.Sin(a), Mathf.Cos(a), Mathf.Sin(y), Mathf.Cos(y));
+        }
+
+        internal static int CardId
+        {
+            get { return isoCardId; }
         }
 
         // Moves the sprite quad just added to sm (its last four corners) into the layer's card piece

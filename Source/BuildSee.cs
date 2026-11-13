@@ -92,8 +92,16 @@ namespace IsoRim
                 Shader.SetGlobalVector(see2Id, new Vector4(Inner, Outer, DitherPx, 0f));
                 return;
             }
-            Shader.SetGlobalVector(seeId, new Vector4(-9999f, -9999f, 0f, 0f));   // w = 0: off
+            Shader.SetGlobalVector(seeId, Off);
             Shader.SetGlobalVector(see2Id, new Vector4(Inner, Outer, DitherPx, 0f));
+        }
+
+        // _IsoSee with nothing see-through (w = 0: off); a photo without overlays draws with it (Api 76, Photos).
+        internal static readonly Vector4 Off = new Vector4(-9999f, -9999f, 0f, 0f);
+
+        internal static int SeeId
+        {
+            get { return seeId; }
         }
     }
 }

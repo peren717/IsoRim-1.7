@@ -152,7 +152,10 @@ namespace IsoRim
         // put together by DynamicModels.BuildMerged: also outfit stands) drawn with their texture by the one rule of every textured
         // model writer (TexturedFaces: baked, moving, merged), tinted as their plain faces; "{stuff}" textures keep their plain
         // colour there. No new member.
-        public static int Version => 75;
+        // 76: Api76.cs, Photos.cs: CaptureView (CaptureViewOptions): a photo from any pose, drawn offscreen on its own layer (routed
+        // to the engine's CaptureOnly pass) with the photo's camera installed in View3D only while its draws are made and its view
+        // values per draw; the shown view never changes. ViewPose.LookAt, ViewPose.FirstPersonOf (FirstPerson.EyeOf).
+        public static int Version => 76;
 
         // ---- glass parts (Version 30)
 

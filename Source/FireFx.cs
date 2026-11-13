@@ -96,6 +96,35 @@ namespace IsoRim
         // Per-frame budget: what the fires wanted last frame decides how many each gets this frame.
         private static int frameSeen = -1;
         private static int wantedThis, wantedLast;
+
+        // (Api 76) A photo's draws (Photos.Shoot) do not count toward the shown view's budget: what the fires asked for and
+        // drew is put back as it was before the photo's draws.
+        private static int photoSeen, photoWanted, photoWantedLast, photoFires, photoFiresLast, photoDrawn, photoDrawnLast;
+        private static float photoShare;
+
+        internal static void BeginPhoto()
+        {
+            photoSeen = frameSeen;
+            photoWanted = wantedThis;
+            photoWantedLast = wantedLast;
+            photoFires = firesThis;
+            photoFiresLast = firesLast;
+            photoDrawn = DrawnPieces;
+            photoDrawnLast = DrawnLast;
+            photoShare = share;
+        }
+
+        internal static void EndPhoto()
+        {
+            frameSeen = photoSeen;
+            wantedThis = photoWanted;
+            wantedLast = photoWantedLast;
+            firesThis = photoFires;
+            firesLast = photoFiresLast;
+            DrawnPieces = photoDrawn;
+            DrawnLast = photoDrawnLast;
+            share = photoShare;
+        }
         private static int firesThis, firesLast;
         private static float share = 1f;
 

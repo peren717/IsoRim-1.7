@@ -8,7 +8,7 @@ namespace IsoRim
     /// (Api version 66) Where the 3D view looks from: <see cref="Api.PushViewPose"/>, <see cref="Api.CurrentViewPose"/>.
     /// Positions are true space (x and z in map cells, y the height in cells). Fields left 0 or null take IsoRim's own value.
     /// </summary>
-    public struct ViewPose
+    public partial struct ViewPose
     {
         /// <summary>Which way the camera faces, degrees clockwise from north seen from above (0 = north up the screen).</summary>
         public float Yaw;

@@ -140,6 +140,22 @@ namespace IsoRim
         private static readonly int lutId = Shader.PropertyToID("_LutTex");
         private static readonly int testId = Shader.PropertyToID("_TestPattern");
 
+        // A material on a shader with the grade's uniforms (IsoRimGrade.glsl) set to the grade asked for now (a photo's
+        // grade pass, Api 76). False: the grade changes nothing now.
+        internal static bool SetUp(Material m)
+        {
+            Texture2D lut;
+            float strength;
+            if (!Current(out lut, out strength))
+            {
+                return false;
+            }
+            m.SetTexture(lutId, lut);
+            m.SetFloat(strengthId, strength);
+            m.SetFloat(testId, 0f);
+            return true;
+        }
+
         private static bool tried;
         private static Material material;
         private static Mesh quad;
@@ -177,8 +193,34 @@ namespace IsoRim
                 return;
             }
 
-            Texture2D lut = null;
-            float strength = 0f;
+            Texture2D lut;
+            float strength;
+            if (!Current(out lut, out strength))
+            {
+                if (!TestPattern)
+                {
+                    return;
+                }
+                lut = Built(Looks.Find("Gentle"));
+                strength = 0f;
+            }
+            material.SetTexture(lutId, lut);
+            material.SetFloat(strengthId, strength);
+            material.SetFloat(testId, TestPattern ? 1f : 0f);
+            Graphics.DrawMesh(quad, Matrix4x4.identity, material, 0, cam);
+            for (int i = 0; i < ExtraDraws; i++)
+            {
+                Graphics.DrawMesh(quad, Matrix4x4.identity, material, 0, cam);
+            }
+        }
+
+        // The grade the player's settings ask for now: its LUT strip and strength; false when the grade changes nothing (off,
+        // no look, or no strength). The shown view's pass (Draw) and a photo's (Photos, Api 76) take it from here.
+        internal static bool Current(out Texture2D lut, out float strength)
+        {
+            IsoRimSettings st = IsoRimMod.Settings;
+            lut = null;
+            strength = 0f;
             if (st.grade)
             {
                 Table file = FileFor(st);
@@ -197,23 +239,7 @@ namespace IsoRim
                     }
                 }
             }
-            if (lut == null || strength <= 0.001f)
-            {
-                if (!TestPattern)
-                {
-                    return;
-                }
-                lut = Built(Looks.Find("Gentle"));
-                strength = 0f;
-            }
-            material.SetTexture(lutId, lut);
-            material.SetFloat(strengthId, strength);
-            material.SetFloat(testId, TestPattern ? 1f : 0f);
-            Graphics.DrawMesh(quad, Matrix4x4.identity, material, 0, cam);
-            for (int i = 0; i < ExtraDraws; i++)
-            {
-                Graphics.DrawMesh(quad, Matrix4x4.identity, material, 0, cam);
-            }
+            return lut != null && strength > 0.001f;
         }
 
         private static void Init()

@@ -36,14 +36,23 @@ namespace IsoRim
             }
             try
             {
-                material.SetFloat(strengthId, st.antiAlias ? Mathf.Clamp01(st.antiAliasStrength) : 0f);
-                material.SetFloat(sharpenId, st.sharpen ? Mathf.Clamp01(st.sharpenStrength) : 0f);
+                SetUp(material);
                 Graphics.DrawMesh(quad, Matrix4x4.identity, material, 0, cam);
             }
             catch (Exception e)
             {
                 Log.ErrorOnce("[IsoRim] Drawing the anti-aliasing pass failed: " + e, 93611961);
             }
+        }
+
+        // A material on a shader with the pass's uniforms (IsoRimAA.glsl) set as the player's settings ask now: the shown
+        // view's pass and a photo's (Photos, Api 76). False: neither anti-aliasing nor sharpening is on.
+        internal static bool SetUp(Material m)
+        {
+            IsoRimSettings st = IsoRimMod.Settings;
+            m.SetFloat(strengthId, st.antiAlias ? Mathf.Clamp01(st.antiAliasStrength) : 0f);
+            m.SetFloat(sharpenId, st.sharpen ? Mathf.Clamp01(st.sharpenStrength) : 0f);
+            return st.antiAlias || st.sharpen;
         }
 
         private static void Init()

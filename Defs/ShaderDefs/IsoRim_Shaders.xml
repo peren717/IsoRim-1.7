@@ -622,6 +622,30 @@
     </shaderProgram>
   </ShaderDef>
 
+  <!-- Photos (Api 76, Photos.cs): the anti-aliasing and the colour grade of the shown view (the shared IsoRimAA.glsl and
+       IsoRimGrade.glsl) over a photo's own picture, drawn with Graphics.Blit (the picture as _MainTex), never in the map pass. -->
+  <ShaderDef>
+    <defName>IsoRimPhotoAA</defName>
+    <shaderProgram>
+      <fragmentShaderFileName>IsoRimPhotoAA.frag.glsl</fragmentShaderFileName>
+      <blendMode>Opaque</blendMode>
+      <depthTest>false</depthTest>
+      <depthWrite>false</depthWrite>
+      <cullMode>None</cullMode>
+    </shaderProgram>
+  </ShaderDef>
+
+  <ShaderDef>
+    <defName>IsoRimPhotoGrade</defName>
+    <shaderProgram>
+      <fragmentShaderFileName>IsoRimPhotoGrade.frag.glsl</fragmentShaderFileName>
+      <blendMode>Opaque</blendMode>
+      <depthTest>false</depthTest>
+      <depthWrite>false</depthWrite>
+      <cullMode>None</cullMode>
+    </shaderProgram>
+  </ShaderDef>
+
   <!-- Faded floors (FadeFloors, prototype): the game's Cutout, CutoutComplex and terrain shaders with the FadeFloors
        drop (_IsoFade) in copies of their fragment stages; render state exactly as the game's defs. Materials of a floor
        drawn faded are swapped for copies on these. -->

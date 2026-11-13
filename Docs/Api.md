@@ -3,7 +3,7 @@
 Model packs (XML and .obj files, no code), the dev-mode model binder and the coverage report: see [ModelPacks.md](ModelPacks.md).
 
 IsoRim's public surface is the static class `IsoRim.Api` and the small types next to it (`FigureFrame`, `FigureHook`,
-`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`, `WallShapeRule`, `WallShape`, `HeadDecal`, `SelectionRing`, `ModelDecal`, `ModelDecalProvider`, `StaticModelGeometry`, `StaticModelView`, `StaticModelContext`, `StaticMaterialContext`, `FigureDrawer`, `FigureDrawContext`, `FigureKinds`, `FigureSituation`, `FigurePlacement`, `FigurePlacementOptions`, `FigureMeshFlags`, `FigureMaterialKind`, `FigureMeshPart`, `ModelData`, `ModelDataMaterial`, `ThingModelUse`, `ThingModelInfo`, `WornMount`, `GroundModel`, `GroundModelContext`, `ViewPose`, `ViewPoseOptions`, `SceneImageOptions`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
+`ModelHandle`, `ProjectileCardHook`, `IFloorLayout`, `ApparelDecal`, `DecalSide`, `ApparelDecalProvider`, `UprightScope`, `FlatScope`, `Attachment`, `AttachAnchor`, `AttachPose`, `AttachFacing`, `HostTransform`, `CardLight`, `CutawayRule`, `FaceDrawer`, `FaceFrame`, `FigureParts`, `FigureMode`, `AlienFace`, `AlienHair`, `CornerRule`, `WallShapeRule`, `WallShape`, `HeadDecal`, `SelectionRing`, `ModelDecal`, `ModelDecalProvider`, `StaticModelGeometry`, `StaticModelView`, `StaticModelContext`, `StaticMaterialContext`, `FigureDrawer`, `FigureDrawContext`, `FigureKinds`, `FigureSituation`, `FigurePlacement`, `FigurePlacementOptions`, `FigureMeshFlags`, `FigureMaterialKind`, `FigureMeshPart`, `ModelData`, `ModelDataMaterial`, `ThingModelUse`, `ThingModelInfo`, `WornMount`, `GroundModel`, `GroundModelContext`, `ViewPose`, `ViewPoseOptions`, `SceneImageOptions`, `CaptureViewOptions`), the defs `IsoRim.ModelDef` (part M), `IsoRim.ApparelModelDef` (Api 9) and `IsoRim.AlienModelDef` (Api 25), and the `ModelDef` fields listed in part M. Everything else in the assembly is internal detail and can change
 in any update, even when it is public: do not patch or reflect into it, ask for an Api member instead. Reference `IsoRim.dll` (Publicize is not needed) and keep the reference optional if IsoRim is optional for
 your mod.
 
@@ -2551,7 +2551,8 @@ IsoRim.Api.RequestSceneImage(tex =>
 - **How and when:** a grab after the colour grade (render queue 4990) copied on the render thread, read back only after that
   frame was submitted: about 5 frames after asking. Never in the same frame and never blocking. One picture at a time;
   requests made meanwhile share it (each caller gets its own texture). A material with a render queue above 4990 (no game or
-  IsoRim one has one) is not in the picture. With a camera pose pushed, the picture is from the pose.
+  IsoRim one has one) is not in the picture. With a camera pose pushed, the picture is from the pose. A photo from another
+  pose that leaves the screen as it is: part 54 (`Api.CaptureView`, version 76).
 - **Cost:** nothing when nobody asks (no grab is drawn). A picture costs one screen-size copy on the GPU and a read back on the
   main thread (about 50 ms at 1600x900).
 - **Failure:** an engine change that breaks the copy turns pictures off for the session with one warning; requests then answer
@@ -3034,6 +3035,85 @@ map_Kd MyMod/People/MyVestTrim
   - A carved statue of the person shows the plain faces in the statue's colour.
 
 Version gate: `IsoRim.Api.Version >= 75` (nothing to call: older versions draw the plain colour).
+
+## Part 54: photos from any pose (version 76)
+
+A photo of the map from any camera pose, drawn offscreen: the player's screen does not change at all (no frame of the pose
+is shown, nothing blinks or jumps). For photo and camera mods: a first-person shot, a selfie, a building from its other
+side, a far view, at any size up to 4096 pixels.
+
+```csharp
+if (IsoRim.Api.Version >= 76)
+{
+    // Through a colonist's eyes, the colonist left out of the photo.
+    IsoRim.Api.CaptureView(pawn.Map, IsoRim.ViewPose.FirstPersonOf(pawn),
+        new IsoRim.CaptureViewOptions { Width = 1280, Height = 720, FirstPersonPawn = pawn }, tex =>
+    {
+        if (tex == null) return;                 // could not be taken
+        File.WriteAllBytes(path, tex.EncodeToPNG());
+        UnityEngine.Object.Destroy(tex);
+    });
+
+    // A selfie: a little in front of the face and above it, looking back at the face.
+    Vector3 face = IsoRim.ViewPose.FirstPersonOf(pawn).Eye.Value;
+    Vector3 ahead = Quaternion.Euler(0f, pawn.Rotation.AsAngle, 0f) * Vector3.forward;
+    IsoRim.Api.CaptureView(pawn.Map, IsoRim.ViewPose.LookAt(face + ahead * 1.6f + Vector3.up * 0.35f, face - Vector3.up * 0.15f, 55f),
+        new IsoRim.CaptureViewOptions { Width = 1280, Height = 720 }, OnSelfie);
+}
+```
+
+| Member | Meaning |
+|---|---|
+| `bool Api.CaptureView(Map map, ViewPose pose, CaptureViewOptions options, Action<Texture2D> done)` | A photo of `map` from `pose` (part 45's `ViewPose`, the same fields and defaults; `OrthoSize` is half the photo's height in cells). `done` gets a new RGBA32 texture (opaque, rows bottom first as `Texture2D`, the caller's to `Destroy`) on the main thread usually one frame later, or null if it could not be taken. False (and `done` is not called) when it can't be asked: no game, the 3D view off, a pose that is not a number, or photos off for this session after an engine problem. Throws for a null `done`. Main thread. `options` may be null (the defaults below). |
+| `ViewPose ViewPose.FirstPersonOf(Pawn pawn, float pitch = 8, float fov = 0)` | Through a person's eyes: the eye where IsoRim's first person puts it (their spot as drawn, the first-person eye height option, sitting, stacked floors), looking the way they face (`pawn.Rotation`) and `pitch` degrees below the horizon. `Eye` also serves as "the face" for portraits and selfies. Throws for a null pawn. |
+| `ViewPose ViewPose.LookAt(Vector3 eye, Vector3 target, float fov = 0)` | A perspective eye looking at a point (true space: x and z in cells, y the height in cells). |
+
+`CaptureViewOptions`:
+
+| Field | Meaning |
+|---|---|
+| `Width`, `Height` | The photo's size in pixels, 16-4096. 0: the screen's. |
+| `IncludeOverlays` | Default false: no map overlays. True: selection brackets and rings, designations and status icons as the game draws them for the shown view. The designator in hand, drag boxes, ghosts, targeting highlights and room stats are never in photos. |
+| `ColourPost` | Default true: the shown view's colour passes as the player has them (anti-aliasing and sharpening, then the colour grade) and the engine's final saturation, so a photo looks like the screen. False: the picture as drawn. |
+| `FirstPersonPawn` | The photo is taken from this person's eyes: they are left out of it (as IsoRim's own first person leaves its colonist out) and every other person is drawn. Null: everyone is drawn, also the colonist the player is in first person with. |
+
+- **What is in a photo:** the map's blocks (ground, walls, rock, trees, buildings and items with their models), the things
+  the game draws every frame (figures and animals with their models, cards and sprites stood up to the photo's camera,
+  projectiles, motes), flecks, IsoRim's live parts (flames, turning and bobbing parts, glass, work panels, collapse debris),
+  stacked floors as shown, the sky and the distance fog (perspective), culled and lit for the photo's own camera.
+- **Not in photos (known limits):**
+  - ambient occlusion, screen-space sun shadows and subsurface light, tilt-shift and depth of field (they are passes over
+    the shown view's screen);
+  - the weather (rain, snow, fog curtains) and the game's screen and condition overlays;
+  - the game's sun shadows of walls, trees and things point the right way but are cast at a fixed length (the engine gives
+    a photo's render a unit sun): shorter than on screen in the morning and evening;
+  - water is drawn still (the game's ripples are worked out for the shown camera only);
+  - what is built or cut for the shown view stays as the player sees it: the cut-away (walls, rock and roofs cut for the
+    player's view stay cut, others stay whole whatever the photo's side), the earth cut of the map edge, and the parts
+    built for the view's facing;
+  - on space maps the planet seen from orbit and the clouds' size follow the shown view;
+  - what another mod draws from its own map or game component update, or in its interface code, is not drawn again for the
+    photo (what it draws through the game's thing drawing: a thing's or comp's draw, render nodes, is); its draws through
+    the engine-material or `DrawPropertyBlock` overloads of `Graphics.DrawMesh` are in the photo without the photo's view
+    values (the shown view's facing for IsoRim's shading);
+  - addon caches keyed on `Api.ViewVersion` keep the shown view's version while a photo is drawn.
+- **How and when:** the photo is drawn after the game has drawn the shown map, in a frame where that map is shown in the 3D
+  view: IsoRim installs the photo's camera in its own view state, draws the map again on a layer only the photo's camera
+  renders (the engine's capture-only pass) with the photo's view values handed to each draw, and puts the shown view's state
+  back in the same frame. The engine renders it at the end of that frame; it is read back and handed over at the start of
+  the next. One photo a frame, in the order asked; a photo of a map that is not shown (or while a gravship launch or landing
+  is filmed) waits and answers null after about two seconds. A block of the map waiting to be rebuilt is drawn as last built
+  (a photo never rebuilds anything).
+- **Cost:** until the first photo, one flag test per draw call (about 8 ns, 0.015 ms a frame at 2000 draws); nothing else
+  runs. A photo costs its draws on the main thread (1-10 ms), a render at the end of its frame (3-20 ms, about 35 ms for the
+  very first) and the read back on the next frame (about 5 ms at 640x360, 25 ms at 1600x900): one slower frame each, like a
+  screenshot.
+- **Failure:** an exception while a photo is drawn or read ends that photo (null, and a warning for it) and never the
+  frame; a photo the engine renders on a later frame than it was drawn in (while a loading screen runs) answers null; an
+  engine change that breaks the setup turns photos off for the session with one warning; a callback that throws: a
+  warning each time, other photos go on.
+
+Version gate: `IsoRim.Api.Version >= 76`.
 
 ## Part M: model packs (IsoRim.ModelDef)
 

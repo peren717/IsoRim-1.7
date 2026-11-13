@@ -178,6 +178,10 @@ namespace IsoRim
         {
             get
             {
+                if (photo)
+                {
+                    return photoFrame.pitch;   // (Api 76) a photo's draws are being made from its own camera
+                }
                 if (ViewPoses.Active)
                 {
                     return ViewPoses.Pose.Pitch;
@@ -196,7 +200,7 @@ namespace IsoRim
         // It glides to YawTarget when the view is turned.
         public static float Yaw
         {
-            get { return ViewPoses.Active ? ViewPoses.Pose.Yaw : yawNow; }
+            get { return photo ? photoFrame.yaw : ViewPoses.Active ? ViewPoses.Pose.Yaw : yawNow; }
         }
 
         // Where the camera is turning to: the base direction plus the eighth turns asked for.
@@ -409,6 +413,7 @@ namespace IsoRim
                 ResetCamera();
             }
             SceneImage.Frame();   // (Api 66) a clean picture of the map view asked for: its late grab, its readback
+            Photos.Frame();       // (Api 76) a photo drawn last frame: read back and handed over
             Floors.BeginFrame();
             FullWalls.Refresh();
             Probe.Lap(1);
@@ -428,14 +433,8 @@ namespace IsoRim
             {
                 Cutaway.TrackPointer();
                 Probe.Lap(6);
-                Effects.DrawAll();
-                Spinners.DrawAll();
-                Bobbers.DrawAll();
-                Pulses.DrawAll();
-                ActivityGlow.DrawAll();
-                Glass.DrawAll();
                 Beams.Update();   // (Api 33) flickering and pulsing beam parts
-                WorkPanels.DrawAll();
+                DrawFrameParts();
                 Silhouettes3D.DrawAll();
                 CollapseDebris.Frame();
                 Probe.Lap(7);
@@ -738,114 +737,14 @@ namespace IsoRim
             }
 
             float pitchDeg = Pitch;
-            float p = pitchDeg * Mathf.Deg2Rad;
             float s = Squash;
-
-            orthoSize = main.orthographicSize;
-            aspect = main.aspect;
 
             // The game keeps the camera directly above the point at the centre of the screen.
             // The transform is left alone so everything that reads it keeps working.
-            Vector3 tp = main.transform.position;
-            Vector3 focus = new Vector3(tp.x, 0f, tp.z);
             bool posed = ViewPoses.Active;
             bool fp = FirstPerson.On && !posed;
-
-            Quaternion look = Quaternion.Euler(pitchDeg, Yaw, 0f);
-            fwd = look * Vector3.forward;
-            up = look * Vector3.up;
-            right = look * Vector3.right;
-
-            IsoRimSettings st = IsoRimMod.Settings;
-            float sizeScale = 1f;   // an external pose's zoom over the game's (the helper cameras keep their ratio to the main one)
-            float fovNow;
-            float near, far;
-            if (posed)
-            {
-                ViewPose v = ViewPoses.Pose;
-                persp = v.Perspective;
-                fovNow = v.Fov > 0f ? v.Fov : Mathf.Clamp(st.fov, 15f, 100f);
-                if (v.OrthoSize > 0f)
-                {
-                    sizeScale = v.OrthoSize / Mathf.Max(0.01f, orthoSize);
-                    orthoSize = v.OrthoSize;
-                }
-                if (v.Focus.HasValue)
-                {
-                    focus = new Vector3(v.Focus.Value.x, 0f, v.Focus.Value.z);
-                }
-                if (persp)
-                {
-                    tanHalf = Mathf.Tan(fovNow * 0.5f * Mathf.Deg2Rad);
-                    if (v.Eye.HasValue)
-                    {
-                        // A free eye: "how far the view looks" (label fading, pointer reach, fog) is the distance to the ground
-                        // at the middle of the screen, within 10-150 cells, unless the pose says.
-                        eye = v.Eye.Value;
-                        camDist = v.FocusDistance > 0f ? v.FocusDistance : (fwd.y < -0.01f ? Mathf.Clamp(eye.y / -fwd.y, 10f, 150f) : 150f);
-                        near = v.Near > 0f ? v.Near : Mathf.Clamp(0.05f + eye.y * 0.01f, 0.08f, 1f);
-                    }
-                    else
-                    {
-                        // Swung round the focus point as the player's perspective camera is, at the pose's zoom.
-                        camDist = v.FocusDistance > 0f ? v.FocusDistance : orthoSize / tanHalf;
-                        eye = focus - fwd * camDist;
-                        near = v.Near > 0f ? v.Near : Mathf.Clamp(camDist * 0.02f, 0.3f, 2f);
-                    }
-                    far = v.Far > 0f ? v.Far : camDist + ViewDistance + 2f * DepthPad;
-                }
-                else
-                {
-                    if (v.Eye.HasValue && !v.Focus.HasValue)
-                    {
-                        // Orthographic: only the line of sight matters; the view is centred where the eye's line meets the ground.
-                        Vector3 e = v.Eye.Value;
-                        focus = fwd.y < -0.01f ? new Vector3(e.x - fwd.x * e.y / fwd.y, 0f, e.z - fwd.z * e.y / fwd.y) : new Vector3(e.x, 0f, e.z);
-                    }
-                    float half = orthoSize / Mathf.Tan(p) + DepthPad;
-                    eye = focus - fwd * (half + 5f);
-                    near = v.Near > 0f ? v.Near : 0.5f;
-                    far = v.Far > 0f ? v.Far : 2f * half + 10f;
-                }
-            }
-            else
-            {
-                persp = st.perspective || fp;
-                fovNow = Mathf.Clamp(fp ? st.fpFov : st.fov, 15f, 100f);
-                if (fp)
-                {
-                    // In the colonist's head. camDist stands for "near things" (label fading, ray reach).
-                    tanHalf = Mathf.Tan(fovNow * 0.5f * Mathf.Deg2Rad);
-                    camDist = 10f;
-                    eye = FirstPerson.Eye;
-                    near = 0.08f;
-                    far = ViewDistance + 2f * DepthPad;
-                }
-                else if (persp)
-                {
-                    float fov = fovNow;
-                    tanHalf = Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad);
-                    camDist = orthoSize / tanHalf;
-                    eye = focus - fwd * camDist;
-                    near = Mathf.Clamp(camDist * 0.02f, 0.3f, 2f);
-                    far = camDist + ViewDistance + 2f * DepthPad;
-                }
-                else
-                {
-                    float half = orthoSize / Mathf.Tan(p) + DepthPad;
-                    eye = focus - fwd * (half + 5f);
-                    near = 0.5f;
-                    far = 2f * half + 10f;
-                }
-            }
-            FieldOfView = fovNow;
-
-            nearNow = near;
-            farNow = far;
-            Altitude = persp ? eye.y : orthoSize / DefaultTanHalf * Mathf.Sin(p);
-            Matrix4x4 view = Matrix4x4.Scale(new Vector3(1f, 1f, -1f))
-                * Matrix4x4.TRS(eye, look, Vector3.one).inverse;
-            Matrix4x4 worldToCamera = view * Matrix4x4.Scale(new Vector3(1f, s, 1f));
+            ViewFrame f = Solve(posed ? ViewPoses.Pose : (ViewPose?)null, fp, pitchDeg, Yaw, main.orthographicSize, main.aspect, GameFocus(main));
+            Install(f);
 
             for (int i = 0; i < cams.Length; i++)
             {
@@ -854,14 +753,11 @@ namespace IsoRim
                 {
                     continue;
                 }
-                float size = posed ? c.orthographicSize * sizeScale : c.orthographicSize;
-                float asp = c.aspect;
-                Matrix4x4 proj = persp
-                    ? Matrix4x4.Perspective(fovNow, asp, near, far)
-                    : Matrix4x4.Ortho(-size * asp, size * asp, -size, size, near, far);
-                c.worldToCameraMatrix = worldToCamera;
+                float size = posed ? c.orthographicSize * f.sizeScale : c.orthographicSize;
+                Matrix4x4 proj = f.Projection(size, c.aspect);
+                c.worldToCameraMatrix = f.worldToCamera;
                 c.projectionMatrix = proj;
-                c.cullingMatrix = proj * worldToCamera;
+                c.cullingMatrix = proj * f.worldToCamera;
             }
             camerasOverridden = true;
             haveFrame = true;
@@ -869,32 +765,286 @@ namespace IsoRim
 
             // The shaders work out face normals in true space and turn them toward the camera.
             R3DMaterials.SetView(-fwd, s);
-
-            // Moving something straight toward an orthographic camera does not move it on screen,
-            // it only puts it in front. That is how the lighting overlay gets to darken upright things.
-            // With perspective the same is a shrink toward the eye (drawn space: the eye's height unsquashed).
-            if (persp)
-            {
-                float k = Mathf.Clamp(1f - OverlayPull / camDist, 0.3f, 0.9f);
-                Vector3 eyeDrawn = new Vector3(eye.x, eye.y / s, eye.z);
-                Shader.SetGlobalVector(isoEyeId, new Vector4(eyeDrawn.x, eyeDrawn.y, eyeDrawn.z, 1f));   // moving outlines (IsoRim.vert.glsl)
-                LightingMatrix = Matrix4x4.Translate(eyeDrawn) * Matrix4x4.Scale(new Vector3(k, k, k)) * Matrix4x4.Translate(-eyeDrawn);
-            }
-            else
-            {
-                Shader.SetGlobalVector(isoEyeId, Vector4.zero);
-                LightingMatrix = Matrix4x4.Translate(new Vector3(-fwd.x * OverlayPull, -fwd.y * OverlayPull / s, -fwd.z * OverlayPull));
-            }
+            Shader.SetGlobalVector(isoEyeId, f.isoEye);   // moving outlines (IsoRim.vert.glsl)
             UprightCards.SetCamera(pitchDeg, Yaw);
 
             if (persp)
             {
-                // The fog is solid a little before the reach of the pointer rays and of the drawn ground
-                // (view depth is shorter than the distance along the ground toward the screen corners).
-                float reach = camDist + ViewDistance;
-                float fogEnd = reach * 0.92f;
-                float fogStart = Mathf.Lerp(Mathf.Min(camDist * 0.8f, fogEnd * 0.5f), fogEnd, Mathf.Clamp(st.fogStart, 0f, 0.95f));
-                Sky.Draw(main, fwd, right, up, tanHalf * aspect, tanHalf, near, far, fogStart, fogEnd);
+                DrawSky(main, f);
+            }
+        }
+
+        // The point the game's camera looks down on (the game keeps it straight above the middle of the screen).
+        private static Vector3 GameFocus(Camera main)
+        {
+            Vector3 tp = main.transform.position;
+            return new Vector3(tp.x, 0f, tp.z);
+        }
+
+        // The sky and the distance fog of a perspective frame (Sky.Draw), from the frame's basis.
+        private static void DrawSky(Camera cam, ViewFrame f)
+        {
+            // The fog is solid a little before the reach of the pointer rays and of the drawn ground
+            // (view depth is shorter than the distance along the ground toward the screen corners).
+            float reach = f.camDist + ViewDistance;
+            float fogEnd = reach * 0.92f;
+            float fogStart = Mathf.Lerp(Mathf.Min(f.camDist * 0.8f, fogEnd * 0.5f), fogEnd, Mathf.Clamp(IsoRimMod.Settings.fogStart, 0f, 0.95f));
+            Sky.Draw(cam, f.fwd, f.right, f.up, f.tanHalf * f.aspect, f.tanHalf, f.near, f.far, fogStart, fogEnd);
+        }
+
+        // One camera worked out from where it looks from: everything IsoRim derives from the pose (View3D.Solve). The shown
+        // view's is installed into View3D's fields every frame (ApplyCamera); a photo's (Api 76, Photos) only while the
+        // photo's draws are made.
+        internal struct ViewFrame
+        {
+            public float pitch, yaw;
+            public bool persp;
+            public Vector3 eye, fwd, up, right;
+            public float orthoSize, aspect, tanHalf, camDist, near, far, fov, altitude;
+            public float sizeScale;          // an external pose's zoom over the game's (helper cameras keep their ratio)
+            public Matrix4x4 worldToCamera;  // with the squash
+            public Matrix4x4 lighting;       // LightingMatrix
+            public Vector4 isoEye;           // _IsoEye: the eye in drawn space (w 1) for perspective, else zero
+
+            public Matrix4x4 Projection(float size, float asp)
+            {
+                return persp ? Matrix4x4.Perspective(fov, asp, near, far) : Matrix4x4.Ortho(-size * asp, size * asp, -size, size, near, far);
+            }
+        }
+
+        // The camera for a pose: an external pose (pose set), else first person (fp), else the player's camera, at this pitch
+        // and yaw, with the game's zoom (gameOrtho: half the screen height in cells), the screen's aspect and the game camera's
+        // ground point. The one place a pose becomes a camera: ApplyCamera (the shown view) and Photos (Api 76).
+        internal static ViewFrame Solve(ViewPose? pose, bool fp, float pitchDeg, float yawDeg, float gameOrtho, float aspectNow, Vector3 focus)
+        {
+            ViewFrame f = new ViewFrame();
+            float p = pitchDeg * Mathf.Deg2Rad;
+            float s = Squash;
+            f.pitch = pitchDeg;
+            f.yaw = yawDeg;
+            f.orthoSize = gameOrtho;
+            f.aspect = aspectNow;
+            f.sizeScale = 1f;
+            // An orthographic camera has no field of view or eye distance of its own: it keeps the last ones (as the fields
+            // always did; View3D.CamDistance and the label fade read them).
+            f.tanHalf = tanHalf;
+            f.camDist = camDist;
+
+            Quaternion look = Quaternion.Euler(pitchDeg, yawDeg, 0f);
+            f.fwd = look * Vector3.forward;
+            f.up = look * Vector3.up;
+            f.right = look * Vector3.right;
+            Vector3 fwdNow = f.fwd;
+
+            IsoRimSettings st = IsoRimMod.Settings;
+            float fovNow;
+            if (pose.HasValue)
+            {
+                ViewPose v = pose.Value;
+                f.persp = v.Perspective;
+                fovNow = v.Fov > 0f ? v.Fov : Mathf.Clamp(st.fov, 15f, 100f);
+                if (v.OrthoSize > 0f)
+                {
+                    f.sizeScale = v.OrthoSize / Mathf.Max(0.01f, f.orthoSize);
+                    f.orthoSize = v.OrthoSize;
+                }
+                if (v.Focus.HasValue)
+                {
+                    focus = new Vector3(v.Focus.Value.x, 0f, v.Focus.Value.z);
+                }
+                if (f.persp)
+                {
+                    f.tanHalf = Mathf.Tan(fovNow * 0.5f * Mathf.Deg2Rad);
+                    if (v.Eye.HasValue)
+                    {
+                        // A free eye: "how far the view looks" (label fading, pointer reach, fog) is the distance to the ground
+                        // at the middle of the screen, within 10-150 cells, unless the pose says.
+                        f.eye = v.Eye.Value;
+                        f.camDist = v.FocusDistance > 0f ? v.FocusDistance : (fwdNow.y < -0.01f ? Mathf.Clamp(f.eye.y / -fwdNow.y, 10f, 150f) : 150f);
+                        f.near = v.Near > 0f ? v.Near : Mathf.Clamp(0.05f + f.eye.y * 0.01f, 0.08f, 1f);
+                    }
+                    else
+                    {
+                        // Swung round the focus point as the player's perspective camera is, at the pose's zoom.
+                        f.camDist = v.FocusDistance > 0f ? v.FocusDistance : f.orthoSize / f.tanHalf;
+                        f.eye = focus - fwdNow * f.camDist;
+                        f.near = v.Near > 0f ? v.Near : Mathf.Clamp(f.camDist * 0.02f, 0.3f, 2f);
+                    }
+                    f.far = v.Far > 0f ? v.Far : f.camDist + ViewDistance + 2f * DepthPad;
+                }
+                else
+                {
+                    if (v.Eye.HasValue && !v.Focus.HasValue)
+                    {
+                        // Orthographic: only the line of sight matters; the view is centred where the eye's line meets the ground.
+                        Vector3 e = v.Eye.Value;
+                        focus = fwdNow.y < -0.01f ? new Vector3(e.x - fwdNow.x * e.y / fwdNow.y, 0f, e.z - fwdNow.z * e.y / fwdNow.y) : new Vector3(e.x, 0f, e.z);
+                    }
+                    float half = f.orthoSize / Mathf.Tan(p) + DepthPad;
+                    f.eye = focus - fwdNow * (half + 5f);
+                    f.near = v.Near > 0f ? v.Near : 0.5f;
+                    f.far = v.Far > 0f ? v.Far : 2f * half + 10f;
+                }
+            }
+            else
+            {
+                f.persp = st.perspective || fp;
+                fovNow = Mathf.Clamp(fp ? st.fpFov : st.fov, 15f, 100f);
+                if (fp)
+                {
+                    // In the colonist's head. camDist stands for "near things" (label fading, ray reach).
+                    f.tanHalf = Mathf.Tan(fovNow * 0.5f * Mathf.Deg2Rad);
+                    f.camDist = 10f;
+                    f.eye = FirstPerson.Eye;
+                    f.near = 0.08f;
+                    f.far = ViewDistance + 2f * DepthPad;
+                }
+                else if (f.persp)
+                {
+                    float fov = fovNow;
+                    f.tanHalf = Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad);
+                    f.camDist = f.orthoSize / f.tanHalf;
+                    f.eye = focus - fwdNow * f.camDist;
+                    f.near = Mathf.Clamp(f.camDist * 0.02f, 0.3f, 2f);
+                    f.far = f.camDist + ViewDistance + 2f * DepthPad;
+                }
+                else
+                {
+                    float half = f.orthoSize / Mathf.Tan(p) + DepthPad;
+                    f.eye = focus - fwdNow * (half + 5f);
+                    f.near = 0.5f;
+                    f.far = 2f * half + 10f;
+                }
+            }
+            f.fov = fovNow;
+            f.altitude = f.persp ? f.eye.y : f.orthoSize / DefaultTanHalf * Mathf.Sin(p);
+            Matrix4x4 view = Matrix4x4.Scale(new Vector3(1f, 1f, -1f))
+                * Matrix4x4.TRS(f.eye, look, Vector3.one).inverse;
+            f.worldToCamera = view * Matrix4x4.Scale(new Vector3(1f, s, 1f));
+
+            // Moving something straight toward an orthographic camera does not move it on screen,
+            // it only puts it in front. That is how the lighting overlay gets to darken upright things.
+            // With perspective the same is a shrink toward the eye (drawn space: the eye's height unsquashed).
+            if (f.persp)
+            {
+                float k = Mathf.Clamp(1f - OverlayPull / f.camDist, 0.3f, 0.9f);
+                Vector3 eyeDrawn = new Vector3(f.eye.x, f.eye.y / s, f.eye.z);
+                f.isoEye = new Vector4(eyeDrawn.x, eyeDrawn.y, eyeDrawn.z, 1f);
+                f.lighting = Matrix4x4.Translate(eyeDrawn) * Matrix4x4.Scale(new Vector3(k, k, k)) * Matrix4x4.Translate(-eyeDrawn);
+            }
+            else
+            {
+                f.isoEye = Vector4.zero;
+                f.lighting = Matrix4x4.Translate(new Vector3(-fwdNow.x * OverlayPull, -fwdNow.y * OverlayPull / s, -fwdNow.z * OverlayPull));
+            }
+            return f;
+        }
+
+        // The frame's camera into the fields every reader of the view uses (pointer rays, labels, the view rect, culling
+        // boxes, upright sprites, the lighting overlay's pull...).
+        private static void Install(ViewFrame f)
+        {
+            eye = f.eye;
+            fwd = f.fwd;
+            up = f.up;
+            right = f.right;
+            orthoSize = f.orthoSize;
+            aspect = f.aspect;
+            persp = f.persp;
+            tanHalf = f.tanHalf;
+            camDist = f.camDist;
+            nearNow = f.near;
+            farNow = f.far;
+            FieldOfView = f.fov;
+            Altitude = f.altitude;
+            LightingMatrix = f.lighting;
+        }
+
+        // The fields as installed now (the shown view's frame outside a photo's draws).
+        private static ViewFrame Installed()
+        {
+            return new ViewFrame
+            {
+                pitch = Pitch, yaw = Yaw, persp = persp, eye = eye, fwd = fwd, up = up, right = right, orthoSize = orthoSize, aspect = aspect,
+                tanHalf = tanHalf, camDist = camDist, near = nearNow, far = farNow, fov = FieldOfView, altitude = Altitude, lighting = LightingMatrix
+            };
+        }
+
+        // ---- a photo's camera (Api 76, Photos): installed only while the photo's own draws are made, the shown view's
+        // frame put back right after, in the same frame. No shader global and no camera of the shown view is touched.
+
+        private static bool photo;
+        private static ViewFrame photoFrame;
+        private static ViewFrame shownFrame;
+
+        // A photo's camera is installed (its draws are being made).
+        internal static bool InPhoto
+        {
+            get { return photo; }
+        }
+
+        // The camera for a photo pose (cleaned as a pushed pose is: ViewPoses.Clean) at this aspect, with the game's zoom and
+        // ground point for what the pose leaves at 0.
+        internal static ViewFrame PhotoFrame(ViewPose pose, float aspectNow)
+        {
+            Camera main = Find.Camera;
+            return Solve(pose, false, pose.Pitch, pose.Yaw, main.orthographicSize, aspectNow, GameFocus(main));
+        }
+
+        internal static void BeginPhoto(ViewFrame f)
+        {
+            shownFrame = Installed();
+            photoFrame = f;
+            photo = true;
+            Install(f);
+            Cull.SetCamera(f.Projection(f.orthoSize, f.aspect) * f.worldToCamera, Squash);
+        }
+
+        internal static void EndPhoto()
+        {
+            if (!photo)
+            {
+                return;
+            }
+            photo = false;
+            Install(shownFrame);
+            Camera main = Find.Camera;
+            if (main != null)
+            {
+                Cull.SetCamera(main.projectionMatrix * main.worldToCameraMatrix, Squash);
+            }
+        }
+
+        // IsoRim's own parts drawn every frame on top of the game's things (live flames, turning and bobbing parts, pulses,
+        // activity glows, glass, work panels): for the shown view (TickInner) and for a photo's draws (Photos). Each is
+        // culled by the game's view rect (the installed camera's) and moves by game ticks, so drawing it twice in a frame
+        // changes nothing.
+        internal static void DrawFrameParts()
+        {
+            Effects.DrawAll();
+            Spinners.DrawAll();
+            Bobbers.DrawAll();
+            Pulses.DrawAll();
+            ActivityGlow.DrawAll();
+            Glass.DrawAll();
+            WorkPanels.DrawAll();
+        }
+
+        // The per-view shader values of a frame, which the shown view sets as globals (ApplyCamera: R3DMaterials.SetView,
+        // _IsoEye, UprightCards.SetCamera): into a photo's property block, so they reach only its draws (Api 76).
+        internal static void ViewValues(ViewFrame f, MaterialPropertyBlock into)
+        {
+            into.SetVector(R3DMaterials.ViewId, R3DMaterials.ViewVector(-f.fwd, Squash));
+            into.SetVector(isoEyeId, f.isoEye);
+            into.SetVector(UprightCards.CardId, UprightCards.CardVector(f.pitch, f.yaw));
+        }
+
+        // The sky of the photo's frame (perspective photos), its values handed over per draw (Sky.Draw under Photos).
+        internal static void DrawPhotoSky(Camera cam)
+        {
+            if (photo && photoFrame.persp)
+            {
+                DrawSky(cam, photoFrame);
             }
         }
 
@@ -1045,6 +1195,7 @@ namespace IsoRim
             FirstPerson.Reset();
             ViewPoses.Reset();
             SceneImage.Reset();
+            Photos.Reset();
             ModelLibrary.ClearOverrides();   // the dev-mode model binder's changes last one game only
             FallbackLog.NewGame();
             Active = LockedOn || HarnessStartsOn;

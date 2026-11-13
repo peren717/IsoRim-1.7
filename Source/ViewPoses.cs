@@ -207,7 +207,7 @@ namespace IsoRim
         }
 
         // The pose in IsoRim's ranges: yaw 0-360, pitch -89..89 for perspective (1..89 orthographic), sizes non-negative.
-        private static bool Clean(ViewPose v, out ViewPose p)
+        internal static bool Clean(ViewPose v, out ViewPose p)
         {
             p = v;
             if (!Finite(v.Yaw) || !Finite(v.Pitch) || !Finite(v.Fov) || !Finite(v.OrthoSize) || !Finite(v.FocusDistance) || !Finite(v.Near) || !Finite(v.Far))

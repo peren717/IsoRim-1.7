@@ -4047,8 +4047,19 @@ namespace IsoRim
         // normals (global _IsoView). Set by View3D every frame while the 3D view is on.
         public static void SetView(Vector3 towardCamera, float squash)
         {
-            Shader.SetGlobalVector(isoViewId, new Vector4(towardCamera.x, towardCamera.y, towardCamera.z, squash));
+            Shader.SetGlobalVector(isoViewId, ViewVector(towardCamera, squash));
             SetToon();
+        }
+
+        // The _IsoView value of a camera (also handed to a photo's draws, Api 76).
+        internal static Vector4 ViewVector(Vector3 towardCamera, float squash)
+        {
+            return new Vector4(towardCamera.x, towardCamera.y, towardCamera.z, squash);
+        }
+
+        internal static int ViewId
+        {
+            get { return isoViewId; }
         }
 
         // The stylised light options for the models (global _IsoToon, IsoRimSolid.frag.glsl): x = sun bands (0 smooth),

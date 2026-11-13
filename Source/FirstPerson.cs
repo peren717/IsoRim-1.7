@@ -18,7 +18,8 @@ namespace IsoRim
         private static bool headingSet;
         private static Vector3 lastPos;
         private static float lookYaw;      // looking round, on top of the heading
-        private static float lookPitch = 8f;   // degrees below the horizon (negative = up)
+        public const float StartPitch = 8f;   // where the look starts and resets to: degrees below the horizon
+        private static float lookPitch = StartPitch;   // degrees below the horizon (negative = up)
 
         private const float TurnRate = 5f;     // how fast the view follows the body (per second, exponential)
         public const float MinPitch = -60f;
@@ -50,9 +51,11 @@ namespace IsoRim
             get { return pawn != null && !ViewPoses.Active; }
         }
 
+        // The colonist whose head the camera is in, left out of the drawing. While a photo's draws are made (Api 76,
+        // Photos) the photo's own: the one its options name (CaptureViewOptions.FirstPersonPawn), else none.
         public static Pawn ViewingPawn
         {
-            get { return Viewing ? pawn : null; }
+            get { return View3D.InPhoto ? Photos.EyesOf : Viewing ? pawn : null; }
         }
 
         public static float Yaw
@@ -74,14 +77,21 @@ namespace IsoRim
                 {
                     return Vector3.zero;
                 }
-                float headRise;
-                Vector3 p = Poses.DrawnSpot(pawn, out headRise);   // sitting: the eye comes down with the head
-                Vector3 o = Floors.ThingOffset(pawn);
-                float h = Mathf.Clamp(IsoRimMod.Settings.fpEyeHeight, 0.3f, 3f) + headRise;
-                // A little forward, so the eye is not inside the back of the head.
-                Vector3 f = Quaternion.Euler(0f, heading, 0f) * Vector3.forward * 0.12f;
-                return new Vector3(p.x + o.x + f.x, h + o.y, p.z + o.z + f.z);
+                return EyeOf(pawn, heading);
             }
+        }
+
+        // Where first person puts the eye of a person facing this way (degrees clockwise from north): on their spot as drawn,
+        // at head height, on an upper floor if they are on one, a little forward. Also for photos (Api 76, ViewPose.FirstPersonOf).
+        internal static Vector3 EyeOf(Pawn who, float facing)
+        {
+            float headRise;
+            Vector3 p = Poses.DrawnSpot(who, out headRise);   // sitting: the eye comes down with the head
+            Vector3 o = Floors.ThingOffset(who);
+            float h = Mathf.Clamp(IsoRimMod.Settings.fpEyeHeight, 0.3f, 3f) + headRise;
+            // A little forward, so the eye is not inside the back of the head.
+            Vector3 f = Quaternion.Euler(0f, facing, 0f) * Vector3.forward * 0.12f;
+            return new Vector3(p.x + o.x + f.x, h + o.y, p.z + o.z + f.z);
         }
 
         // The first person key: in with the one selected person, out again.
@@ -106,7 +116,7 @@ namespace IsoRim
             pawn = chosen;
             headingSet = false;
             lookYaw = 0f;
-            lookPitch = 8f;
+            lookPitch = StartPitch;
             Messages.Message("R3D_Msg_FirstPersonWith".Translate(chosen.LabelShort), MessageTypeDefOf.SilentInput, false);
         }
 
@@ -197,7 +207,7 @@ namespace IsoRim
         public static void ResetLook()
         {
             lookYaw = 0f;
-            lookPitch = 8f;
+            lookPitch = StartPitch;
         }
     }
 }
