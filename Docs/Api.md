@@ -127,10 +127,12 @@ if (IsoRim.Api.Version >= 72) { /* HarnessSeed: the -isorimseed=N of a test harn
 if (IsoRim.Api.Version >= 73) { /* glass colour sources: a negative alpha = the bound ModelDef's opacity; GlassOpacity(thing) (part 19) */ }
 if (IsoRim.Api.Version >= 74) { /* 3D explosions: SkipExplosionFx, AddExplosionFxFilter (keep yours flat), AddExplosionLook, DrawExplosion3D (part 52) */ }
 if (IsoRim.Api.Version >= 75) { /* textured faces (map_Kd) on people's models: apparel, gear, gene parts, races (part 53); no member */ }
+if (IsoRim.Api.Version >= 76) { /* photos from any pose: CaptureView, CaptureViewOptions, ViewPose.LookAt, ViewPose.FirstPersonOf (part 54) */ }
+if (IsoRim.Api.Version >= 77) { /* first-person eye providers: AddFirstPersonEye, RemoveFirstPersonEye (part 55) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`), version 72 part 51 (`HarnessSeed`), version 73 part 19 (`GlassOpacityFromModel`, `GlassOpacity`), version 74 part 52 (3D explosions), version 75 part 53 (textured faces on people) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`), version 72 part 51 (`HarnessSeed`), version 73 part 19 (`GlassOpacityFromModel`, `GlassOpacity`), version 74 part 52 (3D explosions), version 75 part 53 (textured faces on people), version 76 part 54 (photos), version 77 part 55 (first-person eye providers) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -2844,6 +2846,7 @@ static bool FirstPersonOn() => IsoRim.Api.FirstPersonOn;   // called only on ver
   each frame (in `BeforeViewUpdate` or your camera's update) and, when it turns true while your pose holds the view, hand
   over (`SetPlayerView` if you like, then dispose the pose). A key press that did not start first person changes nothing.
 - **Cost:** two field reads.
+- **Where the eye is:** a mod that draws its own figures can say where each person's eye is (part 55, version 77).
 
 Version gate: `IsoRim.Api.Version >= 71`.
 
@@ -3065,7 +3068,7 @@ if (IsoRim.Api.Version >= 76)
 | Member | Meaning |
 |---|---|
 | `bool Api.CaptureView(Map map, ViewPose pose, CaptureViewOptions options, Action<Texture2D> done)` | A photo of `map` from `pose` (part 45's `ViewPose`, the same fields and defaults; `OrthoSize` is half the photo's height in cells). `done` gets a new RGBA32 texture (opaque, rows bottom first as `Texture2D`, the caller's to `Destroy`) on the main thread usually one frame later, or null if it could not be taken. False (and `done` is not called) when it can't be asked: no game, the 3D view off, a pose that is not a number, or photos off for this session after an engine problem. Throws for a null `done`. Main thread. `options` may be null (the defaults below). |
-| `ViewPose ViewPose.FirstPersonOf(Pawn pawn, float pitch = 8, float fov = 0)` | Through a person's eyes: the eye where IsoRim's first person puts it (their spot as drawn, the first-person eye height option, sitting, stacked floors), looking the way they face (`pawn.Rotation`) and `pitch` degrees below the horizon. `Eye` also serves as "the face" for portraits and selfies. Throws for a null pawn. |
+| `ViewPose ViewPose.FirstPersonOf(Pawn pawn, float pitch = 8, float fov = 0)` | Through a person's eyes: the eye where IsoRim's first person puts it (their spot as drawn, the first-person eye height option, sitting, stacked floors; from version 77 the eye a provider gives, part 55), looking the way they face (`pawn.Rotation`) and `pitch` degrees below the horizon. `Eye` also serves as "the face" for portraits and selfies. Throws for a null pawn. |
 | `ViewPose ViewPose.LookAt(Vector3 eye, Vector3 target, float fov = 0)` | A perspective eye looking at a point (true space: x and z in cells, y the height in cells). |
 
 `CaptureViewOptions`:
@@ -3114,6 +3117,58 @@ if (IsoRim.Api.Version >= 76)
   warning each time, other photos go on.
 
 Version gate: `IsoRim.Api.Version >= 76`.
+
+## Part 55: first-person eye providers (version 77)
+
+For a mod that draws its own figures (part 43): IsoRim's first person puts the eye at one height for everyone (the
+first-person eye height option, lowered when IsoRim sees the person sit, crouch or swim). If your figures' heads are
+somewhere else (taller adults, much smaller children, poses of your own), tell IsoRim where the eye is, per person.
+
+```csharp
+if (IsoRim.Api.Version >= 77) AddEye();
+
+[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+static void AddEye() => IsoRim.Api.AddFirstPersonEye(MyEye);   // once, at start-up; called only on version 77 or later
+
+static Vector3? MyEye(Pawn pawn)
+{
+    if (!IDrawThisFigure(pawn)) return null;          // IsoRim's own eye for everyone else
+    Vector3 head = MyHeadCentre(pawn);               // where your figure's head is now: x, z as pawn.DrawPos, y over the floor
+    return head + MyFacing(pawn) * 0.1f;             // the eye, a little in front of the head's middle
+}
+```
+
+| Member | Meaning |
+|---|---|
+| `void Api.AddFirstPersonEye(Func<Pawn, Vector3?> provider)` | Adds a provider. Throws for null and for a provider added already. |
+| `void Api.RemoveFirstPersonEye(Func<Pawn, Vector3?> provider)` | Removes it; nothing happens if it is not added. |
+
+- **The point:** true space as your figure drawer uses it: the space of `FigurePlacement.Position`, `SubmitFigureMesh`'s
+  `trueSpace` and `ReportMuzzle` (part 43). x and z in map cells in the person's own rows (as `pawn.DrawPos`), y the height
+  over the floor they stand on, in cells. IsoRim moves it onto that floor exactly as it moves your figure (a stacked floor's
+  rows and height, a stair step, a bridge deck); don't add those yourself.
+- **Used exactly as given:** IsoRim's eye height option, its head drop (sitting, crouching, face down, swimming, attached)
+  and its small nudge forward are not applied to your eye. IsoRim does not smooth the eye in any case; your answer each frame
+  is where the camera is that frame. The look direction stays IsoRim's (the body's heading, turned smoothly toward where
+  they walk, plus the player's mouse look).
+- **Null:** IsoRim's own eye for that person, unchanged.
+- **When it is asked:** wherever IsoRim works out a first-person eye, by one rule: every frame while the camera is in a
+  colonist's head (once a frame now; do not count on it), and for each `ViewPose.FirstPersonOf` (photos, part 54). While a camera
+  pose (part 45) holds the view the shown first-person camera is not worked out (so not asked for it); `FirstPersonOf`
+  always asks the providers. Main thread only; off the main thread no provider is asked and IsoRim's eye is used.
+  Keep it cheap and allocation-free.
+- **Several providers:** asked in the order added; the first that answers (not null) wins.
+- **IsoRim's eye as a base:** inside a provider, `ViewPose.FirstPersonOf(pawn).Eye` is IsoRim's own eye (no provider is
+  asked while one runs, so nothing recurses), in the same space as your answer (before the floor's offset): return
+  it adjusted, e.g. `ViewPose.FirstPersonOf(pawn).Eye.Value + Vector3.up * 0.1f`, and IsoRim adds the offset once.
+- **Failure:** a provider that throws, or answers a point with NaN or infinity in it, is removed with one warning, and IsoRim
+  uses the next provider or its own eye for that person.
+- **Cost:** with no provider added, one array length test per eye (nothing else runs, the view is exactly as before).
+- **Your own poses:** sitting, lying, crawling, swimming and anything your figures do are yours to follow: IsoRim asks you
+  every frame, so answer where the head is drawn now. The colonist's own figure is left out of first person as before
+  (figure drawers are not asked for them).
+
+Version gate: `IsoRim.Api.Version >= 77`.
 
 ## Part M: model packs (IsoRim.ModelDef)
 

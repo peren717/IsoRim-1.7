@@ -83,15 +83,103 @@ namespace IsoRim
 
         // Where first person puts the eye of a person facing this way (degrees clockwise from north): on their spot as drawn,
         // at head height, on an upper floor if they are on one, a little forward. Also for photos (Api 76, ViewPose.FirstPersonOf).
+        // The one eye rule: an eye provider's answer (Api 77) wins, moved onto the person's floor like everything they draw;
+        // then the eye height option, the head drop and the nudge forward are not used for them. Asked while a provider runs
+        // (askingProviders: ViewPose.FirstPersonOf inside it), the answer is IsoRim's own eye in the providers' space (before
+        // the floor's offset), so a provider can return it adjusted and the offset is added once.
         internal static Vector3 EyeOf(Pawn who, float facing)
         {
+            Vector3 given;
+            if (eyeProviders.Length != 0 && !askingProviders && ProvidedEye(who, out given))
+            {
+                return given + Floors.ThingOffset(who);
+            }
             float headRise;
             Vector3 p = Poses.DrawnSpot(who, out headRise);   // sitting: the eye comes down with the head
-            Vector3 o = Floors.ThingOffset(who);
+            Vector3 o = askingProviders ? Vector3.zero : Floors.ThingOffset(who);
             float h = Mathf.Clamp(IsoRimMod.Settings.fpEyeHeight, 0.3f, 3f) + headRise;
             // A little forward, so the eye is not inside the back of the head.
             Vector3 f = Quaternion.Euler(0f, facing, 0f) * Vector3.forward * 0.12f;
             return new Vector3(p.x + o.x + f.x, h + o.y, p.z + o.z + f.z);
+        }
+
+        // ---- (Api 77) eye providers: other mods that draw their own figures say where a person's eye is
+
+        private static Func<Pawn, Vector3?>[] eyeProviders = new Func<Pawn, Vector3?>[0];
+        private static bool askingProviders;   // set while a provider runs: an eye asked inside it (FirstPersonOf) is IsoRim's own, in the providers' space
+
+        internal static void AddEyeProvider(Func<Pawn, Vector3?> provider)
+        {
+            if (provider == null)
+            {
+                throw new ArgumentNullException(nameof(provider));
+            }
+            if (Array.IndexOf(eyeProviders, provider) >= 0)
+            {
+                throw new ArgumentException("[IsoRim] Api.AddFirstPersonEye: this provider is added already.");
+            }
+            Func<Pawn, Vector3?>[] next = new Func<Pawn, Vector3?>[eyeProviders.Length + 1];
+            eyeProviders.CopyTo(next, 0);
+            next[eyeProviders.Length] = provider;
+            eyeProviders = next;
+        }
+
+        internal static void RemoveEyeProvider(Func<Pawn, Vector3?> provider)
+        {
+            int i = Array.IndexOf(eyeProviders, provider);
+            if (i < 0)
+            {
+                return;
+            }
+            Func<Pawn, Vector3?>[] next = new Func<Pawn, Vector3?>[eyeProviders.Length - 1];
+            Array.Copy(eyeProviders, 0, next, 0, i);
+            Array.Copy(eyeProviders, i + 1, next, i, eyeProviders.Length - i - 1);
+            eyeProviders = next;
+        }
+
+        // The first provider's answer for this person, in the order added (true space before their floor's offset). A provider
+        // that throws or answers a point that is not a number is removed with one warning. Off the main thread none is asked.
+        private static bool ProvidedEye(Pawn who, out Vector3 eye)
+        {
+            eye = Vector3.zero;
+            if (who == null || !UnityData.IsInMainThread)
+            {
+                return false;
+            }
+            Func<Pawn, Vector3?>[] all = eyeProviders;
+            for (int i = 0; i < all.Length; i++)
+            {
+                Vector3? r;
+                askingProviders = true;   // (a provider asking for an eye itself, e.g. ViewPose.FirstPersonOf, gets IsoRim's: no recursion)
+                try
+                {
+                    r = all[i](who);
+                }
+                catch (Exception e)
+                {
+                    Log.Warning("[IsoRim] A first-person eye provider failed and is removed: " + e);
+                    RemoveEyeProvider(all[i]);
+                    continue;
+                }
+                finally
+                {
+                    askingProviders = false;
+                }
+                if (!r.HasValue)
+                {
+                    continue;
+                }
+                Vector3 v = r.Value;
+                if (float.IsNaN(v.x) || float.IsNaN(v.y) || float.IsNaN(v.z) || float.IsInfinity(v.x) || float.IsInfinity(v.y) || float.IsInfinity(v.z))
+                {
+                    Log.Warning("[IsoRim] A first-person eye provider answered " + v + " for " + who.LabelShort + " and is removed.");
+                    RemoveEyeProvider(all[i]);
+                    continue;
+                }
+                eye = v;
+                return true;
+            }
+            return false;
         }
 
         // The first person key: in with the one selected person, out again.

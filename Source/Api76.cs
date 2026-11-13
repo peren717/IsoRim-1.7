@@ -41,7 +41,8 @@ namespace IsoRim
         }
 
         /// <summary>(Api version 76) Through a person's eyes: the eye where IsoRim's first person puts it (their spot as drawn,
-        /// the first-person eye height option, sitting, stacked floors), looking the way they face (their rotation) and pitch
+        /// the first-person eye height option, sitting, stacked floors; or the eye a provider gives, Api 77
+        /// <see cref="Api.AddFirstPersonEye"/>), looking the way they face (their rotation) and pitch
         /// degrees below the horizon (IsoRim's first person starts at 8). Pair it with
         /// <see cref="CaptureViewOptions.FirstPersonPawn"/> so they are left out of the photo.</summary>
         public static ViewPose FirstPersonOf(Pawn pawn, float pitch = FirstPerson.StartPitch, float fov = 0f)

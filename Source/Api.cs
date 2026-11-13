@@ -155,7 +155,9 @@ namespace IsoRim
         // 76: Api76.cs, Photos.cs: CaptureView (CaptureViewOptions): a photo from any pose, drawn offscreen on its own layer (routed
         // to the engine's CaptureOnly pass) with the photo's camera installed in View3D only while its draws are made and its view
         // values per draw; the shown view never changes. ViewPose.LookAt, ViewPose.FirstPersonOf (FirstPerson.EyeOf).
-        public static int Version => 76;
+        // 77: Api77.cs: AddFirstPersonEye, RemoveFirstPersonEye: other mods' eye providers, asked first by the one eye rule
+        // (FirstPerson.EyeOf: first person, ViewPose.FirstPersonOf); their eye (a figure drawer's true space) moved onto the person's floor.
+        public static int Version => 77;
 
         // ---- glass parts (Version 30)
 
