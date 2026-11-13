@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <R3D_ToggleView.label>3D 보기 전환</R3D_ToggleView.label>
+  <R3D_Isometric.label>등각 투영 보기 켜기/끄기</R3D_Isometric.label>
+  <R3D_TurnLeft.label>시점 왼쪽으로 회전</R3D_TurnLeft.label>
+  <R3D_TurnRight.label>시점 오른쪽으로 회전</R3D_TurnRight.label>
+  <R3D_TiltUp.label>카메라 시점 올리기</R3D_TiltUp.label>
+  <R3D_TiltDown.label>카메라 시점 낮추기</R3D_TiltDown.label>
+  <R3D_ToggleRoofs.label>지붕 표시 켜기/끄기</R3D_ToggleRoofs.label>
+  <R3D_ResetCamera.label>카메라 초기화 (자유 시점)</R3D_ResetCamera.label>
+  <R3D_LookModifier.label>자유 시점: 누르고 있을 키</R3D_LookModifier.label>
+  <R3D_FirstPerson.label>선택한 인물의 1인칭 시점 켜기/끄기</R3D_FirstPerson.label>
+</LanguageData>
