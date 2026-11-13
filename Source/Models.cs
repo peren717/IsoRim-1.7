@@ -203,7 +203,7 @@ namespace IsoRim
         // reactor's panel, as the game's hackedGraphicData (_Off sprite). A hackedModel, if given, wins.
         public bool hackedGlowOff;
         public List<Vector3> emitters;      // nozzles (x, height, z; model space, facing north) the game's thrown smoke or dust comes out of (Emitters.cs)
-        public float emitterRise = 0.4f;    // how fast those puffs rise, in cells a second
+        public float emitterRise = Emitters.PuffRise;    // how fast those puffs rise, in cells a second
         public string topModelLoaded;       // the gun while the game shows its loaded gun sprite (rocketswarm launcher: fully loaded)
         // A part that turns about the thing's upright axis (the lightball's ball), drawn every frame
         // (Spinners.cs). Built in the same space as model (same ground origin, facing north); it turns

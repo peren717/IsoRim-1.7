@@ -10,9 +10,10 @@ namespace IsoRim
 
         /// <summary>
         /// (Version 74) Gives a damage def's 3D explosions their own colours: fire from the hottest (the light core) to the coldest
-        /// (where a shrinking piece ends), evenly spaced, at least one; smoke the smoke's darkest shade (it lightens as it rises);
-        /// dust the ground ring's and the debris' colour. Without it a def's colours come from its own explosionColorCenter and
-        /// explosionColorEdge (docs part 52). Call at startup (main thread); a second call for the same def replaces the first.
+        /// (where a shrinking piece ends), evenly spaced, at least one; dust the ground ring's and the debris' colour. smoke is
+        /// ignored (since 2026-11-12 the smoke is the game's own, stood up: nothing of IsoRim's to colour). Without it a def's
+        /// colours come from its own explosionColorCenter and explosionColorEdge (docs part 52). Call at startup (main thread); a
+        /// second call for the same def replaces the first.
         /// </summary>
         public static void AddExplosionLook(DamageDef def, Color[] fire, Color smoke, Color dust)
         {
@@ -21,7 +22,7 @@ namespace IsoRim
 
         /// <summary>
         /// (Version 74) Explosions of this damage def are never drawn in 3D: the game's own flat explosion with all its flecks, as
-        /// without IsoRim (nothing held back, nothing drawn). Call at startup (main thread).
+        /// without IsoRim (nothing held back, nothing drawn, its smoke not stood up). Call at startup (main thread).
         /// </summary>
         public static void SkipExplosionFx(DamageDef def)
         {
@@ -55,7 +56,8 @@ namespace IsoRim
         public static partial class Dev
         {
             // (Api 74) For tests: bursts made so far, the game's explosion flecks replaced so far (made already at the end of their
-            // life), explosions left flat by an opt-out so far, bursts alive, and parts submitted in the last frame.
+            // life: the flash and the cells' dust puffs; since 2026-11-12 not the smoke, which is stood up), explosions left flat by
+            // an opt-out so far, bursts alive, and parts submitted in the last frame.
             public static int ExplosionBursts => ExplosionFx.Made;
             public static int ExplosionFlecksHeld => ExplosionFx.Held;
             public static int ExplosionsOptedOut => ExplosionFx.OptedOut;

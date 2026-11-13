@@ -2910,10 +2910,14 @@ Version gate: `IsoRim.Api.Version >= 72`.
 
 ## Part 52: 3D explosions (version 74)
 
-With the player's option "3D explosions" on (off by default), IsoRim draws ordinary explosions as 3D fireballs: a few round
-outlined volumes in the fire's colours that swell with the blast front, shrink and cool, then grey outlined smoke puffs that
-rise, drift and shrink away, a ring of dust on the ground and a few debris chunks. Each explosion picks one of three looks of
-the same burst by a stable hash of its cell, tick and map.
+With the player's option "3D explosions" on (on by default since 2026-11-12; off before), IsoRim draws ordinary explosions as
+3D fireballs: a few round outlined volumes in the fire's colours that swell with the blast front, shrink and cool, the game's
+own smoke puffs standing up from the fireball's top and rising, a ring of dust on the ground and a few debris chunks. Each
+explosion picks one of three looks of the same burst by a stable hash of its cell, tick and map.
+
+The option's saved value: a player who saved it on keeps it on; a player with no saved value gets it on. The game does not
+write a value equal to the old default, so a player who turned it on and off again before 2026-11-12 has no saved value and
+gets it on too.
 
 **Which explosions.** One with visual effects (`Explosion.doVisualEffects`) whose damage def is explosive
 (`DamageDef.isExplosive`) and whose worker draws the game's standard explosion: no class between it and `DamageWorker`
@@ -2921,18 +2925,20 @@ overrides `ExplosionStart`, `ExplosionVisualEffectCenter` or `ExplosionAffectCel
 Flame, EMP, Stun, gas and the like stay flat.
 
 **What changes.** While the game's own `DamageWorker.ExplosionStart` and `ExplosionAffectCell` run for such an explosion,
-the flecks they make themselves (not an effecter's) drive the 3D burst: every `ExplosionFlash` and `Smoke` fleck of
-`ExplosionStart` (also a def's own centre fleck if it is one of those) and the `DustPuff` thrown with each cell's fleck are
-replaced by it (the game still makes them, already at the end of their life, so its random draws stay the same); the def's
-own `explosionCellFleck` on each cell hit stays the game's, under the burst, so players still see which cells were hit. The
-burst's front follows every `Explosion.AffectCell` on its floor, at the game's own tick for each cell. Places, sizes,
-speeds and timing are the game's. A def's other centre and interior flecks, its effecters, a projectile's
-`explosionEffect`, sounds, the camera shake and the blast mark stay the game's. The 3D smoke is shorter than the game's flat smoke (it shrinks away over 3 s); a flat
-explosion keeps the game's smoke.
+the flecks they make themselves (not an effecter's) drive the 3D burst: every `ExplosionFlash` fleck of `ExplosionStart`
+(also a def's own centre fleck if it is one) and the `DustPuff` thrown with each cell's fleck are replaced by it (the game
+still makes them, already at the end of their life, so its random draws stay the same); the def's own `explosionCellFleck`
+on each cell hit stays the game's, under the burst, so players still see which cells were hit. The burst's front follows
+every `Explosion.AffectCell` on its floor, at the game's own tick for each cell. Places, sizes, speeds and timing are the
+game's. A def's other centre and interior flecks, its effecters, a projectile's `explosionEffect`, sounds, the camera shake
+and the blast mark stay the game's.
 
-An explosion whose source brings an effecter look of its own (its projectile's or its `CompExplosive`'s `explosionEffect`;
-in the game only the antigrain warhead's GiantExplosion) keeps that effecter and gets the fireball, dust ring and debris but
-no 3D smoke; the game's flat explosion smoke is left out for it all the same.
+**Smoke (since 2026-11-12).** The `Smoke` flecks of `ExplosionStart` stay the game's own (how many, size, colour, drift,
+speed, fade and life) and are drawn standing up, facing the camera, from the fireball's top, rising 0.4 cells a second as
+they age: the same stand-up as the smoke spewers' and steam sprayers' puffs. Before, they were replaced by IsoRim's own 3D
+smoke puffs (3 s). An explosion whose source brings an effecter look of its own (its projectile's or its `CompExplosive`'s
+`explosionEffect`; in the game only the antigrain warhead's GiantExplosion) keeps that effecter and its smoke follows the
+same rule (before: no smoke at all). A flat explosion (option off, opted out) keeps the game's flat smoke.
 
 **Colours.** IsoRim's fire colours are the 3D form of the game's standard explosion colour (the Bomb def's
 `explosionColorCenter`). A def with another centre colour gets them turned to its hue (a blue blast is blue); the dust takes
@@ -2957,9 +2963,9 @@ static void OptOut()   // called only on version 74 or later
 |---|---|
 | `void Api.SkipExplosionFx(DamageDef def)` | Explosions of this def always stay the game's flat ones. |
 | `void Api.AddExplosionFxFilter(Func<Explosion, bool> skip)` | Asked for each explosion IsoRim would draw in 3D, as it starts (main thread, while the game ticks); true keeps it flat. A filter that throws is warned about once and ignored from then on (counts as false). |
-| `void Api.AddExplosionLook(DamageDef def, Color[] fire, Color smoke, Color dust)` | The def's 3D colours: fire hottest to coldest (at least one), the smoke's darkest shade, the dust ring and debris. A second call replaces the first. |
+| `void Api.AddExplosionLook(DamageDef def, Color[] fire, Color smoke, Color dust)` | The def's 3D colours: fire hottest to coldest (at least one), the dust ring and debris. A second call replaces the first. `smoke` is ignored since 2026-11-12 (the smoke is the game's own, stood up). |
 | `bool Api.DrawExplosion3D(Map map, IntVec3 cell, float radius, DamageDef def)` | For an explosion of your own that does not run the game's `DamageWorker.ExplosionStart`: IsoRim's fireball and dust ring at full size at once, on the cell's floor (no stair or bridge rise; no smoke or debris: your own flecks stay yours). Main thread only (call it where your explosion starts, while the game ticks). False, and nothing drawn, with the option or the 3D view off, on a map not shown, with a null map or def, a radius of 0 or less, a skipped def, 48 bursts already alive, or after the 3D explosions failed (logged once). |
-| `Api.Dev.ExplosionBursts`, `ExplosionFlecksHeld`, `ExplosionsOptedOut`, `ExplosionBurstsLive`, `ExplosionPartsDrawn` | For tests (not part of the version promise). |
+| `Api.Dev.ExplosionBursts`, `ExplosionFlecksHeld`, `ExplosionsOptedOut`, `ExplosionBurstsLive`, `ExplosionPartsDrawn` | For tests (not part of the version promise). Since 2026-11-12 `ExplosionFlecksHeld` counts the flash and the dust puffs only, `ExplosionPartsDrawn` has no smoke parts, and a burst lives as long as its fireball, ring and debris. |
 
 Call the registration members at startup (main thread); `SkipExplosionFx` and `AddExplosionFxFilter` throw for a null
 argument, `AddExplosionLook` for a null def or no fire colour. Version gate: `IsoRim.Api.Version >= 74`.

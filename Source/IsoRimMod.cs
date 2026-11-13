@@ -140,7 +140,10 @@ namespace IsoRim
         public float smoothCrease = 70f;     // degrees: faces meeting at more than this keep a hard edge (SmoothFigures)
         public List<string> keepPaper = new List<string>();   // races (ThingDef defNames) kept as cards although an alien pack makes them 3D (Api 25, AlienFigures)
         public bool effects3D = true;
-        public bool explosions3D;   // ordinary explosions as 3D fireballs and smoke (ExplosionFx, Api 74); new: off by default
+        // Ordinary explosions as 3D fireballs with the game's smoke stood up (ExplosionFx, Api 74). On by default since 2026-11-12
+        // (was off): a saved True stays on; no saved key (never changed, or turned on and off again: the game does not write a
+        // value equal to its default) now reads as on.
+        public bool explosions3D = true;
         public bool collapseDebris = true;
         public bool groundShadows = true;
         public bool treeShadows = true;
@@ -295,7 +298,7 @@ namespace IsoRim
                 keepPaper = new List<string>();
             }
             Scribe_Values.Look(ref effects3D, "effects3D", true);
-            Scribe_Values.Look(ref explosions3D, "explosions3D", false);
+            Scribe_Values.Look(ref explosions3D, "explosions3D", true);
             Scribe_Values.Look(ref collapseDebris, "collapseDebris", true);
             Scribe_Values.Look(ref cutHeight, "cutHeight", 0.5f);
             Scribe_Values.Look(ref dissolveRadius, "dissolveRadius", 3.5f);

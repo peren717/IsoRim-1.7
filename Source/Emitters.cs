@@ -15,7 +15,7 @@ namespace IsoRim
     //
     // Puffs are plain structs in the game's fleck lists, so the ones thrown here are known by
     // their exact spawn position (kept until they have faded). Shots' muzzle flashes are stood up
-    // the same way (Raise, from Projectiles.ShotFlash).
+    // the same way (Raise, from Projectiles.ShotFlash), and so is a 3D explosion's own smoke (ExplosionFx.StandSmoke).
     //
     // Steam sprayers (the game's IntermittentSteamSprayer: a geothermal generator over its geyser, the bare geyser) throw
     // their air puffs from the building's centre the same way; for a building whose model lists emitters they come out of a
@@ -36,6 +36,10 @@ namespace IsoRim
             public Vector3 centre;
             public float radius;
         }
+
+        // How fast a stood-up puff of the game's thrown smoke or dust rises (cells a second) when nothing more particular is
+        // given: a model's emitters (ModelDef.emitterRise default) and an explosion's own smoke (ExplosionFx.StandSmoke).
+        internal const float PuffRise = 0.4f;
 
         private static readonly Dictionary<Vector3, Puff> puffs = new Dictionary<Vector3, Puff>();
         private static readonly List<Vector3> expired = new List<Vector3>();

@@ -116,7 +116,7 @@ namespace IsoRim
         private static readonly Color StandardSmokeColour = new Color(0.44f, 0.43f, 0.42f);
 
         // How a flame piece shrinks away over its life u (size (1 - u)^ShrinkPower), and a smoke shade at u (0 thick and dark ..
-        // 1 thin and light): FireFx's rules, shared with the 3D explosions (ExplosionFx).
+        // 1 thin and light): FireFx's rules (ShrinkPower is shared with the 3D explosions, ExplosionFx).
         internal const float ShrinkPower = 1.5f;
 
         internal static Color SmokeShade(Color smoke, float u)
@@ -124,7 +124,8 @@ namespace IsoRim
             return Color.Lerp(Color.Lerp(smoke, Color.white, 0.25f), Color.Lerp(smoke, Color.white, 0.6f), u);
         }
 
-        // IsoRim's own fire colours (hottest to coldest) and smoke shade, for the 3D explosions (ExplosionFx).
+        // IsoRim's own fire colours (hottest to coldest), for the 3D explosions (ExplosionFx). StandardSmoke: unused since the
+        // explosions show the game's own smoke (kept until the next DLL build drops it).
         internal static Color[] StandardFlame => StandardRamp;
         internal static Color StandardSmoke => StandardSmokeColour;
 

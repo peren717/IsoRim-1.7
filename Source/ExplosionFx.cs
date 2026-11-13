@@ -9,21 +9,19 @@ using Verse;
 namespace IsoRim
 {
     // (Api 74) The colours of a 3D explosion: the fireball's ramp from the hottest (its light core) to the coldest (where a
-    // shrinking piece ends), the smoke's darkest shade (it lightens as it rises, as FireFx's smoke), and the ground ring's
-    // and debris' dust.
+    // shrinking piece ends), and the ground ring's and debris' dust. (No smoke colour: the smoke is the game's own, stood up.)
     internal sealed class ExplosionLook
     {
         public Color[] fire;
-        public Color smoke;
         public Color dust;
         public int id;   // cache key of its meshes
     }
 
-    // Ordinary explosions in 3D (explosions3D setting, default off; Api 74): a few big round outlined volumes in the fire's
-    // yellow, orange and red that swell with the blast front, hold while the game's flash lasts, shrink and cool to red while
-    // the smoke comes in, and are gone when it is fully in (FireEndRule); grey outlined smoke puffs that rise and drift as the
-    // game's and shrink away ever faster over SmokeLife3D (shorter than the game's flat smoke); a ring of dust lumps on the ground that runs out with the front and on at the
-    // dust's speed; and a debris chunk for each dust puff, flying out to the blast's edge over the dust's life.
+    // Ordinary explosions in 3D (explosions3D setting, default on since 2026-11-12; Api 74): a few big round outlined volumes in
+    // the fire's yellow, orange and red that swell with the blast front, hold while the game's flash lasts, shrink and cool to
+    // red while the smoke comes in, and are gone when it is fully in (FireEndRule); the game's own smoke puffs, stood up
+    // (StandSmoke); a ring of dust lumps on the ground that runs out with the front and on at the dust's speed; and a debris
+    // chunk for each dust puff, flying out to the blast's edge over the dust's life.
     //
     // Covered: an explosion with visual effects whose damage def is explosive (DamageDef.isExplosive) and whose worker draws
     // the game's standard explosion (no class between it and DamageWorker overrides ExplosionStart,
@@ -32,11 +30,12 @@ namespace IsoRim
     //
     // Nothing is copied from the game: while the game's own DamageWorker.ExplosionStart and ExplosionAffectCell run for a
     // covered explosion, the flecks they make themselves (outside any effecter) are recorded, and the replaced ones made by the
-    // game already at the end of their life (Hold): the flash (FleckDefOf.ExplosionFlash: its fade times the hold), the smoke
-    // (FleckDefOf.Smoke: where, how big, which way and how fast, the def's fade-in) and the dust puff thrown with each cell's
-    // fleck (FleckDefOf.DustPuff: the ring's speed, a debris chunk). The cell flecks themselves (the damage def's
-    // explosionCellFleck) stay the game's, under the burst, so the cells hit still show. The front is every
-    // Explosion.AffectCell on the burst's floor (Cell_Prefix), at the game's own tick for that cell. Everything else the
+    // game already at the end of their life (Hold): the flash (FleckDefOf.ExplosionFlash: its fade times the hold) and the dust
+    // puff thrown with each cell's fleck (FleckDefOf.DustPuff: the ring's speed, a debris chunk). The smoke
+    // (FleckDefOf.Smoke) stays the game's (how many, how big, colour, drift, speed, fade; its def's fade-in times the fireball's
+    // end, its northward speed the fireball's rise), drawn standing up from the fireball's top (StandSmoke). The cell flecks
+    // themselves (the damage def's explosionCellFleck) stay the game's, under the burst, so the cells hit still show. The
+    // front is every Explosion.AffectCell on the burst's floor (Cell_Prefix), at the game's own tick for that cell. Everything else the
     // explosion does (sound, shake, heat, the blast mark, the water splash, a def's centre / interior / cell effecters and its
     // other flecks, a projectile's explosionEffect) is the game's. A cell on another stacked floor keeps the game's flecks.
     //
@@ -70,12 +69,11 @@ namespace IsoRim
         {
             public float scale;     // a small factor around the game's radius
             public Blob[] blobs;
-            public Vector4[] lobes; // a smoke puff's lobes: x, y, h, radius in puff diameters
             public float debris;    // degrees the debris' ways are turned
         }
 
         // Three looks of the same approved burst (user 2026-11-11): the blobs reshuffled inside the ball, another light core,
-        // count +-1, size +-10 %, the smoke lobes and debris a little different. Each explosion picks one by a stable hash
+        // count +-1, size +-10 %, the debris a little different. Each explosion picks one by a stable hash
         // (Look), turned and jittered a little by it. Row 0 is the approved concept (model-review\explosion, v1).
         private static readonly Variant[] Variants =
         {
@@ -89,7 +87,6 @@ namespace IsoRim
                     new Blob(-0.15f, -0.45f, 0.22f, 0.27f, 1), new Blob(0.55f, 0.10f, 0.22f, 0.30f, 2), new Blob(-0.50f, -0.25f, 0.16f, 0.28f, 2),
                     new Blob(0.10f, 0.52f, 0.24f, 0.32f, 2), new Blob(-0.25f, 0.35f, 0.78f, 0.28f, 2), new Blob(0.35f, 0.28f, 0.80f, 0.26f, 2),
                 },
-                lobes = new[] { new Vector4(0f, 0f, 0f, 0.50f), new Vector4(0.42f, 0.05f, -0.06f, 0.34f), new Vector4(-0.36f, -0.08f, -0.04f, 0.32f) },
             },
             new Variant
             {
@@ -101,7 +98,6 @@ namespace IsoRim
                     new Blob(0.20f, -0.45f, 0.20f, 0.26f, 1), new Blob(-0.55f, 0.05f, 0.20f, 0.30f, 2), new Blob(0.50f, -0.20f, 0.18f, 0.28f, 2),
                     new Blob(-0.10f, 0.50f, 0.22f, 0.31f, 2), new Blob(0.28f, 0.30f, 0.80f, 0.28f, 2),
                 },
-                lobes = new[] { new Vector4(0f, 0f, 0f, 0.48f), new Vector4(-0.40f, 0.06f, -0.05f, 0.35f), new Vector4(0.34f, -0.10f, -0.02f, 0.33f) },
             },
             new Variant
             {
@@ -114,7 +110,6 @@ namespace IsoRim
                     new Blob(-0.25f, 0.48f, 0.25f, 0.30f, 2), new Blob(0.20f, 0.40f, 0.88f, 0.25f, 2), new Blob(-0.42f, 0.28f, 0.70f, 0.27f, 2),
                     new Blob(0.45f, -0.15f, 0.70f, 0.24f, 2),
                 },
-                lobes = new[] { new Vector4(0f, 0f, 0f, 0.50f), new Vector4(0.38f, 0.10f, -0.04f, 0.32f), new Vector4(-0.30f, -0.12f, -0.06f, 0.30f), new Vector4(0.05f, 0.30f, 0.12f, 0.28f) },
             },
         };
 
@@ -124,11 +119,6 @@ namespace IsoRim
         private const float DebrisJitter = 15f;     // each chunk's way turned by up to this (degrees)
         private static readonly float[] ToneAt = { 0.15f, 0.55f, 1f };   // where on the fire ramp (0 hottest .. 1 coldest) each tone sits
         private static readonly float[] FireBands = { 1f, 0.87f, 0.74f }; // the glow's three flat tones: upper, middle, lower faces
-        // The 3D smoke's life (user's choice 2026-11-11, explosion_anim_v3.gif, v4.gif): the game's 9.7 s felt long in 3D. A puff grows
-        // in over the game's own fade-in, then shrinks slowly at first and ever faster (power SmokeShrink) until it is gone at
-        // SmokeLife3D. Rise and drift stay the game's. The flat explosions (option off, opted out) keep the game's smoke.
-        internal const float SmokeLife3D = 3.0f;   // user 2026-11-11: 4.5 s (v3), then 3.0 s (v4)
-        private const float SmokeShrink = 3f;      // user 2026-11-11: steeper than the 2 of v3
         private const float RingLump = 0.20f;       // the ground ring's dust lumps (cells)
         private const float RingStep = 1.3f;        // lumps spaced this many lump radii apart
         private const int MaxRingLumps = 48;        // more ring than this: bigger lumps instead
@@ -142,12 +132,10 @@ namespace IsoRim
         private const float MinPart = SizeBase / 2f;   // a part smaller than half the smallest size step is not drawn (cells)
         private const float MinSpan = 1f / 60f;     // no span shorter than one tick (s)
         private const int AgedMargin = 2;           // a replaced fleck is made this many ticks past its life (never -1: "no override")
-        private const float PuffTurnStep = 97f;     // degrees each further puff of a burst is turned (lobes not all alike)
         private const float Chunk = 0.13f;          // a debris chunk (cells)
         private const int MaxChunks = 24;           // per burst
         private const int MaxBursts = 48;
         private const int Steps = FireFx.Steps;     // colour steps along the fire ramp
-        private const int SmokeSteps = FireFx.SmokeSteps;
         private const float SizeBase = 0.02f;       // smallest size step (cells, radius)
         private const float SizeRatio = 1.35f;      // each size step this much bigger: the outline within about +-15 % of its width
         private const int SizeSteps = 24;
@@ -189,7 +177,7 @@ namespace IsoRim
             {
                 throw new ArgumentException("Api.AddExplosionLook: a damage def and at least one fire colour are needed");
             }
-            apiLooks[def] = new ExplosionLook { fire = (Color[])fire.Clone(), smoke = smoke, dust = dust, id = ++lookIds };
+            apiLooks[def] = new ExplosionLook { fire = (Color[])fire.Clone(), dust = dust, id = ++lookIds };   // (smoke: nothing to colour)
             looks.Remove(def);
         }
 
@@ -197,7 +185,7 @@ namespace IsoRim
         // explosion colour, the Bomb def's explosionColorCenter; a def with another centre colour gets the ramp turned to its
         // hue and its saturation scaled as much as its centre's against Bomb's (a blue blast is blue), one that keeps the
         // DamageDef default (white: the game draws the cell fleck untinted) the ramp as it is. Dust: the def's
-        // explosionColorEdge (default white: Bomb's). Smoke: FireFx's. An Api look wins.
+        // explosionColorEdge (default white: Bomb's). An Api look wins.
         internal static ExplosionLook LookOf(DamageDef def)
         {
             ExplosionLook l;
@@ -224,7 +212,7 @@ namespace IsoRim
                 ramp = turned;
             }
             Color dust = edge != DefaultEdge ? edge : std != null ? std.explosionColorEdge : edge;
-            l = new ExplosionLook { fire = ramp, smoke = FireFx.StandardSmoke, dust = dust, id = ++lookIds };
+            l = new ExplosionLook { fire = ramp, dust = dust, id = ++lookIds };
             looks[def] = l;
             return l;
         }
@@ -303,11 +291,6 @@ namespace IsoRim
         }
 
         // ---- the bursts
-        internal struct Puff
-        {
-            public float x, z, scale, angle, speed, spin;
-        }
-
         internal struct Dust
         {
             public float x, z, angle, speed, turn;
@@ -328,14 +311,14 @@ namespace IsoRim
             public Variant variant;
             public float turn;
             public Blob[] blobs;          // turned and jittered (x radius)
-            public float top;             // the highest blob's middle (x radius): where the smoke starts
+            public float top;             // the highest blob's middle (x radius): where the smoke stands from (StandSmoke)
             public FleckDef flash, cellFleck, smoke, dust;
             public float front;           // the farthest cell hit so far (cells)
             public int frontEnd = -1;     // tick of its last cell, once the explosion is gone
             public int lastCell;
             public bool instant;          // an Api burst: no front, full size from the start
-            public bool smoke3D = true;   // drawn with 3D smoke (OwnLookSource: not when the source has a look of its own)
-            public readonly List<Puff> puffs = new List<Puff>();
+            public float smokeNorth;      // the sum of its smoke puffs' northward speeds (cells/s; the fireball's rise)
+            public int smokePuffs;
             public readonly List<Dust> dusts = new List<Dust>();
         }
 
@@ -347,18 +330,7 @@ namespace IsoRim
         internal static int Made, Held, OptedOut, DrawnLast;
         internal static int Started;            // every explosion's ExplosionStart so far (covered or not)
         internal static IntVec3 LastStart;      // the last one's cell
-        internal static bool LastSmoke3D;       // whether the last burst made has 3D smoke
-
-        // The parts a burst gets, decided once here (user 2026-11-12): an explosion whose source brings an effecter look of its
-        // own (its projectile's explosionEffect, or the explosionEffect of the CompExplosive detonating now: in the game only
-        // the antigrain warhead's GiantExplosion, as shell and as IED) gets no 3D smoke; its fireball, ring and debris stay,
-        // and so does the game's own effecter. Its flat smoke flecks are replaced all the same.
-        internal static int detonatingOwnLook;   // CompExplosive.Detonate with an explosionEffect running now (Patches)
-
-        private static bool OwnLookSource(Explosion e)
-        {
-            return e.projectile?.projectile?.explosionEffect != null || detonatingOwnLook > 0;
-        }
+        internal static int SmokeStood;         // the game's explosion smoke puffs stood up so far (StandSmoke)
         internal static int Live => bursts.Count;
 
         private static Burst NewBurst(Map map, IntVec3 cell, float radius, DamageDef def, Thing at)
@@ -471,8 +443,6 @@ namespace IsoRim
                 }
                 b.explosion = explosion;
                 b.cellFleck = explosion.damType.explosionCellFleck;
-                b.smoke3D = !OwnLookSource(explosion);
-                LastSmoke3D = b.smoke3D;
                 byExplosion[explosion.thingIDNumber] = b;
                 scope.burst = b;
             }
@@ -548,12 +518,15 @@ namespace IsoRim
         internal static bool OwnFleck;
 
         // FleckManager.CreateFleck, first of its prefixes, for a covered explosion's own flecks (the ONE rule of what the 3D
-        // burst replaces; user 2026-11-11):
+        // burst replaces; user 2026-11-11, smoke 2026-11-12):
         //   - the cell flecks (kind 4) stay the game's, so the cells hit still show;
-        //   - the flash, the smoke puffs and the cell dust puffs (1, 2, 5) are recorded and replaced: the game still makes them
-        //     (its random draws in the fleck's set-up stay as without IsoRim, so everything after is the game's to the byte),
-        //     but already at the end of their life (ageTicksOverride): drawn at alpha 0 and dropped at the next tick; a def
-        //     that does not fade out (alpha 1 at its end) is made at zero size instead.
+        //   - the smoke puffs (2) stay the game's and are stood up (StandSmoke); their def and northward speed are recorded;
+        //   - the flash and the cell dust puffs (1, 5) are recorded and replaced: the game still makes them (its random draws
+        //     in the fleck's set-up stay as without IsoRim, so everything after is the game's to the byte), but already at the
+        //     end of their life (ageTicksOverride): drawn at alpha 0 and dropped at the next tick; a def that does not fade out
+        //     (alpha 1 at its end) is made at zero size instead.
+        // An explosion with an effecter look of its own (the antigrain warhead's GiantExplosion) keeps it and follows the same
+        // rule (user 2026-11-12).
         // Only for this explosion's own burst with the option on (switched off mid-explosion: from then on the game's).
         internal static void Hold(ref FleckCreationData data)
         {
@@ -572,12 +545,10 @@ namespace IsoRim
                     break;
                 case 2:
                     b.smoke = data.def;
-                    b.puffs.Add(new Puff
-                    {
-                        x = data.spawnPosition.x, z = data.spawnPosition.z, scale = data.scale,
-                        angle = data.velocityAngle, speed = data.velocitySpeed, spin = data.rotationRate,
-                    });
-                    break;
+                    b.smokeNorth += data.velocitySpeed * Mathf.Cos(data.velocityAngle * Mathf.Deg2Rad);
+                    b.smokePuffs++;
+                    StandSmoke(b, ref data);
+                    return;   // not replaced
                 case 5:
                 {
                     b.dust = data.def;
@@ -603,6 +574,19 @@ namespace IsoRim
                 data.exactScale = Vector3.zero;   // (no fade: full alpha at its end)
             }
         }
+
+        // The game's smoke puff of a covered explosion, drawn standing up facing the camera (the one stand-up path of the game's
+        // thrown puffs: Emitters.Raise, as smoke spewers' and steam sprayers' puffs), from the fireball's top (SmokeBase) and
+        // rising at Emitters.PuffRise as it ages, the burst's stair or bridge rise included (Burst.centre.y). Where it drifts,
+        // how big, its colour and fade stay the game's.
+        private static void StandSmoke(Burst b, ref FleckCreationData data)
+        {
+            Emitters.Raise(data.spawnPosition, SmokeBase(b), Emitters.PuffRise, data.def);
+            SmokeStood++;
+        }
+
+        // Where the smoke starts: the fireball's top at full size, the middle of its highest blob (cells over the ground).
+        private static float SmokeBase(Burst b) => b.centre.y + b.radius * b.variant.scale * b.top;
 
         private static void Fail(Exception e)
         {
@@ -639,7 +623,6 @@ namespace IsoRim
         private static List<Vector3> sphere, rock;
         private const int BuildsPerFrame = 6;       // part sets made in one frame, at most
         private static int builds, buildFrame = -1, warmed;
-        private static readonly int[] KindSteps = { Steps, SmokeSteps, 1, 1 };   // colour steps of kind 0 fire, 1 smoke, 2 dust, 3 debris
 
         private static int SizeStep(float r)
         {
@@ -658,7 +641,8 @@ namespace IsoRim
             return builds < BuildsPerFrame;
         }
 
-        // kind 0 glowing fire, 1 lit smoke, 2 lit dust, 3 lit debris; null while not made yet (the frame's builds are used up)
+        // kind 0 glowing fire, 2 lit dust, 3 lit debris (1 was the 3D smoke, retired 2026-11-12); null while not made yet (the
+        // frame's builds are used up)
         private static List<DynamicModels.Part> PartsFor(int kind, ExplosionLook look, int colour, int step)
         {
             long key = ((long)kind << 40) | ((long)look.id << 20) | ((long)colour << 8) | (long)step;
@@ -674,12 +658,10 @@ namespace IsoRim
             builds++;
             sphere ??= Icosahedron.Sphere(2);
             rock ??= Rock();
-            Color c = kind == 0 ? FireRamp(look.fire, colour / (float)(Steps - 1))
-                : kind == 1 ? FireFx.SmokeShade(look.smoke, colour / (float)(SmokeSteps - 1))   // FireFx's: lighter as it ages
-                : look.dust;
+            Color c = kind == 0 ? FireRamp(look.fire, colour / (float)(Steps - 1)) : look.dust;
             List<Vector3> shape = kind == 3 ? rock : sphere;
             float grow = 1f + ObjLoader.OutlineWidthCells / StepSize(step);   // the outline at its width for this size
-            List<Vector3> v = new List<Vector3>(shape.Count), line = new List<Vector3>(shape.Count), normals = kind == 1 || kind == 2 ? new List<Vector3>(shape.Count) : null;
+            List<Vector3> v = new List<Vector3>(shape.Count), line = new List<Vector3>(shape.Count), normals = kind == 2 ? new List<Vector3>(shape.Count) : null;
             List<Color32> col = new List<Color32>(shape.Count), lineCol = new List<Color32>(shape.Count);
             Color32 dark = R3DMaterials.Shaded(c, ModelBaker.OutlineShade);
             for (int i = 0; i + 2 < shape.Count; i += 3)
@@ -706,7 +688,7 @@ namespace IsoRim
 
         // The standard look's fireball parts (the vanilla explosives' colours: the first parts every explosion needs at once)
         // made ahead, a few a frame, while the option is on: every colour step, up to the size step the biggest explosive of
-        // the game can reach (WarmSteps). Smoke, dust and debris (few parts, wanted later in a burst) are made when wanted.
+        // the game can reach (WarmSteps). Dust and debris (few parts, wanted later in a burst) are made when wanted.
         private static int warmSteps = -1;
         internal static int WarmedVertices;   // harness: vertices of the parts made ahead so far
 
@@ -842,15 +824,14 @@ namespace IsoRim
             }
         }
 
-        // Till its last part is gone: the fireball, the smoke (only if the game threw some), the ring and the debris. Asked only
-        // once its explosion is over (frontEnd known; while it still spreads its cells the burst stays).
+        // Till its last part is gone: the fireball, the ring and the debris (the smoke is the game's flecks). Asked only once its
+        // explosion is over (frontEnd known; while it still spreads its cells the burst stays).
         private static float LifeOf(Burst b)
         {
             float front = (b.frontEnd - b.born) / 60f;
             float fire = Mathf.Max(Life(b.flash ?? FleckDefOf.ExplosionFlash), front) + FireShrinkSpan(b);
-            float smoke = b.puffs.Count > 0 && b.smoke3D ? SmokeLife3D : 0f;
             float dust = front + Life(b.dust ?? FleckDefOf.DustPuff);
-            return Mathf.Max(Mathf.Max(smoke, dust), fire);
+            return Mathf.Max(dust, fire);
         }
 
         // How long the fireball shrinks: from the flash's end to the fire's end (FireEndRule).
@@ -894,15 +875,12 @@ namespace IsoRim
         private static void DrawBurst(Burst b, float t, int now, Matrix4x4 floor)
         {
             float R = b.radius;
-            FleckDef smokeDef = b.smoke ?? FleckDefOf.Smoke, dustDef = b.dust ?? FleckDefOf.DustPuff;
+            FleckDef dustDef = b.dust ?? FleckDefOf.DustPuff;
             float tFront = b.frontEnd >= 0 ? (b.frontEnd - b.born) / 60f : t;
 
-            // the smoke's own rise: the mean northward speed of its puffs (the game's north is up in 3D)
-            float rise = 0f;
-            for (int i = 0; i < b.puffs.Count; i++)
-            {
-                rise += b.puffs[i].speed * Mathf.Cos(b.puffs[i].angle * Mathf.Deg2Rad) / b.puffs.Count;
-            }
+            // the fireball's rise: the mean northward speed the game gives its smoke puffs (the game's north is up in 3D); the
+            // puffs themselves, stood up, rise at Emitters.PuffRise
+            float rise = b.smokePuffs > 0 ? b.smokeNorth / b.smokePuffs : 0f;
 
             // fireball: hot while it holds, then cooling toward red as it shrinks
             float hold;
@@ -918,31 +896,6 @@ namespace IsoRim
                     float u = t <= hold ? ToneAt[o.tone] * FlashTone : ToneAt[o.tone] + (1f - ToneAt[o.tone]) * heat;
                     int step = Mathf.Clamp(Mathf.RoundToInt(u * (Steps - 1)), 0, Steps - 1);
                     Submit(b, floor, 0, step, new Vector3(b.centre.x + o.x * Rk, b.centre.y + o.h * Rk + up, b.centre.z + o.y * Rk), o.r * Rk);
-                }
-            }
-
-            // smoke: each of the game's puffs, from the fireball's top, its north speed as the rise, east as the drift
-            if (b.smoke3D && t < SmokeLife3D)
-            {
-                float fadeIn = smokeDef.fadeInTime;
-                float a = t < fadeIn ? t / fadeIn : 1f - Mathf.Pow(Mathf.Clamp01((t - fadeIn) / Mathf.Max(MinSpan, SmokeLife3D - fadeIn)), SmokeShrink);   // the game's fade-in, then ever faster
-                int tone = Mathf.Clamp((int)(t / SmokeLife3D * SmokeSteps), 0, SmokeSteps - 1);
-                for (int i = 0; i < b.puffs.Count; i++)
-                {
-                    Puff p = b.puffs[i];
-                    float size = (p.scale + smokeDef.growthRate * t) * SmokeCover * a;
-                    if (size < MinPart)
-                    {
-                        continue;
-                    }
-                    float ang = p.angle * Mathf.Deg2Rad;
-                    Vector3 c = new Vector3(p.x + p.speed * Mathf.Sin(ang) * t, b.centre.y + R * b.variant.scale * b.top + p.speed * Mathf.Cos(ang) * t, p.z);
-                    float yaw = (b.turn + i * PuffTurnStep + p.spin * t) * Mathf.Deg2Rad;
-                    float cy = Mathf.Cos(yaw), sy = Mathf.Sin(yaw);
-                    foreach (Vector4 l in b.variant.lobes)
-                    {
-                        Submit(b, floor, 1, tone, new Vector3(c.x + (l.x * cy - l.y * sy) * size, c.y + l.z * size, c.z + (l.x * sy + l.y * cy) * size), l.w * size);
-                    }
                 }
             }
 
@@ -994,10 +947,5 @@ namespace IsoRim
                 Submit(b, floor, 3, 0, new Vector3(d.x + Mathf.Cos(wa) * R * f, b.centre.y + h, d.z + Mathf.Sin(wa) * R * f), Chunk);
             }
         }
-
-        // How much of the Smoke fleck's quad its visible puff fills (the alpha-weighted radius holding 90 % of its alpha, 1 = the
-        // quad's edge). Measured from vanilla Things/Mote/Smoke (tools\make_explosion_concept.py cover(), 2026-11-11): the
-        // texture is not readable at run time.
-        private const float SmokeCover = 0.746f;
     }
 }

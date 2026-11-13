@@ -46,6 +46,7 @@ namespace IsoRim
         private static readonly Dictionary<string, int> explMade = new Dictionary<string, int>();
         private static readonly Dictionary<string, int> explHeldDefs = new Dictionary<string, int>();
         private static int explLifted;
+        private static int explSmokeMade, explSmokeStood, explSmokeAged;
 
         private static bool ExplosionKey(string key, string[] a, Map map)
         {
@@ -124,9 +125,16 @@ namespace IsoRim
                 explLifted++;
             }
             Vector3 p = fleckData.spawnPosition;
+            bool stood = Emitters.Raised(p);   // stood up by a rule (an explosion's smoke: ExplosionFx.StandSmoke)
+            if (fleckData.def == FleckDefOf.Smoke && ExplosionFx.OwnFleck)   // the explosion's own smoke (its ExplosionStart)
+            {
+                explSmokeMade++;
+                explSmokeStood += stood ? 1 : 0;
+                explSmokeAged += fleckData.ageTicksOverride != -1 ? 1 : 0;
+            }
             Log.Message("[IsoRim probe] explrec " + explRec + " F " + d + " " + p.x.ToString("0.0000") + " " + p.y.ToString("0.0000") + " " + p.z.ToString("0.0000")
                 + " s " + fleckData.scale.ToString("0.0000") + " a " + fleckData.velocityAngle.ToString("0.00") + " v " + fleckData.velocitySpeed.ToString("0.0000")
-                + " r " + fleckData.rotationRate.ToString("0.00") + " rot " + fleckData.rotation.ToString("0.0") + " tick " + Find.TickManager.TicksGame + (lifted ? " lifted" : "") + (fleckData.ageTicksOverride != -1 ? " aged " + (Find.TickManager.TicksGame - fleckData.ageTicksOverride) : ""));
+                + " r " + fleckData.rotationRate.ToString("0.00") + " rot " + fleckData.rotation.ToString("0.0") + " tick " + Find.TickManager.TicksGame + (lifted ? " lifted" : "") + (stood ? " stood" : "") + (fleckData.ageTicksOverride != -1 ? " aged " + (Find.TickManager.TicksGame - fleckData.ageTicksOverride) : ""));
         }
 
         private static readonly System.Reflection.PropertyInfo randState = AccessTools.Property(typeof(Rand), "StateCompressed");
@@ -207,6 +215,7 @@ namespace IsoRim
             explMade.Clear();
             explHeldDefs.Clear();
             explLifted = 0;
+            explSmokeMade = explSmokeStood = explSmokeAged = 0;
             explLiftedSeen = BodyFlecks.Lifted;
             int made0 = ExplosionFx.Made, held0 = ExplosionFx.Held, out0 = ExplosionFx.OptedOut, started0 = ExplosionFx.Started;
             if (kind == "throw" && a.Length > 7 && a[7] == "up1")
@@ -302,7 +311,7 @@ namespace IsoRim
             }
             int born = Find.TickManager.TicksGame;
             IntVec3 cell = ExplosionFx.LastStart;
-            Log.Message("[IsoRim probe] explscene " + label + " explosion at " + cell + " tick " + born + " after " + ticks + " ticks, 3D smoke " + ExplosionFx.LastSmoke3D);
+            Log.Message("[IsoRim probe] explscene " + label + " explosion at " + cell + " tick " + born + " after " + ticks + " ticks");
             foreach (int age in ages)
             {
                 while (Find.TickManager.TicksGame - born < age)
@@ -324,9 +333,14 @@ namespace IsoRim
                 yield return 2;
             }
             explRec = null;
+            // the explosion's smoke: the game's own puffs, none made at the end of its life; all stood up when the explosion is
+            // drawn in 3D, none otherwise
+            bool in3D = ExplosionFx.Made > made0;
+            Check("explscene " + label + " smoke " + (in3D ? "stood up" : "flat"), explSmokeMade > 0 && explSmokeAged == 0 && explSmokeStood == (in3D ? explSmokeMade : 0),
+                "Smoke made " + explSmokeMade + ", stood " + explSmokeStood + ", aged " + explSmokeAged);
             Log.Message("[IsoRim probe] explsum " + label + ": made " + string.Join(", ", explMade.OrderBy(k => k.Key).Select(k => k.Key + " " + k.Value))
                 + " | held " + string.Join(", ", explHeldDefs.OrderBy(k => k.Key).Select(k => k.Key + " " + k.Value))
-                + " | lifted " + explLifted + " | bursts +" + (ExplosionFx.Made - made0) + " held +" + (ExplosionFx.Held - held0) + " optedOut +" + (ExplosionFx.OptedOut - out0)
+                + " | lifted " + explLifted + " | smoke stood " + explSmokeStood + " | bursts +" + (ExplosionFx.Made - made0) + " held +" + (ExplosionFx.Held - held0) + " optedOut +" + (ExplosionFx.OptedOut - out0)
                 + " | option " + IsoRimMod.Settings.explosions3D + " | warmed vertices " + ExplosionFx.WarmedVertices);
         }
     }
