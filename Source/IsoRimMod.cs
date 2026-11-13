@@ -165,6 +165,7 @@ namespace IsoRim
         public bool fogLid = true;
         public bool showRoofs = false;
         public int roofStyle = 0;        // slate, terracotta, thatch, tin, flat roof in steel, marble, granite (SectionLayer_IsoRimRoofs.StyleNames)
+        public bool shipRoofLights = true;   // gravship decks with the glowing circuit-board look (ShipRoofLights)
         public bool sunMoves = true;
         public bool cutFrontOnly = false;        // only walls between the camera and the pointer are lowered
         public bool cutNearColonists = false;    // walls round colonists are lowered too
@@ -322,6 +323,7 @@ namespace IsoRim
             Scribe_Values.Look(ref fogLid, "fogLid", true);
             Scribe_Values.Look(ref showRoofs, "showRoofs", false);
             Scribe_Values.Look(ref roofStyle, "roofStyle", 0);
+            Scribe_Values.Look(ref shipRoofLights, "shipRoofLights", true);
             Scribe_Values.Look(ref sunMoves, "sunMoves", true);
             Scribe_Values.Look(ref cutFrontOnly, "cutFrontOnly", false);
             Scribe_Values.Look(ref cutNearColonists, "cutNearColonists", false);
@@ -1129,6 +1131,16 @@ namespace IsoRim
                         }));
                     }
                     Find.WindowStack.Add(new FloatMenu(options));
+                }
+                if (ModsConfig.OdysseyActive)
+                {
+                    bool lights = st.shipRoofLights;
+                    Check(r, "R3D_Settings_ShipRoofLights".Translate(), ref lights, "R3D_Settings_ShipRoofLightsTip".Translate());
+                    if (lights != st.shipRoofLights)
+                    {
+                        st.shipRoofLights = lights;
+                        Roofs.Rebuild();
+                    }
                 }
                 Note(r, "R3D_Settings_RoofShapeNote".Translate());
             }

@@ -749,6 +749,11 @@ namespace IsoRim
     // built roof keeps the pitched house roof (an upper-floor opening in a ship's deck, IFloorLayout.ShipCell, counts
     // as Substructure here). A corner piece cell gets a triangle when either of its two
     // hull neighbours carries the ship roof.
+    //
+    // Ship roof lights (option shipRoofLights, default on; ShipRoofLights.cs): the plates' top faces take the circuit-board
+    // deck texture by world position (PutDeck), the same faces again its glow, added (unlit), and a glowing strip runs on
+    // top of the rims along the outline (RimStrip). Everything else here (rims, corner pieces, gaps, plate sides, the
+    // cut-away tags) is built as before; with the option off the deck is exactly the plain one.
     [StaticConstructorOnStartup]
     public static class ShipRoofs
     {
@@ -764,8 +769,17 @@ namespace IsoRim
         private static Material material;
         private static readonly List<Vector2> edgeA = new List<Vector2>();
         private static readonly List<Vector2> edgeB = new List<Vector2>();
-        private static readonly List<Vector2> starts = new List<Vector2>();
         private static readonly List<Vector2> dirs = new List<Vector2>();
+
+        // The ship kit's plate colour (the rims' top: roof_rim.obj ship_plate), the tone the lit deck's plates take (ShipRoofLights).
+        internal static Color PlateColour
+        {
+            get
+            {
+                Load();
+                return plateColor;
+            }
+        }
 
         public static bool IsShip(Map map, IntVec3 c)
         {
@@ -971,6 +985,19 @@ namespace IsoRim
                 return;
             }
             float baseY = View3D.WallHeight + Lift;   // cells; a per-map base height would add here (design section 11)
+            BeginLights(layer);
+            try
+            {
+                BuildCells(layer, sm, map, rect, kindAt, baseY);
+            }
+            finally
+            {
+                EndLights();
+            }
+        }
+
+        private static void BuildCells(SectionLayer layer, LayerSubMesh sm, Map map, CellRect rect, Func<int, int, int> kindAt, float baseY)
+        {
             foreach (IntVec3 c in rect)
             {
                 if (sm.verts.Count + 2000 > MeshWriter.MaxVerts)
@@ -996,7 +1023,7 @@ namespace IsoRim
                 int cellMark = CutTags.Mark(layer);   // (shader cut-away) hidden while this cell's roof is open
                 if (p == 1)
                 {
-                    Put(sm, square, centre, 1f, 0f, 0f, 1f, baseY);
+                    PutDeck(sm, square, c, centre, 1f, 0f, 0f, 1f, baseY);
                 }
                 else
                 {
@@ -1005,18 +1032,18 @@ namespace IsoRim
                     {
                         case CornerType.Corner_NE:
                         case CornerType.Diagonal_NE:
-                            Put(sm, triangle, centre, 1f, 0f, 0f, 1f, baseY);
+                            PutDeck(sm, triangle, c, centre, 1f, 0f, 0f, 1f, baseY);
                             break;
                         case CornerType.Corner_NW:
                         case CornerType.Diagonal_NW:
-                            Put(sm, triangle, centre, 0f, -1f, 1f, 0f, baseY);
+                            PutDeck(sm, triangle, c, centre, 0f, -1f, 1f, 0f, baseY);
                             break;
                         case CornerType.Corner_SW:
                         case CornerType.Diagonal_SW:
-                            Put(sm, triangle, centre, -1f, 0f, 0f, -1f, baseY);
+                            PutDeck(sm, triangle, c, centre, -1f, 0f, 0f, -1f, baseY);
                             break;
                         default:
-                            Put(sm, triangle, centre, 0f, 1f, -1f, 0f, baseY);
+                            PutDeck(sm, triangle, c, centre, 0f, 1f, -1f, 0f, baseY);
                             break;
                     }
                 }
@@ -1041,7 +1068,12 @@ namespace IsoRim
                         float cs = (d.x + d.y) * s2, sn = (d.y - d.x) * s2;   // rotation from (1,1)/sqrt2 to d
                         Put(sm, rimDiagonal, mid, cs, -sn, sn, cs, baseY);
                     }
-                    CornerAt(sm, map, kindAt, b, d, baseY);
+                    Vector2 next = SideFrom(map, kindAt, b, true);
+                    CornerAt(sm, b, d, next, baseY);
+                    if (lightsOn)
+                    {
+                        RimStrip(a, b, d, SideFrom(map, kindAt, a, false), next, baseY);
+                    }
                 }
                 // A corner piece's deck goes with the roof of its first leg (the corner cell itself is in no room).
                 IntVec3 owner = c, legA, legB;
@@ -1061,7 +1093,7 @@ namespace IsoRim
         {
             int cellMark = CutTags.Mark(layer);
             int[] mark = ShapeRoofs.MarkTris(layer);
-            Put(sm, square, new Vector2(c.x + 0.5f, c.z + 0.5f), 1f, 0f, 0f, 1f, baseY);
+            PutDeck(sm, square, c, new Vector2(c.x + 0.5f, c.z + 0.5f), 1f, 0f, 0f, 1f, baseY);
             ShapeRoofs.ClipSince(layer, mark, cover, Kind);
             ShapeRoofs.Outline(map, c, Kind, shapeEdges);
             foreach (ShapeRoofs.Edge e in shapeEdges)
@@ -1075,6 +1107,10 @@ namespace IsoRim
                 d /= len;
                 Vector2 mid = (e.a + e.b) * 0.5f;
                 Put(sm, rim, mid, d.x * len, -d.y, d.y * len, d.x, baseY);   // rim runs along x: x -> d, stretched to the side
+                if (lightsOn)
+                {
+                    StripOn(e.a, e.b, ShipRoofLights.Mitre(e.joinA, e.o, ShipRoofLights.StripHalf), ShipRoofLights.Mitre(e.o, e.joinB, ShipRoofLights.StripHalf), baseY);
+                }
                 // an outside corner at its end: the gap between the two rims' square ends filled
                 Vector2 n1 = e.o, n2 = e.joinB;
                 if (n1.x * n2.y - n1.y * n2.x > 1e-3f)
@@ -1088,10 +1124,10 @@ namespace IsoRim
             CutTags.Apply(layer, cellMark, tag, ShaderCut.Roof);
         }
 
-        // The corner where a side ending at p (direction d1) meets the next side of the outline.
-        private static void CornerAt(LayerSubMesh sm, Map map, Func<int, int, int> kindAt, Vector2 p, Vector2 d1, float baseY)
+        // The direction of the outline side starting at p (outgoing) or ending at p (not outgoing), the first found in the
+        // four cells round the corner p; zero where there is none.
+        private static Vector2 SideFrom(Map map, Func<int, int, int> kindAt, Vector2 p, bool outgoing)
         {
-            starts.Clear();
             dirs.Clear();
             int px = Mathf.RoundToInt(p.x), pz = Mathf.RoundToInt(p.y);
             for (int dx = -1; dx <= 0; dx++)
@@ -1103,18 +1139,24 @@ namespace IsoRim
                     Edges(map, kindAt, px + dx, pz + dz, edgeTmpA, edgeTmpB);
                     for (int i = 0; i < edgeTmpA.Count; i++)
                     {
-                        if ((edgeTmpA[i] - p).sqrMagnitude < 1e-6f)
+                        if (((outgoing ? edgeTmpA[i] : edgeTmpB[i]) - p).sqrMagnitude < 1e-6f)
                         {
                             dirs.Add((edgeTmpB[i] - edgeTmpA[i]).normalized);
                         }
                     }
                 }
             }
-            if (dirs.Count == 0)
+            return dirs.Count > 0 ? dirs[0] : Vector2.zero;
+        }
+
+        // The corner where a side ending at p (direction d1) meets the next side of the outline (direction d2, from
+        // SideFrom; zero: none).
+        private static void CornerAt(LayerSubMesh sm, Vector2 p, Vector2 d1, Vector2 d2, float baseY)
+        {
+            if (d2 == Vector2.zero)
             {
                 return;
             }
-            Vector2 d2 = dirs[0];
             float turn = d1.x * d2.y - d1.y * d2.x;
             if (turn <= 1e-3f)
             {
@@ -1138,6 +1180,109 @@ namespace IsoRim
 
         private static readonly List<Vector2> edgeTmpA = new List<Vector2>();
         private static readonly List<Vector2> edgeTmpB = new List<Vector2>();
+
+        // ---- ship roof lights (ShipRoofLights) while one block is built: the pieces of mesh they need, made when first
+        // written to (a block without a ship deck gets none).
+        private static bool lightsOn;
+        private static SectionLayer lightsLayer;
+        private static LayerSubMesh deckSm, glowSm, stripSm;
+
+        private static void BeginLights(SectionLayer layer)
+        {
+            lightsOn = ShipRoofLights.On;
+            lightsLayer = layer;
+            deckSm = glowSm = stripSm = null;
+        }
+
+        private static void EndLights()
+        {
+            lightsOn = false;
+            lightsLayer = null;
+            deckSm = glowSm = stripSm = null;
+        }
+
+        private static LayerSubMesh LightSub(ref LayerSubMesh sub, Material mat)
+        {
+            if (sub == null && mat != null)
+            {
+                sub = MeshWriter.Sub(lightsLayer, mat);
+            }
+            return sub != null && sub.verts.Count + 2000 <= MeshWriter.MaxVerts ? sub : null;
+        }
+
+        // A deck piece (roof_square, roof_triangle) in cell `cell`, as Put. With the lights on its top faces go to the
+        // textured deck, by world position (ShipRoofLights.UV), and again a hair higher to the glow; the rest as Put.
+        private static void PutDeck(LayerSubMesh sm, Model m, IntVec3 cell, Vector2 c, float m00, float m01, float m10, float m11, float baseY)
+        {
+            LayerSubMesh tex = lightsOn ? LightSub(ref deckSm, ShipRoofLights.DeckMaterial) : null;
+            if (tex == null)
+            {
+                Put(sm, m, c, m00, m01, m10, m11, baseY);
+                return;
+            }
+            LayerSubMesh glow = LightSub(ref glowSm, ShipRoofLights.GlowMaterial);
+            bool[] top = ShipRoofLights.TopFaces(m);
+            float squash = View3D.Squash;
+            float lift = ShipRoofLights.Lift / squash;
+            Color32 white = new Color32(255, 255, 255, 255);
+            Vector3[] pos = m.positions;
+            for (int i = 0; i + 2 < pos.Length; i += 3)
+            {
+                LayerSubMesh to = top[i] ? tex : sm;
+                int start = to.verts.Count;
+                for (int k = i; k < i + 3; k++)
+                {
+                    Vector3 v = pos[k];
+                    Vector3 w = new Vector3(c.x + m00 * v.x + m01 * v.z, (baseY + v.y) / squash, c.y + m10 * v.x + m11 * v.z);
+                    to.verts.Add(w);
+                    if (top[i])
+                    {
+                        Vector2 uv = ShipRoofLights.UV(cell.x, cell.z, w.x, w.z);
+                        to.colors.Add(white);
+                        to.uvs.Add(new Vector3(uv.x, uv.y, 0f));
+                        if (glow != null)
+                        {
+                            glow.verts.Add(new Vector3(w.x, w.y + lift, w.z));
+                            glow.colors.Add(white);
+                            glow.uvs.Add(new Vector3(uv.x, uv.y, 0f));
+                            glow.tris.Add(glow.verts.Count - 1);
+                        }
+                    }
+                    else
+                    {
+                        to.colors.Add(R3DMaterials.Shaded(m.colors[k], 1f));
+                        to.uvs.Add(Vector3.zero);
+                    }
+                }
+                to.tris.Add(start);
+                to.tris.Add(start + 1);
+                to.tris.Add(start + 2);
+            }
+        }
+
+        // The glowing strip on top of the rim along the outline side a -> b (direction d), mitred into the sides before
+        // (dPrev, ending at a) and after it (dNext, starting at b); zero: none there (a square end).
+        private static void RimStrip(Vector2 a, Vector2 b, Vector2 d, Vector2 dPrev, Vector2 dNext, float baseY)
+        {
+            Vector2 n = OutwardDir(d);
+            float h = ShipRoofLights.StripHalf;
+            StripOn(a, b, ShipRoofLights.Mitre(OutwardDir(dPrev), n, h), ShipRoofLights.Mitre(n, OutwardDir(dNext), h), baseY);
+        }
+
+        private static void StripOn(Vector2 a, Vector2 b, Vector2 ma, Vector2 mb, float baseY)
+        {
+            LayerSubMesh s = LightSub(ref stripSm, ShipRoofLights.StripMaterial);
+            if (s != null)
+            {
+                ShipRoofLights.Strip(s, a, b, ma, mb, baseY + RimTop + ShipRoofLights.Lift);
+            }
+        }
+
+        // The outward normal of an outline side running along d (the roof on its left); zero for zero.
+        private static Vector2 OutwardDir(Vector2 d)
+        {
+            return new Vector2(d.y, -d.x);
+        }
 
         // A roof piece placed with its footprint centre at c, turned by the 2x2 matrix (m00 m01; m10 m11) on (x, z),
         // its bottom at baseY (cells).

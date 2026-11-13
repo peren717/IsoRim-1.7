@@ -230,6 +230,8 @@
   <R3D_Settings_Roof_FlatSteel>平顶（钢铁）</R3D_Settings_Roof_FlatSteel>
   <R3D_Settings_Roof_FlatMarble>平顶（大理石）</R3D_Settings_Roof_FlatMarble>
   <R3D_Settings_Roof_FlatGranite>平顶（花岗岩）</R3D_Settings_Roof_FlatGranite>
+  <R3D_Settings_ShipRoofLights>飞船屋顶灯纹</R3D_Settings_ShipRoofLights>
+  <R3D_Settings_ShipRoofLightsTip>重力飞船屋顶显示发光电路纹路，船体边缘有一圈灯带。</R3D_Settings_ShipRoofLightsTip>
   <R3D_Settings_RoofShapeNote>建造的屋顶从四边升至屋脊，类似四坡顶。屏幕右下角有它的按钮，也可设置按键。</R3D_Settings_RoofShapeNote>
 
   <!-- ==================== 3D 内容 ==================== -->

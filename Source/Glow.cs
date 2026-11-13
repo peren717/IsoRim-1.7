@@ -399,6 +399,7 @@ namespace IsoRim
             if (!IsoRimMod.Settings.lightingFix)
             {
                 BindNeutral();
+                ShipRoofLights.Frame(Color.white);
                 // The floors still go over: the roof and slab clips read them too (the 1 x 1 neutral texture gives the
                 // same light wherever the floors' rows point).
                 Shader.SetGlobalVector(floorsId, Floors.GlowFloors());
@@ -411,6 +412,7 @@ namespace IsoRim
             Shader.SetGlobalVector(mapId, new Vector4(g.origin.x, g.origin.y, 1f / g.width, 1f / g.height));
             Color sky = SkyFor(map);
             Shader.SetGlobalVector(skyId, new Vector4(sky.r, sky.g, sky.b, 1f));
+            ShipRoofLights.Frame(sky);   // the ship roofs' glow by the sky light
             Shader.SetGlobalVector(floorsId, Floors.GlowFloors());
         }
 

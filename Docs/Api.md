@@ -3301,3 +3301,16 @@ not touched. The sun direction is
 the game's shadow vector (one cast length per wall height). ProjectZ floors hidden above the viewed one are not drawn and
 cast nothing. Where AO and the shadow meet, the darker of the two is used. Both are off for the session (rows greyed)
 when the engine's scene depth cannot be read; the game draws as without them.
+
+## Note: ship roof lights
+
+Not an Api: the option Ship roof lights (tab "Ground, water, roofs", Roofs section; default on, Odyssey only) gives gravship roofs (the flat deck IsoRim
+draws over roofed Substructure, Source/Gravship.cs ShipRoofs) a glowing circuit-board look (Source/ShipRoofLights.cs). The
+deck plates take one repeating texture (Textures/IsoRim/Roofs/ShipDeck.png, 8 x 8 cells, laid by world position; each
+8 x 8 block shows it turned or mirrored by a fixed order, so neighbouring blocks differ), lit as the plain deck (sky colour
+and sun). The same faces again carry ShipDeckGlow.png, added unlit (ShaderDef IsoRimAddTex, the textured twin of
+IsoRimAdd): full in the dark and in space at night, a little by daylight (it follows the sky colour). A thin glowing strip
+runs on top of the hull rim. It is part of the roofs layer, so it follows show roofs, the roof cut-away and lift, the
+gravship flight and collapse debris; the roof clip texture and ProjectZ floor slabs are unchanged. Off: the plain deck,
+exactly as before. A mod with its own ship deck terrain gets it wherever IsoRim draws the ship roof (TerrainDef.IsSubstructure
+or the Substructure affordance).

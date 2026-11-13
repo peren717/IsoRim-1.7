@@ -208,6 +208,21 @@
     </shaderProgram>
   </ShaderDef>
 
+  <!-- The same with a texture (IsoRimTex.vert.glsl: the textured faces' vertex stage, so the cut-away and roof lift apply):
+       light added to what is behind, unlit, no depth write, no culling. The glow of the ship roof lights (ShipRoofLights:
+       the glow texture over the deck, its material at queue 3602, after the deck it lies on). -->
+  <ShaderDef>
+    <defName>IsoRimAddTex</defName>
+    <shaderProgram>
+      <vertexShaderFileName>IsoRimTex.vert.glsl</vertexShaderFileName>
+      <fragmentShaderFileName>IsoRimSolid.frag.glsl</fragmentShaderFileName>
+      <blendMode>Additive</blendMode>
+      <depthWrite>false</depthWrite>
+      <cullMode>None</cullMode>
+      <renderQueue>3151</renderQueue>
+    </shaderProgram>
+  </ShaderDef>
+
   <!-- See-through marks drawn over everything (drag box, brackets): no depth test or write. -->
   <ShaderDef>
     <defName>IsoRimOverlay</defName>

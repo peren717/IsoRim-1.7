@@ -171,7 +171,7 @@ namespace IsoRim
         {
             "IsoRimSolid", "IsoRimSolidTex", "IsoRimOutline", "IsoRimOutlineRing", "IsoRimGhost", "IsoRimBlend", "IsoRimLitMark", "IsoRimLitMarkTex",
             "IsoRimLitMarkCard", "IsoRimCardPlant", "IsoRimCardSnow", "IsoRimCardSprite", "IsoRimFog", "IsoRimFadeCutout", "IsoRimFadeCutoutComplex",
-            "IsoRimFadeTerrainHard", "IsoRimFadeTerrainFade", "IsoRimFadeTerrainFadeRough", "IsoRimAdd",
+            "IsoRimFadeTerrainHard", "IsoRimFadeTerrainFade", "IsoRimFadeTerrainFadeRough", "IsoRimAdd", "IsoRimAddTex",
         };
 
         private static void BuildMap()

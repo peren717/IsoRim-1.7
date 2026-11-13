@@ -230,6 +230,8 @@
   <R3D_Settings_Roof_FlatSteel>Flat roof (steel)</R3D_Settings_Roof_FlatSteel>
   <R3D_Settings_Roof_FlatMarble>Flat roof (marble)</R3D_Settings_Roof_FlatMarble>
   <R3D_Settings_Roof_FlatGranite>Flat roof (granite)</R3D_Settings_Roof_FlatGranite>
+  <R3D_Settings_ShipRoofLights>Ship roof lights</R3D_Settings_ShipRoofLights>
+  <R3D_Settings_ShipRoofLightsTip>Gravship roofs show a glowing circuit pattern and a light strip along the hull edge.</R3D_Settings_ShipRoofLightsTip>
   <R3D_Settings_RoofShapeNote>Built roofs rise from every edge to a ridge, like hipped roofs. There is a button for them in the bottom right corner of the screen, and a key you can set.</R3D_Settings_RoofShapeNote>
 
   <!-- ==================== What is 3D ==================== -->
