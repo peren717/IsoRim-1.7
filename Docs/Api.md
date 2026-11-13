@@ -2093,7 +2093,7 @@ Limits:
 
 The VFE Medieval 2 pack's `Heraldry.cs` and `OpenHelmet.cs` use all of this.
 
-**Weapons other mods draw themselves, on cards.** On a pawn drawn as a 2D card IsoRim stands up only the game's own weapon drawing. A mod that draws the weapon itself with `Graphics.DrawMesh` (a prefix that skips the game's draw, a helper of its own) is left exactly as it wrote it: on a card its weapon lies flat at the card's feet. To have it stand up with the card, and show on figures, the mod registers that method with `CatchWeaponDraws`. (From 2026-11-12 to 2026-11-13 IsoRim found and rewrote such draws by itself; that was taken out, since IsoRim cannot know what another mod's own drawing does: a mod that already stood its weapon up lost it.)
+**Weapons other mods draw themselves, on cards.** On a pawn drawn as a 2D card IsoRim stands up only the game's own weapon drawing. A mod that draws the weapon itself with `Graphics.DrawMesh` (a prefix that skips the game's draw, a helper of its own) is left exactly as it wrote it: on a card its weapon lies flat at the card's feet. To have it stand up with the card, and show on figures, the mod registers that method with `CatchWeaponDraws`. (From 2026-11-12 to 2026-11-13 IsoRim found and rewrote such draws by itself; that was taken out, since IsoRim cannot know what another mod's own drawing does: a mod that already stood its weapon up itself got it stood up a second time, squashed out of sight.)
 
 ## Part 39: bodies in the air (version 55)
 
