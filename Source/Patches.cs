@@ -26,7 +26,8 @@ namespace IsoRim
         // compared with a person.
         private static bool pawnUpright;
         private static Pawn uprightPawn;     // the pawn pawnUpright is about
-        // A pawn is being drawn stood up as a 2D card now (DrawHook stands up what is drawn; CardDraw).
+        // A pawn is being drawn stood up as a 2D card now (DrawHook stands up what is drawn; Api 54's fallback,
+        // FigureWeapons.DrawOrCatchWeapon).
         internal static bool DrawingCard => pawnUpright && DrawHook.active;
         private static Vector3 pawnFeet;
         private static float pawnLift;       // an upright card sitting on a seat (Poses): how far it is raised
@@ -399,11 +400,10 @@ namespace IsoRim
             // A 3D figure aiming a gun shows its aim pie at the muzzle (AimPies).
             Patch("aim pies at the muzzle", AccessTools.Method(typeof(GenDraw), nameof(GenDraw.DrawAimPie)), prefix: nameof(DrawAimPie_Prefix));
             // A 3D figure's weapon is posed by the game (FigureWeapons): which pose it chose, and the shield belt's bubble caught.
-            MethodInfo carried = renderUtility != null ? FindMethod(renderUtility, "DrawCarriedWeapon") : null;
-            Patch("3D weapons carried", carried, prefix: nameof(DrawCarriedWeapon_Prefix), finalizer: nameof(DrawCarriedWeapon_Finalizer));
-            // Other mods' own drawing of these and of DrawEquipmentAndApparelExtras, which calls them (their patches, helpers): their
-            // draws stand up on 2D cards too (CardWeapons, once every mod is loaded).
-            CardWeapons.ScanWhenLoaded(renderUtility != null ? FindMethod(renderUtility, "DrawEquipmentAndApparelExtras") : null, aiming, carried);
+            // On a 2D card only the game's own weapon drawing stands up (RedirectDrawCalls); a mod that draws the weapon itself
+            // opts in through Api 54 (FigureWeapons.CatchDrawsOf), else its draw is left exactly as it wrote it.
+            Patch("3D weapons carried", renderUtility != null ? FindMethod(renderUtility, "DrawCarriedWeapon") : null,
+                prefix: nameof(DrawCarriedWeapon_Prefix), finalizer: nameof(DrawCarriedWeapon_Finalizer));
             Patch("shield bubbles on 3D figures", AccessTools.DeclaredMethod(typeof(CompShield), "Draw"), transpiler: nameof(CatchDraws_Transpiler));
 
             // Wind turbines: the blades are a turning 3D model.
@@ -4652,9 +4652,7 @@ namespace IsoRim
             }
         }
 
-        // byName: the game's own methods named for shadows or debug drawing are left alone (RedirectDrawCalls); other mods'
-        // methods (CardWeapons) are never judged by their names.
-        private static bool TryRedirect(MethodInfo m, HarmonyMethod transpiler, bool byName = true)
+        private static bool TryRedirect(MethodInfo m, HarmonyMethod transpiler)
         {
             try
             {
@@ -4662,7 +4660,7 @@ namespace IsoRim
                 {
                     return false;
                 }
-                if (byName && (m.Name.Contains("Shadow") || m.Name.Contains("Debug")))
+                if (m.Name.Contains("Shadow") || m.Name.Contains("Debug"))
                 {
                     return false;
                 }
@@ -4697,33 +4695,6 @@ namespace IsoRim
                 && callee.DeclaringType == typeof(Graphics)
                 && callee.Name == "DrawMesh"
                 && DrawHook.ReplacementFor(callee) != null;
-        }
-
-        // (CardWeapons) Another mod's method: its Graphics.DrawMesh calls to CardDraw (the same rule and rewriting as above),
-        // so they stand up on 2D cards and go to Unity as before everywhere else. False (one dev-mode warning) if it makes no
-        // such call or cannot be patched.
-        internal static bool RedirectCardDraws(MethodInfo m)
-        {
-            return TryRedirect(m, Hook(nameof(CardRedirect_Transpiler)), byName: false);
-        }
-
-        // The same method, however the MethodInfo was reached (through a subclass, another lookup: different objects).
-        internal static bool SameMethod(MethodBase a, MethodBase b)
-        {
-            return a == b || (a != null && b != null && a.MethodHandle.Equals(b.MethodHandle));
-        }
-
-        // Takes that back (Api 54 registered the method later: its draws are handled there).
-        internal static void UnredirectCardDraws(MethodBase m)
-        {
-            harmony.Unpatch(m, AccessTools.Method(typeof(Patches), nameof(CardRedirect_Transpiler)));
-        }
-
-        // Whether IsoRim already rewrites this method's drawing (RedirectDrawCalls, TryRedirect, any transpiler of its own).
-        internal static bool RewritesDrawing(MethodBase m)
-        {
-            HarmonyLib.Patches info = Harmony.GetPatchInfo(m);
-            return info != null && info.Transpilers.Any(t => t.owner == HarmonyId);
         }
 
         private static readonly AccessTools.FieldRef<IntermittentSteamSprayer, Thing> sprayerParent = AccessTools.FieldRefAccess<IntermittentSteamSprayer, Thing>("parent");
@@ -5136,19 +5107,6 @@ namespace IsoRim
 
         public static IEnumerable<CodeInstruction> Redirect_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            return RedirectDraws(instructions, typeof(DrawHook));
-        }
-
-        // Other mods' weapon drawing (CardWeapons): the same rewriting, to the card-only stand-ins. (Public for Harmony, as the
-        // other transpilers here; not Api.)
-        public static IEnumerable<CodeInstruction> CardRedirect_Transpiler(IEnumerable<CodeInstruction> instructions)
-        {
-            return RedirectDraws(instructions, typeof(CardDraw));
-        }
-
-        // Every Graphics.DrawMesh call IsoRim redirects (IsRedirectable) pointed at the stand-in of the same overload in host.
-        private static IEnumerable<CodeInstruction> RedirectDraws(IEnumerable<CodeInstruction> instructions, Type host)
-        {
             foreach (CodeInstruction ci in instructions)
             {
                 if (ci.opcode == OpCodes.Call)
@@ -5156,7 +5114,7 @@ namespace IsoRim
                     MethodInfo callee = ci.operand as MethodInfo;
                     if (IsRedirectable(callee))
                     {
-                        ci.operand = DrawHook.ReplacementIn(host, callee) ?? callee;
+                        ci.operand = DrawHook.ReplacementFor(callee);
                     }
                 }
                 yield return ci;

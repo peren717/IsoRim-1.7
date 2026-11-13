@@ -148,8 +148,10 @@ namespace IsoRim
         }
 
         // (Api 54) A draw another mod's method makes straight to Unity (Api.CatchWeaponDraws): caught while a figure's weapon is
-        // drawn (with a model or as its sprite made solid, as the game's own draw is); on a pawn drawn as a card it stands up with
-        // the card (CardDraw); anything else goes on to Unity as that mod wrote it (the 2D view).
+        // drawn (with a model or as its sprite made solid, as the game's own draw is); on a pawn drawn as a 2D card it is
+        // DrawHook's own draw, stood up with the card (onto its floor, its barrel tip caught) as the game's weapon drawing is;
+        // anything else goes on to Unity as that mod wrote it (the 2D view). Only methods registered here get this: IsoRim does
+        // not rewrite other mods' weapon drawing on its own.
         public static void DrawOrCatchWeapon(Mesh mesh, Matrix4x4 matrix, Material material, int layer)
         {
             if (Capturing && drawingWeapon != null)
@@ -159,7 +161,12 @@ namespace IsoRim
                 catchingOwn = false;
                 return;
             }
-            CardDraw.DrawMesh(mesh, matrix, material, layer);
+            if (Patches.DrawingCard && !Capturing)
+            {
+                DrawHook.DrawMesh(mesh, matrix, material, layer);
+                return;
+            }
+            Graphics.DrawMesh(mesh, matrix, material, layer);
         }
 
         private static bool catchingOwn;
@@ -180,23 +187,6 @@ namespace IsoRim
 
         private static readonly HashSet<MethodBase> catching = new HashSet<MethodBase>();
         private static Harmony catchHarmony;
-
-        // Whether a method's draws are handled through Api 54 (CatchWeaponDraws): the one registry CardWeapons asks.
-        internal static bool Catches(MethodBase method)
-        {
-            if (method == null)
-            {
-                return false;
-            }
-            foreach (MethodBase m in catching)
-            {
-                if (Patches.SameMethod(m, method))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
 
         // Api.CatchWeaponDraws: false (one warning) if the method makes no such draw or cannot be patched.
         internal static bool CatchDrawsOf(MethodBase method)
@@ -221,28 +211,8 @@ namespace IsoRim
                     Log.Warning("[IsoRim] CatchWeaponDraws: " + method.DeclaringType + "." + method.Name + " makes no Graphics.DrawMesh(mesh, matrix, material, layer) call.");
                     return false;
                 }
-                // Registered after the card scan redirected it: the card redirect comes off first (this transpiler must see the
-                // method's own Graphics.DrawMesh calls) and is put back if this patch fails. If it cannot come off, the method
-                // stays a card redirect and is not registered (this transpiler would find nothing to catch).
-                CardWeapons.Handover handover = CardWeapons.Release(method);
-                if (handover == CardWeapons.Handover.Kept)
-                {
-                    Log.Warning("[IsoRim] CatchWeaponDraws: " + method.DeclaringType + "." + method.Name + " could not be patched: its card redirect could not be taken off.");
-                    return false;
-                }
-                try
-                {
-                    catchHarmony = catchHarmony ?? new Harmony("isorim.api54");
-                    catchHarmony.Patch(method, transpiler: new HarmonyMethod(typeof(FigureWeapons), nameof(CatchWeaponDraws_Transpiler)));
-                }
-                catch
-                {
-                    if (handover == CardWeapons.Handover.Released)
-                    {
-                        CardWeapons.Restore(method as MethodInfo);
-                    }
-                    throw;
-                }
+                catchHarmony = catchHarmony ?? new Harmony("isorim.api54");
+                catchHarmony.Patch(method, transpiler: new HarmonyMethod(typeof(FigureWeapons), nameof(CatchWeaponDraws_Transpiler)));
                 catching.Add(method);
                 return true;
             }

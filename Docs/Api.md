@@ -2093,22 +2093,7 @@ Limits:
 
 The VFE Medieval 2 pack's `Heraldry.cs` and `OpenHelmet.cs` use all of this.
 
-**Weapons other mods draw themselves, on cards (no Api, 2026-11-12).** A pawn drawn as a 2D card gets its weapon stood up because the game's own weapon drawing goes through IsoRim. A mod that draws the weapon itself with `Graphics.DrawMesh` left it lying flat at the card's feet. Now, once every mod is loaded, IsoRim reads Harmony's patch info for the game's `PawnRenderUtility.DrawEquipmentAndApparelExtras`, `DrawEquipmentAiming` and `DrawCarriedWeapon` and redirects the `Graphics.DrawMesh` calls in:
-- every prefix, postfix and finalizer of another mod on those three;
-- the methods each of those calls (one level deep);
-- the methods another mod's transpiler put into those three (calls in their patched code that the game's code does not make).
-
-The redirect is the same rewriting IsoRim makes in the game's pawn drawing, to a card-only stand-in: while a pawn is drawn as a card the draw stands up with the card (and onto its floor); everywhere else it goes to `Graphics.DrawMesh` exactly as the mod wrote it. So 3D figures, the 2D view and every other caller of those methods are unchanged; figures keep taking their weapon from the game's own draws and `CatchWeaponDraws`.
-
-Left out, so each draw is handled once: methods registered with `CatchWeaponDraws` (their own draws stand up on cards through `CatchWeaponDraws` itself; a method registered after the scan is handed over then), IsoRim's own methods, methods IsoRim already rewrites, generic methods and methods of generic types, and anything outside the running mods' assemblies. The methods a registered method calls are looked at like any patch's helpers, whenever it was registered. Nothing to call or set: a mod that wants its weapon on figures too still registers with `CatchWeaponDraws`.
-
-Limits:
-- **Only `Graphics.DrawMesh`:** `Graphics.DrawMeshInstanced`, command buffers, `GenDraw` helpers and the `Graphics.DrawMesh` overloads IsoRim does not redirect anywhere (shadow casting, light probes) stay as drawn.
-- **Everything such a method draws:** on a card every `Graphics.DrawMesh` draw of a redirected method stands up with the card, not only the weapon (an aim line, a flash drawn there too).
-- **One level of helpers:** a draw two calls away from the patch method, or in a lambda or delegate, is not found. A method another mod's transpiler put in is not followed further: Combat Extended's platform weapons (`WeaponPlatform.DrawPlatform`, called from its helper) stay flat on cards.
-- **`CatchWeaponDraws` methods:** only their `Graphics.DrawMesh(Mesh, Matrix4x4, Material, int)` calls stand up on cards; their other overloads stay flat (they are left out of the redirect, and `CatchWeaponDraws` takes only that overload).
-- **When:** the scan runs once, as the last step of loading (after every static constructor and the steps they queued). Patches made on those three methods after it (at runtime, by a later step) are not looked at.
-- **Failing soft:** a method that cannot be patched is skipped with one warning in dev mode; the rest still work. With dev mode and `-isorimdiag` (or `-isorim3d`) the log lists the redirected methods and the scan time once.
+**Weapons other mods draw themselves, on cards.** On a pawn drawn as a 2D card IsoRim stands up only the game's own weapon drawing. A mod that draws the weapon itself with `Graphics.DrawMesh` (a prefix that skips the game's draw, a helper of its own) is left exactly as it wrote it: on a card its weapon lies flat at the card's feet. To have it stand up with the card, and show on figures, the mod registers that method with `CatchWeaponDraws`. (From 2026-11-12 to 2026-11-13 IsoRim found and rewrote such draws by itself; that was taken out, since IsoRim cannot know what another mod's own drawing does: a mod that already stood its weapon up lost it.)
 
 ## Part 39: bodies in the air (version 55)
 
