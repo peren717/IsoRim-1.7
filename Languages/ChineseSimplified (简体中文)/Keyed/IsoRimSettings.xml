@@ -275,6 +275,8 @@
   <R3D_Settings_WorkAnimationsTip>殖民者工作时的斧头、镐、锤子、镰刀、锄头和扫帚。</R3D_Settings_WorkAnimationsTip>
   <R3D_Settings_SelectionRings>选中圈</R3D_Settings_SelectionRings>
   <R3D_Settings_SelectionRingsTip>选中的角色脚下显示彩色圆圈。</R3D_Settings_SelectionRingsTip>
+  <R3D_Settings_TargetBox>目标框</R3D_Settings_TargetBox>
+  <R3D_Settings_TargetBoxTip>瞄准或指派时，用立体框标出目标。</R3D_Settings_TargetBoxTip>
   <R3D_Settings_Ghosts3D>蓝图显示建成后的样子</R3D_Settings_Ghosts3D>
   <R3D_Settings_Ghosts3DTip>蓝图、建造框架和放置预览显示为半透明 3D 模型。</R3D_Settings_Ghosts3DTip>
   <R3D_Settings_Damage3D>建筑上的损伤痕迹</R3D_Settings_Damage3D>

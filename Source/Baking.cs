@@ -2520,6 +2520,48 @@ namespace IsoRim
             }
         }
 
+        // A plant drawn by its growth (ModelDef.growthScale): the share of its full size it is drawn at now; else 1. One place
+        // for the bake (BakeModel) and the model's box (PlacedBounds).
+        public static float GrowthScale(Thing thing, ModelDef def)
+        {
+            Plant plant = thing as Plant;
+            return plant != null && def.growthScale && plant.def.plant != null ? plant.def.plant.visualSizeRange.LerpThroughRange(plant.Growth) : 1f;
+        }
+
+        // The box round a thing's model as the bake places it (its model picked, sized, grown, turned, scattered and offset as
+        // BakeModel does, up its wall if mounted): lo/hi on the map (x, z) and in cells over what it stands on (y). False
+        // without a model or for a model laid flat. No printing.
+        public static bool PlacedBounds(Thing thing, ModelEntry entry, out Vector3 lo, out Vector3 hi)
+        {
+            lo = hi = Vector3.zero;
+            Model m = entry != null ? entry.Pick(thing) : null;
+            if (m == null || entry.def.layFlat)
+            {
+                return false;
+            }
+            float scale, yaw;
+            StartPlace(thing, entry, out scale, out yaw);
+            scale *= GrowthScale(thing, entry.def);
+            float baseHeight = 0f;
+            Vector3 center, fit;
+            bool mounted;
+            Place(thing, entry, m, scale, ref yaw, ref baseHeight, out center, out fit, out mounted);
+            Quaternion turn = Quaternion.AngleAxis(yaw, Vector3.up);
+            lo = new Vector3(float.MaxValue, 0f, float.MaxValue);
+            hi = new Vector3(float.MinValue, baseHeight + m.maxY * fit.y + entry.def.offset.y, float.MinValue);
+            for (int k = 0; k < 4; k++)
+            {
+                Vector3 local = new Vector3((k & 1) == 0 ? m.minX : m.maxX, 0f, (k & 2) == 0 ? m.minZ : m.maxZ);
+                Vector3 p = center + turn * (Vector3.Scale(local, fit) + entry.def.offset);
+                lo.x = Mathf.Min(lo.x, p.x);
+                lo.z = Mathf.Min(lo.z, p.z);
+                hi.x = Mathf.Max(hi.x, p.x);
+                hi.z = Mathf.Max(hi.z, p.z);
+            }
+            lo.y = baseHeight;
+            return true;
+        }
+
         // Where a point of the model (model space) ends up on the map (y in cells above the ground), and the model's
         // size per axis there, as Place puts it for the bake (not for models laid flat).
         public static Vector3 PointOnMap(Thing thing, ModelEntry entry, Model m, Vector3 local, out Vector3 fit, out float yaw)
@@ -2619,10 +2661,7 @@ namespace IsoRim
             Plant plant = thing as Plant;
             if (plant != null)
             {
-                if (def.growthScale && plant.def.plant != null)
-                {
-                    scale *= plant.def.plant.visualSizeRange.LerpThroughRange(plant.Growth);
-                }
+                scale *= GrowthScale(thing, def);
                 bare = (plant.LeaflessNow && !def.keepLeaves)
                     || (!CutTags.Enabled && plant.def.plant != null && plant.def.plant.IsTree && Cutaway.TreeThinned(thing.Map, thing.Position));
             }

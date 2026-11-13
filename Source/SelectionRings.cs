@@ -50,6 +50,8 @@ namespace IsoRim
             public float x, z;        // the middle of the body on the ground, world (the pawn's own rows)
             public float y;           // true height of the ground (bed surface) under it
             public float fit;         // half diagonal of the body's box on the ground
+            public float top;         // true height of the posed body's top (a box drawer's note; 0 for a card)
+            public float hx, hz, yaw; // the posed body's box on the ground: half extents in the figure's own x and z, its turn
             public Matrix4x4 extra;   // the layout's stair offset (DrawHook.floorMatrix) while it was drawn, or identity
         }
 
@@ -64,12 +66,17 @@ namespace IsoRim
             {
                 return false;
             }
+            if (pawn == TargetBox.Figure)
+            {
+                return true;   // the target box's figure: its posed box (FigureBox)
+            }
             Selector sel = Find.Selector;
             return sel != null && sel.NumSelected > 0 && sel.IsSelected(pawn);
         }
 
         // A drawer's posed body: the box lo..hi in the figure's own space (cells, before the turn by yaw and the move to at),
-        // placed by local; at in world (rows) space, its y ignored; ground: the true height the ring lies at.
+        // placed by local; at in world (rows) space, its y the true height local places from (the body's top: FigureBox);
+        // ground: the true height the ring lies at.
         internal static void NoteBox(Pawn pawn, Vector3 at, float yaw, float ground, Matrix4x4 local, Vector3 lo, Vector3 hi)
         {
             if (!Wanted(pawn))
@@ -77,7 +84,7 @@ namespace IsoRim
                 return;
             }
             Vector3 min = new Vector3(float.MaxValue, 0f, float.MaxValue);
-            Vector3 max = new Vector3(float.MinValue, 0f, float.MinValue);
+            Vector3 max = new Vector3(float.MinValue, float.MinValue, float.MinValue);
             Grow(ref min, ref max, local, lo, hi);
             Note(pawn, at, yaw, ground, min, max);
         }
@@ -90,7 +97,7 @@ namespace IsoRim
                 return;
             }
             Vector3 min = new Vector3(float.MaxValue, 0f, float.MaxValue);
-            Vector3 max = new Vector3(float.MinValue, 0f, float.MinValue);
+            Vector3 max = new Vector3(float.MinValue, float.MinValue, float.MinValue);
             FigureBoxes.Box b = FigureBoxes.Body(look);
             Grow(ref min, ref max, bodyPlace, b.centre - b.size * 0.5f, b.centre + b.size * 0.5f);
             FigureBoxes.Box h = FigureBoxes.Head(look);
@@ -111,7 +118,7 @@ namespace IsoRim
             {
                 at = AlongBed(bed, at);
             }
-            Store(pawn, at.x, at.z, ground, length * CardFill * 0.5f);
+            Store(pawn, at.x, at.z, ground, length * CardFill * 0.5f, 0f, 0f, 0f, 0f);
         }
 
         // A 2D sleeper's body lies along its bed from the pillow (where the game draws it) toward the foot: the middle of the
@@ -159,6 +166,7 @@ namespace IsoRim
                 min.z = Mathf.Min(min.z, p.z);
                 max.x = Mathf.Max(max.x, p.x);
                 max.z = Mathf.Max(max.z, p.z);
+                max.y = Mathf.Max(max.y, p.y);   // the top (TargetBox)
             }
         }
 
@@ -170,10 +178,10 @@ namespace IsoRim
             }
             Vector3 mid = Quaternion.AngleAxis(yaw, Vector3.up) * new Vector3((min.x + max.x) * 0.5f, 0f, (min.z + max.z) * 0.5f);
             float dx = max.x - min.x, dz = max.z - min.z;
-            Store(pawn, at.x + mid.x, at.z + mid.z, ground, 0.5f * Mathf.Sqrt(dx * dx + dz * dz));
+            Store(pawn, at.x + mid.x, at.z + mid.z, ground, 0.5f * Mathf.Sqrt(dx * dx + dz * dz), at.y + max.y, dx * 0.5f, dz * 0.5f, yaw);
         }
 
-        private static void Store(Pawn pawn, float x, float z, float ground, float fit)
+        private static void Store(Pawn pawn, float x, float z, float ground, float fit, float top, float hx, float hz, float yaw)
         {
             Building_Bed bed = pawn.CurrentBed();
             if (bed != null)
@@ -187,6 +195,10 @@ namespace IsoRim
                 z = z,
                 y = ground,
                 fit = fit,
+                top = top,
+                hx = hx,
+                hz = hz,
+                yaw = yaw,
                 extra = DrawHook.floor ? DrawHook.floorMatrix : Matrix4x4.identity
             };
             Prune();
@@ -215,6 +227,25 @@ namespace IsoRim
                     notes.Remove(p);
                 }
             }
+        }
+
+        // A pawn's body as a box drawer posed it this frame or the last: its rect on the ground (world rows, the posed box turned
+        // by its yaw, axis aligned round it) and its top (true cells over the floor it stands on). False when not noted (not
+        // drawn by a box drawer, a 2D card, or neither selected nor the target box's figure).
+        internal static bool FigureBox(Pawn pawn, out Rect rect, out float top)
+        {
+            Footprint f;
+            if (pawn == null || !notes.TryGetValue(pawn, out f) || Time.frameCount - f.frame > 2 || f.top <= 0f || f.hx <= 0f && f.hz <= 0f)
+            {
+                rect = default(Rect);
+                top = 0f;
+                return false;
+            }
+            float c = Mathf.Abs(Mathf.Cos(f.yaw * Mathf.Deg2Rad)), sn = Mathf.Abs(Mathf.Sin(f.yaw * Mathf.Deg2Rad));
+            float ex = c * f.hx + sn * f.hz, ez = sn * f.hx + c * f.hz;
+            rect = new Rect(f.x - ex, f.z - ez, 2f * ex, 2f * ez);
+            top = f.top;
+            return true;
         }
 
         // ---- the look: THE one place that decides a pawn's ring

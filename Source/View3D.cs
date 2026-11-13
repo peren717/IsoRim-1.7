@@ -446,6 +446,7 @@ namespace IsoRim
                         Interaction.DrawDesignationDrag();
                         Interaction.DrawDragGhosts();
                         MineXray.Draw();
+                        TargetBox.Draw();
                     }
                 }
                 catch (Exception e)
@@ -1414,6 +1415,14 @@ namespace IsoRim
                 ny = Vector3.Dot(d, up) / orthoSize;
             }
             return new Vector2((nx + 1f) * 0.5f * Screen.width, (ny + 1f) * 0.5f * Screen.height);
+        }
+
+        // How many cells one screen pixel spans at a point (map x and z, real height in cells as y), for lines kept a fixed
+        // number of pixels wide (TargetBox), with the perspective camera too.
+        internal static float CellsPerPixel(Vector3 p)
+        {
+            float h = Mathf.Max(1f, Screen.height);
+            return persp ? 2f * Mathf.Max(0.01f, Vector3.Dot(p - eye, fwd)) * tanHalf / h : 2f * orthoSize / h;
         }
 
         // The block of map cells that can be seen, used by the game to decide what to draw.

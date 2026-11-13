@@ -275,6 +275,8 @@
   <R3D_Settings_WorkAnimationsTip>Axes, pickaxes, hammers, scythes, hoes and brooms while colonists work.</R3D_Settings_WorkAnimationsTip>
   <R3D_Settings_SelectionRings>Selection rings</R3D_Settings_SelectionRings>
   <R3D_Settings_SelectionRingsTip>A coloured ring on the ground under selected pawns.</R3D_Settings_SelectionRingsTip>
+  <R3D_Settings_TargetBox>Target box</R3D_Settings_TargetBox>
+  <R3D_Settings_TargetBoxTip>A 3D box marks what you aim at or designate.</R3D_Settings_TargetBoxTip>
   <R3D_Settings_Ghosts3D>Blueprints show the finished build</R3D_Settings_Ghosts3D>
   <R3D_Settings_Ghosts3DTip>Blueprints, frames and the placement preview as see-through 3D models.</R3D_Settings_Ghosts3DTip>
   <R3D_Settings_Damage3D>Damage marks on buildings</R3D_Settings_Damage3D>

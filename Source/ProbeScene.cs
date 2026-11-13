@@ -1835,6 +1835,12 @@ namespace IsoRim
                 case "labels":
                     IxKey(key, a);
                     break;
+                case "tbox":
+                case "tbcam":
+                case "tbcheck":
+                case "tbnocursor":
+                    TbKey(key, a);   // ProbeTargetBox
+                    break;
                 case "window":
                 case "campath":
                 case "spin":
@@ -2453,6 +2459,7 @@ namespace IsoRim
             }
             FilmTick(map);
             IxTick(map);
+            TbTick(map);
             MeleeAnimTick(map);
             MotionTick();
             CutTick();

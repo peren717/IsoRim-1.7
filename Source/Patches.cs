@@ -310,6 +310,16 @@ namespace IsoRim
             Patch("designators aim at blocks", AccessTools.Method(typeof(DesignatorUtility), "RenderHighlightOverSelectableCells"), prefix: nameof(HighlightCells_Prefix));
             Patch("designators aim at blocks", AccessTools.Method(typeof(DesignatorUtility), "RenderHighlightOverSelectableThings"), prefix: nameof(HighlightThings_Prefix));
 
+            // The target box (TargetBox): while a 3D box marks the targeted thing, the game's flat marks of that same target are
+            // left out (its targeting square, a position mark inside its footprint; the mouse-over bracket: MouseoverBracket_Prefix).
+            // The game's checks the box asks every frame post no messages (QuietMessage_Prefix).
+            Patch("target box", FindMethod(typeof(GenDraw), "DrawTargetingHighlight_Thing"), transpiler: nameof(TargetingSquare_Transpiler));
+            Patch("target box", AccessTools.Method(typeof(GenDraw), nameof(GenDraw.DrawTargetHighlightWithLayer), new[] { typeof(Vector3), typeof(AltitudeLayer) }),
+                prefix: nameof(TargetMarkAt_Prefix));
+            Patch("target box", AccessTools.Method(typeof(GenDraw), nameof(GenDraw.DrawTargetHighlightWithLayer), new[] { typeof(IntVec3), typeof(AltitudeLayer), typeof(Material) }),
+                prefix: nameof(TargetMarkCell_Prefix));
+            Patch("target box", AccessTools.Method(typeof(Messages), nameof(Messages.Message), new[] { typeof(Message), typeof(bool) }), prefix: nameof(QuietMessage_Prefix));
+
             // The game lays dark sheets round the outside of the map to hide whatever lies past
             // its edge. In 3D they would cover the cut through the earth below the edge.
             Type clipper = AccessTools.TypeByName("Verse.MapEdgeClipDrawer");
@@ -1208,6 +1218,7 @@ namespace IsoRim
         public static void GameCtor_Postfix()
         {
             View3D.NewGame();
+            TargetBox.Reset();
         }
 
         public static void RootUpdate_Postfix()
@@ -1216,6 +1227,7 @@ namespace IsoRim
             {
                 FullWalls.Reset();
                 FirstPerson.Reset();
+                TargetBox.Reset();
             }
         }
 
@@ -4854,6 +4866,10 @@ namespace IsoRim
         {
             try
             {
+                if (TargetBox.HidesBracket())
+                {
+                    return false;   // the target box marks it (IsoRim's lifted bracket left out too)
+                }
                 return !Interaction.DrawBlockBracket();
             }
             catch (Exception e)
@@ -4861,6 +4877,63 @@ namespace IsoRim
                 Log.ErrorOnce("[IsoRim] Drawing the designator bracket failed: " + e, 93611164);
                 return true;
             }
+        }
+
+        // GenDraw.DrawTargetingHighlight_Thing: its one Graphics.DrawMesh (the square under the thing) becomes
+        // TargetBox.ThingSquare(..., t), which leaves it out while the target box marks t (the colonist bar highlight stays).
+        public static IEnumerable<CodeInstruction> TargetingSquare_Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            MethodInfo from = AccessTools.Method(typeof(Graphics), nameof(Graphics.DrawMesh), new[] { typeof(Mesh), typeof(Vector3), typeof(Quaternion), typeof(Material), typeof(int) });
+            MethodInfo to = AccessTools.Method(typeof(TargetBox), nameof(TargetBox.ThingSquare));
+            int found = 0;
+            foreach (CodeInstruction ci in instructions)
+            {
+                if (ci.opcode == OpCodes.Call && from != null && to != null && ci.operand as MethodInfo == from)
+                {
+                    CodeInstruction thing = new CodeInstruction(OpCodes.Ldarg_0);   // the thing
+                    thing.labels.AddRange(ci.labels);
+                    ci.labels.Clear();
+                    yield return thing;
+                    ci.operand = to;
+                    found++;
+                }
+                yield return ci;
+            }
+            if (found != 1)
+            {
+                ModLog.Warn("[IsoRim] Target box: the game's targeting square call was found " + found + " times (expected 1)");
+            }
+        }
+
+        public static bool TargetMarkAt_Prefix(Vector3 __0)
+        {
+            try
+            {
+                return !TargetBox.HidesMarkAt(__0);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Leaving out the game's target mark failed: " + e, 93627002);
+                return true;
+            }
+        }
+
+        public static bool TargetMarkCell_Prefix(IntVec3 __0)
+        {
+            try
+            {
+                return !TargetBox.HidesMarkAt(__0.ToVector3Shifted());
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Leaving out the game's target mark failed: " + e, 93627003);
+                return true;
+            }
+        }
+
+        public static bool QuietMessage_Prefix()
+        {
+            return !TargetBox.Quiet;
         }
 
         // The game's FleckMaker.Static(caster.Position, map, ShotFlash, muzzleFlashScale) becomes
