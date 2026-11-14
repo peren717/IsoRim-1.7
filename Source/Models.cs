@@ -3617,6 +3617,39 @@ namespace IsoRim
             }
         }
 
+        // True if the game draws the thing's own sprite in two colours: its material's shader takes a mask (the game's own
+        // test, ShaderUtility.SupportsMaskTex) and has one, so Thing.DrawColorTwo shows on it. Read once per def: right for
+        // ore (one graphic per def). Things whose graphic differs from thing to thing (styles, stuff, random variants)
+        // would need the answer kept per graphic instead.
+        private static readonly Dictionary<ThingDef, bool> twoColoured = new Dictionary<ThingDef, bool>();
+
+        public static bool TwoColoured(Thing t)
+        {
+            if (t == null)
+            {
+                return false;
+            }
+            bool two;
+            if (twoColoured.TryGetValue(t.def, out two))
+            {
+                return two;
+            }
+            try
+            {
+                Graphic g = t.Graphic;
+                Material m = g != null ? g.MatSingleFor(t) : null;
+                two = m != null && m.shader != null && m.shader.SupportsMaskTex()
+                    && m.HasProperty(ShaderPropertyIDs.MaskTex) && m.GetTexture(ShaderPropertyIDs.MaskTex) != null;
+            }
+            catch (Exception e)
+            {
+                two = false;
+                Log.ErrorOnce("[IsoRim] Reading the sprite of " + t.def.defName + " failed: " + e.Message, 93611413);
+            }
+            twoColoured[t.def] = two;
+            return two;
+        }
+
         // True if any of the model's materials is a "sheet" one (the second tint matters for it).
         public static bool HasSheet(Model m)
         {
@@ -4311,6 +4344,23 @@ namespace IsoRim
             }
             shaders[defName] = s;
             return s;
+        }
+
+        // A two-colour texture's second colour (Shaders/IsoRimSolid.frag.glsl, _IsoColorTwo): the texture's alpha is then the
+        // mask between the material's colour and this one. Ore (WallBoxes.OreMaterial). Its light pass takes it too
+        // (IsoGlow.Resync), so that pass reads the alpha as the mask as well, not as a cut-out.
+        // Not for smooth textured faces (ModelDef.smoothTextured): the shader mixes the two colours times the vertex colour,
+        // which is a normal on those faces, not a colour.
+        internal static readonly int ColorTwoId = Shader.PropertyToID("_IsoColorTwo");
+
+        public static void SetSecond(Material m, Color second)
+        {
+            if (m != null)
+            {
+                second.a = 1f;
+                m.SetColor(ColorTwoId, second);
+                IsoGlow.Resync(m);
+            }
         }
 
         // A new material on one of the IsoRim defs. queue -1 keeps the def's queue.

@@ -249,6 +249,22 @@ namespace IsoRim
             mark.mainTexture = m.mainTexture;
             mark.SetVector(mainTexStId, m.GetVector(mainTexStId));
             mark.SetColor(colorId, m.color);
+            // a two-colour texture (R3DMaterials.SetSecond): its alpha is a mask in the light pass too, never a cut-out
+            // (shaders of an addon's own, Api.ConfigureFigureMaterial, need not have the property)
+            if (m.HasProperty(R3DMaterials.ColorTwoId) && mark.HasProperty(R3DMaterials.ColorTwoId))
+            {
+                mark.SetColor(R3DMaterials.ColorTwoId, m.GetColor(R3DMaterials.ColorTwoId));
+            }
+        }
+
+        // Copies a material's texture and colours to its light-pass twin again, after they were changed (R3DMaterials.SetSecond).
+        internal static void Resync(Material m)
+        {
+            Material mark;
+            if (m != null && marks.TryGetValue(m, out mark))
+            {
+                SyncMark(m, mark);
+            }
         }
 
         // The mark material for a material drawn now, or null if it needs none. Texture and colour

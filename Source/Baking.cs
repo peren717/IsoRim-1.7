@@ -1004,8 +1004,13 @@ namespace IsoRim
         // not depend on how the game's shader treats vertex colours.
         // Sides are lit by the sun through LitTexture, so they brighten and darken smoothly as it
         // moves; the cap keeps a steady brightness.
-        private static Material MaterialFor(WallKind kind, bool top, int face, bool sloped, Color tint)
+        // second: an ore block's second colour (OreSecond); only ore reads it.
+        private static Material MaterialFor(WallKind kind, bool top, int face, bool sloped, Color tint, Color? second = null)
         {
+            if (kind == WallKind.RockOre)
+            {
+                return OreMaterial(top, face, sloped, tint, second ?? tint);
+            }
             if (!top)
             {
                 float lift = sloped ? 1f + SlopeLight * 1.4f : 1f;
@@ -1028,6 +1033,57 @@ namespace IsoRim
             return m;
         }
 
+        // Ore (WallKind.RockOre). Its two textures carry two colours: the rock takes the def's colour, the nuggets its second
+        // colour, as the game's flecked rock sprite does by its mask (CutoutComplex: color where the mask is red, colorTwo
+        // where it is green). The textures' alpha is that mask (Shaders/IsoRimSolid.frag.glsl, _IsoColorTwo). Both colours
+        // get the same shading as any block's (the cap's TopShade, a sloped face's lift). One material per pair of colours,
+        // cap, side and sloped side. second = tint: nuggets in a lighter shade of the rock (an ore without a second colour).
+        private static readonly Dictionary<long, Material> oreMaterials = new Dictionary<long, Material>();
+
+        private static Material OreMaterial(bool top, int face, bool sloped, Color tint, Color second)
+        {
+            Color32 c = tint, c2 = second;
+            long key = ((long)((c2.r << 16) | (c2.g << 8) | c2.b) << 26) | (long)(uint)(((c.r << 16) | (c.g << 8) | c.b) << 2) | (top ? 1L : 0L) | (sloped ? 2L : 0L);
+            Material m;
+            if (oreMaterials.TryGetValue(key, out m))
+            {
+                return m;
+            }
+            float shade = top ? TopShade : (sloped ? 1f + SlopeLight * 1.4f : 1f);
+            Color first = new Color(tint.r * shade, tint.g * shade, tint.b * shade, 1f);
+            Color32 lifted = first;
+            if (sloped && lifted.r == c.r && lifted.g == c.g && lifted.b == c.b)
+            {
+                // A colour the slope's lift cannot brighten (white: an ore with no colour of its own). The side materials are
+                // kept by the bytes of their colour (R3DMaterials.LitTexture), so its sloped face has always been drawn with
+                // the lower face's material, the rock without the lift. It stays that one material, with that face's second
+                // colour: the nuggets match on both parts (before: the lift on the nuggets only, of both parts).
+                m = OreMaterial(top, face, false, tint, second);
+                oreMaterials[key] = m;
+                return m;
+            }
+            string path = "IsoRim/Walls/" + KindNames[(int)WallKind.RockOre] + (top ? "Top" : "Side");
+            string tag = "|two" + c2.r + "," + c2.g + "," + c2.b;   // one material per pair, whatever the first colour rounds to
+            m = top ? R3DTextures.MaterialFor(path, first, -1, tag)
+                : R3DMaterials.LitTexture(path, first, R3DMaterials.BinOf(FaceOut[face].ToVector3()), 1, tag);
+            R3DMaterials.SetSecond(m, new Color(second.r * shade, second.g * shade, second.b * shade, 1f));
+            oreMaterials[key] = m;
+            return m;
+        }
+
+        // An ore block's second colour: the thing's own (Thing.DrawColorTwo, R3DTextures.SheetTint) where the game draws its
+        // sprite in two colours (R3DTextures.TwoColoured), tinted toward the mine mark's colour when marked, as its first.
+        // Null for anything else: not ore, or an ore whose sprite has one colour (its nuggets then take a lighter shade of
+        // the rock's colour, OreMaterial).
+        private static Color? OreSecond(Thing t, WallKind kind)
+        {
+            if (kind != WallKind.RockOre || !R3DTextures.TwoColoured(t))
+            {
+                return null;
+            }
+            return MineMarks.Tint(t, R3DTextures.SheetTint(t));
+        }
+
         // Draws one block entirely from the mod's own textures. Returns false, having drawn
         // nothing, if the textures are missing, so the caller can fall back to the game's sprite.
         public static bool PrintBlock(SectionLayer layer, Thing t, float height)
@@ -1042,8 +1098,9 @@ namespace IsoRim
             BlockTones(t, ref tint, ref capTint);
             tint = MineMarks.Tint(t, tint);   // marked for mining: toward the mark's colour
             capTint = MineMarks.Tint(t, capTint);
+            Color? two = OreSecond(t, kind);   // ore (rugged rock off): its nuggets' colour
             WallTopSpec spec = Forms.For(t.def).wallTops;   // (Api 11) a wall with a shaped top: plain cap, its own side texture
-            Material topMat = spec != null ? R3DMaterials.Solid : MaterialFor(kind, true, 0, false, capTint);
+            Material topMat = spec != null ? R3DMaterials.Solid : MaterialFor(kind, true, 0, false, capTint, two);
             if (topMat == null)
             {
                 return false;
@@ -1127,7 +1184,7 @@ namespace IsoRim
                 Vector3 p0 = centre + outward * 0.5f - right * 0.5f;   // bottom left corner, seen from outside
                 Vector3 p1 = p0 + right;
 
-                Material sideMat = spec != null ? WallTops.SideMaterial(spec, tint) : MaterialFor(kind, false, f, false, tint);
+                Material sideMat = spec != null ? WallTops.SideMaterial(spec, tint) : MaterialFor(kind, false, f, false, tint, two);
                 LayerSubMesh side = sideMat != null ? MeshWriter.Sub(layer, sideMat) : null;
                 bool textured = side != null && side.verts.Count + 4 <= MeshWriter.MaxVerts;
                 if (textured)
@@ -1217,8 +1274,9 @@ namespace IsoRim
                 return PrintRockSmooth(layer, t, height, kind);   // PROTOTYPE (CliffLook.cs)
             }
             Color tint = MineMarks.Tint(t, t.DrawColor);   // marked for mining: toward the mark's colour
+            Color? two = OreSecond(t, kind);               // ore: its nuggets' colour
             Material capMat = kind == WallKind.Rock ? RockCapMaterial(t) : null;
-            Material topMat = capMat ?? MaterialFor(kind, true, 0, false, tint);
+            Material topMat = capMat ?? MaterialFor(kind, true, 0, false, tint, two);
             if (topMat == null)
             {
                 return false;
@@ -1298,7 +1356,7 @@ namespace IsoRim
                     Vector3 b = part == 0 ? rockMid[l] : rockTop[l];
                     Vector3 d = part == 0 ? rockGround[r] : rockMid[r];
                     Vector3 e = part == 0 ? rockMid[r] : rockTop[r];
-                    Material sideMat = MaterialFor(kind, false, f, part == 1, tint);
+                    Material sideMat = MaterialFor(kind, false, f, part == 1, tint, two);
                     LayerSubMesh side = sideMat != null ? MeshWriter.Sub(layer, sideMat) : null;
                     bool textured = side != null && side.verts.Count + 4 <= MeshWriter.MaxVerts;
                     if (textured)

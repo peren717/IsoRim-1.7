@@ -65,6 +65,9 @@ Everything else in the `.mtl` is ignored. Write the `.mtl` by hand: Blender writ
 - Tileable textures that come with IsoRim: `IsoRim/Swatches/` Wood, Stone, Metal, Fabric, Rock, Bark, Leaf, Soil, Solar,
   Glow, Flame. Each face draws its `Kd` colour, and the texture times `Kd` over it; players can switch textures off, so
   `Kd` alone must already be the right colour.
+- IsoRim's block textures (`IsoRim/Walls/`: walls, natural rock, ore) are not for models. If you replace them:
+  RockOreTop/RockOreSide.png: alpha is a mask, 1 = rock and outlines, 0.6 = nugget faces (the ore's second colour), never
+  below 0.6; a file without alpha gives the one-colour look.
 - Textured faces are drawn 0.004 cells out along their normal. A plain face 0.0025 to 0.0046 over a textured one would land on that
   layer and shimmer, so IsoRim moves it 0.006 further out when the model loads; nothing to do in the file. Closer than 0.0025 the
   textured face hides it. Faces of the same kind must not be exactly coplanar: no lift settles those.

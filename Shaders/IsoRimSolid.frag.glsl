@@ -7,6 +7,7 @@
 // USE_TEXTURE is defined by the engine for defs with useTexture = true (IsoRimSolidTex).
 //
 // colour = vertex colour * _Color [* texture, cut out below alpha 0.5] * shade
+// (a two-colour texture, _IsoColorTwo.a = 1: _Color or _IsoColorTwo by the texture's alpha, see TwoColourAlpha)
 // shade (_LightMode): 0 unlit; 1 model curve; 2 wall curve; 3 roof slates (model curve * 1.05, at most 1.1).
 // The sun is IsoRim's own (C# R3DMaterials.SunDirAt), pushed every frame as the global _IsoSun.
 // The face normal comes from screen derivatives of the world position in true (unsquashed) space,
@@ -22,6 +23,12 @@
 // pass (ghosts, drawn after the overlay).
 
 #define QUANTIZE 1   // 1: snap normals to IsoRim's 26 direction groups (original look); 0: exact face normals
+
+// Two-colour textures (_IsoColorTwo): the alpha of a texel that takes the second colour in full. The one place this value
+// lives: the generator of the ore textures (gen_oretex.py, kept with the project's tools outside this repository: tools\runners\oretex)
+// reads it from this line.
+const float TwoColourAlpha = 0.6;
+
 //
 // Smooth shading on people (Source\SmoothFigures.cs): faces of a person's figure may carry a smooth normal per corner, from
 // IsoRim.vert.glsl in vUv (x + 1024, y) and vColor.a (z), true space. Such a fragment is lit by that normal, interpolated
@@ -63,6 +70,7 @@ layout(set = 2, binding = 0) uniform MaterialUniforms
     float _IsoFadeFrom; // @default = 0.0   faded floors: where in the dither pattern (0-1) the kept share starts
     vec4 _IsoToon;    // global, no default: stylised light (R3DMaterials.SetToon): x = sun bands on models (0 smooth, 2 or 3), y = rim light strength (0 off)
     float _IsoFlash;  // @default = 0.0   per draw (HitFlash): how red a hit figure is now, 0 = not at all
+    vec4 _IsoColorTwo; // @color @default = vec4(1.0, 1.0, 1.0, 0.0)   two-colour textures (ore: WallBoxes.OreMaterial): rgb = the second colour, a = 1 on, 0 = an ordinary texture
 } uMaterial;
 
 layout(set = 2, binding = 1) uniform sampler2D _MainTex;
@@ -432,7 +440,18 @@ void main()
         color.a = uMaterial._Color.a;
 #endif
 #ifdef USE_TEXTURE
-    color *= texture(_MainTex, vUv * uMaterial._MainTex_ST.zw + uMaterial._MainTex_ST.xy);
+    vec4 texel = texture(_MainTex, vUv * uMaterial._MainTex_ST.zw + uMaterial._MainTex_ST.xy);
+    if (uMaterial._IsoColorTwo.a > 0.5)
+    {
+        // Two-colour texture (ore: the rock in the def's colour, the nuggets in its second colour, as the game's
+        // CutoutComplex gives its flecked rock two colours by a mask). The texture's alpha is the mask, not a cut-out:
+        // 1 = the first colour (_Color), TwoColourAlpha = the second (_IsoColorTwo), in between a mix. It stays above the
+        // cut-out's 0.5, so the light pass and any material without the second colour draw the texture whole.
+        float second = clamp((1.0 - texel.a) / (1.0 - TwoColourAlpha), 0.0, 1.0);
+        color.rgb = vColor.rgb * mix(uMaterial._Color.rgb, uMaterial._IsoColorTwo.rgb, second);
+        texel.a = 1.0;
+    }
+    color *= texel;
     if (color.a < 0.5)
         discard;
 #endif

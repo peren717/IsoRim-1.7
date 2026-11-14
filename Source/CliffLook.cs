@@ -393,8 +393,9 @@ namespace IsoRim
         private static bool PrintRockSmooth(SectionLayer layer, Thing t, float height, WallKind kind)
         {
             Color tint = MineMarks.Tint(t, t.DrawColor);   // marked for mining: toward the mark's colour
+            Color? two = OreSecond(t, kind);               // ore: its nuggets' colour
             Material capMat = kind == WallKind.Rock ? RockCapMaterial(t) : null;
-            Material topMat = capMat ?? MaterialFor(kind, true, 0, false, tint);
+            Material topMat = capMat ?? MaterialFor(kind, true, 0, false, tint, two);
             if (topMat == null)
             {
                 return false;
@@ -516,7 +517,7 @@ namespace IsoRim
                     // the upper part catches more light, as the old leaning face did: also on a straight face at the top of
                     // its column (under a ledge), not part way up a tall cliff
                     bool sloped = part == 1 && (!coveredFace || !rockAbove);
-                    Material sideMat = MaterialFor(kind, false, f, sloped, tint);
+                    Material sideMat = MaterialFor(kind, false, f, sloped, tint, two);
                     LayerSubMesh side = sideMat != null ? MeshWriter.Sub(layer, sideMat) : null;
                     bool textured = side != null && side.verts.Count + 4 <= MeshWriter.MaxVerts;
                     if (textured)
