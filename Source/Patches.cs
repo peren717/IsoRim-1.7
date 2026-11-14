@@ -235,7 +235,10 @@ namespace IsoRim
             Patch("bridge decks", FindMethod(typeof(SectionLayer_Plans), "Regenerate"), postfix: nameof(BridgeGround_Postfix));
             Type zonesLayer = AccessTools.TypeByName("Verse.SectionLayer_Zones");
             Patch("bridge decks", zonesLayer != null ? FindMethod(zonesLayer, "Regenerate") : null, postfix: nameof(BridgeGround_Postfix));
-            Patch("bridge decks", AccessTools.DeclaredMethod(typeof(SectionLayer_Gas), "Regenerate"), postfix: nameof(BridgeGround_Postfix));
+            // Gas (GasSheets: THE gas height rule): sheets stacked over the game's quads, then all of them put on bridge decks;
+            // on a stacked floor the gas layer's own drawing gets its block's matrix.
+            Patch("gas in 3D", AccessTools.DeclaredMethod(typeof(SectionLayer_Gas), "Regenerate"), postfix: nameof(Gas_Postfix));
+            Patch("gas in 3D", AccessTools.DeclaredMethod(typeof(SectionLayer_Gas), "DrawLayer"), prefix: nameof(GasDraw_Prefix), finalizer: nameof(GasDraw_Finalizer));
             // (the power overlay's conduits: SectionLayer_Things.Regenerate, shared with the other things layers, which
             // LiftGround passes over)
             Patch("bridge decks", AccessTools.Method(typeof(SectionLayer_ThingsPowerGrid), "Regenerate"), postfix: nameof(BridgeGround_Postfix));
@@ -2379,6 +2382,30 @@ namespace IsoRim
             {
                 Log.ErrorOnce("[IsoRim] Lifting the ground onto a bridge deck failed: " + e, 93611473);
             }
+        }
+
+        // The gas layer's Regenerate: the sheets first (GasSheets.Stack), then the bridge lift moves them with the game's quads.
+        public static void Gas_Postfix(SectionLayer __instance)
+        {
+            try
+            {
+                GasSheets.Stack(__instance);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Stacking gas sheets failed: " + e, 93611475);
+            }
+            BridgeGround_Postfix(__instance);
+        }
+
+        public static void GasDraw_Prefix()
+        {
+            GasSheets.DrawLayer_Prefix();
+        }
+
+        public static void GasDraw_Finalizer()
+        {
+            GasSheets.DrawLayer_Finalizer();
         }
 
         // The game's whole-map overlays (CellBoolDrawer): put on bridge decks (Bridges.LiftOverlay) and moved onto stacked

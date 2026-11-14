@@ -258,7 +258,8 @@ namespace IsoRim
 
         // Postfix of the ground layers' Regenerate (terrain, zones, plans, snow, sand, gas, the power overlay's conduits):
         // their pieces in deck cells are put on the deck. Snow and sand keep their geometry between rebuilds (only
-        // recoloured), so heights are set, not added.
+        // recoloured), so heights are set, not added. Gas: after GasSheets.Stack (Patches.Gas_Postfix), so its stacked sheets
+        // are added to.
         public static void LiftGround(SectionLayer layer)
         {
             if (layer == null || !Active)

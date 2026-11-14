@@ -1342,8 +1342,18 @@ namespace IsoRim
         // InDrawnSpace. Set and put back by DynamicModels.SubmitParts with a floor.
         internal static int DrawnSpaceFloor = -1;
 
+        // Set while a game layer that draws itself is drawn for a block of an upper floor (GasSheets.DrawLayer_Prefix: the gas
+        // layer's own DrawLayer, which Patches.DrawLayer_Prefix does not see): its single draws, made in the block's own map
+        // space, get the block's matrix, as Floors.DrawLayer gives the other layers.
+        internal static bool SelfDrawnLifted;
+
         public static bool Single_Prefix(ref Matrix4x4 matrix)
         {
+            if (SelfDrawnLifted && sectionLifted)
+            {
+                matrix = sectionMatrix * matrix;
+                return true;
+            }
             return !On || InDrawnSpace || Drawn(ref matrix);
         }
 
