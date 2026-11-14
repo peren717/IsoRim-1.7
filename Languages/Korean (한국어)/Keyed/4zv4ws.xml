@@ -327,6 +327,8 @@
   <R3D_Settings_Roof_FlatMarble>평평한 지붕 (대리석)</R3D_Settings_Roof_FlatMarble>
   <R3D_Settings_Roof_FlatGranite>평평한 지붕 (화강암)</R3D_Settings_Roof_FlatGranite>
   <R3D_Settings_RoofShapeNote>건설된 지붕은 모서리에서 중앙의 용마루까지 경사지도록 표시됩니다. 화면 오른쪽 아래 모서리에 해당 기능을 위한 버튼이 있으며, 단축키도 지정할 수 있습니다.</R3D_Settings_RoofShapeNote>
+  <R3D_Settings_ShipRoofLights>중력부양선 지붕 조명</R3D_Settings_ShipRoofLights>
+  <R3D_Settings_ShipRoofLightsTip>중력부양선의 지붕에는 빛나는 회로 무늬가 표시되며, 선체 가장자리를 따라 조명선이 배치됩니다.</R3D_Settings_ShipRoofLightsTip>
   <R3D_Settings_BuildingsNature>건물 및 자연물</R3D_Settings_BuildingsNature>
   <R3D_Settings_BuildingsNatureNote>문제가 발생하는 항목은 끄세요.</R3D_Settings_BuildingsNatureNote>
   <R3D_Settings_Walls3D>벽과 암석을 입체적으로 표시</R3D_Settings_Walls3D>
@@ -369,9 +371,12 @@
   <R3D_Settings_WorkAnimationsTip>정착민이 작업할 때 도끼, 곡괭이, 망치, 낫, 괭이, 빗자루를 사용하는 모습을 표시합니다.</R3D_Settings_WorkAnimationsTip>
   <R3D_Settings_SelectionRings>선택 표시 원</R3D_Settings_SelectionRings>
   <R3D_Settings_SelectionRingsTip>선택된 폰의 발밑에 색상이 있는 원을 표시합니다.</R3D_Settings_SelectionRingsTip>
+  <R3D_Settings_TargetBox>조준 대상 표시</R3D_Settings_TargetBox>
+  <R3D_Settings_TargetBoxTip>조준하거나 지정한 대상을 표시하는 3D 테두리입니다.</R3D_Settings_TargetBoxTip>
   <R3D_Settings_Ghosts3D>청사진에 완성된 구조물 모양 표시</R3D_Settings_Ghosts3D>
   <R3D_Settings_Ghosts3DTip>청사진, 건설 중인 구조물, 배치 미리보기를 투명한 3D 모델로 표시합니다.</R3D_Settings_Ghosts3DTip>
   <R3D_Settings_Damage3D>건물의 손상 흔적</R3D_Settings_Damage3D>
+  <R3D_Settings_Explosions3D>3D 폭발 효과</R3D_Settings_Explosions3D>
   <R3D_Settings_Effects3D>불꽃, 연기, 증기 및 반짝임</R3D_Settings_Effects3D>
   <R3D_Settings_CollapseDebris>붕괴 잔해</R3D_Settings_CollapseDebris>
   <R3D_Settings_CollapseDebrisTip>지붕과 바닥이 무너질 때 조각으로 부서져 떨어집니다.</R3D_Settings_CollapseDebrisTip>
