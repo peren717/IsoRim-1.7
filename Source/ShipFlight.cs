@@ -531,7 +531,8 @@ namespace IsoRim
         // vanilla 1.7), in 3D: the shadow on the ground (ShipSnapshot.DrawShadow), the thruster flames stood up round
         // their thrust (axial cards: long along the thrust, turned about it to face the camera) at the nozzles, the engine
         // and field extender glows as cards facing the camera, the exhaust, and the screen effects (downwash, distortion,
-        // lens flares: the game's screen-space shaders on a card filling the screen, _DrawPos from the 3D points).
+        // lens flares: the game's screen-space shaders on a card filling the screen, _DrawPos from the 3D points). The
+        // flames, lens flares and extender glows are drawn under the distortion (WarpedQueue), so they warp with the ship.
         // progress: the takeoff's, or the landing's remapped one (0-1 over raw 0-0.95), as vanilla passes them on.
         private static void Effects(GravshipRenderer r, Gravship g, Vector3 enginePos, float progress, float heightShare, bool isTakeoff)
         {
@@ -568,9 +569,10 @@ namespace IsoRim
             Color value = new Color(1f, 1f, 1f, 1f);
             value *= Mathf.Lerp(0.75f, 1f, Mathf.PerlinNoise1D(progress * 100f));
             value.a = Mathf.InverseLerp(0f, 0.1f, isTakeoff ? progress : 1f - progress);
-            if (matLensFlare != null)
+            Material lensFlare = LensFlare;
+            if (lensFlare != null)
             {
-                matLensFlare.SetColor(Color2, value);
+                lensFlare.SetColor(Color2, value);
             }
             MaterialPropertyBlock block = rFlameBlock(r);
             MaterialPropertyBlock flare = rFlareBlock(r);
@@ -592,9 +594,7 @@ namespace IsoRim
                 Vector3 pos = Turned(enginePos + local).SetToAltitude(AltitudeLayer.Skyfaller).WithYOffset(0.07317074f);
                 float up = snap.FloorHeight(data.local.y);   // an upper deck's thruster: its floor (ship cells carry it in y)
                 Vector3 at = new Vector3(pos.x, height + up + nozzle, pos.z);
-                MaterialRequest req = new MaterialRequest(props.FlameShaderType.Shader);
-                req.renderQueue = 3201;
-                Material mat = MaterialPool.MatFrom(req);
+                Material mat = FlameMaterial(props);
                 block.Clear();
                 block.SetColor(Color2, value);
                 foreach (ShaderParameter p in props.flameShaderParameters)
@@ -611,10 +611,10 @@ namespace IsoRim
                 }
                 Matrix4x4 m = Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f)) * Matrix4x4.TRS(at, Quaternion.LookRotation(along, face.normalized), new Vector3(size, 1f, size));
                 Graphics.DrawMesh(MeshPool.plane10, m, mat, 0, null, 0, block);
-                if (matLensFlare != null && flare != null)
+                if (lensFlare != null && flare != null)
                 {
                     flare.SetVector(ShaderPropertyIDs.DrawPos, View3D.WorldToViewport(at));
-                    Graphics.DrawMesh(MeshPool.plane10, View3D.ScreenCard(View3D.NearCard), matLensFlare, 0, null, 0, flare);
+                    Graphics.DrawMesh(MeshPool.plane10, View3D.ScreenCard(View3D.NearCard), lensFlare, 0, null, 0, flare);
                 }
                 EventQueue q;
                 if (props.exhaustSettings != null && props.exhaustSettings.enabled && timers != null && timers.TryGetValue(thing, out q))
@@ -626,13 +626,14 @@ namespace IsoRim
                     }
                 }
             }
-            if (matExtenderGlow != null)
+            Material extenderGlow = ExtenderGlow;
+            if (extenderGlow != null)
             {
-                matExtenderGlow.SetColor(Color2, value);
+                extenderGlow.SetColor(Color2, value);
                 foreach (IntVec3 c in g.GravFieldExtenderPositions)
                 {
                     Vector3 p = Turned(enginePos + c.ToVector3() + ThingDefOf.GravFieldExtender.graphicData.drawSize.ToVector3() * 0.5f);
-                    Glow(new Vector3(p.x, height + snap.FloorHeight(c.y) + ExtenderHeight, p.z), 8f, matExtenderGlow, snap.GlowPull);
+                    Glow(new Vector3(p.x, height + snap.FloorHeight(c.y) + ExtenderHeight, p.z), 8f, extenderGlow, snap.GlowPull);
                 }
             }
             if (matEngineGlow != null)
@@ -640,6 +641,64 @@ namespace IsoRim
                 matEngineGlow.SetColor(Color2, value);
                 Glow(orb, 12.5f, matEngineGlow, snap.GlowPull);
             }
+        }
+
+        // The queue of what must warp with the ship: one below where the game copies the screen for the distortion. The
+        // engine copies it at the queue of GravshipDistortion's scene grab (its ShaderDef) and draws the copy back warped
+        // round the engine, opaque, with the distortion's card (never before the grab; at its own queue if that is higher).
+        // So the lower of the two, minus one: drawn before the copy, never after it (where the card would paint it over).
+        // The 3D ship (its section materials, far below) is in the copy and warps; the flames and their lens flares at
+        // vanilla's queue (GravshipRenderer.ThrusterFlameRenderQueue, above it) did not, so they stayed put while the
+        // warped thrusters moved off them. Vanilla does not meet this: its flat ship is drawn after the distortion as
+        // well. Without the distortion material (nothing warps): no override (0).
+        private static int WarpedQueue
+        {
+            get
+            {
+                if (matDistortion == null)
+                {
+                    return 0;
+                }
+                Waylith.Rendering.SceneGrabPoint grab = matDistortion.engineMaterial?.Shader?.SceneGrab;
+                return Math.Min(matDistortion.renderQueue, grab != null ? grab.Queue : int.MaxValue) - 1;
+            }
+        }
+
+        // A thruster's flame material: vanilla's request (GravshipRenderer.DrawGravship), at the queue that warps.
+        internal static Material FlameMaterial(CompProperties_GravshipThruster props)
+        {
+            MaterialRequest req = new MaterialRequest(props.FlameShaderType.Shader);
+            req.renderQueue = WarpedQueue;
+            return MaterialPool.MatFrom(req);
+        }
+
+        // Vanilla's lens flare and grav field extender glow materials, each copied once at the queue that warps (the flare
+        // is centred on a nozzle, the glow on an extender, so they have to move with them); vanilla's own are left as they
+        // are. The engine glow keeps vanilla's: it sits on the distortion's centre, where the warp is nil.
+        private static Material lensFlareWarped;
+        private static Material extenderGlowWarped;
+
+        private static Material LensFlare
+        {
+            get { return Warped(matLensFlare, ref lensFlareWarped); }
+        }
+
+        private static Material ExtenderGlow
+        {
+            get { return Warped(matExtenderGlow, ref extenderGlowWarped); }
+        }
+
+        private static Material Warped(Material vanilla, ref Material copy)
+        {
+            if (vanilla == null || WarpedQueue == 0)
+            {
+                return vanilla;
+            }
+            if (copy == null)
+            {
+                copy = new Material(vanilla) { name = vanilla.name + "_Warped", renderQueue = WarpedQueue };
+            }
+            return copy;
         }
 
         // Vanilla 1.7 GravshipRenderer.EmitSmoke, the puff then stood up at the nozzle's height as IsoRim's own smoke
