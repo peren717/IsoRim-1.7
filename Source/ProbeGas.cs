@@ -29,6 +29,10 @@ namespace IsoRim
     //       P                    performance: each gas block of the scene rebuilt GsRegenRuns times (its Regenerate, with
     //                            the postfixes), the time and vertex count logged; the frame times of GsPerfFrames frames
     //                            at play zoom (probe perf)
+    //       G                    the shader gate (GasSheets.GameGas), day, play zoom: the gas blocks rebuilt by the game
+    //                            (MapMeshDirty) with the game's material (sheets expected, shot G0), then with the vanilla
+    //                            layer's Mat patched (probe only, unpatched right after) to the gas texture on another shader
+    //                            (flat expected, shot G1), then back (sheets again); vertex counts logged, CHECK lines
     //       2                    the 3D view off (the game's 2D view; turned back on at the end of the scene): views after it
     //                            are 2D shots (camera by the game's own driver)
     // Several gasscene keys queue and run one after the other. Log: "[IsoRim probe] gas <label> ...".
@@ -80,10 +84,18 @@ namespace IsoRim
             {
                 while (gsQueue.Count > 0)
                 {
+                    // (disposed in finally: a runner replaced mid-scene (FwStart) still runs the scene's own clean-up)
                     IEnumerator<int> scene = GsScene(gsQueue.Dequeue(), map);
-                    while (scene.MoveNext())
+                    try
                     {
-                        yield return scene.Current;
+                        while (scene.MoveNext())
+                        {
+                            yield return scene.Current;
+                        }
+                    }
+                    finally
+                    {
+                        scene.Dispose();
                     }
                 }
             }
@@ -236,12 +248,43 @@ namespace IsoRim
                     yield return GsFpLeave;
                     continue;
                 }
+                if (v == "G")
+                {
+                    if (hour != GsDay)
+                    {
+                        SetLocalHour(GsDay);
+                        hour = GsDay;
+                        yield return GsHourSettle;
+                    }
+                    // (disposed in finally: the gate's temporary Mat patch and view pose go even if the runner is replaced)
+                    IEnumerator<int> gate = GsGate(map, at, look, baseYaw, dir, label, L);
+                    try
+                    {
+                        while (gate.MoveNext())
+                        {
+                            yield return gate.Current;
+                        }
+                    }
+                    finally
+                    {
+                        gate.Dispose();
+                    }
+                    continue;
+                }
                 if (v == "P")
                 {
+                    // (disposed in finally: its view pose goes even if the runner is replaced)
                     IEnumerator<int> perf = GsPerf(map, at, look, baseYaw, L);
-                    while (perf.MoveNext())
+                    try
                     {
-                        yield return perf.Current;
+                        while (perf.MoveNext())
+                        {
+                            yield return perf.Current;
+                        }
+                    }
+                    finally
+                    {
+                        perf.Dispose();
                     }
                     continue;
                 }
@@ -286,13 +329,13 @@ namespace IsoRim
             ScreenCapture.CaptureScreenshot(Path.Combine(dir, "gas_" + label + "_" + view + ".png"));
         }
 
-        // GasSheets' totals (read by name: the base build has no GasSheets).
+        // GasSheets' totals (read by name, so this probe file also builds and runs against a build without GasSheets).
         private static string GsStats()
         {
             Type t = AccessTools.TypeByName("IsoRim.GasSheets");
             if (t == null)
             {
-                return "no GasSheets (base build)";
+                return "no GasSheets in this build";
             }
             long ticks = (long)AccessTools.Field(t, "Ticks").GetValue(null);
             return "GasSheets blocks " + AccessTools.Field(t, "Blocks").GetValue(null) + ", quads in " + AccessTools.Field(t, "QuadsIn").GetValue(null)
@@ -300,7 +343,8 @@ namespace IsoRim
         }
 
         // P: the scene's gas blocks rebuilt and timed, their vertices counted; then the frame times at play zoom.
-        private static IEnumerator<int> GsPerf(Map map, IntVec3 at, Vector3 look, float yaw, string L)
+        // The map blocks with gas round at (the scene's cloud).
+        private static HashSet<Section> GsGasSections(Map map, IntVec3 at)
         {
             HashSet<Section> sections = new HashSet<Section>();
             foreach (IntVec3 c in GenRadial.RadialCellsAround(at, GsCloudRadius + 6f, true))
@@ -310,6 +354,172 @@ namespace IsoRim
                     sections.Add(map.mapDrawer.SectionAt(c));
                 }
             }
+            return sections;
+        }
+
+        // ---- G: the shader gate (GasSheets.GameGas)
+
+        private const int GsGateMaxFrames = 240;   // frames, at most, for the game to rebuild the dirtied gas blocks
+        private static Material gsGateMat;         // the game's gas texture on another shader (ShaderDatabase.Transparent)
+
+        // Probe only, patched for the negative case and unpatched right after: the vanilla gas layer's Mat answers the
+        // gate material, as a mod's SectionLayer_Gas subclass on its own shader would.
+        private static void GsGateMat_Postfix(ref Material __result)
+        {
+            __result = gsGateMat;
+        }
+
+        // The scene's gas blocks marked dirty for gas (the game's own MapMeshDirty) and rebuilt by the game's drawer.
+        private static IEnumerator<int> GsGateRebuild(Map map, List<Section> sections, List<SectionLayer> layers)
+        {
+            foreach (Section s in sections)
+            {
+                map.mapDrawer.MapMeshDirty(s.botLeft, MapMeshFlagDefOf.Gas);
+            }
+            int f = 0;
+            for (; f < GsGateMaxFrames && (sections.Any(s => s.dirtyFlags != 0) || layers.Any(l => l.Dirty)); f++)
+            {
+                yield return 1;
+            }
+            Log.Message("[IsoRim probe] gas gate rebuild: " + f + " frames" + (f >= GsGateMaxFrames ? " (TIMED OUT)" : ""));
+            yield return 2;
+        }
+
+        // Each block's drawn sub-meshes: the one on the layer's own Mat (verts in own), the others (sheets); all on the
+        // game's gas shader or not.
+        private static string GsGateCount(List<Section> sections, List<SectionLayer> layers, Material ownMat, out int own, out int sheetSubs, out int sheetVerts, out bool perBlockOk, int wantSheetsPerBlock)
+        {
+            own = sheetSubs = sheetVerts = 0;
+            perBlockOk = true;
+            List<string> parts = new List<string>();
+            for (int i = 0; i < layers.Count; i++)
+            {
+                SectionLayer layer = layers[i];
+                int o = 0, sn = 0, sv = 0;
+                bool ownSeen = false, allGame = true;
+                List<string> subsTxt = new List<string>();
+                foreach (LayerSubMesh sm in layer.subMeshes)
+                {
+                    if (!sm.finalized || sm.disabled || sm.verts.Count == 0)
+                    {
+                        continue;
+                    }
+                    bool game = GasSheets.GameGas(sm.material);
+                    if (sm.material == ownMat)
+                    {
+                        o += sm.verts.Count;
+                        ownSeen = true;
+                    }
+                    else
+                    {
+                        sn++;
+                        sv += sm.verts.Count;
+                        allGame &= game;
+                    }
+                    subsTxt.Add((sm.material != null ? sm.material.name : "null") + "/" + (sm.material != null && sm.material.shader != null ? sm.material.shader.name : "null") + " " + sm.verts.Count);
+                }
+                bool ok = ownSeen && sn == wantSheetsPerBlock && allGame;
+                perBlockOk &= ok;
+                own += o;
+                sheetSubs += sn;
+                sheetVerts += sv;
+                parts.Add(sections[i].botLeft.x + "," + sections[i].botLeft.z + ": "+ string.Join("; ", subsTxt) + (ok ? "" : " (!)"));
+            }
+            return string.Join(" | ", parts);
+        }
+
+        // G: the game's gas (GasRotating) gets Sheets sub-meshes per block, Sheets - 1 of them sheets; the same blocks on
+        // another shader keep only their own quads, unchanged (no sheet sub-mesh); after the unpatch the sheets are back.
+        // Shots gas_<label>_G0 (game's material) and gas_<label>_G1 (another shader), day, play zoom.
+        private static IEnumerator<int> GsGate(Map map, IntVec3 at, Vector3 look, float yaw, string dir, string label, string L)
+        {
+            List<Section> sections = GsGasSections(map, at).Where(s => s.GetLayer(typeof(SectionLayer_Gas)) != null).ToList();
+            List<SectionLayer> layers = sections.Select(s => s.GetLayer(typeof(SectionLayer_Gas))).ToList();
+            if (layers.Count == 0)
+            {
+                Check("gas " + label + " gate", false, "no gas block round " + at);
+                yield break;
+            }
+            Material gameMat = ((SectionLayer_Gas)layers[0]).Mat;
+            if (gsGateMat == null)
+            {
+                gsGateMat = MaterialPool.MatFrom("Things/Gas/GasCloudThickA", ShaderDatabase.Transparent, 3000);
+            }
+            Log.Message(L + "gate: " + layers.Count + " gas blocks; game material " + gameMat.name + " on " + gameMat.shader.name + " (GasRotating " + ShaderDatabase.GasRotating.name
+                + ", GameGas " + GasSheets.GameGas(gameMat) + "); gate material " + gsGateMat.name + " on " + gsGateMat.shader.name + " (GameGas " + GasSheets.GameGas(gsGateMat) + ")");
+            ViewPose p = new ViewPose { Yaw = yaw, Pitch = gsPitch, Perspective = gsPersp, Focus = look, OrthoSize = GsPlay };
+            IDisposable pose = Api.PushViewPose(typeof(Probe), () => p, new ViewPoseOptions { CountsAsTurning = false });
+            HookMouse();
+            fakeMouse = new Vector2(2f, 2f);
+            Harmony h = new Harmony("peren.isorim.probe.gasgate");
+            System.Reflection.MethodInfo getter = AccessTools.PropertyGetter(typeof(SectionLayer_Gas), nameof(SectionLayer_Gas.Mat));
+            bool patched = false;
+            try
+            {
+                // 1. the game's own material
+                IEnumerator<int> rb = GsGateRebuild(map, sections, layers);
+                while (rb.MoveNext())
+                {
+                    yield return rb.Current;
+                }
+                int own0, subs0, verts0;
+                bool ok0;
+                string t0 = GsGateCount(sections, layers, gameMat, out own0, out subs0, out verts0, out ok0, GasSheets.Sheets - 1);
+                Log.Message(L + "gate game shader: own quads " + own0 + " verts, sheet sub-meshes " + subs0 + ", sheet verts " + verts0 + " -- " + t0);
+                Check("gas " + label + " gate: game's gas gets " + GasSheets.Sheets + " sheets", ok0 && own0 > 0 && verts0 > 0 && verts0 <= (GasSheets.Sheets - 1) * own0,
+                    "own " + own0 + " verts, " + subs0 + " sheet sub-meshes over " + layers.Count + " blocks, " + verts0 + " sheet verts");
+                yield return GsSettle;
+                GsShot(dir, label, "G0");
+                yield return 2;
+
+                // 2. another shader (probe-only patch)
+                long outBefore = GasSheets.QuadsOut;
+                h.Patch(getter, postfix: new HarmonyMethod(typeof(Probe), nameof(GsGateMat_Postfix)));
+                patched = true;
+                rb = GsGateRebuild(map, sections, layers);
+                while (rb.MoveNext())
+                {
+                    yield return rb.Current;
+                }
+                int own1, subs1, verts1;
+                bool ok1;
+                string t1 = GsGateCount(sections, layers, gsGateMat, out own1, out subs1, out verts1, out ok1, 0);
+                long added = GasSheets.QuadsOut - outBefore;
+                Log.Message(L + "gate other shader: own quads " + own1 + " verts, other sub-meshes " + subs1 + ", their verts " + verts1 + ", sheet quads written " + added + " -- " + t1);
+                Check("gas " + label + " gate: another shader stays flat", ok1 && own1 == own0 && subs1 == 0 && added == 0,
+                    "own " + own1 + " verts (game material run " + own0 + "), " + subs1 + " other sub-meshes, " + added + " sheet quads written");
+                yield return GsSettle;
+                GsShot(dir, label, "G1");
+                yield return 2;
+                h.Unpatch(getter, HarmonyPatchType.Postfix, h.Id);
+                patched = false;
+
+                // 3. back to the game's material: the sheets are back
+                rb = GsGateRebuild(map, sections, layers);
+                while (rb.MoveNext())
+                {
+                    yield return rb.Current;
+                }
+                int own2, subs2, verts2;
+                bool ok2;
+                GsGateCount(sections, layers, gameMat, out own2, out subs2, out verts2, out ok2, GasSheets.Sheets - 1);
+                Check("gas " + label + " gate: sheets back after the unpatch", ok2 && own2 == own0 && subs2 == subs0 && verts2 == verts0,
+                    "own " + own2 + " verts, " + subs2 + " sheet sub-meshes, " + verts2 + " sheet verts");
+            }
+            finally
+            {
+                if (patched)
+                {
+                    h.Unpatch(getter, HarmonyPatchType.Postfix, h.Id);
+                }
+                pose.Dispose();
+                fakeMouse = null;
+            }
+        }
+
+        private static IEnumerator<int> GsPerf(Map map, IntVec3 at, Vector3 look, float yaw, string L)
+        {
+            HashSet<Section> sections = GsGasSections(map, at);
             int verts = 0, subs = 0, gasCells = 0;
             double ms = 0;
             foreach (Section s in sections)
@@ -343,10 +553,16 @@ namespace IsoRim
                 ViewPose p = new ViewPose { Yaw = yaw, Pitch = gsPitch, Perspective = gsPersp, Focus = look, OrthoSize = GsPlay };
                 pose = Api.PushViewPose(typeof(Probe), () => p, new ViewPoseOptions { CountsAsTurning = false });
             }
-            yield return GsSettle;
-            Scene("perf", new[] { GsPerfFrames.ToString(), "gas" });
-            yield return GsPerfFrames + 20;
-            pose?.Dispose();
+            try
+            {
+                yield return GsSettle;
+                Scene("perf", new[] { GsPerfFrames.ToString(), "gas" });
+                yield return GsPerfFrames + 20;
+            }
+            finally
+            {
+                pose?.Dispose();
+            }
         }
     }
 }

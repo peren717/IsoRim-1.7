@@ -6,10 +6,12 @@ using Verse;
 
 namespace IsoRim
 {
-    // Gas in 3D (the game's SectionLayer_Gas: smoke, tox gas, rot stink, deadlife dust, and a mod's gas layer deriving from
-    // it). The game lays one soft quad per gas cell flat on the ground (AddCell: jittered size and place, the cell's gas
-    // densities as its colour, its index in uv z for the turning). Seen from a tilted camera that is a sheet on the ground, so
-    // in the 3D view each quad is copied into Sheets - 1 more sheets stacked above it, from the ground up to Top: a cloud
+    // Gas in 3D (the game's SectionLayer_Gas: smoke, tox gas, rot stink, deadlife dust; also a mod's layer deriving from it
+    // that keeps the base Regenerate, but only its sub-meshes drawn with the game's gas shader: GameGas. Biotech's
+    // SectionLayer_PollutionCloud replaces Regenerate, so it gets none). The game lays one soft quad per gas cell flat on
+    // the ground (AddCell: jittered size and place, the cell's gas densities as its colour, its index in uv z for the
+    // turning). Seen from a tilted camera that is a sheet on the ground, so in the 3D view each quad is copied into
+    // Sheets - 1 more sheets stacked above it, from the ground up to the top (TopShare of the wall height): a cloud
     // with depth. The game's quad stays as it is (the bottom sheet); a sheet k up is drawn with a copy of the layer's own
     // material whose colour alpha is FadePerSheet^k (fainter going up), a little smaller (Shrink) and moved a little
     // (Drift, fixed per cell and sheet), and turns its own way (IndexStep added to the turning index): the layers never
@@ -17,9 +19,11 @@ namespace IsoRim
     //
     // THE gas height rule, run once per rebuild of a gas block (Patches.Gas_Postfix, the one Regenerate postfix of the gas
     // layer), in this order:
-    //   1. Stack (here): the sheets, at heights over the game's quad. Under a lid (a roof, or a stacked floor above:
-    //      Floors.SlabOver) the top stays under the wall tops, where roofs and slabs lie (UnderLid); fogged cells get no
-    //      sheets (they would rise through the fog lid).
+    //   1. Stack (here): the sheets, at heights over the game's quad, the top one at TopShare of the wall height
+    //      (View3D.WallHeight) in every cell, indoors and out: under the wall tops, where roofs and slabs lie, so the cloud
+    //      never rises through a lid, nor hazes over the walls and roof edges of a building beside it. Fogged cells get no
+    //      sheets: the fog lid lies on each cell's own top (IsoCellMap.TopOf), over fogged open ground the ground itself,
+    //      so sheets there would rise above it.
     //   2. Bridges.LiftGround: every quad in a deck cell (and on a ramp's land) put on the deck, the sheets with it.
     //   3. A block of a stacked floor is drawn moved onto that floor (Floors: DrawLayer_Prefix below hands the gas layer's
     //      own drawing the block's matrix), the sheets with it.
@@ -30,12 +34,10 @@ namespace IsoRim
         // Sheets in all, the game's own quad on the ground counting as the first (user plan 2026-11-13: start with 3).
         public const int Sheets = 3;
 
-        // The top sheet's height over open ground, cells (user plan: about 1.5 cells; a colonist is about 1.2 tall).
-        public const float Top = 1.5f;
-
-        // Under a lid (roof or a floor above) the top is at most this share of the wall height: roofs lie on the wall tops
-        // and slabs higher (Floors), so the sheets stay inside the room and hide under the lid; with the lid cut away they show.
-        public const float UnderLid = 0.85f;
+        // The top sheet's height as a share of the wall height (View3D.WallHeight), the same everywhere (user decision
+        // 2026-11-13: about 1 cell at the default walls of 1.2): under the wall tops, so under every roof (on the wall
+        // tops) and slab (higher, Floors), and under the walls and roof edges of the next building.
+        public const float TopShare = 0.85f;
 
         // Alpha of sheet k (0 = the game's quad) is FadePerSheet^k: 1, 0.8, 0.64. The game's gas is faint (a smokepop cloud
         // about 0.2-0.4 alpha), so fainter upper sheets (0.6: tried in engine 2026-11-13) barely showed; at 0.8 the cloud reads
@@ -94,6 +96,14 @@ namespace IsoRim
 
         // ---- the sheets
 
+        // The one rule for what gets sheets: a sub-mesh drawn with the game's own gas shader (ShaderDatabase.GasRotating,
+        // whose uv z is the turning index and whose _Color alpha is what the sheets fade). A gas layer of a mod on another
+        // shader keeps its quads flat and untouched: its drawing is its own.
+        public static bool GameGas(Material m)
+        {
+            return m != null && m.shader == ShaderDatabase.GasRotating;
+        }
+
         private static readonly LayerSubMesh[] targets = new LayerSubMesh[Sheets];
 
         // After the game's Regenerate of a gas block (before the bridge lift).
@@ -112,12 +122,13 @@ namespace IsoRim
             List<LayerSubMesh> subs = layer.subMeshes;
             int sources = subs.Count;   // (the sheets' sub-meshes are added after these, or are among them, cleared)
             float squash = View3D.Squash;
-            float lidTop = Mathf.Min(Top, UnderLid * View3D.WallHeight);
+            float top = TopShare * View3D.WallHeight;
             bool any = false;
             for (int s = 0; s < sources; s++)
             {
                 LayerSubMesh src = subs[s];
-                if (src == null || src.material == null || ours.Contains(src.material) || !src.finalized || src.material.IsDeferredMaterial)
+                // (null and deferred first: a deferred material is skipped without GameGas resolving its shader)
+                if (src == null || src.material == null || src.material.IsDeferredMaterial || !GameGas(src.material) || ours.Contains(src.material) || !src.finalized)
                 {
                     continue;
                 }
@@ -142,7 +153,6 @@ namespace IsoRim
                     {
                         continue;
                     }
-                    float top = map.roofGrid.Roofed(cell) || Floors.SlabOver(map, cell) ? lidTop : Top;
                     for (int k = 1; k < Sheets; k++)
                     {
                         AddSheet(src, q, targets[k], k, mx, mz, top * k / (Sheets - 1) / squash, Hash(cell.x, cell.z, k));
@@ -171,7 +181,7 @@ namespace IsoRim
         {
             float scale = 1f - Shrink * k;
             float ox = (Unit(h) * 2f - 1f) * Drift;
-            float oz = (Unit(h * 2654435761u + 1u) * 2f - 1f) * Drift;
+            float oz = (Unit(h * HashMix + 1u) * 2f - 1f) * Drift;
             int v0 = q * 4;
             int start = to.verts.Count;
             bool colours = src.colors.Count > 0;
@@ -194,6 +204,9 @@ namespace IsoRim
             }
             QuadsOut++;
         }
+
+        // Knuth's multiplicative hash constant (2^32 / golden ratio): the z drift from the same cell hash as the x drift.
+        private const uint HashMix = 2654435761u;
 
         // A fixed hash of a cell and a sheet (no game random state touched).
         private static uint Hash(int x, int z, int k)
