@@ -4249,21 +4249,16 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Donkey</defName>
     <thingDef>Donkey</thingDef>
-    <model>Models/animal_donkey.obj</model>
+    <model>Models/animal_donkey_blob.obj</model>
+    <!-- blob donkey (2026-11-14): the stubby horse's family (legs carved out of the body), glides; sprite colours baked in
+         Donkey.png (vanilla is untinted, one coat). animal_donkey(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_donkey_leg.obj</legModel>
-    <legs>
-      <li>(-0.123, 0.528, 0.288)</li>
-      <li>(0.123, 0.528, 0.288)</li>
-      <li>(-0.123, 0.528, -0.317)</li>
-      <li>(0.123, 0.528, -0.317)</li>
-    </legs>
-    <legLength>0.528</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.27</stride>
-    <bodyCentre>0.652</bodyCentre>
-    <bodyHalfWidth>0.199</bodyHalfWidth>
-    <bodyHalfLength>0.595</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.49</bodyCentre>
+    <bodyHalfWidth>0.26</bodyHalfWidth>
+    <bodyHalfLength>0.79</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4285,21 +4280,16 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Dromedary</defName>
     <thingDef>Dromedary</thingDef>
-    <model>Models/animal_dromedary.obj</model>
+    <model>Models/animal_dromedary_blob.obj</model>
+    <!-- blob dromedary (2026-11-14): the stubby horse's proportions (legs carved out of the body), one hump, glides; sprite
+         colours baked in Dromedary.png (vanilla is untinted). animal_dromedary(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_dromedary_leg.obj</legModel>
-    <legs>
-      <li>(-0.146, 0.794, 0.384)</li>
-      <li>(0.146, 0.794, 0.384)</li>
-      <li>(-0.146, 0.794, -0.422)</li>
-      <li>(0.146, 0.794, -0.422)</li>
-    </legs>
-    <legLength>0.794</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.90</stride>
-    <bodyCentre>0.943</bodyCentre>
-    <bodyHalfWidth>0.236</bodyHalfWidth>
-    <bodyHalfLength>0.794</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.75</bodyCentre>
+    <bodyHalfWidth>0.34</bodyHalfWidth>
+    <bodyHalfLength>0.99</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4320,41 +4310,33 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Bison</defName>
     <thingDef>Bison</thingDef>
-    <model>Models/animal_bison.obj</model>
+    <model>Models/animal_bison_blob.obj</model>
+    <!-- blob bison (2026-11-14): the muffalo's legless dome (same trunk and back line), glides; eyes and coat in its texture
+         (Bison.png, sprite colours baked: vanilla is untinted). animal_bison(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_bison_leg.obj</legModel>
-    <legs>
-      <li>(-0.188, 0.523, 0.360)</li>
-      <li>(0.188, 0.523, 0.360)</li>
-      <li>(-0.188, 0.523, -0.396)</li>
-      <li>(0.188, 0.523, -0.396)</li>
-    </legs>
-    <legLength>0.523</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.26</stride>
-    <bodyCentre>0.701</bodyCentre>
-    <bodyHalfWidth>0.304</bodyHalfWidth>
-    <bodyHalfLength>0.744</bodyHalfLength>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <smoothTextured>true</smoothTextured>
+    <bodyCentre>0.55</bodyCentre>
+    <bodyHalfWidth>0.54</bodyHalfWidth>
+    <bodyHalfLength>0.98</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Yak</defName>
     <thingDef>Yak</thingDef>
-    <model>Models/animal_yak.obj</model>
+    <model>Models/animal_yak_male_blob.obj</model>
+    <femaleModel>Models/animal_yak_female_blob.obj</femaleModel>
+    <!-- blob yak (2026-11-14): the cow's family, glides; male and female (femaleModel) as vanilla's YakMale / YakFemale art at
+         every life stage; sprite colours baked in YakMale.png / YakFemale.png (vanilla is untinted).
+         animal_yak(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_yak_leg.obj</legModel>
-    <legs>
-      <li>(-0.198, 0.456, 0.348)</li>
-      <li>(0.198, 0.456, 0.348)</li>
-      <li>(-0.198, 0.456, -0.383)</li>
-      <li>(0.198, 0.456, -0.383)</li>
-    </legs>
-    <legLength>0.456</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.09</stride>
-    <bodyCentre>0.635</bodyCentre>
-    <bodyHalfWidth>0.320</bodyHalfWidth>
-    <bodyHalfLength>0.719</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.58</bodyCentre>
+    <bodyHalfWidth>0.40</bodyHalfWidth>
+    <bodyHalfLength>1.05</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4488,21 +4470,17 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Caribou</defName>
     <thingDef>Caribou</thingDef>
-    <model>Models/animal_caribou.obj</model>
+    <model>Models/animal_caribou_blob.obj</model>
+    <!-- blob caribou (2026-11-14): the elk's family (oval body on tapered legs, one mesh), glides; one model for both sexes
+         and every life stage, antlers on all, as vanilla's one Caribou sprite; sprite colours baked in Caribou.png (vanilla
+         is untinted). animal_caribou(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_caribou_leg.obj</legModel>
-    <legs>
-      <li>(-0.116, 0.612, 0.324)</li>
-      <li>(0.116, 0.612, 0.324)</li>
-      <li>(-0.116, 0.612, -0.356)</li>
-      <li>(0.116, 0.612, -0.356)</li>
-    </legs>
-    <legLength>0.612</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.47</stride>
-    <bodyCentre>0.732</bodyCentre>
-    <bodyHalfWidth>0.186</bodyHalfWidth>
-    <bodyHalfLength>0.670</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.42</bodyCentre>
+    <bodyHalfWidth>0.21</bodyHalfWidth>
+    <bodyHalfLength>0.67</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4603,21 +4581,16 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Rat</defName>
     <thingDef>Rat</thingDef>
-    <model>Models/animal_rat.obj</model>
+    <model>Models/animal_rat_blob.obj</model>
+    <!-- blob rat (2026-11-14): glides with a waddle; sprite colours baked in Rat.png (vanilla tints only the body through a
+         mask, so no tintFromGraphic). animal_rat(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_rat_leg.obj</legModel>
-    <legs>
-      <li>(-0.053, 0.096, 0.112)</li>
-      <li>(0.053, 0.096, 0.112)</li>
-      <li>(-0.053, 0.096, -0.124)</li>
-      <li>(0.053, 0.096, -0.124)</li>
-    </legs>
-    <legLength>0.096</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.35</stride>
-    <bodyCentre>0.142</bodyCentre>
-    <bodyHalfWidth>0.086</bodyHalfWidth>
-    <bodyHalfLength>0.232</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.12</bodyCentre>
+    <bodyHalfWidth>0.10</bodyHalfWidth>
+    <bodyHalfLength>0.47</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4643,21 +4616,19 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Squirrel</defName>
     <thingDef>Squirrel</thingDef>
-    <model>Models/animal_squirrel.obj</model>
+    <model>Models/animal_squirrel_blob.obj</model>
+    <!-- blob squirrel (2026-11-14): hops as the bunny, with a shorter stride (the bunny's 1.1 times the two models' heights,
+         0.337 / 0.464); four tiny paws and the eyes in its white texture (Squirrel.png) times the vanilla colour
+         (tintFromGraphic). animal_squirrel(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_squirrel_leg.obj</legModel>
-    <legs>
-      <li>(-0.051, 0.092, 0.107)</li>
-      <li>(0.051, 0.092, 0.107)</li>
-      <li>(-0.051, 0.092, -0.118)</li>
-      <li>(0.051, 0.092, -0.118)</li>
-    </legs>
-    <legLength>0.092</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.35</stride>
-    <bodyCentre>0.136</bodyCentre>
-    <bodyHalfWidth>0.082</bodyHalfWidth>
-    <bodyHalfLength>0.222</bodyHalfLength>
+    <bodyAnims>true</bodyAnims>
+    <hop>true</hop>
+    <stride>0.8</stride>
+    <smoothTextured>true</smoothTextured>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.10</bodyCentre>
+    <bodyHalfWidth>0.085</bodyHalfWidth>
+    <bodyHalfLength>0.35</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4753,21 +4724,16 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Fox_Fennec</defName>
     <thingDef>Fox_Fennec</thingDef>
-    <model>Models/animal_fox_fennec.obj</model>
+    <model>Models/animal_fox_fennec_blob.obj</model>
+    <!-- blob fennec fox (2026-11-14): the red fox's family, smaller, big ears, glides; sprite colours baked in FoxFennec.png
+         (vanilla is untinted). animal_fox_fennec(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_fox_fennec_leg.obj</legModel>
-    <legs>
-      <li>(-0.046, 0.196, 0.130)</li>
-      <li>(0.046, 0.196, 0.130)</li>
-      <li>(-0.046, 0.196, -0.143)</li>
-      <li>(0.046, 0.196, -0.143)</li>
-    </legs>
-    <legLength>0.196</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.47</stride>
-    <bodyCentre>0.241</bodyCentre>
-    <bodyHalfWidth>0.075</bodyHalfWidth>
-    <bodyHalfLength>0.270</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.20</bodyCentre>
+    <bodyHalfWidth>0.105</bodyHalfWidth>
+    <bodyHalfLength>0.60</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4788,21 +4754,16 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Fox_Arctic</defName>
     <thingDef>Fox_Arctic</thingDef>
-    <model>Models/animal_fox_arctic.obj</model>
+    <model>Models/animal_fox_arctic_blob.obj</model>
+    <!-- blob arctic fox (2026-11-14): the red fox's mesh 1.0417 times as big (the vanilla draw sizes), glides; its own white
+         FoxArctic.png (vanilla is untinted). animal_fox_arctic(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_fox_arctic_leg.obj</legModel>
-    <legs>
-      <li>(-0.057, 0.241, 0.161)</li>
-      <li>(0.057, 0.241, 0.161)</li>
-      <li>(-0.057, 0.241, -0.177)</li>
-      <li>(0.057, 0.241, -0.177)</li>
-    </legs>
-    <legLength>0.241</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.58</stride>
-    <bodyCentre>0.298</bodyCentre>
-    <bodyHalfWidth>0.093</bodyHalfWidth>
-    <bodyHalfLength>0.333</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.23</bodyCentre>
+    <bodyHalfWidth>0.125</bodyHalfWidth>
+    <bodyHalfLength>0.72</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -5101,22 +5062,16 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Tortoise</defName>
     <thingDef>Tortoise</thingDef>
-    <model>Models/animal_tortoise.obj</model>
+    <model>Models/animal_tortoise_blob.obj</model>
+    <!-- blob tortoise (2026-11-14): shell dome on four stub feet (one mesh), glides with a waddle; sprite colours baked in
+         Tortoise.png (vanilla is untinted). animal_tortoise(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_tortoise_leg.obj</legModel>
-    <legs>
-      <li>(-0.163, 0.097, 0.158)</li>
-      <li>(0.163, 0.097, 0.158)</li>
-      <li>(-0.163, 0.097, -0.173)</li>
-      <li>(0.163, 0.097, -0.173)</li>
-    </legs>
-    <legLength>0.097</legLength>
-    <legSwing>18</legSwing>
-    <legSplay>25</legSplay>
-    <stride>0.35</stride>
-    <bodyCentre>0.145</bodyCentre>
-    <bodyHalfWidth>0.181</bodyHalfWidth>
-    <bodyHalfLength>0.326</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.22</bodyCentre>
+    <bodyHalfWidth>0.26</bodyHalfWidth>
+    <bodyHalfLength>0.43</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
