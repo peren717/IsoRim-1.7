@@ -220,10 +220,12 @@
     <thingDef>SolarGenerator</thingDef>
     <model>Models/solar_generator.obj</model>
     <surfaceHeight>0.00</surfaceHeight>
-    <!-- the power bar in the dark slot along the north-middle panel (back row, middle), lying in the tilted panel (Api 36, 63) -->
-    <barAt>(0, 0.970, 0.924)</barAt>
-    <barScale>(0.61, 0.77)</barScale>
-    <barNormal>(0, 1, -0.2)</barNormal>
+    <!-- the power bar at its vanilla size in the dark slot of the spine between the panels, the whole top tilted 12 deg to the
+         south (barAt = slot centre + 0.005 along the normal; barNormal = (0, 1, -tan 12)) (Api 36, 63). Built for 1.2 walls:
+         its height follows the wall height setting (wallFit), the bar with it -->
+    <barAt>(0, 1.7404, -0.001)</barAt>
+    <barNormal>(0, 1, -0.2126)</barNormal>
+    <wallFit>1.2</wallFit>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>

@@ -1,0 +1,32 @@
+# IsoRim solar generator remake (2026-11-14): flat colour blocks sampled from the vanilla SolarCollector sprite (lifted
+# ~1.15x like the other building colours). Stuffless: fixed colours, no stuff* (as the current model). sg_slot = the vanilla
+# bar's unfilled colour (0.15 grey), plain so the bar's back lies flush on it.
+newmtl sg_frame
+Kd 0.53 0.59 0.63
+map_Kd IsoRim/Swatches/Metal
+newmtl sg_cell
+Kd 0.26 0.40 0.50
+newmtl sg_edge
+Kd 0.29 0.35 0.40
+map_Kd IsoRim/Swatches/Metal
+newmtl sg_spine
+Kd 0.62 0.62 0.63
+map_Kd IsoRim/Swatches/Metal
+newmtl sg_rod
+Kd 0.74 0.74 0.75
+map_Kd IsoRim/Swatches/Metal
+newmtl sg_leg
+Kd 0.64 0.64 0.65
+map_Kd IsoRim/Swatches/Metal
+newmtl sg_slot
+Kd 0.15 0.15 0.15
+newmtl sg_under
+Kd 0.20 0.23 0.26
+newmtl sg_box
+Kd 0.56 0.57 0.58
+map_Kd IsoRim/Swatches/Metal
+newmtl sg_vent
+Kd 0.24 0.26 0.28
+newmtl sg_pipe
+Kd 0.42 0.43 0.45
+map_Kd IsoRim/Swatches/Metal
