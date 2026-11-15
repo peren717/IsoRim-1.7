@@ -416,6 +416,13 @@ namespace IsoRim
             Type wind = AccessTools.TypeByName("RimWorld.CompPowerPlantWind");
             Patch("wind turbine blades", wind == null ? null : AccessTools.DeclaredMethod(wind, "PostDraw"),
                 prefix: nameof(WindPostDraw_Prefix), finalizer: nameof(WindPostDraw_Finalizer));
+            // (Api 79) Comps whose own drawing is the flat stand-in for a spin part IsoRim turns in 3D (the watermill's blades):
+            // not run while the part is drawn (Spinners.FlatStandIns).
+            foreach (Type standIn in Spinners.FlatStandIns)
+            {
+                Patch("3D spin parts instead of flat ones (" + standIn.Name + ")", AccessTools.DeclaredMethod(standIn, "PostDraw"),
+                    prefix: nameof(SpinFlatPostDraw_Prefix));
+            }
 
             // Walls are cut down in front of roofed rooms, so they have to be redrawn when a roof changes.
             Patch("cut-down walls keeping up with roofs", AccessTools.Method(typeof(RoofGrid), "SetRoof"),
@@ -3180,6 +3187,27 @@ namespace IsoRim
             catch (Exception e)
             {
                 Log.ErrorOnce("[IsoRim] Drawing a wind turbine's blades failed: " + e, 93611021);
+            }
+        }
+
+        // (Api 79) A comp that draws a flat stand-in for a spin part (Spinners.FlatStandIns): its PostDraw is not run while
+        // IsoRim draws the part (Spinners.HidesFlat, the same rule as Spinners.DrawAll). The watermill's draws its nine blade
+        // quads straight to Unity (Graphics.DrawMesh, not through DrawHook) and nothing else (its base, ThingComp.PostDraw,
+        // is empty; it has no power bar), so the whole method is left out.
+        public static bool SpinFlatPostDraw_Prefix(ThingComp __instance)
+        {
+            if (!View3D.Ready)
+            {
+                return true;
+            }
+            try
+            {
+                return !Spinners.HidesFlat(__instance);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Leaving out a flat spin part failed: " + e, 93611795);
+                return true;
             }
         }
 

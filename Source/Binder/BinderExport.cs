@@ -55,6 +55,7 @@ namespace IsoRim
             { "femaleModel", 38 }, { "femaleModels", 38 }, { "femaleLegModel", 38 }, { "femaleWingModel", 38 },
             { "byGraphic", 39 },
             { "hairDef", 78 }, { "beardDef", 78 },
+            { "spinPivot", 79 }, { "spinAxis", 79 }, { "spinSource", 79 }, { "spinDips", 79 },
         };
         private const int BaseVersion = 2;
 

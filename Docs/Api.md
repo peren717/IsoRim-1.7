@@ -130,6 +130,7 @@ if (IsoRim.Api.Version >= 75) { /* textured faces (map_Kd) on people's models: a
 if (IsoRim.Api.Version >= 76) { /* photos from any pose: CaptureView, CaptureViewOptions, ViewPose.LookAt, ViewPose.FirstPersonOf (part 54) */ }
 if (IsoRim.Api.Version >= 77) { /* first-person eye providers: AddFirstPersonEye, RemoveFirstPersonEye (part 55) */ }
 if (IsoRim.Api.Version >= 78) { /* ModelDef.hairDef, beardDef: a pack's model for a hairstyle or beard style (part 56); no member */ }
+if (IsoRim.Api.Version >= 79) { /* spin parts on an axle: ModelDef.spinPivot, spinAxis, spinSource, spinDips; AddSpinAngle, RemoveSpinAngle (part 57) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
@@ -3209,6 +3210,77 @@ does not know in `Defs/` is an XML error, so the def goes into `Defs/` without t
 Version gate: no member; an older IsoRim does not know the fields, so add them by patch behind `minVersion` 78 (part M,
 `Docs/ModelPacks.md` "Hair and beard models").
 
+## Part 57: spin parts on an axle and their angle (version 79)
+
+A model's **spin part** (`spinModel`, from version 2: the lightball's ball, the void node's dust) is a second model drawn every
+frame over the baked body and turned. Before 79 it could only turn about the upright axis through the model's origin, at
+`spinSpeed` while the thing is powered and wanted on (or always, `spinAlways`, part 39). Version 79 adds an axle anywhere and
+more things that can turn it. Vanilla's watermill is the first user: its wheel is a spin part on a level axle, turned by the
+game's own blade angle, dipping into the river.
+
+```xml
+<!-- Defs/: the def without the version-79 fields (an older IsoRim does not know them) -->
+<IsoRim.ModelDef>
+  <defName>MyPack_WaterWheel</defName>
+  <model>Models/my_mill.obj</model>
+  <spinModel>Models/my_mill_wheel.obj</spinModel>   <!-- built in the model's own space, round the pivot below -->
+</IsoRim.ModelDef>
+
+<!-- Patches/: the binding and the 79 fields, only on IsoRim 79 or newer (part M) -->
+<Operation Class="IsoRimPackGate.PatchOperation_IfIsoRimApi">
+  <minVersion>79</minVersion>
+  <apply Class="PatchOperationAdd">
+    <xpath>/Defs/IsoRim.ModelDef[defName="MyPack_WaterWheel"]</xpath>
+    <value>
+      <thingDef>MyMod_WaterWheel</thingDef>
+      <spinPivot>(0, 1.2, 2.36)</spinPivot>   <!-- where the axle passes, model space as built (z 2.36: copied from
+                                               RimWorld CompPowerPlantWater.BladeOffset, where the game draws its blades) -->
+      <spinAxis>(0, 0, 1)</spinAxis>         <!-- the axle's direction, model space facing north -->
+      <spinSource>PowerOutput</spinSource>   <!-- what turns it (below) -->
+      <spinSpeed>90</spinSpeed>
+      <spinDips>true</spinDips>              <!-- its lowest point stays under the ground at any wall height -->
+    </value>
+  </apply>
+</Operation>
+```
+
+| Field | Default | Meaning |
+|---|---|---|
+| `spinPivot` | (0, 0, 0) | The point the part turns about, model space as built (the part is built in the model's own space, as every spin part). Set (or `spinAxis` set): the part is **on an axle**. |
+| `spinAxis` | (0, 1, 0) | The axis it turns about, model space facing north (turned with the thing). Positive angles turn as `Quaternion.AngleAxis` does about it. |
+| `spinSource` | `Power` | What turns it: `Power` (as before: `spinSpeed` degrees a second at normal speed while the thing is powered and wanted on, always with `spinAlways`); `PowerOutput` (`spinSpeed` times the share of its full output the thing makes now, both asked of its power comp: `PowerOutput` over the props' `PowerConsumption`); `WatermillAngle` (the angle vanilla's watermill turns its blades by, `CompPowerPlantWater.spinPosition`, read every frame: stopping, turning back and half speed on shared water are the game's own; the 3D wheel turns as a real wheel in the river, its bottom moving with the flow, where vanilla's flat top-down blades show no direction; on a thing without `CompPowerPlantWater` the part stands, warned once). Any other value is warned at load and the part stands. An addon's provider (`AddSpinAngle`) wins over all. |
+| `spinDips` | false | On a level axle: the pivot's height is capped so the part's lowest point stays at least an eighth of its reach under the ground, whatever the wall height. |
+
+- **On an axle the part is never stretched.** Its pivot is placed and fitted as a point of the model (`offset`, `builtFor`,
+  `wallFit`: with `wallFit` the pivot's height follows the walls); the part itself keeps the def's `scale`. An upright part at
+  the origin (no `spinPivot`, no `spinAxis`) is fitted with the model as before.
+- **Outline:** a part on an axle gets its outline built all round (a turning part has no ground), also where it is built
+  below the ground. What of it reaches below the ground or water is hidden there by the ground itself: nothing to set.
+- **The game's flat stand-in:** the spin part's mote (`spinMote`) is left out in 3D as before; for vanilla's watermill the
+  nine flat blades its `CompPowerPlantWater.PostDraw` draws are left out while the wheel is drawn (that method draws nothing
+  else; the watermill has no power bar). The wheel and the left-out blades follow one rule, so one never shows without the
+  other: the thing's footprint grown by the wheel's reach, in the camera's view grown by a cell, not fogged.
+- 3D off or models off: the game's own drawing, untouched. Nothing is saved.
+
+### AddSpinAngle, RemoveSpinAngle
+
+```csharp
+if (IsoRim.Api.Version >= 79) AddAngle();
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+static void AddAngle() => IsoRim.Api.AddSpinAngle(new Func<Thing, float?>(MyAngle));
+
+static float? MyAngle(Thing t) => t.def == MyDefOf.MyWheel ? t.TryGetComp<MyWheelComp>()?.angleDegrees : null;
+```
+
+Your angle (degrees about `spinAxis`) for your own things' spin parts, asked every frame the part is drawn, before
+`spinSource`; null = not yours (the next provider, then `spinSource`, answers). Used exactly as given: IsoRim adds no
+speed and does no smoothing. Providers are asked in the order added; the first that answers wins. Main thread only. A
+provider that throws, or answers a value that is not a number, is removed with one warning. Throws on null or when added
+twice. `RemoveSpinAngle` takes it off again.
+
+Version gate: `IsoRim.Api.Version >= 79` (the fields by patch behind `minVersion` 79, part M).
+
 ## Part M: model packs (IsoRim.ModelDef)
 
 A model pack is an XML-only mod (or a mod with a small DLL) that adds `IsoRim.ModelDef`s binding OBJ models to other
@@ -3248,6 +3320,8 @@ mods' things.
 | `anyArt` (50) | Weapons: the model is kept whatever art the weapon has (part 34); default false: a weapon whose sprite another mod supplies draws that sprite. |
 | `holdAsBuilt`, `carryStand`, `carryLean`, `bakedItem` (54) | Weapons: held as built, carried standing in front of the figure, an item with a drawing of its own baked as its model (part 38). |
 | `effectHeight`, `effectRadius`, `cardState`, `spinAlways` (55) | A body in the air: the thing's effects go round it, the game's sprite on a card in a state, a spin part that always turns (part 39). |
+| `spinModel`, `spinSpeed`, `spinMote` | A spin part: a second model turned every frame over the body (upright about the origin unless on an axle), at `spinSpeed` degrees a second while the thing is powered; the game's mote for it left out in 3D. |
+| `spinPivot`, `spinAxis`, `spinSource`, `spinDips` (79) | The spin part on an axle through a pivot, never stretched; what turns it (`Power`, `PowerOutput`, `WatermillAngle`, or an addon's `AddSpinAngle`); its lowest point kept under the ground (part 57). |
 | `tubeColor` (58) | With `shape` `Tube`: the tube's colour (part 41). |
 | `smoothShading` (69) | Mechs: the model and its parts lit by smooth normals as animals are; with `smoothTextured` its textured faces too (part 48). Default false: as before. |
 | `wallTop` (11), `cutaway` (20), `backHeight` (13), wing fields (14), `doorLeafModel`, `doorLeafGather` (18), `crownTop`, `doorLeafRise` (6) | See their parts. |

@@ -137,6 +137,8 @@ Common fields:
 | `immatureModels`, `immatureHide` | | Api 24, plants: the young stage, drawn while the plant is not yet harvestable (as the game's `immatureGraphic`, growth up to `harvestMinGrowth`). `immatureModels`: own models, one per variant of `models` (same order). `immatureHide`: material names left out of the young stage, e.g. the produce; with no `immatureModels` the young stage is the mature model without them. `growthScale` still shrinks it |
 | `geneDef`, `geneAnchor`, `geneTint`, `geneBuilds`, `geneTuck`, `geneHidesHair`, `geneTintsHead` | | Api 35: a gene part on 3D people instead of a thing; see "Gene parts" below |
 | `hairDef`, `beardDef` | | Api 78: your model for a hairstyle (a HairDef defName) or a beard style (a BeardDef defName) on 3D people instead of a thing; see "Hair and beard models" below |
+| `spinModel`, `spinSpeed`, `spinAlways`, `spinMote` | | A part turned every frame over the body (upright about the model's origin): `spinSpeed` degrees a second while powered (always with `spinAlways`, Api 55); the game's mote for it left out in 3D |
+| `spinPivot`, `spinAxis`, `spinSource`, `spinDips` | (0,0,0), (0,1,0), Power, false | Api 79: the spin part on an axle through a pivot (model space), never stretched; turned by power, by the share of full power output, by the vanilla watermill's own angle, or by an addon's angle; its lowest point kept under the ground; see "Spinning parts" below |
 | `hoverHeight`, `hoverBob` | 0 | Api 32, animals and mechs: the figure floats this many cells over the ground (times its size) while up and about, drifting up and down by `hoverBob`; downed, dead or lying it settles onto the ground (Api part 21) |
 
 Doors (`doorLeafModel`, ...), turrets (`topModel`), animals, mechs and many special parts have their own fields; see the
@@ -478,6 +480,53 @@ part and nothing is logged. `IsoRimPackGate.dll` is the file every pack ships (s
   keep theirs. A ghoul's own head and hair are unchanged.
 - Never put `hairDef` / `beardDef` into `Defs/`: an older IsoRim does not know the fields (an XML error). Always the
   two files above.
+
+## Spinning parts
+
+Api 79: a wheel, a fan or a rotor that turns about any axle. Build the part as its own OBJ **in the model's space** (the same
+origin and facing as `model`, where it sits on the model), give the axle with `spinPivot` and `spinAxis`, and say what
+turns it with `spinSource`. On an IsoRim older than 79 the fields are unknown (an XML error in `Defs/`), so add them by
+patch, as for hair (the def in `Defs/` names no thing until the patch binds it):
+
+```xml
+<!-- Defs/MyPack_Mill.xml: the def without the Api 79 fields -->
+<Defs>
+  <IsoRim.ModelDef>
+    <defName>MyPack_Mill</defName>
+    <model>Models/mill.obj</model>
+    <spinModel>Models/mill_wheel.obj</spinModel>
+  </IsoRim.ModelDef>
+</Defs>
+
+<!-- Patches/MyPack_Mill.xml: the binding, only on IsoRim 79 or newer -->
+<Patch>
+  <Operation Class="IsoRimPackGate.PatchOperation_IfIsoRimApi">
+    <minVersion>79</minVersion>
+    <apply Class="PatchOperationAdd">
+      <xpath>/Defs/IsoRim.ModelDef[defName="MyPack_Mill"]</xpath>
+      <value>
+        <thingDef>SomeMod_Mill</thingDef>
+        <spinPivot>(0, 1.2, 2.36)</spinPivot>   <!-- z 2.36: copied from RimWorld CompPowerPlantWater.BladeOffset -->
+        <spinAxis>(0, 0, 1)</spinAxis>
+        <spinSource>PowerOutput</spinSource>
+        <spinSpeed>60</spinSpeed>
+        <spinDips>true</spinDips>
+      </value>
+    </apply>
+  </Operation>
+</Patch>
+```
+
+- **`spinSource`:** `Power` (default: `spinSpeed` while powered, always with `spinAlways`), `PowerOutput` (`spinSpeed` times
+  the share of its full output the thing makes now), `WatermillAngle` (the angle vanilla's watermill keeps; for a thing with
+  `CompPowerPlantWater`; the 3D wheel turns as a real wheel in the river, its bottom moving with the flow, where vanilla's
+  flat top-down blades show no direction). Any other value is warned at load and the part stands. A mod with its own
+  angle (its own comp) answers in C# with `Api.AddSpinAngle` (Docs/Api.md part 57).
+- **Never stretched:** the pivot moves with the model's fit and `wallFit`, the part keeps `scale`. With `spinDips` the
+  pivot never rises so far that the part's lowest point leaves the ground (water).
+- **Below the ground:** a part that reaches below the ground or water is hidden there by the ground itself; nothing to set.
+- **Model:** big simple pieces, as any model; a part on an axle may reach below the ground (its outline is built all round).
+- The vanilla watermill (`Models/watermill_wheel.obj` in IsoRim) is a worked example.
 
 ## Alien packs
 

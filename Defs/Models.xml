@@ -2376,12 +2376,27 @@
     <emitterRise>1.2</emitterRise>
   </IsoRim.ModelDef>
 
+  <!-- Watermill (remade 2026-11-15 after the vanilla sprites; tools/make_watermill.py): the body (deck, house, generator drum,
+       shaft, trestle) built facing north with the wheel's side at +z, as the game's own footprint (5, 6); and the wheel as its
+       spin part on an axle (Api 79): built in the body's space round its pivot, the axle along the facing, 2.36 forward of the
+       centre as the game's own blades (spinPivot z: Copied from RimWorld CompPowerPlantWater.BladeOffset, checked against the
+       game at startup, Spinners.CheckCopies), turned by the game's own angle (spinPosition), so it stops, turns back and
+       halves its speed as the game says. Its direction is a real wheel's in the river: with the game's spinRate > 0 (the
+       water flowing to the facing's clockwise side) the bottom of the wheel moves with the flow; the game's flat top-down
+       blades show no direction. Built for 1.2 walls: the body follows the wall height, the wheel is never stretched, its
+       axle rises with the walls but its paddles always dip (spinDips). The ground and water hide what of the wheel is
+       under them by themselves. -->
   <IsoRim.ModelDef>
     <defName>R3D_WatermillGenerator</defName>
     <thingDef>WatermillGenerator</thingDef>
     <model>Models/watermill.obj</model>
     <surfaceHeight>0.00</surfaceHeight>
-    <builtFor>(6, 5)</builtFor>
+    <wallFit>1.2</wallFit>
+    <spinModel>Models/watermill_wheel.obj</spinModel>
+    <spinPivot>(0, 1.2, 2.36)</spinPivot>
+    <spinAxis>(0, 0, 1)</spinAxis>
+    <spinSource>WatermillAngle</spinSource>
+    <spinDips>true</spinDips>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>

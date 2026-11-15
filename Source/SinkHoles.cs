@@ -12,10 +12,11 @@ namespace IsoRim
     //      ground (terrain with its blends and the water layer, terrain edges, scatter, snow, sand: CutGround, a postfix
     //      of each layer's Regenerate), so nothing at ground level is drawn over the hole. The model's apron covers the
     //      cut cells outside the opening;
-    //   2. the ground's depth: the game's terrain writes no depth, so on its own it would not hide the parts under the
-    //      ground. SectionLayer_IsoRimSinkHoles writes depth only (no colour), just under the ground, for the uncut cells
-    //      within Reach of a hole, before any model is drawn (queue 1990): the near ground then hides the shaft, which
-    //      only shows through the opening.
+    //   2. the ground's depth: SectionLayer_IsoRimSinkHoles writes depth only (no colour), just under the ground, for the
+    //      uncut cells within Reach of a hole, before any model is drawn (queue 1990): the near ground then hides the
+    //      shaft, which only shows through the opening. (Measured 2026-11-15, tools/runners/hidebelow: the game's terrain
+    //      and water write no depth, but they are drawn after IsoRim's models (queue 2000 + their renderPrecedence, depth
+    //      tested against the models' depth), so they hide what of a model is below them on their own as well.)
     // Only while the 3D view is on and the thing is drawn as its model; ground floor only (ProjectZ floors are untouched).
     // A hole that appears or goes dirties the ground round it (NoteChange, from Patches.NoteShapeChange); a settings
     // change rebuilds the whole map anyway.

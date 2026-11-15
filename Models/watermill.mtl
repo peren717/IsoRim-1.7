@@ -1,0 +1,24 @@
+# IsoRim watermill remake (2026-11-14). Stuffless def (WoodLog 280, Steel 80): the stuff* faces of the body take
+# WoodLog's colour and Wood swatch (Models.CostStuffIfWhite), as today's model; fixed colours for the walls and metal.
+# The wheel is drawn on its own (fixed colours: wm_paddle = stuff_dark on WoodLog, 0.8 x (133, 97, 67)).
+newmtl wm_wall
+Kd 0.36 0.16 0.15
+map_Kd IsoRim/Swatches/Wood
+newmtl wm_gen
+Kd 0.58 0.58 0.59
+map_Kd IsoRim/Swatches/Metal
+newmtl wm_band
+Kd 0.30 0.31 0.33
+map_Kd IsoRim/Swatches/Metal
+newmtl wm_shaft
+Kd 0.60 0.60 0.61
+map_Kd IsoRim/Swatches/Metal
+newmtl wm_spoke
+Kd 0.58 0.58 0.60
+map_Kd IsoRim/Swatches/Metal
+newmtl wm_hub
+Kd 0.36 0.37 0.39
+map_Kd IsoRim/Swatches/Metal
+newmtl wm_paddle
+Kd 0.42 0.30 0.21
+map_Kd IsoRim/Swatches/Wood

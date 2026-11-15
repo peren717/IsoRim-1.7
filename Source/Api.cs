@@ -160,7 +160,10 @@ namespace IsoRim
         // 78: HairParts.cs: ModelDef.hairDef / beardDef: a pack's own model for a hairstyle or beard style (a HairDef / BeardDef
         // defName, no thingDef), drawn in place of IsoRim's own hair or beard part for that style and exactly as that part is
         // (placement, hair colour on stuff* faces, hidden and tucked by the same rules). No new member.
-        public static int Version => 78;
+        // 79: spin parts on an axle and what turns them (Spinners.cs, Api79.cs): ModelDef.spinPivot, spinAxis, spinSource (Power,
+        // PowerOutput, WatermillAngle), spinDips; AddSpinAngle / RemoveSpinAngle (an addon's angle for its own things).
+        // First user: the watermill's wheel.
+        public static int Version => 79;
 
         // ---- glass parts (Version 30)
 

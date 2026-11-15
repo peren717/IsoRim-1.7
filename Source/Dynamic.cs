@@ -2249,10 +2249,10 @@ namespace IsoRim
 
             float size = entry.def.scale;
             Vector3 at = parent.DrawPos;
-            Matrix4x4 local = Matrix4x4.Translate(new Vector3(0f, 0f, HubForward * size))
-                * Matrix4x4.Rotate(Quaternion.AngleAxis(angle, Vector3.forward))
-                * Matrix4x4.Scale(new Vector3(size, size, size));
-            DynamicModels.DrawLocal(rotor, new Vector3(at.x, HubHeight * size, at.z), parent.Rotation.AsAngle + entry.def.rotation, local, Color.white, null);
+            // the shared drawing of a part turned about an axis (Spinners.DrawTurning): pivot zero, exactly this rotor's matrix
+            // T(0, 0, HubForward * size) * R(angle about forward) * S(size)
+            Spinners.DrawTurning(rotor, new Vector3(at.x, HubHeight * size, at.z), parent.Rotation.AsAngle + entry.def.rotation,
+                new Vector3(0f, 0f, HubForward * size), Vector3.forward, angle, size, Vector3.zero, Color.white, null);
             return true;
         }
     }

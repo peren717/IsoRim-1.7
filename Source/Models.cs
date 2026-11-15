@@ -212,6 +212,20 @@ namespace IsoRim
         public float spinSpeed = 90f;       // degrees a second at normal game speed
         public string spinMote;             // the game's flat mote for that part (Mote_LightBall), left out in 3D
         public bool spinAlways;             // (Api 55) it turns whatever the power does (the void node's dust)
+        // (Api 79) A spin part on an axle (the watermill's wheel): spinAxis (model space, facing north) through spinPivot (model
+        // space, as built) instead of the upright axis through the model's origin. Such a part is never stretched: only its
+        // pivot is placed and fitted as a point of the model (wallFit's walls lift it), the part keeps the def's scale. Its
+        // outline is built all round (a turning part has no ground: the outline's rule for corners on the ground is not used).
+        // spinSource: what turns it (Spinners.Source*): "" or Power (as before: spinSpeed while powered and wanted on, or
+        // always with spinAlways), PowerOutput (spinSpeed times the share of its full output the thing makes now, asked of
+        // its power comp), WatermillAngle (the angle vanilla's watermill turns its blades by, CompPowerPlantWater.spinPosition);
+        // any other value is warned at load and the part stands. An addon's angle (Api.AddSpinAngle) wins over all of them.
+        // spinDips: the part's lowest point (about a level axle) is kept under the ground at any wall height (Spinners.DipCap).
+        // What of a part reaches below the ground or water is hidden there by the ground itself (drawn after the models).
+        public Vector3 spinPivot = Vector3.zero;
+        public Vector3 spinAxis = Vector3.up;
+        public string spinSource;
+        public bool spinDips;
         // (Api 55, EffectLift.cs) A body hanging in the air round a point effectHeight up (the void node's orb), effectRadius across:
         // what the thing's effecters draw over things goes round it instead of lying on the ground. cardState: while the thing
         // is in that state (Api.AddModelState) the model stands down for the game's own sprite, on a card facing the camera there.
@@ -852,6 +866,7 @@ namespace IsoRim
         public Model topLoaded;   // turrets whose gun sprite changes once loaded (rocket launchers)
         public Model spin;        // spinModel, or null
         public Model spinLit;     // spinModel with its litMaterial lit, or null
+        public float spinRadius;  // (Api 79) how far an axle spin part reaches from its axle (cells, as built), worked out at load
         public Model bob;         // bobModel, or null
         public Dictionary<string, Model> bobByState;   // (Api 27) addon state name -> bob part (bobByState); null if none
         public Model[] pulse;     // pulseParts' models (same order), or null
@@ -1585,7 +1600,17 @@ namespace IsoRim
             }
             if (!md.spinModel.NullOrEmpty() && md.modContentPack != null)
             {
+                if (!Spinners.KnownSource(md.spinSource))
+                {
+                    Log.WarningOnce("[IsoRim] " + md.defName + ": unknown spinSource \"" + md.spinSource + "\" (" + Spinners.SourcePower + ", "
+                        + Spinners.SourcePowerOutput + " or " + Spinners.SourceWatermill + "); its spin part stands still.", ("spinSource" + md.defName).GetHashCode());
+                }
                 entry.spin = LoadFile(Path.Combine(md.modContentPack.RootDir, md.spinModel));
+                if (entry.spin != null && Spinners.OnAxle(md))
+                {
+                    entry.spin = ObjLoader.HulledAllRound(entry.spin);
+                    entry.spinRadius = Spinners.Radius(entry.spin, md.spinPivot, md.spinAxis);
+                }
                 if (entry.spin != null && !md.litMaterial.NullOrEmpty())
                 {
                     entry.spinLit = ObjLoader.Relit(entry.spin, md.litMaterial, md.litColors);
@@ -2061,6 +2086,37 @@ namespace IsoRim
                     m.tinted[k] = false;
                 }
             }
+            m.id = nextId++;
+            return m;
+        }
+
+        // (Api 79) A copy of a model whose outline is built all round: no corner counts as standing on the ground, so a part
+        // that turns (a spin part on an axle, Spinners) keeps an even outline whichever way it is turned, also where it is
+        // built below the ground. The same mesh otherwise (arrays shared).
+        public static Model HulledAllRound(Model src)
+        {
+            if (src == null || src.positions == null || src.normals == null)
+            {
+                return src;
+            }
+            Model m = new Model();
+            m.positions = src.positions;
+            m.normals = src.normals;
+            m.colors = src.colors;
+            m.tinted = src.tinted;
+            m.uvs = src.uvs;
+            m.material = src.material;
+            m.materials = src.materials;
+            m.noOutline = src.noOutline;
+            m.ownColor = src.ownColor;
+            m.beam = src.beam;
+            m.maxY = src.maxY;
+            m.halfDepth = src.halfDepth;
+            m.minX = src.minX;
+            m.maxX = src.maxX;
+            m.minZ = src.minZ;
+            m.maxZ = src.maxZ;
+            m.hull = BuildHull(src.positions, src.normals, OutlineWidth, false);
             m.id = nextId++;
             return m;
         }
@@ -3286,6 +3342,12 @@ namespace IsoRim
         // tips) the corner moves width along the mean normal.
         private static Vector3[] BuildHull(Vector3[] positions, Vector3[] normals, float width)
         {
+            return BuildHull(positions, normals, width, true);
+        }
+
+        // ground false: no corner counts as standing on the ground (a part that turns, HulledAllRound).
+        private static Vector3[] BuildHull(Vector3[] positions, Vector3[] normals, float width, bool ground)
+        {
             Dictionary<Vector3Int, List<Vector3>> facesAt = new Dictionary<Vector3Int, List<Vector3>>();
             for (int i = 0; i < positions.Length; i++)
             {
@@ -3297,7 +3359,7 @@ namespace IsoRim
                     facesAt[key] = list;
                 }
                 Vector3 n = normals[i];
-                if (positions[i].y < 0.001f)
+                if (ground && positions[i].y < 0.001f)
                 {
                     n.y = 0f;   // corners on the ground only move sideways
                     if (n.sqrMagnitude < 0.01f)

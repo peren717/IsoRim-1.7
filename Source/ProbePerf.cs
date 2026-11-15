@@ -27,7 +27,8 @@ namespace IsoRim
     //   speed=0..4                            the game speed (0 paused, 1 normal, 2 fast, 3 superfast) held from now on,
     //                                         against the harness's pauses
     //   -isorimbiome=<BiomeDef> (command line) the quick-test map on a flat tile of that biome (after Capture17's pick);
-    //                                         with -isorimhills=<Hilliness> (e.g. Mountainous) a tile that hilly
+    //                                         with -isorimhills=<Hilliness> (e.g. Mountainous) a tile that hilly;
+    //                                         with -isorimriver (watermill tests) a tile with a river
     public static partial class Probe
     {
         private static int heldSpeed = -1;
@@ -62,12 +63,14 @@ namespace IsoRim
             {
                 hills = (RimWorld.Planet.Hilliness)Enum.Parse(typeof(RimWorld.Planet.Hilliness), hillsName);
             }
+            bool river = GenCommandLine.CommandLineArgPassed("isorimriver");
             foreach (RimWorld.Planet.SurfaceTile t in Find.WorldGrid.Tiles.InRandomOrder())
             {
-                if (t.PrimaryBiome == biome && t.hilliness == hills && RimWorld.Planet.TileFinder.IsValidTileForNewSettlement(t.tile))
+                if (t.PrimaryBiome == biome && t.hilliness == hills && RimWorld.Planet.TileFinder.IsValidTileForNewSettlement(t.tile)
+                    && (!river || (t.Rivers != null && t.Rivers.Count > 0)))
                 {
                     Find.GameInitData.startingTile = t.tile;
-                    Log.Message("[IsoRim probe] quick-test tile " + t.tile + " (" + biome.defName + ", " + hills + ")");
+                    Log.Message("[IsoRim probe] quick-test tile " + t.tile + " (" + biome.defName + ", " + hills + (river ? ", river " + t.Rivers[0].river.defName : "") + ")");
                     return;
                 }
             }
