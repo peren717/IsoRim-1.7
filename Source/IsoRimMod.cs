@@ -60,6 +60,8 @@ namespace IsoRim
         public bool workAnimations = true;
         public bool selectionRings = true;   // a ring on the ground under selected pawns in 3D (SelectionRings); off: brackets
         public bool targetBox = true;        // the corners of a 3D box round the targeted thing (TargetBox); off: the game's marks
+        public bool placeGrid = true;        // grid lines round the pointer while placing a building in 3D (PlaceGrid)
+        public int placeGridRange = PlaceGrid.DefaultRange;   // the grid's reach from the pointer (cells)
         public bool labelsAboveHeads = true; // pawn name labels over the head in 3D (PawnLabels); off: at the feet as the game puts them
         public float labelHeight = 0f;       // cells added to the over-head label's height (PawnLabels.AboveHead); 0 = the default place
         public bool damage3D = true;
@@ -131,7 +133,8 @@ namespace IsoRim
         public float tiltCentre = 0.5f;      // sharp band centre, fraction of the screen height from the top (0.3..0.7)
         public float tiltWidth = 0.3f;       // sharp band width, fraction of the screen height (0.1..0.6)
         public bool tiltPop = false;         // slightly richer colours with tilt-shift (TiltShift.PopAmount)
-        public int lookMode = 0;         // free look drag button: 0 = middle button with R3D_LookModifier (Ctrl), 1 = right button with nothing selected
+        public int lookMode = 0;         // free look drag button: 0 = middle button with R3D_LookModifier (Ctrl), 1 = right button with nothing selected,
+                                         // 2 = middle button alone (no map drag with it in 3D; View3D.LookHeld)
         public bool pawns3D = true;
         public bool hairUnderHats = false;   // hair shown, tucked in, under headgear that covers only the upper head (People.HairUnderHat)
         public bool geneParts3D = true;      // (Api 35) gene parts (ModelDef.geneDef: pig ears, horns, tails, fur) on 3D people (GeneParts)
@@ -215,6 +218,8 @@ namespace IsoRim
             Scribe_Values.Look(ref workAnimations, "workAnimations", true);
             Scribe_Values.Look(ref selectionRings, "selectionRings", true);
             Scribe_Values.Look(ref targetBox, "targetBox", true);
+            Scribe_Values.Look(ref placeGrid, "placeGrid", true);
+            Scribe_Values.Look(ref placeGridRange, "placeGridRange", PlaceGrid.DefaultRange);
             Scribe_Values.Look(ref labelsAboveHeads, "labelsAboveHeads", true);
             Scribe_Values.Look(ref labelHeight, "labelHeight", 0f);
             Scribe_Values.Look(ref damage3D, "damage3D", true);
@@ -684,10 +689,10 @@ namespace IsoRim
             return key.MainKeyLabel;
         }
 
-        // The free look drag button as words (IsoRimSettings.lookMode: 0 middle, 1 right).
+        // The free look drag button as words (IsoRimSettings.lookMode: 0 and 2 middle, 1 right).
         private static string DragButtonLabel(IsoRimSettings st)
         {
-            return (st.lookMode == 1 ? "R3D_Settings_RightButton" : "R3D_Settings_MiddleButton").Translate();
+            return (View3D.LookButton(st) == 1 ? "R3D_Settings_RightButton" : "R3D_Settings_MiddleButton").Translate();
         }
 
         // A length in cells, as shown next to a slider ("2.5 cells").
@@ -705,9 +710,27 @@ namespace IsoRim
                 return "R3D_Settings_LookKeysRight".Translate();
             }
             KeyBindingDef mod = R3DKeyDefOf.R3D_LookModifier;
-            return mod == null || mod.MainKey == KeyCode.None
+            return !View3D.LookUsesModifier(st) || mod == null || mod.MainKey == KeyCode.None
                 ? "R3D_Settings_LookKeysDrag".Translate(DragButtonLabel(st))
                 : "R3D_Settings_LookKeysHoldDrag".Translate(mod.MainKeyLabel, DragButtonLabel(st));
+        }
+
+        // The game's own map move keys (up, left, down, right) as one word ("WASD") when each is one character, else listed.
+        private static string DollyKeysLabel()
+        {
+            KeyBindingDef[] keys = { KeyBindingDefOf.MapDolly_Up, KeyBindingDefOf.MapDolly_Left, KeyBindingDefOf.MapDolly_Down, KeyBindingDefOf.MapDolly_Right };
+            List<string> labels = new List<string>(4);
+            bool single = true;
+            foreach (KeyBindingDef k in keys)
+            {
+                if (k != null && k.MainKey != KeyCode.None)
+                {
+                    string s = k.MainKeyLabel;
+                    labels.Add(s);
+                    single &= s.Length == 1;
+                }
+            }
+            return string.Join(single ? "" : ", ", labels);
         }
 
         private static void KeyRow(Listing_Standard l, KeyBindingDef key, string what)
@@ -763,13 +786,17 @@ namespace IsoRim
                     string middleTip = hold == null || hold.MainKey == KeyCode.None
                         ? "R3D_Settings_LookMiddleTipNoKey".Translate()
                         : "R3D_Settings_LookMiddleTip".Translate(hold.MainKeyLabel);
-                    if (l.RadioButton("R3D_Settings_LookMiddle".Translate(), st.lookMode != 1, 12f, middleTip))
+                    if (l.RadioButton("R3D_Settings_LookMiddle".Translate(), View3D.LookUsesModifier(st), 12f, middleTip))
                     {
                         st.lookMode = 0;
                     }
                     if (l.RadioButton("R3D_Settings_LookRight".Translate(), st.lookMode == 1, 12f, "R3D_Settings_LookRightTip".Translate()))
                     {
                         st.lookMode = 1;
+                    }
+                    if (l.RadioButton("R3D_Settings_LookMiddleOnly".Translate(), st.lookMode == 2, 12f, "R3D_Settings_LookMiddleOnlyTip".Translate(DollyKeysLabel())))
+                    {
+                        st.lookMode = 2;
                     }
                     st.lookSensitivity = Slider(l, "R3D_Settings_LookSpeed".Translate(), st.lookSensitivity, 0.05f, 1f, "R3D_Settings_DegPerPixel".Translate(st.lookSensitivity.ToString("0.00")));
                     Check(l, "R3D_Settings_InvertY".Translate(), ref st.invertY, "R3D_Settings_InvertYTip".Translate());
@@ -1232,6 +1259,12 @@ namespace IsoRim
                 Check(r, "R3D_Settings_SelectionRings".Translate(), ref st.selectionRings, "R3D_Settings_SelectionRingsTip".Translate());
                 Check(r, "R3D_Settings_TargetBox".Translate(), ref st.targetBox, "R3D_Settings_TargetBoxTip".Translate());
                 Check(r, "R3D_Settings_Ghosts3D".Translate(), ref st.ghosts3D, "R3D_Settings_Ghosts3DTip".Translate());
+                Check(r, "R3D_Settings_PlaceGrid".Translate(), ref st.placeGrid, "R3D_Settings_PlaceGridTip".Translate());
+                if (st.placeGrid)
+                {
+                    st.placeGridRange = Mathf.RoundToInt(Slider(r, "R3D_Settings_PlaceGridRange".Translate(), st.placeGridRange, PlaceGrid.MinRange, PlaceGrid.MaxRange,
+                        st.placeGridRange.ToString()));
+                }
                 Check(r, "R3D_Settings_Damage3D".Translate(), ref st.damage3D);
                 Check(r, "R3D_Settings_Effects3D".Translate(), ref st.effects3D);
                 Check(r, "R3D_Settings_Explosions3D".Translate(), ref st.explosions3D);

@@ -43,6 +43,8 @@
   <R3D_Settings_LookMiddleTipNoKey>The hold key is in the game's keyboard options.</R3D_Settings_LookMiddleTipNoKey>
   <R3D_Settings_LookRight>Free look: right button</R3D_Settings_LookRight>
   <R3D_Settings_LookRightTip>Drag while nothing is selected.</R3D_Settings_LookRightTip>
+  <R3D_Settings_LookMiddleOnly>Free look: middle button (no key)</R3D_Settings_LookMiddleOnly>
+  <R3D_Settings_LookMiddleOnlyTip>Drag with the middle button. Move the map with {0}.</R3D_Settings_LookMiddleOnlyTip>
   <R3D_Settings_LookSpeed>Free look speed</R3D_Settings_LookSpeed>
   <R3D_Settings_InvertY>Invert up and down</R3D_Settings_InvertY>
   <R3D_Settings_InvertYTip>Dragging up tilts the camera toward top-down.</R3D_Settings_InvertYTip>
@@ -281,6 +283,9 @@
   <R3D_Settings_TargetBoxTip>A 3D box marks what you aim at or designate.</R3D_Settings_TargetBoxTip>
   <R3D_Settings_Ghosts3D>Blueprints show the finished build</R3D_Settings_Ghosts3D>
   <R3D_Settings_Ghosts3DTip>Blueprints, frames and the placement preview as see-through 3D models.</R3D_Settings_Ghosts3DTip>
+  <R3D_Settings_PlaceGrid>Placement grid</R3D_Settings_PlaceGrid>
+  <R3D_Settings_PlaceGridTip>Grid lines round the pointer while placing a building or floor.</R3D_Settings_PlaceGridTip>
+  <R3D_Settings_PlaceGridRange>Grid range (cells)</R3D_Settings_PlaceGridRange>
   <R3D_Settings_Damage3D>Damage marks on buildings</R3D_Settings_Damage3D>
   <R3D_Settings_Effects3D>Flames, smoke, steam and sparkles</R3D_Settings_Effects3D>
   <R3D_Settings_Explosions3D>3D explosions</R3D_Settings_Explosions3D>

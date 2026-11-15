@@ -446,6 +446,7 @@ namespace IsoRim
                         Interaction.DrawDragGhosts();
                         MineXray.Draw();
                         TargetBox.Draw();
+                        PlaceGrid.Draw();
                     }
                 }
                 catch (Exception e)
@@ -578,15 +579,18 @@ namespace IsoRim
 
         // Whether the mouse buttons and keys for free look are held now (see IsoRimSettings.lookMode):
         // 0 = the middle button with the look modifier (Ctrl by default, a key binding in the game's keyboard options; none
-        // if unbound); 1 = right button while nothing is selected and no building is being placed. The drag button is a
-        // mod setting, not a key binding: the game's keyboard options can't take a mouse button.
+        // if unbound); 1 = right button while nothing is selected and no building is being placed; 2 = the middle button
+        // alone (the look modifier is not read; the middle button no longer drags the map in the 3D view: Patches.
+        // CameraUpdate_Prefix yields to this). Only in the 3D view: with it off the middle button drags the map as the game
+        // does, whatever the mode. The drag button is a mod setting, not a key binding: the game's keyboard options can't
+        // take a mouse button.
         public static bool LookHeld()
         {
             IsoRimSettings st = IsoRimMod.Settings;
             if (FirstPerson.Engaged)
             {
                 // Nothing to drag the map for in first person: the drag button alone looks round.
-                return Input.GetMouseButton(st.lookMode == 1 ? 1 : 2);
+                return Input.GetMouseButton(LookButton(st));
             }
             if (!st.freeLook || !Active)
             {
@@ -599,7 +603,20 @@ namespace IsoRim
                     && (Find.Selector == null || Find.Selector.NumSelected == 0);
             }
             // The modifier is a key binding of its own (Ctrl by default: Alt is the game's cell inspector).
-            return Input.GetMouseButton(2) && BindingHeld(R3DKeyDefOf.R3D_LookModifier, true);
+            return Input.GetMouseButton(2) && (!LookUsesModifier(st) || BindingHeld(R3DKeyDefOf.R3D_LookModifier, true));
+        }
+
+        // The free look drag button of a lookMode (Input mouse button: 1 right, 2 middle).
+        internal static int LookButton(IsoRimSettings st)
+        {
+            return st.lookMode == 1 ? 1 : 2;
+        }
+
+        // Whether free look needs the hold key (R3D_LookModifier) with its button: mode 0 (and any unknown value), not the
+        // right button (1) or the middle button alone (2).
+        internal static bool LookUsesModifier(IsoRimSettings st)
+        {
+            return st.lookMode != 1 && st.lookMode != 2;
         }
 
         // Whether a key binding is held now. Mouse buttons count too (the game's KeyBindingDef.IsDown only reads keys

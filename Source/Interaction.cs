@@ -541,10 +541,49 @@ namespace IsoRim
         private static FieldInfo placingRot;
         private static bool lookedUp;
 
+        // ---- placing a building or floor: THE one test
+
+        // The building tool in hand (Designator_Place and its subclasses: build, install, reinstall; floors too), or null.
+        internal static Designator_Place Placing
+        {
+            get
+            {
+                DesignatorManager dm = Find.DesignatorManager;
+                return dm != null ? dm.SelectedDesignator as Designator_Place : null;
+            }
+        }
+
+        // The building tool in hand while the game draws its placement mark (Designator_Place.SelectedUpdate: the pointer's
+        // cell in the map, the pointer not on the architect menu's info box; the mark is the ghost, or for a floor (a
+        // TerrainDef) only the mouse-over bracket), with no window under the pointer; null otherwise.
+        // cell: the pointer's cell (UI.MouseCell: on the floor the pointer works on).
+        internal static Designator_Place PlacingAt(out IntVec3 cell)
+        {
+            cell = IntVec3.Invalid;
+            Designator_Place place = Placing;
+            Map map = Find.CurrentMap;
+            if (place == null || map == null || !RimWorld.Planet.WorldRendererUtility.DrawingMap)
+            {
+                return null;
+            }
+            Vector2 ui = UI.MousePositionOnUIInverted;
+            if (ArchitectCategoryTab.InfoRect.Contains(ui) || Find.WindowStack != null && Find.WindowStack.GetWindowAt(ui) != null)
+            {
+                return null;
+            }
+            IntVec3 c = UI.MouseCell();
+            if (!c.InBounds(map))
+            {
+                return null;
+            }
+            cell = c;
+            return place;
+        }
+
         public static void DrawDragGhosts()
         {
             DesignatorManager dm = Find.DesignatorManager;
-            Designator_Place place = dm != null ? dm.SelectedDesignator as Designator_Place : null;
+            Designator_Place place = Placing;
             if (place == null || !IsoRimMod.Settings.ghosts3D)
             {
                 return;

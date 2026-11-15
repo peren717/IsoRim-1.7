@@ -1841,6 +1841,15 @@ namespace IsoRim
                 case "tbnocursor":
                     TbKey(key, a);   // ProbeTargetBox
                     break;
+                case "pgrid":
+                case "pgcam":
+                case "pgcheck":
+                    PgKey(key, a);   // ProbePlaceGrid
+                    break;
+                case "ldrag":
+                case "ldcheck":
+                    LdKey(key, a);   // ProbeLookDrag
+                    break;
                 case "window":
                 case "campath":
                 case "spin":
@@ -2460,6 +2469,8 @@ namespace IsoRim
             FilmTick(map);
             IxTick(map);
             TbTick(map);
+            PgTick(map);
+            LdTick(map);
             MeleeAnimTick(map);
             MotionTick();
             CutTick();

@@ -43,6 +43,8 @@
   <R3D_Settings_LookMiddleTipNoKey>按住键可在游戏的按键设置中修改。</R3D_Settings_LookMiddleTipNoKey>
   <R3D_Settings_LookRight>自由视角：鼠标右键</R3D_Settings_LookRight>
   <R3D_Settings_LookRightTip>未选中任何东西时拖动。</R3D_Settings_LookRightTip>
+  <R3D_Settings_LookMiddleOnly>自由视角：鼠标中键（无需按键）</R3D_Settings_LookMiddleOnly>
+  <R3D_Settings_LookMiddleOnlyTip>直接拖动鼠标中键。用 {0} 移动地图。</R3D_Settings_LookMiddleOnlyTip>
   <R3D_Settings_LookSpeed>自由视角速度</R3D_Settings_LookSpeed>
   <R3D_Settings_InvertY>反转上下</R3D_Settings_InvertY>
   <R3D_Settings_InvertYTip>向上拖动时镜头转向俯视。</R3D_Settings_InvertYTip>
@@ -281,6 +283,9 @@
   <R3D_Settings_TargetBoxTip>瞄准或指派时，用立体框标出目标。</R3D_Settings_TargetBoxTip>
   <R3D_Settings_Ghosts3D>蓝图显示建成后的样子</R3D_Settings_Ghosts3D>
   <R3D_Settings_Ghosts3DTip>蓝图、建造框架和放置预览显示为半透明 3D 模型。</R3D_Settings_Ghosts3DTip>
+  <R3D_Settings_PlaceGrid>放置网格</R3D_Settings_PlaceGrid>
+  <R3D_Settings_PlaceGridTip>放置建筑或地板时，在指针周围显示网格线。</R3D_Settings_PlaceGridTip>
+  <R3D_Settings_PlaceGridRange>网格范围（格）</R3D_Settings_PlaceGridRange>
   <R3D_Settings_Damage3D>建筑上的损伤痕迹</R3D_Settings_Damage3D>
   <R3D_Settings_Effects3D>火焰、烟雾、蒸汽和火花</R3D_Settings_Effects3D>
   <R3D_Settings_Explosions3D>3D 爆炸</R3D_Settings_Explosions3D>
