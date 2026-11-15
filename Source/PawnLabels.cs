@@ -18,6 +18,11 @@ namespace IsoRim
     //     whose name is drawn at full strength; the text colour stays the game's name colour. With the option off the plate
     //     and the selected highlight stay; the label is at the feet as before.
     // Only pawn name labels; items, corpses and other labels are left as they are. 3D view off: the game's own.
+    // Only the name label the game draws over a pawn on the map (inside PawnUIOverlay.DrawPawnGUIOverlay: OnMap) gets any of
+    // this (over the head, and Patches.DrawPawnLabel_Prefix's behind-camera hide, far fade and plate). Every other caller of
+    // GenMapUI.DrawPawnLabel stays the game's own: the colonist bar's names (ColonistBarColonistDrawer), the destination
+    // labels of a group go order (MultiPawnGotoController), other mods' interface (2026-11-14: the bar's names were hidden
+    // by where the pawn stood relative to the camera).
     internal static class PawnLabels
     {
         private const float PawnLabelOffset = -0.6f;   // PawnUIOverlay.PawnLabelOffsetY: the game's own name label call
@@ -26,11 +31,34 @@ namespace IsoRim
         private const float PlateAlpha = 0.45f;        // the plate behind an unselected pawn's name
         private const float PlateAlphaSelected = 0.72f;
 
+        // The game's map overlay of a pawn (PawnUIOverlay.DrawPawnGUIOverlay) is being drawn now: entered and left by
+        // Patches.PawnOverlay_Prefix / PawnOverlay_Finalizer (a depth, in case one overlay draws another).
+        private static int mapOverlayDepth;
+
+        // Whether a name label drawn now is the game's label over a pawn on the map (the one place that decides it).
+        internal static bool OnMap
+        {
+            get { return mapOverlayDepth > 0; }
+        }
+
+        internal static void EnterMapOverlay()
+        {
+            mapOverlayDepth++;
+        }
+
+        internal static void LeaveMapOverlay()
+        {
+            if (mapOverlayDepth > 0)
+            {
+                mapOverlayDepth--;
+            }
+        }
+
         // Whether a label call is the pawn's name label and goes over the head now.
         internal static bool Above(Thing t, float offset)
         {
             IsoRimSettings st = IsoRimMod.Settings;
-            return t is Pawn && st != null && st.labelsAboveHeads && View3D.Ready && Mathf.Abs(offset - PawnLabelOffset) < 0.01f;
+            return t is Pawn && OnMap && st != null && st.labelsAboveHeads && View3D.Ready && Mathf.Abs(offset - PawnLabelOffset) < 0.01f;
         }
 
         // How high the figure's top stands over its floor now, in cells.

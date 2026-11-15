@@ -101,6 +101,9 @@ namespace IsoRim
             Patch("far labels", AccessTools.Method(typeof(GenMapUI), "DrawPawnLabel", new[] { typeof(Pawn), typeof(Vector2), typeof(float), typeof(float),
                 typeof(Dictionary<string, string>), typeof(GameFont), typeof(bool), typeof(bool) }),
                 prefix: nameof(DrawPawnLabel_Prefix));
+            // The one scope that makes a name label a map label (PawnLabels.OnMap): the game's own overlay over a pawn on the map.
+            Patch("far labels", AccessTools.Method(typeof(PawnUIOverlay), nameof(PawnUIOverlay.DrawPawnGUIOverlay)),
+                prefix: nameof(PawnOverlay_Prefix), finalizer: nameof(PawnOverlay_Finalizer));
 
             // Rain, snow and fog: stood up in front of the camera instead of lying on the ground (Weather).
             Patch("weather", AccessTools.Method(typeof(SkyOverlay), "DrawWorldOverlay", new[] { typeof(Map), typeof(Material), typeof(float), typeof(int) }),
@@ -1702,10 +1705,29 @@ namespace IsoRim
             return true;
         }
 
-        // The same for names over people and animals. The player's own colonists always keep theirs.
+        public static void PawnOverlay_Prefix(out bool __state)
+        {
+            PawnLabels.EnterMapOverlay();
+            __state = true;
+        }
+
+        public static void PawnOverlay_Finalizer(bool __state)
+        {
+            if (__state)
+            {
+                PawnLabels.LeaveMapOverlay();
+            }
+        }
+
+        // The same for names over people and animals on the map (PawnLabels.OnMap); the colonist bar and other interface
+        // that draw a pawn's name with this method are left to the game. The player's own colonists always keep theirs.
         // In the 3D view the label is drawn on IsoRim's plate (PawnLabels.DrawLabel).
         public static bool DrawPawnLabel_Prefix(Pawn __0, Vector2 __1, ref float __2, float __3, Dictionary<string, string> __4, GameFont __5, bool __7)
         {
+            if (!PawnLabels.OnMap)
+            {
+                return true;
+            }
             if (__0 != null && __0 == FirstPerson.ViewingPawn)
             {
                 return false;   // first person: no name floating in front of the eyes
