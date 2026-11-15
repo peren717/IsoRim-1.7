@@ -54,6 +54,7 @@ namespace IsoRim
             { "barAt", 36 }, { "barScale", 36 },
             { "femaleModel", 38 }, { "femaleModels", 38 }, { "femaleLegModel", 38 }, { "femaleWingModel", 38 },
             { "byGraphic", 39 },
+            { "hairDef", 78 }, { "beardDef", 78 },
         };
         private const int BaseVersion = 2;
 

@@ -129,10 +129,11 @@ if (IsoRim.Api.Version >= 74) { /* 3D explosions: SkipExplosionFx, AddExplosionF
 if (IsoRim.Api.Version >= 75) { /* textured faces (map_Kd) on people's models: apparel, gear, gene parts, races (part 53); no member */ }
 if (IsoRim.Api.Version >= 76) { /* photos from any pose: CaptureView, CaptureViewOptions, ViewPose.LookAt, ViewPose.FirstPersonOf (part 54) */ }
 if (IsoRim.Api.Version >= 77) { /* first-person eye providers: AddFirstPersonEye, RemoveFirstPersonEye (part 55) */ }
+if (IsoRim.Api.Version >= 78) { /* ModelDef.hairDef, beardDef: a pack's model for a hairstyle or beard style (part 56); no member */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`), version 72 part 51 (`HarnessSeed`), version 73 part 19 (`GlassOpacityFromModel`, `GlassOpacity`), version 74 part 52 (3D explosions), version 75 part 53 (textured faces on people), version 76 part 54 (photos), version 77 part 55 (first-person eye providers) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`), version 72 part 51 (`HarnessSeed`), version 73 part 19 (`GlassOpacityFromModel`, `GlassOpacity`), version 74 part 52 (3D explosions), version 75 part 53 (textured faces on people), version 76 part 54 (photos), version 77 part 55 (first-person eye providers), version 78 part 56 (hair and beard models by XML, no member) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -3155,6 +3156,59 @@ static Vector3? MyEye(Pawn pawn)
 
 Version gate: `IsoRim.Api.Version >= 77`.
 
+## Part 56: hair and beard models (version 78)
+
+IsoRim draws every hairstyle and beard style with one of its own shared 3D parts (`Models/person_hair_*.obj`,
+`person_beard_*.obj`; which one: a table for vanilla and DLC styles, style tags and names for others). A pack gives a style
+its own model in XML, with an `IsoRim.ModelDef` that has a `hairDef` (a HairDef defName) or a `beardDef` (a BeardDef
+defName) and no `thingDef`. Ship it in two files: an IsoRim older than 78 does not know the fields, and a field it
+does not know in `Defs/` is an XML error, so the def goes into `Defs/` without the field and a patch adds it (part M,
+`IsoRimPackGate.dll`):
+
+```xml
+<!-- Defs/MyPack_Hair.xml: the def without the field (an IsoRim older than 78 does not know it) -->
+<Defs>
+  <IsoRim.ModelDef>
+    <defName>MyPack_Hair_Braids</defName>
+    <model>Models/hair_braids.obj</model>
+  </IsoRim.ModelDef>
+</Defs>
+
+<!-- Patches/MyPack_Hair.xml: the binding, only on IsoRim 78 or newer -->
+<Patch>
+  <Operation Class="IsoRimPackGate.PatchOperation_IfIsoRimApi">
+    <minVersion>78</minVersion>
+    <apply Class="PatchOperationAdd">
+      <xpath>/Defs/IsoRim.ModelDef[defName="MyPack_Hair_Braids"]</xpath>
+      <value><hairDef>SomeMod_Braids</hairDef></value>   <!-- a HairDef defName; or <beardDef>SomeMod_LongBeard</beardDef> -->
+    </apply>
+  </Operation>
+</Patch>
+```
+
+- **What it does:** the model replaces IsoRim's own choice for that style, for a vanilla style too. Everything else is
+  what IsoRim does with its own part: the same place on the head (built in the space of IsoRim's own parts, on
+  `Models/person_head.obj`; widened with the head type), `stuff*` faces in the person's hair colour and other faces in
+  their own, textured faces (part 53) as on any figure part, the same shading, shown and hidden by the game's rules, by
+  a bound hat's `hides` / `shows` (part 3) and by a gene part's `geneHidesHair` (part 24), tucked inside headgear when
+  shown with it, the same lying, in bed, dead and for children.
+- **Styles the game draws nothing for** (`StyleItemDef.noGraphic`, the property the game's own hair and beard nodes ask:
+  vanilla's `Bald` and `NoBeard`): a binding to one is skipped, so bald and beardless people stay so. Styles the game
+  draws (`Shaved`, `Stubble`) can be bound.
+- **One model per style**, no options. Two ModelDefs for one style: the later one in load order wins, as with
+  `thingDef`. `thingDef` or `geneDef` in the same def are bound on their own as before.
+- **Skipped without a message**, the style keeping IsoRim's own part, as a gene part of a missing gene: a style that does
+  not exist (its mod is not loaded); a def with no `model` (`models` is not read for styles); a def a patch adds whole
+  (no mod folder of its own to find the file in). A model file that cannot be read is skipped with the usual dev-mode
+  file warning, and that def does not replace an earlier def's readable binding for the style.
+- **Races** (part 16): used where the race's pack says `hair` `IsoRim`; `Card` and `None` keep theirs. A ghoul's own head
+  and hair are unchanged.
+- **Built once** when the game has loaded its defs; a person's look asks one dictionary when it is worked out, nothing
+  per frame. No setting. Without such a ModelDef nothing changes.
+
+Version gate: no member; an older IsoRim does not know the fields, so add them by patch behind `minVersion` 78 (part M,
+`Docs/ModelPacks.md` "Hair and beard models").
+
 ## Part M: model packs (IsoRim.ModelDef)
 
 A model pack is an XML-only mod (or a mod with a small DLL) that adds `IsoRim.ModelDef`s binding OBJ models to other
@@ -3182,6 +3236,7 @@ mods' things.
 | `immatureModels`, `immatureHide` (24) | A plant's young stage, drawn while it is not yet harvestable (as the game's `immatureGraphic`: growth up to `harvestMinGrowth`): its own models (one per variant of `models`, same order), or the mature models without the `immatureHide` materials (the produce). `growthScale` still shrinks it. |
 | `spriteTint`, `paintedHull`, `outline`, `outlineMinSize`, `groundShadow`, `aged` (15) | Colour and look. |
 | `geneDef`, `geneAnchor`, `geneTint`, `geneBuilds`, `geneTuck`, `geneHidesHair`, `geneTintsHead` (35) | A gene part on 3D people instead of a thing (no `thingDef`): see part 24. |
+| `hairDef`, `beardDef` (78) | Your model for a hairstyle (HairDef defName) or beard style (BeardDef defName) on 3D people instead of a thing (no `thingDef`), drawn as IsoRim's own hair or beard part: see part 56. |
 | `barAt` (36) | Where the fillable bars the thing draws (`GenDraw.DrawFillableBar` from its own or its comps' drawing: a charge or fuel gauge, e.g. VEF's `CustomFillableBarGaugeData`) sit on the model: one point `(x, height, z)` in model space facing north, placed like the model (`world = thing centre + R(yaw)·(barAt ∘ fit + offset)`, so it turns with the thing and follows `wallFit`). The bar is centred there, flat at that height, with the size and orientation the game or mod gives it; several bars of one thing all go there. Unset: as before (where the game puts it, raised onto the model's top, or `barHeight`). 3D only. |
 | `barScale` (36) | Those bars resized, `(length, thickness)` in the bar's own frame as the game or mod draws it (so it follows the bar's rotation per facing): size times these, margin times the smaller one, so the filled part keeps its proportion. The drawn background is `size + margin` per side, e.g. VEF's default 0.9 × 0.3 with margin 0.15 is 1.05 × 0.45 cells. Default `(1, 1)`: unchanged. 3D only. |
 | `barNormal` (63) | The plane those bars lie in at `barAt`: its normal in model space facing north, turned and fitted with the model, e.g. `(1, 0, 0)` for the east side face, `(0, 1, -0.2)` for a panel rising to the north. The bar is tipped from flat onto the plane by the smallest turn about its centre, so its long axis keeps the direction the game or mod gives it, now running in the plane (it must not point straight into the plane). Lift it off the face a little in `barAt` (about 0.005 along the normal) so it does not fight the face; its fill is drawn 0.01 further out. Default `(0, 0, 0)`: flat, as before. 3D only. |

@@ -136,6 +136,7 @@ Common fields:
 | `aged` | 0 | Api 15: drawn old and rusty |
 | `immatureModels`, `immatureHide` | | Api 24, plants: the young stage, drawn while the plant is not yet harvestable (as the game's `immatureGraphic`, growth up to `harvestMinGrowth`). `immatureModels`: own models, one per variant of `models` (same order). `immatureHide`: material names left out of the young stage, e.g. the produce; with no `immatureModels` the young stage is the mature model without them. `growthScale` still shrinks it |
 | `geneDef`, `geneAnchor`, `geneTint`, `geneBuilds`, `geneTuck`, `geneHidesHair`, `geneTintsHead` | | Api 35: a gene part on 3D people instead of a thing; see "Gene parts" below |
+| `hairDef`, `beardDef` | | Api 78: your model for a hairstyle (a HairDef defName) or a beard style (a BeardDef defName) on 3D people instead of a thing; see "Hair and beard models" below |
 | `hoverHeight`, `hoverBob` | 0 | Api 32, animals and mechs: the figure floats this many cells over the ground (times its size) while up and about, drifting up and down by `hoverBob`; downed, dead or lying it settles onto the ground (Api part 21) |
 
 Doors (`doorLeafModel`, ...), turrets (`topModel`), animals, mechs and many special parts have their own fields; see the
@@ -272,7 +273,7 @@ half-set model), a new enough one gets the whole entry:
 fields 14; `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20; `immatureModels`, `immatureHide` 24; alien packs
 (`IsoRim.AlienModelDef`, `ApparelModelDef.aliens`) 25; `bobByState` 27; `slots` 28; any binding of a multi-cell supported door (not the
 game's `Building_MultiTileDoor`) 29, which draws it from its models (Api part 18); `glassTint`, `glassOpacity`, `glassGlow`
-and a door's `glassModel` 30 (Api part 19); `topThroughRoof`, `roofModel` 31 (Api part 20); `hoverHeight`, `hoverBob` 32 (Api part 21); `geneDef` and the other gene fields 35 (Api part 24); `barAt`, `barScale` 36 (Api part M); `femaleModel`, `femaleModels`, `femaleLegModel`, `femaleWingModel` 38 (female animals, below); `byGraphic` 39 (models by runtime sprite, below); `byBodyGraphic` 65 (animals by body graphic, below); `ApparelModelDef.shown` 43 (when a held shield's model shows: `Default`, `Weapon`, `Always`; Api part 3); `ApparelModelDef.byStyle` 56 (worn models by style; Api part 40); `bodyModels` in a `byStyle` entry 57 (worn style models per body type; Api part 40). The highest one used counts.
+and a door's `glassModel` 30 (Api part 19); `topThroughRoof`, `roofModel` 31 (Api part 20); `hoverHeight`, `hoverBob` 32 (Api part 21); `geneDef` and the other gene fields 35 (Api part 24); `hairDef`, `beardDef` 78 (hair and beard models, below; Api part 56); `barAt`, `barScale` 36 (Api part M); `femaleModel`, `femaleModels`, `femaleLegModel`, `femaleWingModel` 38 (female animals, below); `byGraphic` 39 (models by runtime sprite, below); `byBodyGraphic` 65 (animals by body graphic, below); `ApparelModelDef.shown` 43 (when a held shield's model shows: `Default`, `Weapon`, `Always`; Api part 3); `ApparelModelDef.byStyle` 56 (worn models by style; Api part 40); `bodyModels` in a `byStyle` entry 57 (worn style models per body type; Api part 40). The highest one used counts.
 
 ## Models by runtime sprite (byGraphic)
 
@@ -420,6 +421,64 @@ size 1), placed where it belongs as built.
   Workshop id; these genes, all, or all but some) or `Api.YieldGeneParts`; see `Docs/Api.md` part 24. Put a yield def in a
   folder loaded only with IsoRim 35 or newer (an older IsoRim does not know the def type).
 
+## Hair and beard models
+
+Api 78: a ModelDef with `hairDef` (a HairDef defName) or `beardDef` (a BeardDef defName) instead of `thingDef` is your model
+for that style on 3D people. It replaces the part IsoRim would pick for the style (for a vanilla style too) and is drawn
+exactly as IsoRim's own hair or beard part is; nothing else changes.
+
+```xml
+<!-- Defs/MyPack_Hair.xml: the def without the field (an IsoRim older than 78 does not know it) -->
+<Defs>
+  <IsoRim.ModelDef>
+    <defName>MyPack_Hair_Braids</defName>
+    <model>Models/hair_braids.obj</model>
+  </IsoRim.ModelDef>
+</Defs>
+
+<!-- Patches/MyPack_Hair.xml: the binding, only on IsoRim 78 or newer -->
+<Patch>
+  <Operation Class="IsoRimPackGate.PatchOperation_IfIsoRimApi">
+    <minVersion>78</minVersion>
+    <apply Class="PatchOperationAdd">
+      <xpath>/Defs/IsoRim.ModelDef[defName="MyPack_Hair_Braids"]</xpath>
+      <value><hairDef>SomeMod_Braids</hairDef></value>   <!-- a HairDef defName; or <beardDef>SomeMod_LongBeard</beardDef> -->
+    </apply>
+  </Operation>
+</Patch>
+```
+
+On an IsoRim older than 78 the patch does nothing and the def, naming no style, is skipped: the style keeps IsoRim's own
+part and nothing is logged. `IsoRimPackGate.dll` is the file every pack ships (see "Gating on IsoRim's version").
+
+- **Template:** start from a copy of one of IsoRim's own parts, `Models/person_hair_*.obj` or `Models/person_beard_*.obj`
+  (e.g. `person_hair_long.obj`, `person_beard_full.obj`), and build on `Models/person_head.obj`. Your model is used in the
+  same space and fit, as built: one unit = one cell, +y up, the face at -z as loaded, an adult of size 1, the head between
+  y 0.745 and 1.25 round (0, 1.0, 0). Keep the faces wound as in IsoRim's files.
+- **Placement:** with the head: widened or narrowed with the head type as IsoRim's hair is, scaled with the figure
+  (children), lying, in bed and dead as the head is.
+- **Colour:** faces whose material name starts with `stuff` take the person's hair colour; other faces keep their own
+  colour (a ribbon, a bead), and textured faces (Api 75) are drawn with their texture, both as on any figure part.
+- **Shown and hidden** by the game's own rules, as any hair or beard: under headgear that hides it, with a bound hat's
+  `hides` / `shows`, under a gene part with `geneHidesHair`. Shown together with headgear (the option "hair under hats",
+  beards under helmets) it is tucked inside the headgear like IsoRim's own hair; nothing to set.
+- **Styles the game draws nothing for** (`noGraphic` on the style: vanilla's `Bald` and `NoBeard`) get no model: a
+  binding to one is skipped, so bald and beardless people stay so. `Shaved`, `Stubble` and the like are drawn by the game
+  and can be bound.
+- **One model per style.** No variants per build or head type, no second part, no options. Of two ModelDefs naming one
+  style the later one in load order wins (as with `thingDef`). A ModelDef may name both a `hairDef` and a `beardDef` (the
+  same model for both); `thingDef` or `geneDef` in the same def keep working on their own, as they do next to
+  `geneDef`, but give each binding its own def.
+- **Skipped without a message** (the style keeps IsoRim's own part): a style from a mod that is not loaded; a def with
+  no `model` (`models` is not read here); a def a patch adds whole (it has no mod folder of its own, so its file cannot
+  be found: keep the def in `Defs/` and add only the field by patch, as above). A model file that cannot be read is
+  skipped too (with the usual dev-mode warning for the file), and such a def does not win over an earlier def that binds
+  the style with a readable file: that one stays.
+- **Races:** on a race whose alien pack says `hair` `IsoRim` the bound model is used as on people; `Card` and `None`
+  keep theirs. A ghoul's own head and hair are unchanged.
+- Never put `hairDef` / `beardDef` into `Defs/`: an older IsoRim does not know the fields (an XML error). Always the
+  two files above.
+
 ## Alien packs
 
 Humanlike races from other mods (Humanoid Alien Races and the like) are drawn as flat cards in IsoRim's 3D view. An **alien
@@ -516,7 +575,7 @@ A full example (one `Human` race, one `Own` race with a tail model, a race-only 
 | `headOffset` | measured | `Human`: the head moved, `(0, up, forward)` in cells of a figure of size 1. |
 | `build` | by name | The race's body types onto IsoRim's builds: `<MyBody>thin</MyBody>` (`male`, `female`, `thin`, `fat`, `hulk`). Without one: the vanilla types keep theirs, others by name (Female, Thin, Hulk, Fat), else by the body type's art, else male. |
 | `face` | IsoRim | `IsoRim`: IsoRim's face (eyes, Facial Animation's face, other mods' face drawers); on an `Own` head at the `face` anchor, scaled by `faceFit`. `None`: no face (your head model has its own). |
-| `hair` | IsoRim | `IsoRim`: IsoRim's hair shapes by the hairstyle; `Card`: the game's own hair and beard sprites as cards (races with hair art of their own); `None`: no hair. |
+| `hair` | IsoRim | `IsoRim`: IsoRim's hair shapes by the hairstyle (or a pack's model for the style, Api 78); `Card`: the game's own hair and beard sprites as cards (races with hair art of their own); `None`: no hair. |
 | `addonCards` | true | The race's addons without a model of their own drawn as cards. |
 | `clothes` | Show | `Hide`: only apparel with a binding for this race (`ApparelModelDef.aliens`) shows. |
 | `bodies` | | `Own`: `<li>` with `upper`, `lower`, `fitAs` (the build whose clothes fit it), optional `bodyType`, `lifeStage`; first match. |

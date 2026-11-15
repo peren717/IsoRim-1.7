@@ -1369,6 +1369,7 @@ namespace IsoRim
             {
                 ModelLibrary.LoadAll();
                 GeneParts.LoadAll();   // (Api 35) gene parts and their yields
+                HairParts.LoadAll();   // (Api 78) hair and beard models bound by ModelDef.hairDef / beardDef
             }
             catch (Exception e)
             {

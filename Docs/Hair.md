@@ -49,4 +49,4 @@ IsoRim draws all 71 vanilla (Core + DLC) hairstyles with **22 shared 3D shapes**
 
 Notes: FACE-SLIM = hair hanging past the jaw needs a slimmer face; HAT = parts above the hat line are hidden under headgear (IsoRim tucks hair inside hats).
 
-Hair models live in IsoRim's `Models/` folder (person head/hair .obj files); the hair kind for each vanilla hair is chosen in code (HairParts.cs), so a separate addon can replace hair through the figure API (hide `Hair`, attach your own model to the head).
+Hair models live in IsoRim's `Models/` folder (person head/hair .obj files); the hair kind for each vanilla hair is chosen in code (HairParts.cs), so a separate addon can replace hair through the figure API (hide `Hair`, attach your own model to the head). Since Api 78 a pack can also give one style its own model in XML (`ModelDef.hairDef` / `beardDef`, Docs/ModelPacks.md "Hair and beard models"); IsoRim's own parts here are the template.

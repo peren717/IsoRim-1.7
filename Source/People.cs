@@ -1365,8 +1365,6 @@ namespace IsoRim
             look.femaleEyes = headName.StartsWith("Female", StringComparison.OrdinalIgnoreCase);
             look.skin = Corpses.Skin(pawn, story.SkinColor);   // rotting: the game's rotten colour
             look.hairColor = story.HairColor;
-            string hairKind = HairParts.Hair(story.hairDef);
-            string beardKind = pawn.style != null ? HairParts.Beard(pawn.style.beardDef) : null;
 
             string hatKind = Dress(look, build, alien != null ? AlienFigures.Worn(pawn, alien) : (pawn.apparel != null ? pawn.apparel.WornApparel : null), look.skin, null);
 
@@ -1422,17 +1420,14 @@ namespace IsoRim
             }
             look.hatKind = hatKind;
             look.hairShown = !Skips(skip, RenderSkipFlagDefOf.Hair) || HairUnderHat(pawn, skip);
-            if (hairKind != null && look.hairShown)
+            // Which part a style gets (IsoRim's own, or a pack's bound model, Api 78): HairParts, the one place.
+            if (look.hairShown)
             {
-                look.hair = Part("person_hair_" + hairKind);
-                if (HairParts.Exists("person_hair_" + hairKind + "_bun"))
-                {
-                    look.hairTop = Part("person_hair_" + hairKind + "_bun");
-                }
+                look.hair = HairParts.HairModel(story.hairDef, out look.hairTop);
             }
-            if (beardKind != null && !Skips(skip, RenderSkipFlagDefOf.Beard))
+            if (pawn.style != null && !Skips(skip, RenderSkipFlagDefOf.Beard))
             {
-                look.beard = Part("person_beard_" + beardKind);
+                look.beard = HairParts.BeardModel(pawn.style.beardDef);
             }
             look.faceHidden = (skip & RenderSkipFlagDefOf.Eyes) != 0;
             if (look.bindHides != 0)

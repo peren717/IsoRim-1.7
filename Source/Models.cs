@@ -278,6 +278,15 @@ namespace IsoRim
         public bool geneTuck = false;
         public bool geneHidesHair = false;
         public bool geneTintsHead = false;
+        // (Api 78) Hair and beard models (HairParts.cs): with hairDef (a HairDef defName) or beardDef (a BeardDef defName; no
+        // thingDef) the model is drawn for that style on 3D people in place of IsoRim's own hair or beard part, and exactly as
+        // that part is: built in the same space and fit as Models/person_hair_*.obj / person_beard_*.obj (figure space, on
+        // Models/person_head.obj), widened with the head type, stuff* faces in the person's hair colour and other faces in
+        // their own, shown, hidden and tucked into headgear (HairTuck) by the same rules. One model per style: of two
+        // ModelDefs naming one style the later one in load order wins. A style from a mod that is not loaded: skipped quietly,
+        // and so is a style the game itself draws nothing for (StyleItemDef.noGraphic: Bald, NoBeard).
+        public string hairDef;
+        public string beardDef;
         public float contentTop = -1f;      // roof of the chamber under the glass: what stands inside (a forming
                                             // mech, a vat embryo or child) is fitted between surfaceHeight and this
         public bool heldPawnUpright = false; // the person held inside floats upright (growth vat) instead of lying

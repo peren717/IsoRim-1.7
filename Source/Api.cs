@@ -157,7 +157,10 @@ namespace IsoRim
         // values per draw; the shown view never changes. ViewPose.LookAt, ViewPose.FirstPersonOf (FirstPerson.EyeOf).
         // 77: Api77.cs: AddFirstPersonEye, RemoveFirstPersonEye: other mods' eye providers, asked first by the one eye rule
         // (FirstPerson.EyeOf: first person, ViewPose.FirstPersonOf); their eye (a figure drawer's true space) moved onto the person's floor.
-        public static int Version => 77;
+        // 78: HairParts.cs: ModelDef.hairDef / beardDef: a pack's own model for a hairstyle or beard style (a HairDef / BeardDef
+        // defName, no thingDef), drawn in place of IsoRim's own hair or beard part for that style and exactly as that part is
+        // (placement, hair colour on stuff* faces, hidden and tucked by the same rules). No new member.
+        public static int Version => 78;
 
         // ---- glass parts (Version 30)
 

@@ -11,8 +11,78 @@ namespace IsoRim
     // Some parts are not made yet: until their file is in Models, the part listed in StandIn is drawn instead
     // (a chain, ending in nothing), so a new part is picked up as soon as its file is there.
     // Styles from other mods go by their style tags, and by their name only when no tag helps.
+    // (Api 78) A pack's own model for a style (ModelDef.hairDef / beardDef) replaces all of that for the style; it is drawn
+    // exactly as IsoRim's own part would be (People.Work, People.Merged), so this is the one place that knows of it.
     internal static class HairParts
     {
+        private const string HairPrefix = "person_hair_";
+        private const string BeardPrefix = "person_beard_";
+        private const string TopSuffix = "_bun";   // a hairstyle's separate top part (People.Look.hairTop)
+
+        // (Api 78) A style's bound model and the ModelDef that names it.
+        private sealed class Bound
+        {
+            public ModelDef def;
+            public Model model;
+        }
+
+        // (Api 78) Built once after the defs are loaded (LoadAll), read when a person's look is worked out.
+        private static readonly Dictionary<HairDef, Bound> boundHair = new Dictionary<HairDef, Bound>();
+        private static readonly Dictionary<BeardDef, Bound> boundBeard = new Dictionary<BeardDef, Bound>();
+
+        // For the harness: how many styles have a bound model.
+        internal static int BoundCount => boundHair.Count + boundBeard.Count;
+
+        // (Api 78) The ModelDefs with a hairDef or beardDef, from any mod. A style from a mod that is not loaded and a model
+        // file that cannot be read are skipped quietly (the style keeps IsoRim's own part), as gene parts are; of two
+        // ModelDefs naming one style the later one in load order wins, as with thingDef. A style the game itself draws
+        // nothing for (StyleItemDef.noGraphic, as PawnRenderNode_Hair / PawnRenderNode_Beard ask it: vanilla's Bald and
+        // NoBeard) gets no model either: its binding is skipped here, so the lookups below never answer for it.
+        internal static void LoadAll()
+        {
+            boundHair.Clear();
+            boundBeard.Clear();
+            foreach (ModelDef md in DefDatabase<ModelDef>.AllDefsListForReading)
+            {
+                if (md.hairDef.NullOrEmpty() && md.beardDef.NullOrEmpty())
+                {
+                    continue;
+                }
+                HairDef hair = md.hairDef.NullOrEmpty() ? null : DefDatabase<HairDef>.GetNamedSilentFail(md.hairDef);
+                BeardDef beard = md.beardDef.NullOrEmpty() ? null : DefDatabase<BeardDef>.GetNamedSilentFail(md.beardDef);
+                if (hair != null && hair.noGraphic)
+                {
+                    hair = null;
+                }
+                if (beard != null && beard.noGraphic)
+                {
+                    beard = null;
+                }
+                if ((hair == null && beard == null) || md.modContentPack == null || md.model.NullOrEmpty())
+                {
+                    continue;
+                }
+                Model model = ModelLibrary.LoadFile(Path.Combine(md.modContentPack.RootDir, md.model));
+                if (model == null)
+                {
+                    continue;
+                }
+                Bound b = new Bound { def = md, model = model };
+                if (hair != null)
+                {
+                    boundHair[hair] = b;
+                }
+                if (beard != null)
+                {
+                    boundBeard[beard] = b;
+                }
+            }
+            if (BoundCount > 0)
+            {
+                ModLog.Note("[IsoRim] " + boundHair.Count + " hair styles and " + boundBeard.Count + " beard styles have a bound 3D model.");
+            }
+        }
+
         // Until a part's file exists, this one is drawn in its place (null: nothing).
         private static readonly Dictionary<string, string> hairStandIn = new Dictionary<string, string>
         {
@@ -75,8 +145,56 @@ namespace IsoRim
 
         private static readonly Dictionary<string, bool> fileThere = new Dictionary<string, bool>();
 
-        // The hair kind drawn for this style (a part whose file exists), or null for none.
+        // The hair part drawn for this style, or null for none: its bound model (Api 78), else IsoRim's own part, with that
+        // part's separate top part if it has one (top).
+        public static Model HairModel(HairDef def, out Model top)
+        {
+            top = null;
+            Bound b;
+            if (def != null && boundHair.TryGetValue(def, out b))
+            {
+                return b.model;
+            }
+            string kind = OwnHair(def);
+            if (kind == null)
+            {
+                return null;
+            }
+            if (Exists(HairPrefix + kind + TopSuffix))
+            {
+                top = People.Part(HairPrefix + kind + TopSuffix);
+            }
+            return People.Part(HairPrefix + kind);
+        }
+
+        // The beard part drawn for this style, or null for none: its bound model (Api 78), else IsoRim's own part.
+        public static Model BeardModel(BeardDef def)
+        {
+            Bound b;
+            if (def != null && boundBeard.TryGetValue(def, out b))
+            {
+                return b.model;
+            }
+            string kind = OwnBeard(def);
+            return kind != null ? People.Part(BeardPrefix + kind) : null;
+        }
+
+        // For logs: what HairModel draws for this style: the ModelDef bound to it (Api 78), else IsoRim's own hair kind; null for none.
         public static string Hair(HairDef def)
+        {
+            Bound b;
+            return def != null && boundHair.TryGetValue(def, out b) ? b.def.defName : OwnHair(def);
+        }
+
+        // For logs: what BeardModel draws for this style.
+        public static string Beard(BeardDef def)
+        {
+            Bound b;
+            return def != null && boundBeard.TryGetValue(def, out b) ? b.def.defName : OwnBeard(def);
+        }
+
+        // IsoRim's own hair kind for this style (a part whose file exists), or null for none.
+        private static string OwnHair(HairDef def)
         {
             if (def == null)
             {
@@ -87,11 +205,11 @@ namespace IsoRim
             {
                 kind = HairByTags(def);
             }
-            return Drawn("person_hair_", kind, hairStandIn);
+            return Drawn(HairPrefix, kind, hairStandIn);
         }
 
-        // The beard kind drawn for this style, or null for none.
-        public static string Beard(BeardDef def)
+        // IsoRim's own beard kind for this style, or null for none.
+        private static string OwnBeard(BeardDef def)
         {
             if (def == null)
             {
@@ -102,7 +220,7 @@ namespace IsoRim
             {
                 kind = HasTag(def.styleTags, "MoustacheOnly") ? "moustache" : BeardByName(def.defName ?? "");
             }
-            return Drawn("person_beard_", kind, beardStandIn);
+            return Drawn(BeardPrefix, kind, beardStandIn);
         }
 
         // The kind itself if its file is there, else its stand-in (and so on).
@@ -120,7 +238,7 @@ namespace IsoRim
             return null;
         }
 
-        public static bool Exists(string part)
+        private static bool Exists(string part)
         {
             bool there;
             if (!fileThere.TryGetValue(part, out there))
