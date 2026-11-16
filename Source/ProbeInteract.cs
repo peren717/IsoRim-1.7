@@ -305,6 +305,7 @@ namespace IsoRim
             {
                 fakeMouse = Vector2.Lerp(pa, pb, j.frame / 8f);
             }
+            MidStepStep(j);   // (ProbeDragBox, midstep=)
             if (j.frame == 12)
             {
                 j.box = sel.dragBox.ScreenRect;

@@ -619,7 +619,16 @@ namespace IsoRim
         // The map position under a screen pixel: on the floor the ray lands on (PointerFloorAt), else on the ground.
         public static Vector3 ScreenToMap(Vector2 px)
         {
+            int floor;
+            return ScreenToMapOnFloor(px, out floor);
+        }
+
+        // The same, and the floor it is on (0: the ground, also past the map's north edge, where a ground position can lie
+        // in an upper floor's rows).
+        public static Vector3 ScreenToMapOnFloor(Vector2 px, out int floor)
+        {
             int k = PointerFloorAt(px);
+            floor = Mathf.Max(0, k);
             if (k <= 0)
             {
                 return View3D.ScreenToGround(px);

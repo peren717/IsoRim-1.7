@@ -22,6 +22,8 @@ namespace IsoRim
     //   textmote=x,z,text,tag    a text mote thrown at a map point (MoteMaker.ThrowText; the game draws it with
     //                            GenMapUI.DrawText in its own interface pass); where its label is drawn is read from
     //                            Widgets.Label; CHECK: the label's anchor at the drawn point of the mote; shot ix_<tag>_mote.png
+    //   midstep=tag,dir          (ProjectZ) the drag with that tag steps the viewed floor mid-drag, as the floor keys do;
+    //                            CHECK: the box's start corner stays at the click, on screen (2026-11-15, dragstale)
     public static partial class Probe
     {
         private static bool boxCheck;
@@ -53,8 +55,58 @@ namespace IsoRim
                     HookMouse();
                     ixJobs.Add(new IxJob { kind = "tmote", tag = a[3], mode = a[2], a = new Vector3(F(a[0]), 0f, F(a[1])) });
                     return true;
+                case "midstep":
+                    midSteps[a[0]] = I(a[1]);
+                    return true;
             }
             return false;
+        }
+
+        // midstep=tag,dir: in the drag with that tag, while the button is held (MidStepFrame), the viewed floor is stepped
+        // as ProjectZ's floor keys step it (FloorView.StepShown(dir)). At MidStepCheckFrame the box's start corner is checked
+        // against the pointer's spot at the click (it stays where the drag began), and logged with the floor now viewed.
+        private static readonly Dictionary<string, int> midSteps = new Dictionary<string, int>();
+        private static Vector2 midStepClick;
+        private const int MidStepFrame = 4;
+        private const int MidStepCheckFrame = 12;   // (DragStep takes its box shot on this frame)
+
+        private static void MidStepStep(IxJob j)
+        {
+            int dir;
+            if (!midSteps.TryGetValue(j.tag, out dir))
+            {
+                return;
+            }
+            if (j.frame == 0)
+            {
+                midStepClick = UiOf(Input.mousePosition);
+                Log.Message("[IsoRim probe] midstep " + j.tag + ": click at UI " + midStepClick + ", start " + Find.Selector.dragBox.start
+                    + " (floor of row " + Floors.FloorOfRow(Mathf.FloorToInt(Find.Selector.dragBox.start.z)) + "), floor viewed " + Floors.PointerTop);
+            }
+            if (j.frame == MidStepFrame)
+            {
+                Type fv = AccessTools.TypeByName("ProjectZ.FloorView");
+                int was = Floors.PointerTop;
+                if (fv == null)
+                {
+                    Log.Warning("[IsoRim probe] midstep: ProjectZ not loaded");
+                    return;
+                }
+                AccessTools.Method(fv, "StepShown").Invoke(null, new object[] { dir });
+                Log.Message("[IsoRim probe] midstep " + j.tag + ": FloorView.StepShown(" + dir + ") mid-drag, floor viewed " + was + " -> (next frame)");
+            }
+            if (j.frame == MidStepCheckFrame)
+            {
+                Rect box = Find.Selector.dragBox.ScreenRect;
+                Vector2 mouse = Verse.UI.MousePositionOnUIInverted;
+                // the corner of the box opposite the pointer
+                Vector2 corner = new Vector2(Mathf.Abs(box.xMin - mouse.x) < Mathf.Abs(box.xMax - mouse.x) ? box.xMax : box.xMin,
+                    Mathf.Abs(box.yMin - mouse.y) < Mathf.Abs(box.yMax - mouse.y) ? box.yMax : box.yMin);
+                float off = (corner - midStepClick).magnitude;
+                Rect screen = new Rect(0f, 0f, Verse.UI.screenWidth, Verse.UI.screenHeight);
+                Check("ix " + j.tag + " start corner stays at the click (floor viewed " + Floors.PointerTop + ")", off <= BoxCheckTolerance && screen.Contains(corner),
+                    "box (UI) " + box + ", start corner " + corner + ", click " + midStepClick + ", off by " + off.ToString("0.0") + ", pointer cell now " + Verse.UI.MouseCell());
+            }
         }
 
         // (DragStep, frame 16) the box of a drag against its two ends.

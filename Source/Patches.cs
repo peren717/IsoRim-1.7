@@ -131,6 +131,8 @@ namespace IsoRim
 
             Patch("mouse position", AccessTools.Method(typeof(Verse.UI), "UIToMapPosition", new[] { typeof(Vector2) }),
                 prefix: nameof(UIToMapPosition_Prefix));
+            Patch("mouse position", AccessTools.Method(typeof(Verse.UI), nameof(Verse.UI.MouseMapPosition)),
+                postfix: nameof(MouseMapPosition_Postfix));
 
             Patch("visible area", AccessTools.PropertyGetter(typeof(CameraDriver), "CurrentViewRect"),
                 postfix: nameof(CurrentViewRect_Postfix));
@@ -1662,27 +1664,54 @@ namespace IsoRim
             return false;
         }
 
-        // Where the start of a box on an upper floor (Floors) shows, in interface coordinates; false on the ground, without
-        // floors and on a floor not drawn. Its map point lies in that floor's rows, north of where it is drawn: it is moved
-        // onto its floor (DrawnFloor, as ShowsInBox) and put on screen by IsoRim's own camera (View3D.WorldToScreen), not by
-        // the game's map-to-interface helper, which only gets there through IsoRim's hook on Camera.WorldToScreenPoint and
-        // misses it where a mod compiled the helper before that hook (Floors.PatchScreenPoints). It is placed against the
-        // pointer, as the pointer's own interface point has it (UI.MousePositionOnUIInverted), so an interface whose origin
-        // a mod moves moves both corners of the box alike.
+        // Where the start of a box shows, in interface coordinates, when its map point lies north of the ground's rows (Floors);
+        // false without floors and on the ground's rows, where the game's own projection is right. Such a point is on an
+        // upper floor, in that floor's rows, or on the ground past the map's north edge. Which one is decided once, when the
+        // box's start is first seen (BoxStartFloor), and kept while it stays the same: a start on an upper floor is moved
+        // onto its floor (Floors.RowOffset) whether that floor is shown or not, so the corner stays where the drag began
+        // when the viewed floor changes while the button is held (what the box selects is still only what shows inside it,
+        // ShowsInBox); a ground start stays a ground point.
+        // It is put on screen by IsoRim's own camera (View3D.WorldToScreen), not by the game's map-to-interface helper,
+        // which only gets there through IsoRim's hook on Camera.WorldToScreenPoint, misses it where a mod compiled the
+        // helper before that hook (Floors.PatchScreenPoints), and would move a ground point in a floor's rows onto that
+        // floor. It is placed against the pointer, as the pointer's own interface point has it
+        // (UI.MousePositionOnUIInverted), so an interface whose origin a mod moves moves both corners of the box alike.
         private static bool BoxStartOnFloor(DragBox box, out Vector2 ui)
         {
             ui = Vector2.zero;
-            int floor;
-            Vector3 lift;
-            if (!Floors.On || !DrawnFloor(box.start.ToIntVec3(), out floor, out lift) || floor <= 0)
+            int row = Mathf.FloorToInt(box.start.z);
+            if (!Floors.On || Floors.FloorOfRow(row) == 0)
             {
                 return false;
             }
+            if (box.start != boxStart)
+            {
+                boxStart = box.start;
+                boxStartFloor = BoxStartFloor(box.start);
+            }
             float scale = Prefs.UIScale;
-            Vector2 start = View3D.WorldToScreen(box.start + lift);   // pixels from the bottom left
-            Vector2 pointer = Input.mousePosition;                       // the same
+            Vector3 at = boxStartFloor > 0 ? box.start + Floors.RowOffset(row) : box.start;
+            Vector2 start = View3D.WorldToScreen(at);   // pixels from the bottom left
+            Vector2 pointer = Input.mousePosition;       // the same
             ui = Verse.UI.MousePositionOnUIInverted + new Vector2(start.x - pointer.x, pointer.y - start.y) / scale;
             return true;
+        }
+
+        private static Vector3 boxStart = new Vector3(float.NaN, float.NaN, float.NaN);   // (never equal to a start)
+        private static int boxStartFloor;
+
+        // The floor a box's start lies on: the floor the pointer's ray landed on when the game took that point
+        // (UI.MouseMapPosition, as a drag begins: MouseMapPosition_Postfix), else, for a start set some other way, the
+        // floor drawn at its row now (DrawnFloor; 0 when none).
+        private static int BoxStartFloor(Vector3 start)
+        {
+            if (start == mouseMapPoint)
+            {
+                return mouseMapFloor;
+            }
+            int floor;
+            Vector3 lift;
+            return DrawnFloor(start.ToIntVec3(), out floor, out lift) ? Mathf.Max(0, floor) : 0;
         }
 
         // Where a thing's name label goes. The game puts it a little to the south of the thing,
@@ -1844,8 +1873,23 @@ namespace IsoRim
             {
                 return true;
             }
-            __result = Floors.ScreenToMap(__0 * Prefs.UIScale);
+            __result = Floors.ScreenToMapOnFloor(__0 * Prefs.UIScale, out mapPositionFloor);
             return false;
+        }
+
+        // The floor of the last map position worked out above, and of the last pointer position the game asked for
+        // (UI.MouseMapPosition: what a drag box starts from), for BoxStartOnFloor.
+        private static int mapPositionFloor;
+        private static Vector3 mouseMapPoint;
+        private static int mouseMapFloor;
+
+        public static void MouseMapPosition_Postfix(Vector3 __result)
+        {
+            if (View3D.Ready)
+            {
+                mouseMapPoint = __result;
+                mouseMapFloor = mapPositionFloor;
+            }
         }
 
         // Same for the area it thinks is on screen: tilted or turned, the camera sees a different part of the map.
