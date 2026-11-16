@@ -68,6 +68,9 @@ namespace IsoRim
             // the screen while north is up.
             Patch("camera movement in the isometric view", AccessTools.Method(typeof(CameraDriver), "CalculateCurInputDollyVect"),
                 postfix: nameof(DollyVect_Postfix));
+            // The movement keys' speed there (setting keyPanSpeed): hooked on its own, so the direction above stays if it fails.
+            Patch("key move speed in the isometric view", AccessTools.Method(typeof(CameraDriver), "CalculateCurInputDollyVect"),
+                prefix: nameof(DollyVect_Prefix), finalizer: nameof(DollyVect_Finalizer));
             // Dragging the map with the middle mouse button: done by the mod while the 3D view is on,
             // so the ground stays under the pointer whichever way the camera is turned.
             foreach (string name in new[] { "desiredDollyRaw", "desiredDolly", "mouseDragVect" })
@@ -1270,6 +1273,44 @@ namespace IsoRim
             catch (Exception e)
             {
                 Log.ErrorOnce("[IsoRim] Preparing the 3D view while loading failed: " + e, 93611190);
+            }
+        }
+
+        // The movement keys' speed in the 3D view (setting keyPanSpeed, x the game's own). The keys' part of the move is the
+        // game's desiredDolly (set from its CameraMapConfig.dollyRateKeys): it is scaled for this call only and put back by
+        // the finalizer, so the game's own Shift boost and the screen edges stay as they are. 2D is not touched.
+        internal const float KeyPanMin = 0.5f;   // the setting's range (x the game's speed; 1 = the game's)
+        internal const float KeyPanMax = 3f;
+        private static readonly AccessTools.FieldRef<CameraDriver, Vector2> keyDolly = KeyDollyRef();
+
+        private static AccessTools.FieldRef<CameraDriver, Vector2> KeyDollyRef()
+        {
+            FieldInfo f = AccessTools.Field(typeof(CameraDriver), "desiredDolly");
+            return f != null && f.FieldType == typeof(Vector2) ? AccessTools.FieldRefAccess<CameraDriver, Vector2>(f) : null;
+        }
+
+        public static void DollyVect_Prefix(CameraDriver __instance, out Vector2? __state)
+        {
+            __state = null;
+            if (!View3D.Ready || FirstPerson.On || keyDolly == null)
+            {
+                return;
+            }
+            float scale = Mathf.Clamp(IsoRimMod.Settings.keyPanSpeed, KeyPanMin, KeyPanMax);
+            ref Vector2 keys = ref keyDolly(__instance);
+            if (scale == 1f || keys == Vector2.zero)
+            {
+                return;
+            }
+            __state = keys;
+            keys *= scale;
+        }
+
+        public static void DollyVect_Finalizer(CameraDriver __instance, Vector2? __state)
+        {
+            if (__state.HasValue)
+            {
+                keyDolly(__instance) = __state.Value;
             }
         }
 

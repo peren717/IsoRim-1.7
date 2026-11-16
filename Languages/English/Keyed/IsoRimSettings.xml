@@ -53,6 +53,8 @@
   <R3D_Settings_FpEyeHeight>First person eye height</R3D_Settings_FpEyeHeight>
   <R3D_Settings_MinZoom>Closest zoom</R3D_Settings_MinZoom>
   <R3D_Settings_MinZoomTip>How close the mouse wheel can bring the camera. The game's own limit is 11.</R3D_Settings_MinZoomTip>
+  <R3D_Settings_KeyPanSpeed>Key move speed</R3D_Settings_KeyPanSpeed>
+  <R3D_Settings_KeyPanSpeedTip>How fast {0} move the camera in 3D. ×1 is the game's speed.</R3D_Settings_KeyPanSpeedTip>
   <R3D_Settings_Weather3D>3D rain and snow</R3D_Settings_Weather3D>
   <R3D_Settings_Weather3DTip>Rain and snow fall as drops and flakes round the camera, fog and haze stand in front of it.</R3D_Settings_Weather3DTip>
   <R3D_Settings_WeatherSize>  Rain and snow size</R3D_Settings_WeatherSize>

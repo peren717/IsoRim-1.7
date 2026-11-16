@@ -133,6 +133,7 @@ namespace IsoRim
         public float tiltCentre = 0.5f;      // sharp band centre, fraction of the screen height from the top (0.3..0.7)
         public float tiltWidth = 0.3f;       // sharp band width, fraction of the screen height (0.1..0.6)
         public bool tiltPop = false;         // slightly richer colours with tilt-shift (TiltShift.PopAmount)
+        public float keyPanSpeed = 1f;   // 3D: how fast the movement keys (WASD) move the camera, x the game's (Patches.DollyVect_Prefix)
         public int lookMode = 0;         // free look drag button: 0 = middle button with R3D_LookModifier (Ctrl), 1 = right button with nothing selected,
                                          // 2 = middle button alone (no map drag with it in 3D; View3D.LookHeld)
         public bool pawns3D = true;
@@ -259,6 +260,7 @@ namespace IsoRim
             Scribe_Values.Look(ref lookSensitivity, "lookSensitivity", 0.25f);
             Scribe_Values.Look(ref invertY, "invertY", false);
             Scribe_Values.Look(ref lookMode, "lookMode", 0);
+            Scribe_Values.Look(ref keyPanSpeed, "keyPanSpeed", 1f);
             Scribe_Values.Look(ref perspective, "perspective", false);
             Scribe_Values.Look(ref fov, "fov", 40f);
             Scribe_Values.Look(ref viewDistance, "viewDistance", 160f);
@@ -716,6 +718,8 @@ namespace IsoRim
                 : "R3D_Settings_LookKeysHoldDrag".Translate(mod.MainKeyLabel, DragButtonLabel(st));
         }
 
+        private const float KeyPanSteps = 20f;   // the key move speed slider snaps to 1/20 (×0.05)
+
         // The game's own map move keys (up, left, down, right) as one word ("WASD") when each is one character, else listed.
         private static string DollyKeysLabel()
         {
@@ -806,6 +810,8 @@ namespace IsoRim
                     "R3D_Settings_FpFovTip".Translate(R3DKeyDefOf.R3D_FirstPerson != null ? R3DKeyDefOf.R3D_FirstPerson.MainKeyLabel : "F5", DragButtonLabel(st)));
                 st.fpEyeHeight = Slider(l, "R3D_Settings_FpEyeHeight".Translate(), st.fpEyeHeight, 0.5f, 2f, Cells(st.fpEyeHeight, "0.00"));
                 st.minZoom = Slider(l, "R3D_Settings_MinZoom".Translate(), st.minZoom, 2f, 11f, st.minZoom.ToString("0.0"), "R3D_Settings_MinZoomTip".Translate());
+                st.keyPanSpeed = Mathf.Round(Slider(l, "R3D_Settings_KeyPanSpeed".Translate(), st.keyPanSpeed, Patches.KeyPanMin, Patches.KeyPanMax,
+                    "×" + st.keyPanSpeed.ToString("0.00"), "R3D_Settings_KeyPanSpeedTip".Translate(DollyKeysLabel())) * KeyPanSteps) / KeyPanSteps;
                 Check(l, "R3D_Settings_Weather3D".Translate(), ref st.weather3D, "R3D_Settings_Weather3DTip".Translate());
                 if (st.weather3D)
                 {

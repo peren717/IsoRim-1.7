@@ -53,6 +53,8 @@
   <R3D_Settings_FpEyeHeight>第一人称视线高度</R3D_Settings_FpEyeHeight>
   <R3D_Settings_MinZoom>最近缩放</R3D_Settings_MinZoom>
   <R3D_Settings_MinZoomTip>鼠标滚轮能把镜头拉到多近。游戏自身的限制是 11。</R3D_Settings_MinZoomTip>
+  <R3D_Settings_KeyPanSpeed>按键移动速度</R3D_Settings_KeyPanSpeed>
+  <R3D_Settings_KeyPanSpeedTip>3D 下用 {0} 移动镜头的速度。×1 为游戏原速。</R3D_Settings_KeyPanSpeedTip>
   <R3D_Settings_Weather3D>3D 雨雪</R3D_Settings_Weather3D>
   <R3D_Settings_Weather3DTip>雨和雪化作雨滴和雪花在镜头周围落下，雾和霾立在镜头前。</R3D_Settings_Weather3DTip>
   <R3D_Settings_WeatherSize>  雨雪大小</R3D_Settings_WeatherSize>
