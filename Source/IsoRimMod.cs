@@ -370,6 +370,7 @@ namespace IsoRim
             instance = this;
             Settings = GetSettings<IsoRimSettings>();
             RootDir = content.RootDir;
+            Floors.PatchScreenPoints();   // this early on purpose (see there)
         }
 
         // Writes the options to disk now (they are also written when the options window closes).

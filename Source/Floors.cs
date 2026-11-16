@@ -1291,7 +1291,7 @@ namespace IsoRim
                 prefix: new HarmonyMethod(typeof(Floors), nameof(Line_Prefix)));
             // (CellBoolDrawer.RegenerateMesh: CellBool_Postfix is hooked always, by Patches, for bridge decks too)
             h.Patch(AccessTools.Method(typeof(SectionLayer_LightingOverlay), nameof(SectionLayer_LightingOverlay.Regenerate)), postfix: new HarmonyMethod(typeof(Floors), nameof(LightingOverlay_Postfix)));
-            h.Patch(AccessTools.Method(typeof(Camera), nameof(Camera.WorldToScreenPoint), new[] { typeof(Vector3) }), prefix: new HarmonyMethod(typeof(Floors), nameof(WorldToScreen_Prefix)));
+            PatchScreenPoints();   // (normally done already, from IsoRim's mod constructor)
             h.Patch(AccessTools.Method(typeof(MapDrawer), nameof(MapDrawer.MapMeshDirty), new[] { typeof(IntVec3), typeof(ulong), typeof(bool), typeof(bool) }),
                 postfix: new HarmonyMethod(typeof(Floors), nameof(MapMeshDirty_Postfix)));
             ModLog.Note("[IsoRim] Floors: " + n + " Graphics entry points mapped to the floors.");
@@ -1491,6 +1491,31 @@ namespace IsoRim
             if (On && position.z >= groundRows && ReferenceEquals(__instance, Find.Camera))
             {
                 Drawn(ref position);
+            }
+        }
+
+        private static bool screenPointsPatched;
+
+        // Hooks Camera.WorldToScreenPoint with WorldToScreen_Prefix, once, always (it does nothing while no floors are drawn:
+        // On). Called from IsoRim's mod constructor, before the constructors of the mods loaded after it: code compiled
+        // before the hook may have the camera's projection inlined and then never passes through it (the case found:
+        // UI Rethemed - Main Bar transpiles UI.MapToUIPosition in its constructor, and its copy put upper-floor points
+        // where their rows lie on the ground). Once hooked, later compiled code calls it.
+        internal static void PatchScreenPoints()
+        {
+            if (screenPointsPatched)
+            {
+                return;
+            }
+            screenPointsPatched = true;
+            try
+            {
+                new Harmony("isorim.floors").Patch(AccessTools.Method(typeof(Camera), nameof(Camera.WorldToScreenPoint), new[] { typeof(Vector3) }),
+                    prefix: new HarmonyMethod(typeof(Floors), nameof(WorldToScreen_Prefix)));
+            }
+            catch (Exception e)
+            {
+                Log.Error("[IsoRim] Could not hook the screen points of stacked floors: " + e);
             }
         }
 

@@ -203,6 +203,14 @@ namespace IsoRim
                 {
                     SetStep(j);
                 }
+                else if (j.kind == "w2s")
+                {
+                    W2sStep(j);   // (ProbeDragBox)
+                }
+                else if (j.kind == "tmote")
+                {
+                    TextMoteStep(map, j);   // (ProbeDragBox)
+                }
                 else
                 {
                     ClickStep(map, j);
@@ -312,6 +320,7 @@ namespace IsoRim
                 List<object> got = sel.SelectedObjects.ToList();
                 Log.Message("[IsoRim probe] ix " + j.tag + " drag (" + Yp() + "): screen A " + pa + " B " + pb + ", box (UI) " + r
                     + ", valid " + valid + ", selected " + got.Count + ": " + string.Join("; ", got.Select(Desc)));
+                BoxCheckStep(j, pa, pb, valid);   // (ProbeDragBox, boxcheck=1)
                 // Every pawn whose body shows inside the box on screen: it should be selected when
                 // any pawn is (pawns win over everything else).
                 List<string> missing = new List<string>();

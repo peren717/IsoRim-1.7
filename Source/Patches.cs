@@ -92,6 +92,8 @@ namespace IsoRim
                 prefix: nameof(DragBoxContains_Prefix));
             Patch("box selection in the isometric view", AccessTools.PropertyGetter(typeof(DragBox), nameof(DragBox.IsValid)),
                 prefix: nameof(DragBoxIsValid_Prefix));
+            Patch("box selection in the isometric view", AccessTools.PropertyGetter(typeof(DragBox), nameof(DragBox.ScreenRect)),
+                prefix: nameof(DragBoxScreenRect_Prefix));
             Patch("name labels in the isometric view", AccessTools.Method(typeof(GenMapUI), "LabelDrawPosFor", new[] { typeof(Thing), typeof(float) }),
                 prefix: nameof(LabelDrawPosFor_Prefix));
 
@@ -1637,8 +1639,50 @@ namespace IsoRim
             {
                 return true;
             }
-            __result = (__instance.start.MapToUIPosition() - Verse.UI.MousePositionOnUIInverted).magnitude > HalfCellUi();
+            Vector2 start;
+            if (!BoxStartOnFloor(__instance, out start))
+            {
+                start = __instance.start.MapToUIPosition();
+            }
+            __result = (start - Verse.UI.MousePositionOnUIInverted).magnitude > HalfCellUi();
             return false;
+        }
+
+        // The box on screen, from where its start shows to the pointer: the game's own, but for a start on an upper floor
+        // (BoxStartOnFloor).
+        public static bool DragBoxScreenRect_Prefix(DragBox __instance, ref Rect __result)
+        {
+            Vector2 a;
+            if (!View3D.Ready || !BoxStartOnFloor(__instance, out a))
+            {
+                return true;
+            }
+            Vector2 b = Verse.UI.MousePositionOnUIInverted;
+            __result = Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
+            return false;
+        }
+
+        // Where the start of a box on an upper floor (Floors) shows, in interface coordinates; false on the ground, without
+        // floors and on a floor not drawn. Its map point lies in that floor's rows, north of where it is drawn: it is moved
+        // onto its floor (DrawnFloor, as ShowsInBox) and put on screen by IsoRim's own camera (View3D.WorldToScreen), not by
+        // the game's map-to-interface helper, which only gets there through IsoRim's hook on Camera.WorldToScreenPoint and
+        // misses it where a mod compiled the helper before that hook (Floors.PatchScreenPoints). It is placed against the
+        // pointer, as the pointer's own interface point has it (UI.MousePositionOnUIInverted), so an interface whose origin
+        // a mod moves moves both corners of the box alike.
+        private static bool BoxStartOnFloor(DragBox box, out Vector2 ui)
+        {
+            ui = Vector2.zero;
+            int floor;
+            Vector3 lift;
+            if (!Floors.On || !DrawnFloor(box.start.ToIntVec3(), out floor, out lift) || floor <= 0)
+            {
+                return false;
+            }
+            float scale = Prefs.UIScale;
+            Vector2 start = View3D.WorldToScreen(box.start + lift);   // pixels from the bottom left
+            Vector2 pointer = Input.mousePosition;                       // the same
+            ui = Verse.UI.MousePositionOnUIInverted + new Vector2(start.x - pointer.x, pointer.y - start.y) / scale;
+            return true;
         }
 
         // Where a thing's name label goes. The game puts it a little to the south of the thing,
