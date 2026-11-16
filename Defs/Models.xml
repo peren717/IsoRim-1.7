@@ -4504,61 +4504,54 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Ibex</defName>
     <thingDef>Ibex</thingDef>
-    <model>Models/animal_ibex.obj</model>
+    <model>Models/animal_ibex_male_blob.obj</model>
+    <femaleModel>Models/animal_ibex_female_blob.obj</femaleModel>
+    <!-- blob ibex (2026-11-16): the goat's family (box body, legs carved out of the body), glides; ram with big ridged horns,
+         doe (femaleModel); coat in the vanilla colours (tintFromGraphic), horns, beard and tail tuft plain untinted materials
+         (outside vanilla's CutoutComplex mask). Vanilla draws kids of both sexes (first two life stages) with IbexFemale:
+         byBodyGraphic gives them the doe. animal_ibex(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_ibex_leg.obj</legModel>
-    <legs>
-      <li>(-0.099, 0.427, 0.252)</li>
-      <li>(0.099, 0.427, 0.252)</li>
-      <li>(-0.099, 0.427, -0.277)</li>
-      <li>(0.099, 0.427, -0.277)</li>
-    </legs>
-    <legLength>0.427</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.02</stride>
-    <bodyCentre>0.525</bodyCentre>
-    <bodyHalfWidth>0.159</bodyHalfWidth>
-    <bodyHalfLength>0.521</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.35</bodyCentre>
+    <bodyHalfWidth>0.23</bodyHalfWidth>
+    <bodyHalfLength>0.66</bodyHalfLength>
+    <byBodyGraphic>
+      <li><path>Ibex/IbexFemale</path><model>Models/animal_ibex_female_blob.obj</model></li>
+    </byBodyGraphic>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Gazelle</defName>
     <thingDef>Gazelle</thingDef>
-    <model>Models/animal_gazelle.obj</model>
+    <model>Models/animal_gazelle_blob.obj</model>
+    <!-- blob gazelle (2026-11-16): the deer doe's build, smaller, thin dark horns, glides; sprite colours baked in Gazelle.png
+         (vanilla is untinted). animal_gazelle(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_gazelle_leg.obj</legModel>
-    <legs>
-      <li>(-0.070, 0.509, 0.228)</li>
-      <li>(0.070, 0.509, 0.228)</li>
-      <li>(-0.070, 0.509, -0.251)</li>
-      <li>(0.070, 0.509, -0.251)</li>
-    </legs>
-    <legLength>0.509</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.22</stride>
-    <bodyCentre>0.584</bodyCentre>
-    <bodyHalfWidth>0.114</bodyHalfWidth>
-    <bodyHalfLength>0.471</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.25</bodyCentre>
+    <bodyHalfWidth>0.13</bodyHalfWidth>
+    <bodyHalfLength>0.51</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Boomalope</defName>
     <thingDef>Boomalope</thingDef>
-    <model>Models/animal_boomalope.obj</model>
+    <model>Models/animal_boomalope_blob.obj</model>
+    <!-- blob boomalope (2026-11-16): the yak's build (legs carved out of the body), yellow sacs, glides; colours baked in
+         Boomalope.png (vanilla tints only the mask area (CutoutComplex), so no tintFromGraphic).
+         animal_boomalope(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_boomalope_leg.obj</legModel>
-    <legs>
-      <li>(-0.150, 0.502, 0.300)</li>
-      <li>(0.150, 0.502, 0.300)</li>
-      <li>(-0.150, 0.502, -0.330)</li>
-      <li>(0.150, 0.502, -0.330)</li>
-    </legs>
-    <legLength>0.502</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.20</stride>
-    <bodyCentre>0.631</bodyCentre>
-    <bodyHalfWidth>0.241</bodyHalfWidth>
-    <bodyHalfLength>0.620</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.59</bodyCentre>
+    <bodyHalfWidth>0.34</bodyHalfWidth>
+    <bodyHalfLength>0.84</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4614,21 +4607,17 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Boomrat</defName>
     <thingDef>Boomrat</thingDef>
-    <model>Models/animal_boomrat.obj</model>
+    <model>Models/animal_boomrat_blob.obj</model>
+    <!-- blob boomrat (2026-11-16): the rat's family, round body with the yellow sac, glides with a waddle; colours baked in
+         Boomrat.png (vanilla tints only the mask area (CutoutComplex), so no tintFromGraphic). animal_boomrat(_leg).obj
+         kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_boomrat_leg.obj</legModel>
-    <legs>
-      <li>(-0.058, 0.104, 0.122)</li>
-      <li>(0.058, 0.104, 0.122)</li>
-      <li>(-0.058, 0.104, -0.134)</li>
-      <li>(0.058, 0.104, -0.134)</li>
-    </legs>
-    <legLength>0.104</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.35</stride>
-    <bodyCentre>0.154</bodyCentre>
-    <bodyHalfWidth>0.093</bodyHalfWidth>
-    <bodyHalfLength>0.251</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.29</bodyCentre>
+    <bodyHalfWidth>0.16</bodyHalfWidth>
+    <bodyHalfLength>0.41</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4682,21 +4671,17 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Raccoon</defName>
     <thingDef>Raccoon</thingDef>
-    <model>Models/animal_raccoon.obj</model>
+    <model>Models/animal_raccoon_blob.obj</model>
+    <!-- blob raccoon (2026-11-16): legs fused into the body, ringed tail, mask, glides with a waddle; colours baked in
+         Raccoon.png (vanilla tints only the mask area (CutoutComplex), so no tintFromGraphic). animal_raccoon(_leg).obj
+         kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_raccoon_leg.obj</legModel>
-    <legs>
-      <li>(-0.070, 0.125, 0.147)</li>
-      <li>(0.070, 0.125, 0.147)</li>
-      <li>(-0.070, 0.125, -0.161)</li>
-      <li>(0.070, 0.125, -0.161)</li>
-    </legs>
-    <legLength>0.125</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.35</stride>
-    <bodyCentre>0.186</bodyCentre>
-    <bodyHalfWidth>0.112</bodyHalfWidth>
-    <bodyHalfLength>0.303</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.30</bodyCentre>
+    <bodyHalfWidth>0.187</bodyHalfWidth>
+    <bodyHalfLength>0.60</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4833,61 +4818,49 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Cougar</defName>
     <thingDef>Cougar</thingDef>
-    <model>Models/animal_cougar.obj</model>
+    <model>Models/animal_cougar_blob.obj</model>
+    <!-- blob cougar (2026-11-16): the cat's family (legs fused into the body), long tail, glides; white Cougar.png times the
+         vanilla colour (tintFromGraphic). animal_cougar(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_cougar_leg.obj</legModel>
-    <legs>
-      <li>(-0.098, 0.444, 0.276)</li>
-      <li>(0.098, 0.444, 0.276)</li>
-      <li>(-0.098, 0.444, -0.304)</li>
-      <li>(0.098, 0.444, -0.304)</li>
-    </legs>
-    <legLength>0.444</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.06</stride>
-    <bodyCentre>0.540</bodyCentre>
-    <bodyHalfWidth>0.159</bodyHalfWidth>
-    <bodyHalfLength>0.570</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.36</bodyCentre>
+    <bodyHalfWidth>0.165</bodyHalfWidth>
+    <bodyHalfLength>0.81</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Panther</defName>
     <thingDef>Panther</thingDef>
-    <model>Models/animal_panther.obj</model>
+    <model>Models/animal_panther_blob.obj</model>
+    <!-- blob panther (2026-11-16): the cougar mesh x 0.9725 (the vanilla draw sizes) with its own material on the white
+         Cougar.png, in the vanilla panther colour (tintFromGraphic; vanilla uses the cougar sprite). animal_panther(_leg).obj
+         kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_panther_leg.obj</legModel>
-    <legs>
-      <li>(-0.098, 0.444, 0.276)</li>
-      <li>(0.098, 0.444, 0.276)</li>
-      <li>(-0.098, 0.444, -0.304)</li>
-      <li>(0.098, 0.444, -0.304)</li>
-    </legs>
-    <legLength>0.444</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.06</stride>
-    <bodyCentre>0.540</bodyCentre>
-    <bodyHalfWidth>0.159</bodyHalfWidth>
-    <bodyHalfLength>0.570</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.35</bodyCentre>
+    <bodyHalfWidth>0.16</bodyHalfWidth>
+    <bodyHalfLength>0.78</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Lynx</defName>
     <thingDef>Lynx</thingDef>
-    <model>Models/animal_lynx.obj</model>
+    <model>Models/animal_lynx_blob.obj</model>
+    <!-- blob lynx (2026-11-16): the cat's family, ear tufts, short tail, glides; colours baked in Lynx.png (vanilla tints only
+         the mask area (CutoutComplex), so no tintFromGraphic). animal_lynx(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_lynx_leg.obj</legModel>
-    <legs>
-      <li>(-0.068, 0.309, 0.192)</li>
-      <li>(0.068, 0.309, 0.192)</li>
-      <li>(-0.068, 0.309, -0.211)</li>
-      <li>(0.068, 0.309, -0.211)</li>
-    </legs>
-    <legLength>0.309</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.74</stride>
-    <bodyCentre>0.376</bodyCentre>
-    <bodyHalfWidth>0.110</bodyHalfWidth>
-    <bodyHalfLength>0.397</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.28</bodyCentre>
+    <bodyHalfWidth>0.145</bodyHalfWidth>
+    <bodyHalfLength>0.56</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4965,41 +4938,32 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Elephant</defName>
     <thingDef>Elephant</thingDef>
-    <model>Models/animal_elephant.obj</model>
+    <model>Models/animal_elephant_blob.obj</model>
+    <!-- blob elephant (2026-11-16): round big body, legs carved out of the body, glides; white Elephant.png times the vanilla
+         colour (tintFromGraphic), the tusks a plain ivory material (untinted). animal_elephant(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_elephant_leg.obj</legModel>
-    <legs>
-      <li>(-0.328, 0.897, 0.552)</li>
-      <li>(0.328, 0.897, 0.552)</li>
-      <li>(-0.328, 0.897, -0.607)</li>
-      <li>(0.328, 0.897, -0.607)</li>
-    </legs>
-    <legLength>0.897</legLength>
-    <legSwing>26</legSwing>
-    <stride>2.15</stride>
-    <bodyCentre>1.214</bodyCentre>
-    <bodyHalfWidth>0.529</bodyHalfWidth>
-    <bodyHalfLength>1.141</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.79</bodyCentre>
+    <bodyHalfWidth>0.50</bodyHalfWidth>
+    <bodyHalfLength>1.46</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Rhinoceros</defName>
     <thingDef>Rhinoceros</thingDef>
-    <model>Models/animal_rhinoceros.obj</model>
+    <model>Models/animal_rhino_blob.obj</model>
+    <!-- blob rhinoceros (2026-11-16): round big body, legs carved out of the body, glides; sprite colours baked in Rhino.png
+         (vanilla is untinted). animal_rhinoceros(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_rhinoceros_leg.obj</legModel>
-    <legs>
-      <li>(-0.274, 0.603, 0.480)</li>
-      <li>(0.274, 0.603, 0.480)</li>
-      <li>(-0.274, 0.603, -0.528)</li>
-      <li>(0.274, 0.603, -0.528)</li>
-    </legs>
-    <legLength>0.603</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.45</stride>
-    <bodyCentre>0.850</bodyCentre>
-    <bodyHalfWidth>0.442</bodyHalfWidth>
-    <bodyHalfLength>0.992</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.70</bodyCentre>
+    <bodyHalfWidth>0.56</bodyHalfWidth>
+    <bodyHalfLength>1.21</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
