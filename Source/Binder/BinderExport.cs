@@ -57,6 +57,7 @@ namespace IsoRim
             { "hairDef", 78 }, { "beardDef", 78 },
             { "spinPivot", 79 }, { "spinAxis", 79 }, { "spinSource", 79 }, { "spinDips", 79 },
             { "wingsInFlightOnly", 80 },
+            { "slither", 81 }, { "slitherWave", 81 },
         };
         private const int BaseVersion = 2;
 

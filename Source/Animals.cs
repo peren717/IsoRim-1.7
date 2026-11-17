@@ -264,11 +264,22 @@ namespace IsoRim
             bool tintTextured;
             Color tint = BodyGraphicModels.Tint(entry, pawn, out tintTextured);   // (Api 49) the vanilla colour, (Api 65) byBodyGraphic's
             DynamicModels.TintTextured = tintTextured;
+            // (Api 81, ModelDef.slither) moving on its own (not lying, attached, carried or in the air): the body bent side to side
+            Slither.Wave wave = default(Slither.Wave);
+            bool bent = !lying && !attached && air <= 0f && lift <= 0f && flight <= 0f && Slither.Of(def, body, phase, gait, out wave);
             HitFlash.Begin(pawn);
             try
             {
-                DynamicModels.DrawLocal(body, position, yaw, bodyPose * sized * bodyTurn, tint, null);
-                WoundMarks.DrawAnimal(pawn, body, position, yaw, bodyPose * sized, bodyTurn, size);   // the game's wounds on the body
+                if (bent)
+                {
+                    DynamicModels.DrawLocalSlither(pawn, body, position, yaw, bodyPose * sized * bodyTurn, tint, wave);
+                    WoundMarks.DrawAnimal(pawn, body, position, yaw, bodyPose * sized, bodyTurn, size, true, wave);
+                }
+                else
+                {
+                    DynamicModels.DrawLocal(body, position, yaw, bodyPose * sized * bodyTurn, tint, null);
+                    WoundMarks.DrawAnimal(pawn, body, position, yaw, bodyPose * sized, bodyTurn, size);   // the game's wounds on the body
+                }
                 if (ground - flight <= 0f)
                 {
                     // On the ground, or flying: the shadow stays on the ground (the blob is drawn at ground height).
@@ -451,6 +462,9 @@ namespace IsoRim
             return true;
         }
 
+        // At or below this gait (Advance: 0 standing .. 1 in full stride) a hop, waddle or slither is still.
+        internal const float StillGait = 0.001f;
+
         // How far a hopping body (ModelDef.hop) leans nose up as it rises and nose down as it falls, degrees.
         private const float HopTilt = 10f;
 
@@ -462,7 +476,7 @@ namespace IsoRim
         {
             lift = 0f;
             float g = Mathf.Clamp01(gait);
-            if (g <= 0.001f)
+            if (g <= StillGait)
             {
                 return Matrix4x4.identity;
             }
@@ -512,7 +526,7 @@ namespace IsoRim
         {
             bob = 0f;
             float g = Mathf.Clamp01(gait);
-            if (g <= 0.001f)
+            if (g <= StillGait)
             {
                 return Matrix4x4.identity;
             }
@@ -883,9 +897,13 @@ namespace IsoRim
             return new Vector3(drawLoc.x - jolt.x, drawLoc.y, drawLoc.z - jolt.z);
         }
 
+        // How many frames an animal not drawn is remembered (its step here, its bent copies in Slither).
+        internal const int ForgetAfterFrames = 600;
+
         // Forgets animals that have not been drawn for a while (dead, gone, or left behind on another map).
         private static void Prune(int frame)
         {
+            Slither.SweepIfDue(frame);   // (Api 81) the bent copies of slithering animals no longer drawn bent
             if (states.Count < 400)
             {
                 return;
@@ -893,7 +911,7 @@ namespace IsoRim
             stale.Clear();
             foreach (KeyValuePair<int, State> pair in states)
             {
-                if (frame - pair.Value.frame > 600)
+                if (frame - pair.Value.frame > ForgetAfterFrames)
                 {
                     stale.Add(pair.Key);
                 }

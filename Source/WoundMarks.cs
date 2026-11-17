@@ -372,6 +372,12 @@ namespace IsoRim
         // (pose and size, DrawLocal's local without turn); size: the animal's drawn size (cells per model unit).
         internal static void DrawAnimal(Pawn pawn, Model body, Vector3 at, float yaw, Matrix4x4 local, Matrix4x4 turn, float size)
         {
+            DrawAnimal(pawn, body, at, yaw, local, turn, size, false, default(Slither.Wave));
+        }
+
+        // (Api 81) The same on a slithering body (bent: Slither.Of's wave for the body model): the marks bent with it.
+        internal static void DrawAnimal(Pawn pawn, Model body, Vector3 at, float yaw, Matrix4x4 local, Matrix4x4 turn, float size, bool bent, in Slither.Wave wave)
+        {
             if (!Enabled || FigureScope.Measuring || body == null || size <= 0f || (pawn.Dead && pawn.Corpse != null && pawn.Corpse.GetRotStage() == RotStage.Dessicated))
             {
                 return;
@@ -379,7 +385,7 @@ namespace IsoRim
             Set s = SetFor(pawn, body, set => BuildAnimal(pawn, body, turn, size, set));
             if (s != null)
             {
-                Draw(s.body, at, yaw, local);
+                Draw(s.body, at, yaw, local, bent ? pawn : null, bent ? wave.Turned() : default(Slither.Wave));   // (laid on the turned body)
             }
         }
 
@@ -451,7 +457,8 @@ namespace IsoRim
 
         // ---- drawing
 
-        private static void Draw(List<Placed> list, Vector3 at, float yaw, Matrix4x4 local)
+        // bentFor (Api 81): a slithering animal whose marks are drawn bent by wave (Slither.Bent); null: as they are.
+        private static void Draw(List<Placed> list, Vector3 at, float yaw, Matrix4x4 local, Pawn bentFor = null, Slither.Wave wave = default(Slither.Wave))
         {
             if (list.Count == 0)
             {
@@ -468,7 +475,7 @@ namespace IsoRim
                 Placed p = list[i];
                 if (p.mesh != null && p.material != null)
                 {
-                    Graphics.DrawMesh(p.mesh, m, p.material, 0);
+                    Graphics.DrawMesh(bentFor != null ? Slither.Bent(bentFor, p.mesh, wave) : p.mesh, m, p.material, 0);
                 }
             }
         }

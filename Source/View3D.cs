@@ -1215,6 +1215,7 @@ namespace IsoRim
             Photos.Reset();
             ModelLibrary.ClearOverrides();   // the dev-mode model binder's changes last one game only
             FallbackLog.NewGame();
+            Slither.Reset();   // (Api 81) the last game's slithering animals' mesh copies
             Active = LockedOn || HarnessStartsOn;
             lastActive = false;
             appliedSig = 0;

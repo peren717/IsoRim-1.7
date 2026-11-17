@@ -140,6 +140,7 @@ Common fields:
 | `spinModel`, `spinSpeed`, `spinAlways`, `spinMote` | | A part turned every frame over the body (upright about the model's origin): `spinSpeed` degrees a second while powered (always with `spinAlways`, Api 55); the game's mote for it left out in 3D |
 | `spinPivot`, `spinAxis`, `spinSource`, `spinDips` | (0,0,0), (0,1,0), Power, false | Api 79: the spin part on an axle through a pivot (model space), never stretched; turned by power, by the share of full power output, by the vanilla watermill's own angle, or by an addon's angle; its lowest point kept under the ground; see "Spinning parts" below |
 | `hoverHeight`, `hoverBob` | 0 | Api 32, animals and mechs: the figure floats this many cells over the ground (times its size) while up and about, drifting up and down by `hoverBob`; downed, dead or lying it settles onto the ground (Api part 21) |
+| `slither`, `slitherWave` | 0 | Api 81, legless animals: while it moves the body bends side to side in a wave from the head (still) to the tail (`slither`: the reach there, model units), one wave per stride walked; `slitherWave` the wavelength along the body (0: the model's length) (Api part 59) |
 
 Doors (`doorLeafModel`, ...), turrets (`topModel`), animals, mechs and many special parts have their own fields; see the
 comments in IsoRim's `Source/Models.cs` and `Docs/Api.md`.
@@ -272,7 +273,7 @@ half-set model), a new enough one gets the whole entry:
 
 `minVersion` by field: base fields and the plain binding 2; `hackedGlowOff`, `deadBellyUp`, `legFromHip`, `legLift`,
 `legYaw` 5; `rotationByFacing`, `byState`, `style`, `crownTop`, `doorLeafRise` 6; `wallTop` 11; `backHeight` 13; wing
-fields 14 (`wingsInFlightOnly` 80, Api part 58); `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20; `immatureModels`, `immatureHide` 24; alien packs
+fields 14 (`wingsInFlightOnly` 80, Api part 58); `slither`, `slitherWave` 81 (a legless animal slithering, Api part 59); `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20; `immatureModels`, `immatureHide` 24; alien packs
 (`IsoRim.AlienModelDef`, `ApparelModelDef.aliens`) 25; `bobByState` 27; `slots` 28; any binding of a multi-cell supported door (not the
 game's `Building_MultiTileDoor`) 29, which draws it from its models (Api part 18); `glassTint`, `glassOpacity`, `glassGlow`
 and a door's `glassModel` 30 (Api part 19); `topThroughRoof`, `roofModel` 31 (Api part 20); `hoverHeight`, `hoverBob` 32 (Api part 21); `geneDef` and the other gene fields 35 (Api part 24); `hairDef`, `beardDef` 78 (hair and beard models, below; Api part 56); `barAt`, `barScale` 36 (Api part M); `femaleModel`, `femaleModels`, `femaleLegModel`, `femaleWingModel` 38 (female animals, below); `byGraphic` 39 (models by runtime sprite, below); `byBodyGraphic` 65 (animals by body graphic, below); `ApparelModelDef.shown` 43 (when a held shield's model shows: `Default`, `Weapon`, `Always`; Api part 3); `ApparelModelDef.byStyle` 56 (worn models by style; Api part 40); `bodyModels` in a `byStyle` entry 57 (worn style models per body type; Api part 40). The highest one used counts.

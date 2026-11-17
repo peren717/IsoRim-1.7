@@ -766,12 +766,34 @@ namespace IsoRim
             {
                 return;
             }
+            Submit(parts, LocalMatrix(position, yaw, local));
+        }
+
+        // (Api 81) DrawLocal for a slithering animal's body (Animals.Draw, ModelDef.slither): its own copies of the model's
+        // parts, bent by the wave (Slither.Parts). A placement ghost is drawn straight.
+        internal static void DrawLocalSlither(Pawn pawn, Model m, Vector3 position, float yaw, Matrix4x4 local, Color tint, in Slither.Wave wave)
+        {
+            if (m == null || Ghosting)
+            {
+                DrawLocal(m, position, yaw, local, tint, null);
+                return;
+            }
+            List<Part> parts = PartsFor(m, tint, null);
+            if (parts.Count == 0)
+            {
+                return;
+            }
+            Submit(Slither.Parts(pawn, parts, wave), LocalMatrix(position, yaw, local));
+        }
+
+        // A part's whole matrix (drawn space) from its place in the whole (DrawLocal).
+        private static Matrix4x4 LocalMatrix(Vector3 position, float yaw, Matrix4x4 local)
+        {
             float s = View3D.Squash;
-            Matrix4x4 matrix = Matrix4x4.Translate(new Vector3(position.x, position.y / s, position.z))
+            return Matrix4x4.Translate(new Vector3(position.x, position.y / s, position.z))
                 * Matrix4x4.Scale(new Vector3(1f, 1f / s, 1f))
                 * Matrix4x4.Rotate(Quaternion.AngleAxis(yaw, Vector3.up))
                 * local;
-            Submit(parts, matrix);
         }
 
         // A model drawn with a whole matrix of its own (drawn space, before the floor shift): figure attachments (Api 8).

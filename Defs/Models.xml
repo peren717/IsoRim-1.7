@@ -43,6 +43,9 @@
        (degrees swept back, tip lowered); <wingFlap> and <wingBeat> its beat in flight (degrees, beats per second).
        <wingsInFlightOnly>true</wingsInFlightOnly> (Api 80): no wing model on the ground (the folded wings are part of the
        body model); in flight the wings grow out of their hinges at take-off and shrink back on landing.
+       <slither>0.07</slither> (Api 81), legless animals: while it moves the body bends side to side in a wave running from
+       the head (still) back to the tail (swinging this far, model units), one wave per stride walked; <slitherWave> the
+       wavelength along the body (model units; 0, default: the model's length).
        Mechanoids (<mech>true</mech>): <model> is the body, <mechParts> the moving pieces (wheel, leg, spin,
        pitch, arm, upper, head, weapon, turret; see MechPart in Source/Models.cs), <factionMaterials> the faces
        that take the faction colour, <carryAt> where a hauled thing is held, <stride> for the legs. -->
@@ -4727,21 +4730,16 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Monkey</defName>
     <thingDef>Monkey</thingDef>
-    <model>Models/animal_monkey.obj</model>
+    <model>Models/animal_monkey_blob.obj</model>
+    <!-- blob monkey (2026-11-17): legs fused into the body, glides with a waddle; colours baked in
+         Monkey.png (vanilla is untinted). animal_monkey(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_monkey_leg.obj</legModel>
-    <legs>
-      <li>(-0.056, 0.222, 0.139)</li>
-      <li>(0.056, 0.222, 0.139)</li>
-      <li>(-0.056, 0.222, -0.153)</li>
-      <li>(0.056, 0.222, -0.153)</li>
-    </legs>
-    <legLength>0.222</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.53</stride>
-    <bodyCentre>0.279</bodyCentre>
-    <bodyHalfWidth>0.090</bodyHalfWidth>
-    <bodyHalfLength>0.287</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.23</bodyCentre>
+    <bodyHalfWidth>0.13</bodyHalfWidth>
+    <bodyHalfLength>0.46</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -5050,22 +5048,32 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Iguana</defName>
     <thingDef>Iguana</thingDef>
-    <model>Models/animal_iguana.obj</model>
+    <model>Models/animal_iguana_blob.obj</model>
+    <!-- blob iguana (2026-11-17): long low lizard with a crest and a long tail, four splayed bent legs that step
+         (legFromHip); sprite colours baked in Iguana.png (vanilla is untinted). animal_iguana(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_iguana_leg.obj</legModel>
+    <smoothTextured>true</smoothTextured>
+    <legModel>Models/animal_iguana_blob_leg.obj</legModel>
+    <legFromHip>true</legFromHip>
     <legs>
-      <li>(-0.087, 0.090, 0.180)</li>
-      <li>(0.087, 0.090, 0.180)</li>
-      <li>(-0.087, 0.090, -0.198)</li>
-      <li>(0.087, 0.090, -0.198)</li>
+      <li>(-0.04, 0.049, 0.187)</li>
+      <li>(0.04, 0.049, 0.187)</li>
+      <li>(-0.036, 0.049, -0.169)</li>
+      <li>(0.036, 0.049, -0.169)</li>
     </legs>
-    <legLength>0.090</legLength>
+    <legYaw>
+      <li>35</li>
+      <li>35</li>
+      <li>-35</li>
+      <li>-35</li>
+    </legYaw>
+    <legLength>0.049</legLength>
     <legSwing>26</legSwing>
-    <legSplay>40</legSplay>
-    <stride>0.35</stride>
-    <bodyCentre>0.130</bodyCentre>
-    <bodyHalfWidth>0.097</bodyHalfWidth>
-    <bodyHalfLength>0.372</bodyHalfLength>
+    <legLift>16</legLift>
+    <stride>0.3</stride>
+    <bodyCentre>0.119</bodyCentre>
+    <bodyHalfWidth>0.098</bodyHalfWidth>
+    <bodyHalfLength>0.58</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -5086,101 +5094,145 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Cobra</defName>
     <thingDef>Cobra</thingDef>
-    <model>Models/animal_cobra.obj</model>
+    <model>Models/animal_cobra_blob.obj</model>
+    <!-- blob cobra (2026-11-17): coiled tube with the neck and hood raised at the front; sprite colours baked in Cobra.png
+         (vanilla is untinted). No legs: glides with a slight waddle and slithers while it moves (slither, Api 81: the coil
+         bends side to side in a wave running from the head back to the tail, one wave per waddleStride walked).
+         The wave stays put on the ground (no slip): waddleStride = the wavelength, about one turn of the coil (1.3, user
+         2026-11-17 picked it over the model length 0.684 from the videos): about 2 waves a second for an adult at 3.5 cells/s.
+         animal_cobra.obj kept, unused. -->
     <animal>true</animal>
-    <stride>1.00</stride>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <waddleSway>4</waddleSway>
+    <waddleBob>0</waddleBob>
+    <waddleStride>1.3</waddleStride>
+    <slither>0.07</slither>
+    <slitherWave>1.3</slitherWave>
     <bodyCentre>0.045</bodyCentre>
-    <bodyHalfWidth>0.300</bodyHalfWidth>
-    <bodyHalfLength>0.360</bodyHalfLength>
+    <bodyHalfWidth>0.246</bodyHalfWidth>
+    <bodyHalfLength>0.342</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Megascarab</defName>
     <thingDef>Megascarab</thingDef>
-    <model>Models/animal_megascarab.obj</model>
+    <model>Models/animal_megascarab_blob.obj</model>
+    <!-- blob megascarab (2026-11-17): domed beetle shell on six short bent legs that step (legFromHip); white / grey textures
+         times the vanilla colour (tintFromGraphic); dead on its back, legs curled in (deadBellyUp).
+         animal_megascarab(_leg).obj kept, unused. -->
     <animal>true</animal>
+    <smoothTextured>true</smoothTextured>
+    <tintFromGraphic>true</tintFromGraphic>
     <deadBellyUp>true</deadBellyUp>
-    <legModel>Models/animal_megascarab_leg.obj</legModel>
+    <legModel>Models/animal_megascarab_blob_leg.obj</legModel>
+    <legFromHip>true</legFromHip>
     <legs>
-      <li>(-0.110, 0.116, 0.137)</li>
-      <li>(0.110, 0.116, 0.137)</li>
-      <li>(-0.110, 0.116, 0.005)</li>
-      <li>(0.110, 0.116, 0.005)</li>
-      <li>(-0.110, 0.116, -0.126)</li>
-      <li>(0.110, 0.116, -0.126)</li>
+      <li>(-0.04, 0.062, 0.053)</li>
+      <li>(0.04, 0.062, 0.053)</li>
+      <li>(-0.045, 0.062, -0.045)</li>
+      <li>(0.045, 0.062, -0.045)</li>
+      <li>(-0.04, 0.062, -0.134)</li>
+      <li>(0.04, 0.062, -0.134)</li>
     </legs>
-    <legLength>0.144</legLength>
+    <legYaw>
+      <li>52</li>
+      <li>52</li>
+      <li>8</li>
+      <li>8</li>
+      <li>-38</li>
+      <li>-38</li>
+    </legYaw>
+    <legLength>0.062</legLength>
     <legSwing>24</legSwing>
-    <legSplay>48</legSplay>
-    <stride>0.35</stride>
-    <bodyCentre>0.137</bodyCentre>
-    <bodyHalfWidth>0.131</bodyHalfWidth>
-    <bodyHalfLength>0.315</bodyHalfLength>
+    <legLift>14</legLift>
+    <stride>0.3</stride>
+    <bodyCentre>0.187</bodyCentre>
+    <bodyHalfWidth>0.133</bodyHalfWidth>
+    <bodyHalfLength>0.298</bodyHalfLength>
   </IsoRim.ModelDef>
 
-  <!-- Megaspider v3 (2026-10-18, by the user's Grok, models_incoming\20261018-2038_InsectCocoons): the body is built
-       facing south (head at OBJ +z), turned round with rotation 180; one fixed bent leg (hip at the origin, foot at
-       (0.32, -0.40)) drawn with legFromHip, spread front to back by legYaw; hips facing north. insect_cocoons.mtl. -->
+  <!-- Megaspider v3 (2026-10-18, by the user's Grok, models_incoming\20261018-2038_InsectCocoons: animal_megaspider(_leg).obj,
+       built facing south, bound with rotation 180; insect_cocoons.mtl) replaced 2026-11-17 by the blob megaspider below. -->
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Megaspider</defName>
     <thingDef>Megaspider</thingDef>
-    <model>Models/animal_megaspider.obj</model>
-    <rotation>180</rotation>
+    <model>Models/animal_megaspider_blob.obj</model>
+    <!-- blob megaspider (2026-11-17): big round abdomen, small head, eight bent legs that step (legFromHip); built facing
+         north (no rotation, unlike the old v3 model); white / grey textures times the vanilla colour (tintFromGraphic); dead
+         on its back, legs curled in (deadBellyUp). animal_megaspider(_leg).obj kept, unused. -->
     <animal>true</animal>
+    <smoothTextured>true</smoothTextured>
+    <tintFromGraphic>true</tintFromGraphic>
     <deadBellyUp>true</deadBellyUp>
-    <legModel>Models/animal_megaspider_leg.obj</legModel>
+    <legModel>Models/animal_megaspider_blob_leg.obj</legModel>
     <legFromHip>true</legFromHip>
     <legs>
-      <li>(-0.13, 0.40, 0.11)</li>
-      <li>(0.13, 0.40, 0.11)</li>
-      <li>(-0.13, 0.40, 0.03)</li>
-      <li>(0.13, 0.40, 0.03)</li>
-      <li>(-0.13, 0.40, -0.05)</li>
-      <li>(0.13, 0.40, -0.05)</li>
-      <li>(-0.13, 0.40, -0.13)</li>
-      <li>(0.13, 0.40, -0.13)</li>
+      <li>(-0.089, 0.104, 0.237)</li>
+      <li>(0.089, 0.104, 0.237)</li>
+      <li>(-0.096, 0.104, 0.104)</li>
+      <li>(0.096, 0.104, 0.104)</li>
+      <li>(-0.096, 0.104, -0.045)</li>
+      <li>(0.096, 0.104, -0.045)</li>
+      <li>(-0.089, 0.104, -0.193)</li>
+      <li>(0.089, 0.104, -0.193)</li>
     </legs>
     <legYaw>
-      <li>40</li>
-      <li>40</li>
-      <li>14</li>
-      <li>14</li>
-      <li>-14</li>
-      <li>-14</li>
+      <li>55</li>
+      <li>55</li>
+      <li>20</li>
+      <li>20</li>
+      <li>-12</li>
+      <li>-12</li>
       <li>-40</li>
       <li>-40</li>
     </legYaw>
-    <legLength>0.40</legLength>
-    <legSwing>24</legSwing>
-    <legLift>12</legLift>
-    <stride>0.53</stride>
-    <bodyCentre>0.42</bodyCentre>
-    <bodyHalfWidth>0.17</bodyHalfWidth>
-    <bodyHalfLength>0.60</bodyHalfLength>
+    <legLength>0.104</legLength>
+    <legSwing>22</legSwing>
+    <legLift>14</legLift>
+    <stride>0.47</stride>
+    <bodyCentre>0.323</bodyCentre>
+    <bodyHalfWidth>0.408</bodyHalfWidth>
+    <bodyHalfLength>0.915</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Spelopede</defName>
     <thingDef>Spelopede</thingDef>
-    <model>Models/animal_spelopede.obj</model>
+    <model>Models/animal_spelopede_blob.obj</model>
+    <!-- blob spelopede (2026-11-17): segmented cave bug on six bent legs that step (legFromHip); white / grey textures times
+         the vanilla colour (tintFromGraphic); dead on its back, legs curled in (deadBellyUp).
+         animal_spelopede(_leg).obj kept, unused. -->
     <animal>true</animal>
+    <smoothTextured>true</smoothTextured>
+    <tintFromGraphic>true</tintFromGraphic>
     <deadBellyUp>true</deadBellyUp>
-    <legModel>Models/animal_spelopede_leg.obj</legModel>
+    <legModel>Models/animal_spelopede_blob_leg.obj</legModel>
+    <legFromHip>true</legFromHip>
     <legs>
-      <li>(-0.185, 0.211, 0.229)</li>
-      <li>(0.185, 0.211, 0.229)</li>
-      <li>(-0.185, 0.211, 0.009)</li>
-      <li>(0.185, 0.211, 0.009)</li>
-      <li>(-0.185, 0.211, -0.211)</li>
-      <li>(0.185, 0.211, -0.211)</li>
+      <li>(-0.049, 0.078, 0.049)</li>
+      <li>(0.049, 0.078, 0.049)</li>
+      <li>(-0.054, 0.078, -0.088)</li>
+      <li>(0.054, 0.078, -0.088)</li>
+      <li>(-0.049, 0.078, -0.216)</li>
+      <li>(0.049, 0.078, -0.216)</li>
     </legs>
-    <legLength>0.264</legLength>
+    <legYaw>
+      <li>50</li>
+      <li>50</li>
+      <li>5</li>
+      <li>5</li>
+      <li>-40</li>
+      <li>-40</li>
+    </legYaw>
+    <legLength>0.078</legLength>
     <legSwing>24</legSwing>
-    <legSplay>48</legSplay>
-    <stride>0.53</stride>
-    <bodyCentre>0.246</bodyCentre>
-    <bodyHalfWidth>0.220</bodyHalfWidth>
-    <bodyHalfLength>0.528</bodyHalfLength>
+    <legLift>14</legLift>
+    <stride>0.3</stride>
+    <bodyCentre>0.208</bodyCentre>
+    <bodyHalfWidth>0.23</bodyHalfWidth>
+    <bodyHalfLength>0.591</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -7369,59 +7421,44 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Alphabeaver</defName>
     <thingDef>Alphabeaver</thingDef>
-    <model>Models/animal_alphabeaver.obj</model>
+    <model>Models/animal_alphabeaver_blob.obj</model>
+    <!-- blob alphabeaver (2026-11-17): legs fused into the body, glides with a waddle; colours
+         baked in Alphabeaver.png (vanilla is untinted). animal_alphabeaver(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_alphabeaver_leg.obj</legModel>
-    <legs>
-      <li>(-0.115, 0.110, 0.100)</li>
-      <li>(0.115, 0.110, 0.100)</li>
-      <li>(-0.125, 0.110, -0.170)</li>
-      <li>(0.125, 0.110, -0.170)</li>
-    </legs>
-    <legLength>0.110</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.45</stride>
-    <bodyCentre>0.240</bodyCentre>
-    <bodyHalfWidth>0.162</bodyHalfWidth>
-    <bodyHalfLength>0.551</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.27</bodyCentre>
+    <bodyHalfWidth>0.26</bodyHalfWidth>
+    <bodyHalfLength>0.47</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_WasteRat</defName>
     <thingDef>WasteRat</thingDef>
-    <model>Models/animal_wasterat.obj</model>
+    <model>Models/animal_wasterat_blob.obj</model>
+    <!-- blob waste rat (2026-11-17): the rat's family, bigger and hunched, glides with a waddle; colours baked in WasteRat.png
+         (vanilla is untinted). animal_wasterat(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_wasterat_leg.obj</legModel>
-    <legs>
-      <li>(-0.094, 0.099, 0.077)</li>
-      <li>(0.094, 0.099, 0.077)</li>
-      <li>(-0.105, 0.099, -0.165)</li>
-      <li>(0.105, 0.099, -0.165)</li>
-    </legs>
-    <legLength>0.099</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.39</stride>
-    <bodyCentre>0.217</bodyCentre>
-    <bodyHalfWidth>0.132</bodyHalfWidth>
-    <bodyHalfLength>0.589</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.25</bodyCentre>
+    <bodyHalfWidth>0.18</bodyHalfWidth>
+    <bodyHalfLength>0.46</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Toxalope</defName>
     <thingDef>Toxalope</thingDef>
-    <model>Models/animal_toxalope.obj</model>
+    <model>Models/animal_toxalope_blob.obj</model>
+    <!-- blob toxalope (2026-11-17): the blob boomalope's build with a cluster of dark green gas sacs, glides; colours baked
+         in Toxalope.png (vanilla is untinted). animal_toxalope(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_toxalope_leg.obj</legModel>
-    <legs>
-      <li>(-0.140, 0.360, 0.300)</li>
-      <li>(0.140, 0.360, 0.300)</li>
-      <li>(-0.140, 0.360, -0.360)</li>
-      <li>(0.140, 0.360, -0.360)</li>
-    </legs>
-    <legLength>0.360</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.00</stride>
-    <bodyCentre>0.675</bodyCentre>
-    <bodyHalfWidth>0.306</bodyHalfWidth>
-    <bodyHalfLength>0.727</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.56</bodyCentre>
+    <bodyHalfWidth>0.34</bodyHalfWidth>
+    <bodyHalfLength>0.84</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Dryad_Basic</defName>
@@ -8453,21 +8490,17 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_AlphaThrumbo</defName>
     <thingDef>AlphaThrumbo</thingDef>
-    <model>Models/animal_alphathrumbo.obj</model>
+    <model>Models/animal_alphathrumbo_blob.obj</model>
+    <!-- blob alpha thrumbo (2026-11-17): the blob thrumbo's build, bigger, with the mane lobes and the dark crescent horn,
+         glides with a waddle; colours baked in AlphaThrumbo.png (vanilla is untinted). animal_alphathrumbo(_leg).obj kept,
+         unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_alphathrumbo_leg.obj</legModel>
-    <legs>
-      <li>(-0.354, 1.298, 0.648)</li>
-      <li>(0.354, 1.298, 0.648)</li>
-      <li>(-0.354, 1.298, -0.713)</li>
-      <li>(0.354, 1.298, -0.713)</li>
-    </legs>
-    <legLength>1.298</legLength>
-    <legSwing>26</legSwing>
-    <stride>3.11</stride>
-    <bodyCentre>1.350</bodyCentre>
-    <bodyHalfWidth>0.756</bodyHalfWidth>
-    <bodyHalfLength>1.340</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.70</bodyCentre>
+    <bodyHalfWidth>0.63</bodyHalfWidth>
+    <bodyHalfLength>1.27</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Larva</defName>

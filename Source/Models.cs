@@ -428,6 +428,16 @@ namespace IsoRim
         public float waddleSway = 9f;
         public float waddleBob = 0.06f;
         public float waddleStride = 0f;
+        // (Api 81) Slithering (Slither.cs), for legless animals (a snake): while it moves on its own the body bends from side to
+        // side in a wave that runs from the head back to the tail along the model's forward axis (+z, after rotation). A point
+        // u behind the model's foremost point (the head) is moved sideways by slither x (u / L) x sin(2 pi u / wave - phase):
+        // L the model's length along that axis, wave = slitherWave (0, default: L), phase the walk phase that also swings legs
+        // and waddles (one wave passes per stride: stride, or waddleStride for a waddler, cells walked times its size). The head
+        // stays still, the tail swings furthest. slither is in model units (times its size and how far into its stride it is:
+        // gait). Still while it stands; asleep, downed, dead, carried, attached, flying and in 2D it is never bent. Outline,
+        // smooth light, textures, wounds and shadows follow the bent body. 0 (default): off, drawn exactly as before.
+        public float slither = 0f;
+        public float slitherWave = 0f;
         // Textured faces (map_Kd) lit by the same smooth normals as the rest of the body while the smooth-animals setting is
         // on (SmoothFigures; DynamicModels.Build). Off (default): textured faces are lit per face, as before. Opt-in, per model.
         public bool smoothTextured = false;

@@ -1,0 +1,23 @@
+# IsoRim animals batch furry2 (blob style, bound 2026-11-17, branch animals7): Toxalope, WasteRat, Alphabeaver, AlphaThrumbo, Monkey.
+# From model-review\furry2 (tools/make_furry2_concept.py): Toxalope out_v1, WasteRat out_v1, Alphabeaver out_v2, AlphaThrumbo out_v3, Monkey out_v2.
+# Untinted in vanilla: colours baked, Kd = the sprite lit white 0.96.
+
+newmtl an_toxalope_blob
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/Toxalope
+
+newmtl an_wasterat_blob
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/WasteRat
+
+newmtl an_alphabeaver_blob
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/Alphabeaver
+
+newmtl an_alphathrumbo_blob
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/AlphaThrumbo
+
+newmtl an_monkey_blob
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/Monkey

@@ -1,0 +1,40 @@
+# IsoRim animals batch crawl1 (blob style, bound 2026-11-17, branch animals7): Megascarab, Spelopede, Megaspider (bent legs,
+# legModel + legFromHip), Iguana (four splayed legs), Cobra (no legs; slithers: Api 81). From model-review\crawl1\out_v1
+# (tools/make_crawl1_concept.py); the leg OBJs and materials renamed *_blob_leg (the old animal_*_leg.obj / an_*_leg exist).
+# Insects: white / grey textures x the vanilla colour (tintFromGraphic); iguana, cobra: sprite colours baked. Kd 0.96.
+
+newmtl an_megascarab_blob
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/Megascarab
+
+newmtl an_megascarab_blob_leg
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/MegascarabLeg
+
+newmtl an_spelopede_blob
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/Spelopede
+
+newmtl an_spelopede_blob_leg
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/SpelopedeLeg
+
+newmtl an_megaspider_blob
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/Megaspider
+
+newmtl an_megaspider_blob_leg
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/MegaspiderLeg
+
+newmtl an_iguana_blob
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/Iguana
+
+newmtl an_iguana_blob_leg
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/IguanaLeg
+
+newmtl an_cobra_blob
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/Cobra

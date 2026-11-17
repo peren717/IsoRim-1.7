@@ -132,10 +132,11 @@ if (IsoRim.Api.Version >= 77) { /* first-person eye providers: AddFirstPersonEye
 if (IsoRim.Api.Version >= 78) { /* ModelDef.hairDef, beardDef: a pack's model for a hairstyle or beard style (part 56); no member */ }
 if (IsoRim.Api.Version >= 79) { /* spin parts on an axle: ModelDef.spinPivot, spinAxis, spinSource, spinDips; AddSpinAngle, RemoveSpinAngle (part 57) */ }
 if (IsoRim.Api.Version >= 80) { /* ModelDef.wingsInFlightOnly: wings drawn only in the air, growing from the hinge (part 58); no member */ }
+if (IsoRim.Api.Version >= 81) { /* ModelDef.slither, slitherWave: a legless body bent side to side while it moves (part 59); no member */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`), version 72 part 51 (`HarnessSeed`), version 73 part 19 (`GlassOpacityFromModel`, `GlassOpacity`), version 74 part 52 (3D explosions), version 75 part 53 (textured faces on people), version 76 part 54 (photos), version 77 part 55 (first-person eye providers), version 78 part 56 (hair and beard models by XML, no member), version 79 part 57 (spin parts), version 80 part 58 (`wingsInFlightOnly`, no member) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`), version 72 part 51 (`HarnessSeed`), version 73 part 19 (`GlassOpacityFromModel`, `GlassOpacity`), version 74 part 52 (3D explosions), version 75 part 53 (textured faces on people), version 76 part 54 (photos), version 77 part 55 (first-person eye providers), version 78 part 56 (hair and beard models by XML, no member), version 79 part 57 (spin parts), version 80 part 58 (`wingsInFlightOnly`, no member), version 81 part 59 (`slither`, `slitherWave`, no member) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -3311,6 +3312,39 @@ draws the separate wing models only while the bird is in the air:
 IsoRim's own duck and goose (`Defs/Models.xml`) use it. Version gate: no member; an older IsoRim does not know the
 field, so add it by patch behind `minVersion` 80 (part M), or leave it out there (the wings then rest folded on the body).
 
+## Part 59: slithering (version 81)
+
+A legless animal (a snake) can bend its body from side to side while it moves. `slither` (a ModelDef field, animals) turns
+it on:
+
+```xml
+<animal>true</animal>
+<waddle>true</waddle>
+<waddleStride>0.6</waddleStride>
+<slither>0.07</slither>
+```
+
+- **The wave** runs along the body model's forward axis (+z, after `rotation`) from the head back to the tail. A point
+  `u` behind the model's foremost point is moved sideways by `slither × (u / L) × sin(2π u / wave − phase)`, where `L` is
+  the model's length along that axis and `wave` is `slitherWave` (model units; 0, the default: `L`, one whole wave over
+  the body). The head stays still and the tail swings furthest. `slither` is in model units, scaled like the model (its
+  `scale` and the animal's size) and by how far into its stride it is (it eases in as it starts and out as it stops).
+- **Its speed** is the walk phase that also swings legs and drives `waddle` and `hop`: one wave passes per `stride`
+  (or `waddleStride` for a waddler) walked, so with a wavelength close to the stride the wave stays put on the ground as
+  the body glides through it. Frozen when the game is paused.
+- **Only while it moves on its own.** Standing it is straight (the model as built); asleep, downed, dead, carried,
+  attached (part 7), flying and in 2D it is never bent.
+- **Everything follows the bent body:** outline, smooth light, textured faces, hit flash, the game's wound marks, the
+  screen-space sun shadows. Each slithering animal draws its own bent copies of the model's meshes (made the first time it
+  slithers, bent once per frame its wave moves on, let go a while after it stops); a standing one shares the usual meshes.
+- **The bend is along the forward axis, not along the tube**: every slice across the model moves sideways as a whole, so a
+  coiled snake model (IsoRim's cobra) sways its coil from side to side while its raised neck stays still; a stretched-out
+  snake bends along its length.
+- Off (default 0): drawn exactly as before. Nothing is saved; no setting.
+
+IsoRim's own cobra (`Defs/Models.xml`) uses it. Version gate: no member; an older IsoRim does not know the fields, so add
+them by patch behind `minVersion` 81 (part M), or leave them out there (the body then glides straight).
+
 ## Part M: model packs (IsoRim.ModelDef)
 
 A model pack is an XML-only mod (or a mod with a small DLL) that adds `IsoRim.ModelDef`s binding OBJ models to other
@@ -3353,6 +3387,7 @@ mods' things.
 | `spinModel`, `spinSpeed`, `spinMote` | A spin part: a second model turned every frame over the body (upright about the origin unless on an axle), at `spinSpeed` degrees a second while the thing is powered; the game's mote for it left out in 3D. |
 | `spinPivot`, `spinAxis`, `spinSource`, `spinDips` (79) | The spin part on an axle through a pivot, never stretched; what turns it (`Power`, `PowerOutput`, `WatermillAngle`, or an addon's `AddSpinAngle`); its lowest point kept under the ground (part 57). |
 | `tubeColor` (58) | With `shape` `Tube`: the tube's colour (part 41). |
+| `slither`, `slitherWave` (81) | Animals: the body bent side to side in a wave from head to tail while it moves; the reach at the tail and the wavelength, model units (part 59). Default 0: as before. |
 | `smoothShading` (69) | Mechs: the model and its parts lit by smooth normals as animals are; with `smoothTextured` its textured faces too (part 48). Default false: as before. |
 | `wallTop` (11), `cutaway` (20), `backHeight` (13), wing fields (14; `wingsInFlightOnly` 80), `doorLeafModel`, `doorLeafGather` (18), `crownTop`, `doorLeafRise` (6) | See their parts. |
 
