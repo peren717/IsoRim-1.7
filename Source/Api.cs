@@ -163,7 +163,9 @@ namespace IsoRim
         // 79: spin parts on an axle and what turns them (Spinners.cs, Api79.cs): ModelDef.spinPivot, spinAxis, spinSource (Power,
         // PowerOutput, WatermillAngle), spinDips; AddSpinAngle / RemoveSpinAngle (an addon's angle for its own things).
         // First user: the watermill's wheel.
-        public static int Version => 79;
+        // 80: Animals.DrawWings: ModelDef.wingsInFlightOnly: no wing model on the ground, in flight each wing scaled by how far
+        // it is open about its hinge (it grows out at take-off, shrinks on landing). First users: the duck and the goose. No member.
+        public static int Version => 80;
 
         // ---- glass parts (Version 30)
 

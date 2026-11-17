@@ -613,13 +613,21 @@ namespace IsoRim
         // far up the animal is (the game's PositionOffsetFactor, 0..1): the wings open as it leaves the ground and close
         // just before it lands, in step with the legs tucking away. The beat counts game ticks (frozen when paused, faster
         // at higher speeds, like the game's own flying frames), each animal at its own point in the beat.
+        // (Api 80) wingsInFlightOnly: no wing at all while open is 0 (on the ground; the folded wings are part of the body
+        // model), and while it is up each wing scaled by open about its hinge: it grows out of the shoulder at take-off and
+        // shrinks back on landing. Fold, droop and beat as above.
         private static void DrawWings(Pawn pawn, ModelEntry entry, ModelDef def, Vector3 position, float yaw, Matrix4x4 body, float air)
         {
             if (def.wings == null)
             {
                 return;
             }
-            float open = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(air / WingOpenAt));
+            bool drawn;
+            float open = WingOpen(def, air, out drawn);
+            if (!drawn)
+            {
+                return;
+            }
             float beat = 0f;
             if (open > 0f)
             {
@@ -631,6 +639,10 @@ namespace IsoRim
             // Right wing: raised about the body's long axis, then swept back about the upright axis. A left wing is the
             // mirror image, drawn from the mirrored model with the mirrored turn (still a plain rotation).
             Matrix4x4 turn = Matrix4x4.Rotate(Quaternion.AngleAxis(fold, Vector3.up) * Quaternion.AngleAxis(lift, Vector3.forward));
+            if (def.wingsInFlightOnly)
+            {
+                turn *= Matrix4x4.Scale(new Vector3(open, open, open));   // about the hinge: the wing model's origin
+            }
             Matrix4x4 turnLeft = Mirror * turn * Mirror;
             Model right = Corpses.Body(pawn, entry.WingFor(pawn, false));   // (Api 38) hers, for a female with femaleWingModel
             Model left = Corpses.Body(pawn, entry.WingFor(pawn, true));
@@ -641,6 +653,15 @@ namespace IsoRim
                 Matrix4x4 local = body * Matrix4x4.Translate(hinge) * (isLeft ? turnLeft : turn);
                 DynamicModels.DrawLocal(isLeft ? left : right, position, yaw, local, Color.white, null);
             }
+        }
+
+        // How far an animal's wings are open (0 folded .. 1 spread) at airborne factor air, and whether its wing models are drawn
+        // at all: not on the ground with wingsInFlightOnly (Api 80). The one rule for DrawWings (and the harness's wingcheck).
+        internal static float WingOpen(ModelDef def, float air, out bool drawn)
+        {
+            float open = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(air / WingOpenAt));
+            drawn = def.wings != null && (!def.wingsInFlightOnly || open > 0f);
+            return open;
         }
 
         private static readonly Matrix4x4 Mirror = Matrix4x4.Scale(new Vector3(-1f, 1f, 1f));

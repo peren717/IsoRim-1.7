@@ -41,6 +41,8 @@
        Wings (Api 14): <wingModel> one wing (the right one), spread, hinge at the origin, span along +x; <wings> the
        hinges on the body (x < 0: a left wing, the mirror image); <wingFold> and <wingDroop> how it rests on the ground
        (degrees swept back, tip lowered); <wingFlap> and <wingBeat> its beat in flight (degrees, beats per second).
+       <wingsInFlightOnly>true</wingsInFlightOnly> (Api 80): no wing model on the ground (the folded wings are part of the
+       body model); in flight the wings grow out of their hinges at take-off and shrink back on landing.
        Mechanoids (<mech>true</mech>): <model> is the body, <mechParts> the moving pieces (wheel, leg, spin,
        pitch, arm, upper, head, weapon, turret; see MechPart in Source/Models.cs), <factionMaterials> the faces
        that take the faction colour, <carryAt> where a hauled thing is held, <stride> for the legs. -->
@@ -4110,37 +4112,60 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Duck</defName>
     <thingDef>Duck</thingDef>
-    <model>Models/animal_duck.obj</model>
+    <model>Models/animal_duck_drake_blob.obj</model>
+    <femaleModel>Models/animal_duck_hen_blob.obj</femaleModel>
+    <!-- blob duck (2026-11-16): the chicken's family (legs fused into the body), glides; drake, hen (femaleModel); colours
+         painted in DuckMale.png / DuckFemale.png (the vanilla sprites are untinted). The folded wings are part of the body;
+         the wing models are drawn only in flight (wingsInFlightOnly, Api 80): they grow out at take-off and fold away on
+         landing. Vanilla draws ducklings of both sexes with DuckFemale: byBodyGraphic gives them the hen and her wings.
+         animal_duck(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_duck_leg.obj</legModel>
-    <legs>
-      <li>(-0.066, 0.116, -0.014)</li>
-      <li>(0.066, 0.116, -0.014)</li>
-    </legs>
-    <legLength>0.116</legLength>
-    <legSwing>30</legSwing>
-    <stride>0.35</stride>
-    <bodyCentre>0.175</bodyCentre>
-    <bodyHalfWidth>0.107</bodyHalfWidth>
-    <bodyHalfLength>0.222</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <wingModel>Models/animal_duck_drake_wing.obj</wingModel>
+    <femaleWingModel>Models/animal_duck_hen_wing.obj</femaleWingModel>
+    <wings>
+      <li>(-0.143, 0.268, 0.064)</li>
+      <li>(0.143, 0.268, 0.064)</li>
+    </wings>
+    <wingsInFlightOnly>true</wingsInFlightOnly>
+    <wingFold>90</wingFold>
+    <wingDroop>0</wingDroop>
+    <wingFlap>65</wingFlap>
+    <wingBeat>3.75</wingBeat>
+    <bodyCentre>0.193</bodyCentre>
+    <bodyHalfWidth>0.171</bodyHalfWidth>
+    <bodyHalfLength>0.312</bodyHalfLength>
+    <byBodyGraphic>
+      <li><path>Duck/DuckFemale</path><model>Models/animal_duck_hen_blob.obj</model><wingModel>Models/animal_duck_hen_wing.obj</wingModel></li>
+    </byBodyGraphic>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Goose</defName>
     <thingDef>Goose</thingDef>
-    <model>Models/animal_goose.obj</model>
+    <model>Models/animal_goose_blob.obj</model>
+    <!-- blob goose (2026-11-16): the chicken's family (legs fused into the body), glides; colours painted in Goose.png (the
+         vanilla sprite is untinted). The folded wings are part of the body; the wing models are drawn only in flight
+         (wingsInFlightOnly, Api 80). animal_goose(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_goose_leg.obj</legModel>
-    <legs>
-      <li>(-0.078, 0.169, -0.017)</li>
-      <li>(0.078, 0.169, -0.017)</li>
-    </legs>
-    <legLength>0.169</legLength>
-    <legSwing>30</legSwing>
-    <stride>0.41</stride>
-    <bodyCentre>0.239</bodyCentre>
-    <bodyHalfWidth>0.126</bodyHalfWidth>
-    <bodyHalfLength>0.261</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <wingModel>Models/animal_goose_wing.obj</wingModel>
+    <wings>
+      <li>(-0.24, 0.415, 0.12)</li>
+      <li>(0.24, 0.415, 0.12)</li>
+    </wings>
+    <wingsInFlightOnly>true</wingsInFlightOnly>
+    <wingFold>90</wingFold>
+    <wingDroop>0</wingDroop>
+    <wingFlap>65</wingFlap>
+    <wingBeat>3.75</wingBeat>
+    <bodyCentre>0.287</bodyCentre>
+    <bodyHalfWidth>0.294</bodyHalfWidth>
+    <bodyHalfLength>0.481</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4360,21 +4385,24 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_GuineaPig</defName>
     <thingDef>GuineaPig</thingDef>
-    <model>Models/animal_guineapig.obj</model>
+    <model>Models/animal_guineapig_blob.obj</model>
+    <!-- blob guinea pig (2026-11-16): the rodents' family (round loaf, no tail), glides; white face blaze, muzzle and pink
+         nose plain untinted materials, the coat patches in GuineaPig.png (white) times the coat colour: the base sprite's
+         colour (vanilla's white, brown or grey alternates: tintFromGraphic), and for the painted alternates GuineaPig1..3
+         (drawn untinted by vanilla) their patch colours (byBodyGraphic tint). animal_guineapig(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_guineapig_leg.obj</legModel>
-    <legs>
-      <li>(-0.067, 0.081, 0.112)</li>
-      <li>(0.067, 0.081, 0.112)</li>
-      <li>(-0.067, 0.081, -0.124)</li>
-      <li>(0.067, 0.081, -0.124)</li>
-    </legs>
-    <legLength>0.081</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.35</stride>
-    <bodyCentre>0.139</bodyCentre>
-    <bodyHalfWidth>0.108</bodyHalfWidth>
-    <bodyHalfLength>0.232</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.290</bodyCentre>
+    <bodyHalfWidth>0.212</bodyHalfWidth>
+    <bodyHalfLength>0.337</bodyHalfLength>
+    <byBodyGraphic>
+      <li><path>GuineaPig/GuineaPig1</path><tint>(216,204,168)</tint></li>
+      <li><path>GuineaPig/GuineaPig2</path><tint>(96,96,96)</tint></li>
+      <li><path>GuineaPig/GuineaPig3</path><tint>(178,122,48)</tint></li>
+    </byBodyGraphic>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4572,21 +4600,17 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Capybara</defName>
     <thingDef>Capybara</thingDef>
-    <model>Models/animal_capybara.obj</model>
+    <model>Models/animal_capybara_blob.obj</model>
+    <!-- blob capybara (2026-11-16): the rodents' family (barrel body, blunt square head), legs fused into the body, glides;
+         white Capybara.png times the vanilla colour (tintFromGraphic). animal_capybara(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_capybara_leg.obj</legModel>
-    <legs>
-      <li>(-0.107, 0.206, 0.204)</li>
-      <li>(0.107, 0.206, 0.204)</li>
-      <li>(-0.107, 0.206, -0.224)</li>
-      <li>(0.107, 0.206, -0.224)</li>
-    </legs>
-    <legLength>0.206</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.50</stride>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <tintFromGraphic>true</tintFromGraphic>
     <bodyCentre>0.303</bodyCentre>
-    <bodyHalfWidth>0.172</bodyHalfWidth>
-    <bodyHalfLength>0.422</bodyHalfLength>
+    <bodyHalfWidth>0.209</bodyHalfWidth>
+    <bodyHalfLength>0.526</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4687,21 +4711,17 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Chinchilla</defName>
     <thingDef>Chinchilla</thingDef>
-    <model>Models/animal_chinchilla.obj</model>
+    <model>Models/animal_chinchilla_blob.obj</model>
+    <!-- blob chinchilla (2026-11-16): the rodents' family (round sitting body, big round ears, bushy tail curled up), glides;
+         white Chinchilla.png times the vanilla colour (tintFromGraphic). animal_chinchilla(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_chinchilla_leg.obj</legModel>
-    <legs>
-      <li>(-0.067, 0.089, 0.112)</li>
-      <li>(0.067, 0.089, 0.112)</li>
-      <li>(-0.067, 0.089, -0.124)</li>
-      <li>(0.067, 0.089, -0.124)</li>
-    </legs>
-    <legLength>0.089</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.35</stride>
-    <bodyCentre>0.149</bodyCentre>
-    <bodyHalfWidth>0.108</bodyHalfWidth>
-    <bodyHalfLength>0.232</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.230</bodyCentre>
+    <bodyHalfWidth>0.173</bodyHalfWidth>
+    <bodyHalfLength>0.330</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4918,21 +4938,16 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Thrumbo</defName>
     <thingDef>Thrumbo</thingDef>
-    <model>Models/animal_thrumbo.obj</model>
+    <model>Models/animal_thrumbo_blob.obj</model>
+    <!-- blob thrumbo (2026-11-16): soft bell body on four short leg bumps, thick neck, crescent horn, glides; colours painted
+         in Thrumbo.png (the vanilla sprite is untinted). animal_thrumbo(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_thrumbo_leg.obj</legModel>
-    <legs>
-      <li>(-0.328, 1.202, 0.600)</li>
-      <li>(0.328, 1.202, 0.600)</li>
-      <li>(-0.328, 1.202, -0.660)</li>
-      <li>(0.328, 1.202, -0.660)</li>
-    </legs>
-    <legLength>1.202</legLength>
-    <legSwing>26</legSwing>
-    <stride>2.88</stride>
-    <bodyCentre>1.25</bodyCentre>
-    <bodyHalfWidth>0.70</bodyHalfWidth>
-    <bodyHalfLength>1.240</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.62</bodyCentre>
+    <bodyHalfWidth>0.516</bodyHalfWidth>
+    <bodyHalfLength>1.03</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -4969,55 +4984,67 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Emu</defName>
     <thingDef>Emu</thingDef>
-    <model>Models/animal_emu.obj</model>
+    <model>Models/animal_emu_blob.obj</model>
+    <!-- blob emu (2026-11-16): the ratite build, plain shaggy brown (shag in Emu.png; the vanilla sprite is untinted), long
+         legs that step (legModel). animal_emu(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_emu_leg.obj</legModel>
+    <smoothTextured>true</smoothTextured>
+    <legModel>Models/animal_emu_blob_leg.obj</legModel>
     <legs>
-      <li>(-0.116, 0.541, -0.025)</li>
-      <li>(0.116, 0.541, -0.025)</li>
+      <li>(-0.102, 0.48, 0.0)</li>
+      <li>(0.102, 0.48, 0.0)</li>
     </legs>
-    <legLength>0.541</legLength>
-    <legSwing>30</legSwing>
-    <stride>1.30</stride>
-    <bodyCentre>0.645</bodyCentre>
-    <bodyHalfWidth>0.187</bodyHalfWidth>
-    <bodyHalfLength>0.387</bodyHalfLength>
+    <legLength>0.48</legLength>
+    <legSwing>28</legSwing>
+    <stride>0.9</stride>
+    <bodyCentre>0.64</bodyCentre>
+    <bodyHalfWidth>0.315</bodyHalfWidth>
+    <bodyHalfLength>0.581</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Ostrich</defName>
     <thingDef>Ostrich</thingDef>
-    <model>Models/animal_ostrich.obj</model>
+    <model>Models/animal_ostrich_blob.obj</model>
+    <!-- blob ostrich (2026-11-16): the ratite build (teardrop body, long upright neck, small head), long legs that step
+         (legModel); one model for every life stage and sex: the body white x the vanilla colour (tintFromGraphic: the dark
+         male, the brown hen and chicks), neck, head, plumes, tail tuft and legs untinted (their own vertex colours).
+         animal_ostrich(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_ostrich_leg.obj</legModel>
+    <smoothTextured>true</smoothTextured>
+    <tintFromGraphic>true</tintFromGraphic>
+    <legModel>Models/animal_ostrich_blob_leg.obj</legModel>
     <legs>
-      <li>(-0.136, 0.714, -0.029)</li>
-      <li>(0.136, 0.714, -0.029)</li>
+      <li>(-0.11, 0.52, 0.0)</li>
+      <li>(0.11, 0.52, 0.0)</li>
     </legs>
-    <legLength>0.714</legLength>
-    <legSwing>30</legSwing>
-    <stride>1.71</stride>
-    <bodyCentre>0.837</bodyCentre>
-    <bodyHalfWidth>0.220</bodyHalfWidth>
-    <bodyHalfLength>0.456</bodyHalfLength>
+    <legLength>0.52</legLength>
+    <legSwing>28</legSwing>
+    <stride>0.98</stride>
+    <bodyCentre>0.691</bodyCentre>
+    <bodyHalfWidth>0.34</bodyHalfWidth>
+    <bodyHalfLength>0.643</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Cassowary</defName>
     <thingDef>Cassowary</thingDef>
-    <model>Models/animal_cassowary.obj</model>
+    <model>Models/animal_cassowary_blob.obj</model>
+    <!-- blob cassowary (2026-11-16): the ratite build with casque and wattles, colours painted in Cassowary.png (the vanilla
+         sprite is untinted), long legs that step (legModel). animal_cassowary(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_cassowary_leg.obj</legModel>
+    <smoothTextured>true</smoothTextured>
+    <legModel>Models/animal_cassowary_blob_leg.obj</legModel>
     <legs>
-      <li>(-0.128, 0.530, -0.028)</li>
-      <li>(0.128, 0.530, -0.028)</li>
+      <li>(-0.108, 0.46, 0.0)</li>
+      <li>(0.108, 0.46, 0.0)</li>
     </legs>
-    <legLength>0.530</legLength>
-    <legSwing>30</legSwing>
-    <stride>1.27</stride>
-    <bodyCentre>0.645</bodyCentre>
-    <bodyHalfWidth>0.206</bodyHalfWidth>
-    <bodyHalfLength>0.427</bodyHalfLength>
+    <legLength>0.46</legLength>
+    <legSwing>28</legSwing>
+    <stride>0.86</stride>
+    <bodyCentre>0.629</bodyCentre>
+    <bodyHalfWidth>0.332</bodyHalfWidth>
+    <bodyHalfLength>0.61</bodyHalfLength>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>

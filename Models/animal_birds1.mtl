@@ -1,0 +1,53 @@
+# IsoRim animals batch birds1 (blob style, bound 2026-11-16, branch animals6): Duck drake + hen, Goose, Ostrich, Emu, Cassowary;
+# duck and goose wings (Api 14 wingModel, drawn only in flight: Api 80 wingsInFlightOnly), ratite legs (legModel).
+# From model-review\birds1\out_v4 (tools/make_birds1_concept.py); the leg materials renamed *_blob_leg (isorim.mtl has the old
+# an_*_leg). Colours baked in the textures (vanilla sprite colours), Kd 0.96; the ostrich is white x the vanilla colour
+# (tintFromGraphic), its neck, head, plumes and legs untinted by their own vertex colours.
+newmtl an_ostrich_blob
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/Ostrich
+
+newmtl an_ostrich_blob_leg
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/OstrichLeg
+
+newmtl an_emu_blob
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/Emu
+
+newmtl an_emu_blob_leg
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/EmuLeg
+
+newmtl an_cassowary_blob
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/Cassowary
+
+newmtl an_cassowary_blob_leg
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/CassowaryLeg
+
+newmtl an_duck_drake_blob
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/DuckMale
+
+newmtl an_duck_drake_wing
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/DuckMaleWing
+
+newmtl an_duck_hen_blob
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/DuckFemale
+
+newmtl an_duck_hen_wing
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/DuckFemaleWing
+
+newmtl an_goose_blob
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/Goose
+
+newmtl an_goose_wing
+Kd 0.960 0.960 0.960
+map_Kd IsoRim/Animals/GooseWing
+

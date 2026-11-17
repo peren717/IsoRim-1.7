@@ -131,10 +131,11 @@ if (IsoRim.Api.Version >= 76) { /* photos from any pose: CaptureView, CaptureVie
 if (IsoRim.Api.Version >= 77) { /* first-person eye providers: AddFirstPersonEye, RemoveFirstPersonEye (part 55) */ }
 if (IsoRim.Api.Version >= 78) { /* ModelDef.hairDef, beardDef: a pack's model for a hairstyle or beard style (part 56); no member */ }
 if (IsoRim.Api.Version >= 79) { /* spin parts on an axle: ModelDef.spinPivot, spinAxis, spinSource, spinDips; AddSpinAngle, RemoveSpinAngle (part 57) */ }
+if (IsoRim.Api.Version >= 80) { /* ModelDef.wingsInFlightOnly: wings drawn only in the air, growing from the hinge (part 58); no member */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`), version 72 part 51 (`HarnessSeed`), version 73 part 19 (`GlassOpacityFromModel`, `GlassOpacity`), version 74 part 52 (3D explosions), version 75 part 53 (textured faces on people), version 76 part 54 (photos), version 77 part 55 (first-person eye providers), version 78 part 56 (hair and beard models by XML, no member) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`), version 72 part 51 (`HarnessSeed`), version 73 part 19 (`GlassOpacityFromModel`, `GlassOpacity`), version 74 part 52 (3D explosions), version 75 part 53 (textured faces on people), version 76 part 54 (photos), version 77 part 55 (first-person eye providers), version 78 part 56 (hair and beard models by XML, no member), version 79 part 57 (spin parts), version 80 part 58 (`wingsInFlightOnly`, no member) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -702,6 +703,7 @@ OBJs name (copy `isorim.mtl` too if you use its colours).
 | `wingDroop` | On the ground: degrees the tips are lowered, so they rest on the back (insects) or the flanks (birds). | 0 |
 | `wingFlap` | In the air: degrees the wings beat up and down about the body's long axis (a sine). | 50 |
 | `wingBeat` | In the air: beats per second at normal game speed. It counts game ticks: frozen when paused, faster at higher speeds. Insects about 6, big birds about 2. | 6 |
+| `wingsInFlightOnly` | (Version 80, part 58) No wing model on the ground; in flight the wings grow out of their hinges. For birds whose folded wings are part of the body model. | false |
 
 Each animal beats at its own point in the cycle, so a swarm or flock is not in step.
 
@@ -2443,7 +2445,7 @@ antlers whatever its sex.
 
 | Member | Meaning |
 |---|---|
-| `Api.ReadAnimalModel(Pawn pawn, out ModelHandle body, out ModelHandle leg, out ModelHandle wing, out Color tint, out bool tintTextured)` | The body, leg and right wing IsoRim draws this animal with now (its `byBodyGraphic` entry, else `model` / `femaleModel`, `legModel` / `femaleLegModel`, `wingModel` / `femaleWingModel`) and the tint (the entry's, else the graphic colour with `tintFromGraphic`, else white). `tintTextured`: the tint also multiplies textured materials. `leg` / `wing` null when it has none. A rotting body is not darkened here. False (nulls, white) for a pawn without an animal model. Main thread. |
+| `Api.ReadAnimalModel(Pawn pawn, out ModelHandle body, out ModelHandle leg, out ModelHandle wing, out Color tint, out bool tintTextured)` | The body, leg and right wing IsoRim draws this animal with now (its `byBodyGraphic` entry, else `model` / `femaleModel`, `legModel` / `femaleLegModel`, `wingModel` / `femaleWingModel`) and the tint (the entry's, else the graphic colour with `tintFromGraphic`, else white). `tintTextured`: the tint also multiplies textured materials. `leg` / `wing` null when it has none. A rotting body is not darkened here. False (nulls, white) for a pawn without an animal model. Main thread. `wing` is returned also when the binding has `wingsInFlightOnly` (Api 80): then draw it only while the animal is in the air, as IsoRim does (its folded wings are part of the body). |
 
 Version gate: `IsoRim.Api.Version >= 65`.
 
@@ -3281,6 +3283,34 @@ twice. `RemoveSpinAngle` takes it off again.
 
 Version gate: `IsoRim.Api.Version >= 79` (the fields by patch behind `minVersion` 79, part M).
 
+## Part 58: wings only in flight (version 80)
+
+A bird's folded wings are often best built into its body model: they then read as part of the body at play zoom and
+need no fold or droop to fit. `wingsInFlightOnly` (a ModelDef field, animals with `wingModel` and `wings`, part 9)
+draws the separate wing models only while the bird is in the air:
+
+```xml
+<wingModel>Models/my_duck_wing.obj</wingModel>
+<wings>
+  <li>(-0.14, 0.27, 0.06)</li>
+  <li>(0.14, 0.27, 0.06)</li>
+</wings>
+<wingsInFlightOnly>true</wingsInFlightOnly>
+<wingFlap>65</wingFlap>
+<wingBeat>3.75</wingBeat>
+```
+
+- **On the ground** (standing, walking, asleep, downed, dead, carried: `Api.AirborneFactor` 0) no wing model is drawn.
+- **Taking off and landing:** each wing is scaled from its hinge by how far the wings are open (the same opening as
+  without the field: the game's own take-off and landing curve, fully open at an airborne factor of 0.3), so it grows out
+  of the shoulder as the bird rises and shrinks back as it lands; it never pops in or out. Its fold (`wingFold`), droop
+  (`wingDroop`) and beat (`wingFlap`, `wingBeat`) are as without the field.
+- **In flight** (fully open) the wings are drawn exactly as without the field.
+- Off (default): wings drawn folded on the ground as before (IsoRim's locust). Nothing is saved; no setting.
+
+IsoRim's own duck and goose (`Defs/Models.xml`) use it. Version gate: no member; an older IsoRim does not know the
+field, so add it by patch behind `minVersion` 80 (part M), or leave it out there (the wings then rest folded on the body).
+
 ## Part M: model packs (IsoRim.ModelDef)
 
 A model pack is an XML-only mod (or a mod with a small DLL) that adds `IsoRim.ModelDef`s binding OBJ models to other
@@ -3324,7 +3354,7 @@ mods' things.
 | `spinPivot`, `spinAxis`, `spinSource`, `spinDips` (79) | The spin part on an axle through a pivot, never stretched; what turns it (`Power`, `PowerOutput`, `WatermillAngle`, or an addon's `AddSpinAngle`); its lowest point kept under the ground (part 57). |
 | `tubeColor` (58) | With `shape` `Tube`: the tube's colour (part 41). |
 | `smoothShading` (69) | Mechs: the model and its parts lit by smooth normals as animals are; with `smoothTextured` its textured faces too (part 48). Default false: as before. |
-| `wallTop` (11), `cutaway` (20), `backHeight` (13), wing fields (14), `doorLeafModel`, `doorLeafGather` (18), `crownTop`, `doorLeafRise` (6) | See their parts. |
+| `wallTop` (11), `cutaway` (20), `backHeight` (13), wing fields (14; `wingsInFlightOnly` 80), `doorLeafModel`, `doorLeafGather` (18), `crownTop`, `doorLeafRise` (6) | See their parts. |
 
 The numbers in brackets are the Api version a field needs; fields without one are there from version 2.
 

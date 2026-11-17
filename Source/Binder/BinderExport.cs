@@ -56,6 +56,7 @@ namespace IsoRim
             { "byGraphic", 39 },
             { "hairDef", 78 }, { "beardDef", 78 },
             { "spinPivot", 79 }, { "spinAxis", 79 }, { "spinSource", 79 }, { "spinDips", 79 },
+            { "wingsInFlightOnly", 80 },
         };
         private const int BaseVersion = 2;
 

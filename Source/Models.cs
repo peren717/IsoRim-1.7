@@ -385,6 +385,10 @@ namespace IsoRim
         public float wingDroop = 0f;        // on the ground: how far their tips are lowered, degrees (resting on the back or flanks)
         public float wingFlap = 50f;        // in flight: how far they beat up and down about the body's long axis, degrees
         public float wingBeat = 6f;         // in flight: beats per second at normal game speed (insects ~6, big birds ~2)
+        // (Api 80) Birds whose folded wings are part of the body model: no wing model on the ground (standing, walking, asleep,
+        // downed, dead, carried), and in flight each wing grows out of its hinge with the game's take-off (scaled by how far
+        // the wings are open) and shrinks back on landing. Off (default): wings drawn folded on the ground, as before.
+        public bool wingsInFlightOnly = false;
         // (rotation, for an animal, turns its body model only; legs and hips are given facing north.)
         public float stride = 1f;           // cells walked for one full swing of the legs
         // Female animals (Api 38): a female (pawn.gender Female) is drawn with these instead; males, genderless pawns and
