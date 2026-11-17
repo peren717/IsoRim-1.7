@@ -2986,6 +2986,8 @@ namespace IsoRim
         private static bool[] lookedPool = new bool[64];
         private static Color[] slotColourPool = new Color[64];       // each slot's material colour and texture (TextureOutline)
         private static Texture[] slotTexturePool = new Texture[64];
+        private static Color[] slotMeanPool = new Color[64];        // each slot's texture mean for its outline (TextureOutline.MeanOf)
+        private static bool[] slotMeanSetPool = new bool[64];
 
         // While this has any alpha, Bake writes the model as a see-through ghost of this colour
         // (for blueprints and frames) instead of the real thing.
@@ -3190,16 +3192,21 @@ namespace IsoRim
                 lookedPool = new bool[slots * 2];
                 slotColourPool = new Color[slots * 2];
                 slotTexturePool = new Texture[slots * 2];
+                slotMeanPool = new Color[slots * 2];
+                slotMeanSetPool = new bool[slots * 2];
             }
             LayerSubMesh[] texturedMeshes = texturedPool;
             bool[] looked = lookedPool;
             Color[] slotColour = slotColourPool;
             Texture[] slotTexture = slotTexturePool;
+            Color[] slotMean = slotMeanPool;
+            bool[] slotMeanSet = slotMeanSetPool;
             for (int i = 0; i < slots; i++)
             {
                 texturedMeshes[i] = null;
                 looked[i] = false;
                 slotTexture[i] = null;
+                slotMeanSet[i] = false;
             }
             LayerSubMesh plain = null;
             LayerSubMesh round = null;   // (Api 52) the ModelMaterial.round faces, and their smooth normals
@@ -3377,8 +3384,16 @@ namespace IsoRim
                         line.verts.Add(new Vector3(center.x + h.x, baseY + Mathf.Max(lineFloor, h.y) / squash, center.z + h.z));
                         // the face's colour as drawn: a textured face's with its texture taken at its mean (TextureOutline;
                         // a decal's face: the plain colour, its look's texture is made per thing)
-                        Color lc = tm != null && texSlot >= 0
-                            ? TextureOutline.Line(m, mi, slotTexture[texSlot], own ? c : Color.white, slotColour[texSlot], c) : c;
+                        Color lc = c;
+                        if (tm != null && texSlot >= 0)
+                        {
+                            if (!slotMeanSet[texSlot])
+                            {
+                                slotMean[texSlot] = TextureOutline.MeanOf(m, mi, slotTexture[texSlot]);   // (once per slot; MeanOf keeps it)
+                                slotMeanSet[texSlot] = true;
+                            }
+                            lc = TextureOutline.LineWithMean(slotMean[texSlot], own ? c : Color.white, slotColour[texSlot], c);
+                        }
                         line.colors.Add(R3DMaterials.Shaded(lc, OutlineShade));
                         line.uvs.Add(default);
                         if (tagged)

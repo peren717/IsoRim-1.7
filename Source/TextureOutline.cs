@@ -34,7 +34,13 @@ namespace IsoRim
         // texture's mean. plain: the corner's plain colour, kept if the texture cannot be read.
         public static Color Line(Model m, int mi, Texture tex, Color corner, Color material, Color plain)
         {
-            Color mean = MeanOf(m, mi, tex);
+            return LineWithMean(MeanOf(m, mi, tex), corner, material, plain);
+        }
+
+        // The same with the texture's mean already looked up (MeanOf, which keeps it once read): for a writer that outlines
+        // many corners of one material with one texture and looks the mean up once (ModelBaker.Write).
+        public static Color LineWithMean(Color mean, Color corner, Color material, Color plain)
+        {
             if (mean.a < 0f)
             {
                 return plain;

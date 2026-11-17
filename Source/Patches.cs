@@ -1938,7 +1938,7 @@ namespace IsoRim
         {
             if (View3D.Ready)
             {
-                __result = Floors.WidenView(View3D.GroundRect());
+                __result = View3D.ShownViewRect();
             }
         }
 

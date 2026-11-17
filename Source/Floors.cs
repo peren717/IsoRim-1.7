@@ -639,6 +639,54 @@ namespace IsoRim
 
         // ---- the view rectangle: the ground's, and the same ground seen raised on each shown floor
 
+        // WidenView's own inputs besides its argument and the pitch (On, the floor count, the ground rows, each floor's shown, height
+        // and shift), as they were when View3D.ShownViewRect last worked its rect out; compared exactly, so the cached rect is used
+        // only while every one is the same. (Without floors only On matters: WidenView returns the ground rect as it is.)
+        private static bool wvOn;
+        private static int wvCount, wvRows;
+        private static readonly bool[] wvShown = new bool[MaxFloors + 1];
+        private static readonly float[] wvHeights = new float[MaxFloors + 1];
+        private static readonly int[] wvShifts = new int[MaxFloors + 1];
+
+        internal static bool WidenInputsSame()
+        {
+            if (On != wvOn)
+            {
+                return false;
+            }
+            if (!On)
+            {
+                return true;
+            }
+            if (count != wvCount || groundRows != wvRows)
+            {
+                return false;
+            }
+            for (int k = 1; k <= count; k++)
+            {
+                if (shown[k] != wvShown[k] || shifts[k] != wvShifts[k] || BitConverter.SingleToInt32Bits(heights[k]) != BitConverter.SingleToInt32Bits(wvHeights[k]))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        internal static void RememberWidenInputs()
+        {
+            wvOn = On;
+            wvCount = count;
+            wvRows = groundRows;
+            for (int k = 1; k <= count && k <= MaxFloors; k++)
+            {
+                wvShown[k] = shown[k];
+                wvHeights[k] = heights[k];
+                wvShifts[k] = shifts[k];
+            }
+        }
+
+        // (Every input read here must be in the view rect cache's key: the pitch in View3D.ViewRectKey, the rest in WidenInputsSame /
+        // RememberWidenInputs.)
         public static CellRect WidenView(CellRect ground)
         {
             if (!On)

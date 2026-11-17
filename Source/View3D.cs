@@ -267,6 +267,7 @@ namespace IsoRim
         }
 
         // The direction along the ground that runs up the screen, away from the camera.
+        // (GroundRect reads this: its input, the yaw, is in ViewRectKey.)
         public static Vector3 GroundForward
         {
             get
@@ -1541,6 +1542,7 @@ namespace IsoRim
 
         // Where the line of sight through a screen point (pixels, from the bottom left) is at a
         // given height above the ground, in cells.
+        // (GroundRect calls this: every input read here must be in ViewRectKey.)
         public static Vector3 ScreenToHeight(Vector2 px, float height)
         {
             float nx = px.x / Screen.width * 2f - 1f;
@@ -1594,7 +1596,69 @@ namespace IsoRim
             return persp ? 2f * Mathf.Max(0.01f, Vector3.Dot(p - eye, fwd)) * tanHalf / h : 2f * orthoSize / h;
         }
 
+        // The view rect the game is given while the 3D view draws (CameraDriver.CurrentViewRect, Patches.CurrentViewRect_Postfix):
+        // the ground rect widened by the shown floors. The game asks for it hundreds of times a tick, so it is worked out again only
+        // when something it is worked out from has changed: every field and value GroundRect reads (ViewRectKey) and every one
+        // Floors.WidenView reads (Floors.WidenInputsSame), compared exactly. So the answer is always the one a fresh computation gives.
+        public static CellRect ShownViewRect()
+        {
+            ViewRectKey key = ViewRectKey.Now();
+            if (!viewRectValid || !key.Same(ref viewRectKey) || !Floors.WidenInputsSame())
+            {
+                viewRect = Floors.WidenView(GroundRect());
+                viewRectKey = key;
+                Floors.RememberWidenInputs();
+                viewRectValid = true;
+            }
+            return viewRect;
+        }
+
+        private static bool viewRectValid;
+        private static CellRect viewRect;
+        private static ViewRectKey viewRectKey;
+
+        // Everything GroundRect reads (through ScreenToHeight and GroundForward): the installed camera fields, the screen size, the
+        // view distance, the yaw; and the pitch Floors.WidenView reads. Floats are compared bit for bit.
+        private struct ViewRectKey
+        {
+            private Vector3 eye, fwd, up, right;
+            private float orthoSize, aspect, tanHalf, camDist, viewDistance, yaw, pitch;
+            private bool persp;
+            private int width, height;
+
+            public static ViewRectKey Now()
+            {
+                return new ViewRectKey
+                {
+                    eye = View3D.eye, fwd = View3D.fwd, up = View3D.up, right = View3D.right,
+                    orthoSize = View3D.orthoSize, aspect = View3D.aspect, tanHalf = View3D.tanHalf, camDist = View3D.camDist,
+                    viewDistance = ViewDistance, yaw = Yaw, pitch = Pitch, persp = View3D.persp,
+                    width = Screen.width, height = Screen.height
+                };
+            }
+
+            public bool Same(ref ViewRectKey o)
+            {
+                return persp == o.persp && width == o.width && height == o.height
+                    && Bits(eye, o.eye) && Bits(fwd, o.fwd) && Bits(up, o.up) && Bits(right, o.right)
+                    && Bits(orthoSize, o.orthoSize) && Bits(aspect, o.aspect) && Bits(tanHalf, o.tanHalf) && Bits(camDist, o.camDist)
+                    && Bits(viewDistance, o.viewDistance) && Bits(yaw, o.yaw) && Bits(pitch, o.pitch);
+            }
+
+            private static bool Bits(float a, float b)
+            {
+                return BitConverter.SingleToInt32Bits(a) == BitConverter.SingleToInt32Bits(b);
+            }
+
+            private static bool Bits(Vector3 a, Vector3 b)
+            {
+                return Bits(a.x, b.x) && Bits(a.y, b.y) && Bits(a.z, b.z);
+            }
+        }
+
         // The block of map cells that can be seen, used by the game to decide what to draw.
+        // (Every field and value read here, and in ScreenToHeight and GroundForward which it calls, must be in ViewRectKey: ShownViewRect
+        // keeps this rect while the key is the same.)
         public static CellRect GroundRect()
         {
             // With the camera turned, the screen is a slanted rectangle on the ground, so all
