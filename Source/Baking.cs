@@ -165,9 +165,9 @@ namespace IsoRim
                 }
                 return f;
             }
-            if (def.category == ThingCategory.Item && !weapon && !apparel && st.itemsFromArt && !IsChunk(def) && !OverArt(listed ? entry : null) && !podModel)
+            if (ItemFromArt(def, listed ? entry : null) && !podModel)
             {
-                // Items are made solid from their own game sprite, so they read exactly as
+                // Items whose model switch is off (ItemModelsOn) are made solid from their own game sprite, so they read exactly as
                 // they do in the game. (Chunks keep their rock and scrap models.)
                 float thick = st.thickItems ? ItemThickness(def) * Mathf.Clamp01(st.itemThickness) : 0f;
                 if (st.autoExtrude && thick > 0.004f)
@@ -283,7 +283,34 @@ namespace IsoRim
             return def.plant != null && def.plant.Sowable ? st.crops3D : st.smallPlants3D;
         }
 
-        // An item whose model is used even while items are made from the game's art (raw materials, with
+        // (2026-11-16) The model switches of ordinary items (not weapons, apparel or chunks): what the game lets pawns
+        // ingest (its own ingestible data: meals, drinks, drugs, Anomaly's serums) follows "Food, drinks and drugs use 3D
+        // models", every other item "Other items use 3D models". Off: the item is its game sprite made solid. Raw materials
+        // with a model (OverArt) keep it either way. The one rule for Compute, ModelSweep and View3D.StateSignature.
+        public static bool ItemModelsOn(ThingDef def)
+        {
+            IsoRimSettings st = IsoRimMod.Settings;
+            return def.IsIngestible ? st.foodModels3D : st.otherItemModels3D;
+        }
+
+        // An ordinary item drawn as its game sprite made solid, not as its model (ItemModelsOn).
+        public static bool ItemFromArt(ThingDef def, ModelEntry entry)
+        {
+            return def.category == ThingCategory.Item && !GroundGear.IsWeapon(def) && !def.IsApparel && !ItemModelsOn(def)
+                && !IsChunk(def) && !OverArt(entry);
+        }
+
+        // The switches ItemModelsOn reads, as one number for View3D.StateSignature (a change rebuilds the map).
+        public static int ItemModelSwitches
+        {
+            get
+            {
+                IsoRimSettings st = IsoRimMod.Settings;
+                return (st.foodModels3D ? 1 : 0) | (st.otherItemModels3D ? 2 : 0);
+            }
+        }
+
+        // An item whose model is used even while its kind is made from the game's art (raw materials, with
         // the "3D raw materials" setting on).
         public static bool OverArt(ModelEntry entry)
         {

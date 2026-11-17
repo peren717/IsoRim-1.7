@@ -273,6 +273,10 @@
   <R3D_Settings_WeaponModels3DTip>Weapons with a 3D model show it on the ground, on shelves and stands, and in hand.</R3D_Settings_WeaponModels3DTip>
   <R3D_Settings_ApparelModels3D>Apparel as 3D models</R3D_Settings_ApparelModels3D>
   <R3D_Settings_ApparelModels3DTip>Clothing on the ground, on shelves and on belts lies as the 3D clothes colonists wear. Off: made solid from its game sprite.</R3D_Settings_ApparelModels3DTip>
+  <R3D_Settings_FoodModels3D>Food, drinks and drugs as 3D models</R3D_Settings_FoodModels3D>
+  <R3D_Settings_FoodModels3DTip>Meals, beer, tea, kibble, insect jelly and drugs such as go-juice. Off: made solid from their game sprites.</R3D_Settings_FoodModels3DTip>
+  <R3D_Settings_OtherItemModels3D>Other items as 3D models</R3D_Settings_OtherItemModels3D>
+  <R3D_Settings_OtherItemModels3DTip>Bionics, organs, neurotrainers, psychic items, techprints and the like. Off: made solid from their game sprites.</R3D_Settings_OtherItemModels3DTip>
   <R3D_Settings_AimSide>Aim: shoulder side</R3D_Settings_AimSide>
   <R3D_Settings_AimHeight>Aim: shoulder height</R3D_Settings_AimHeight>
   <R3D_Settings_AimReach>Aim: forward reach</R3D_Settings_AimReach>

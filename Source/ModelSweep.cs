@@ -100,7 +100,7 @@ namespace IsoRim
                     {
                         flags.Add("GEAR_ART");   // weapons and apparel follow their own switches (Forms.Compute)
                     }
-                    else if (item && !GroundGear.IsWeapon(def) && !def.IsApparel && st.itemsFromArt && !Forms.IsChunk(def) && !Forms.OverArt(entry))
+                    else if (Forms.ItemFromArt(def, listed ? entry : null))
                     {
                         flags.Add("ITEM_ART");
                     }
@@ -145,7 +145,7 @@ namespace IsoRim
 
             StringBuilder txt = new StringBuilder();
             txt.Append("IsoRim model sweep, vanilla + DLC buildings/plants/items: ").Append(rows).Append(" defs\n");
-            txt.Append("settings: models3D=").Append(st.models3D).Append(" itemsFromArt=").Append(st.itemsFromArt)
+            txt.Append("settings: models3D=").Append(st.models3D).Append(" foodModels3D=").Append(st.foodModels3D).Append(" otherItemModels3D=").Append(st.otherItemModels3D)
                 .Append(" trees3D=").Append(st.trees3D).Append(" smallPlants3D=").Append(st.smallPlants3D).Append(" crops3D=").Append(st.crops3D).Append(" doors3D=").Append(st.doors3D).Append('\n');
             txt.Append("forms: ").Append(string.Join(", ", forms.OrderBy(p => p.Key).Select(p => p.Key + " " + p.Value))).Append('\n');
             txt.Append("flags: ").Append(string.Join(", ", counts.OrderBy(p => p.Key).Select(p => p.Key + " " + p.Value))).Append('\n');

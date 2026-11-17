@@ -222,6 +222,26 @@ namespace IsoRim
                     }
                     return true;
                 }
+                case "itemmodels":
+                {
+                    // itemmodels=Def,Def,...: the item model switches as loaded, and for each def its class (Forms.ItemModelsOn) and form.
+                    IsoRimSettings st = IsoRimMod.Settings;
+                    Log.Message("[IsoRim probe] itemmodels settings: itemsFromArt " + st.itemsFromArt + ", foodModels3D " + st.foodModels3D
+                        + ", otherItemModels3D " + st.otherItemModels3D + ", rawModels " + st.rawModels);
+                    foreach (string name in a)
+                    {
+                        ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(name);
+                        if (d == null)
+                        {
+                            continue;
+                        }
+                        ModelEntry e;
+                        bool listed = ModelLibrary.TryGet(d, out e);
+                        Log.Message("[IsoRim probe] itemmodels " + name + ": ingestible " + d.IsIngestible + ", modelsOn " + Forms.ItemModelsOn(d)
+                            + ", fromArt " + Forms.ItemFromArt(d, listed ? e : null) + ", form " + Forms.For(d).form);
+                    }
+                    return true;
+                }
                 case "settingscheck":
                 {
                     IsoRimSettings st = IsoRimMod.Settings;

@@ -260,7 +260,7 @@ namespace IsoRim
                     }
                     else
                     {
-                        f.SetValue(IsoRimMod.Settings, v);
+                        Api.SetOption(a[0], v);   // as a caller of the Api: a retired option is forwarded
                         if (a[0] == "roofStyle" || a[0] == "shipRoofLights")
                         {
                             Roofs.Rebuild();   // as the options menu does

@@ -1555,13 +1555,21 @@ Notes:
 
 ### Item settings by class (version 40)
 
-From Api 40, `itemsFromArt` covers ordinary items only; weapons follow `weaponModels3D`, apparel follows `apparelModels3D` (new,
+From Api 40, `itemsFromArt` (retired 2026-11-16, kept by name: see below) covers ordinary items only; weapons follow `weaponModels3D`, apparel follows `apparelModels3D` (new,
 default on). The setting names and saved keys are unchanged (`Api.SetOption` still takes them):
 - ordinary items: `itemsFromArt` (the sprite made solid; off: IsoRim's item models), `rawModels`, item thickness;
 - weapons: `weaponModels3D` (on: the weapon's own bound model, else its sprite made solid as held; off: the sprite made solid);
 - apparel: `apparelModels3D` (on: the 3D clothes a figure wears, laid down, with 3D figures on; a model another mod binds to
   that very apparel by thingDef still wins; off: the sprite made solid). Clothes worn by pawns and on outfit stands are not
   affected.
+
+Since 2026-11-16 ordinary items have two switches that say "on = IsoRim's 3D model" (`Forms.ItemModelsOn`):
+`foodModels3D` for what the game lets pawns ingest (`ThingDef.IsIngestible`: meals, drinks, drugs, Anomaly's serums) and
+`otherItemModels3D` for every other item (bionics, organs, trainers, techprints, medicine with "3D raw materials" off, ...).
+Both default off (the sprite made solid). `itemsFromArt` is retired: hidden, no longer read by the drawing, saved as
+`!(foodModels3D && otherItemModels3D)`; a settings file without the new keys sets both to `!itemsFromArt`. Raw materials
+(`rawModels`), weapons, apparel and chunks are unchanged. `Api.SetOption` takes the new names; `SetOption("itemsFromArt", v)`
+still works as before by setting both new switches to `!v`.
 
 ### Plant settings: crops apart
 

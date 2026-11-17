@@ -288,6 +288,7 @@ namespace IsoRim
             }
             object old = f.GetValue(st);
             f.SetValue(st, value);
+            st.ForwardRetired(name);
             return old;
         }
 

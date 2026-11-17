@@ -50,9 +50,13 @@ namespace IsoRim
         public bool texturedWalls = true;
         public bool autoExtrude = true;
         public bool thickItems = true;
-        // (Api 40) Ordinary items only (not weapons: weaponModels3D; not apparel: apparelModels3D). Name and saved key unchanged.
+        // Retired 2026-11-16, kept for compatibility (hidden): replaced by foodModels3D and otherItemModels3D. Read only to
+        // set them up from an older settings file; saved as !(both on) so an older IsoRim reads a matching value.
         public bool itemsFromArt = true;
-        public bool rawModels = true;    // raw materials (steel, wood, blocks ...) keep the mod's 3D models even with itemsFromArt
+        // Ordinary items as the mod's 3D models (Forms.ItemModelsOn): ingestibles (food, drinks, drugs) and everything else.
+        public bool foodModels3D = false;
+        public bool otherItemModels3D = false;
+        public bool rawModels = true;    // raw materials (steel, wood, blocks ...) keep the mod's 3D models even with item models off
         public bool ghosts3D = true;
         public bool cutRock = true;
         public bool mapEdge3D = true;
@@ -210,7 +214,13 @@ namespace IsoRim
             Scribe_Values.Look(ref texturedWalls, "texturedWalls", true);
             Scribe_Values.Look(ref autoExtrude, "autoExtrude", true);
             Scribe_Values.Look(ref thickItems, "thickItems", true);
+            if (Scribe.mode == LoadSaveMode.Saving)
+            {
+                SyncRetired();   // the retired switch, as an older IsoRim reads it
+            }
             Scribe_Values.Look(ref itemsFromArt, "itemsFromArt", true);
+            LookItemModels(ref foodModels3D, "foodModels3D");
+            LookItemModels(ref otherItemModels3D, "otherItemModels3D");
             Scribe_Values.Look(ref rawModels, "rawModels", true);
             Scribe_Values.Look(ref ghosts3D, "ghosts3D", true);
             Scribe_Values.Look(ref cutRock, "cutRock", true);
@@ -347,6 +357,39 @@ namespace IsoRim
             if (lutFile == null)
             {
                 lutFile = "";
+            }
+        }
+
+        // A retired option set by name (Api.SetOption, the probe's set=) still does what it did: itemsFromArt sets both item
+        // model switches to its opposite. Setting one of the switches keeps the retired mirror current (SyncRetired), so a
+        // caller that reads itemsFromArt by name and puts it back later sees what is drawn now.
+        public void ForwardRetired(string name)
+        {
+            if (name == nameof(itemsFromArt))
+            {
+                foodModels3D = otherItemModels3D = !itemsFromArt;
+            }
+            else if (name == nameof(foodModels3D) || name == nameof(otherItemModels3D))
+            {
+                SyncRetired();
+            }
+        }
+
+        // The retired itemsFromArt as the item model switches have it: on (items from art) unless both use 3D models.
+        public void SyncRetired()
+        {
+            itemsFromArt = !(foodModels3D && otherItemModels3D);
+        }
+
+        // An item model switch; a settings file from before it (no such key) keeps its look: on where the retired
+        // itemsFromArt was off (already read). A fresh file has itemsFromArt's default, so both start off.
+        private void LookItemModels(ref bool value, string key)
+        {
+            bool missing = Scribe.mode == LoadSaveMode.LoadingVars && Scribe.loader.curXmlParent?[key] == null;
+            Scribe_Values.Look(ref value, key, false, true);   // always written: a missing key means "older file"
+            if (missing)
+            {
+                value = !itemsFromArt;
             }
         }
 
@@ -1201,11 +1244,13 @@ namespace IsoRim
                         st.itemThickness <= 0.02f ? "R3D_Settings_Flat".Translate().ToString() : (st.itemThickness * 100f).ToString("0") + "%",
                         "R3D_Settings_ItemThicknessTip".Translate());
                 }
-                Check(l, "R3D_Settings_ItemsFromArt".Translate(), ref st.itemsFromArt,
-                    "R3D_Settings_ItemsFromArtTip".Translate());
+                // (itemsFromArt retired 2026-11-16: hidden, replaced by the food and other item switches below)
                 Check(l, "R3D_Settings_RawModels".Translate(), ref st.rawModels, "R3D_Settings_RawModelsTip".Translate());
                 Check(l, "R3D_Settings_WeaponModels3D".Translate(), ref st.weaponModels3D, "R3D_Settings_WeaponModels3DTip".Translate());
                 Check(l, "R3D_Settings_ApparelModels3D".Translate(), ref st.apparelModels3D, "R3D_Settings_ApparelModels3DTip".Translate());
+                Check(l, "R3D_Settings_FoodModels3D".Translate(), ref st.foodModels3D, "R3D_Settings_FoodModels3DTip".Translate());
+                Check(l, "R3D_Settings_OtherItemModels3D".Translate(), ref st.otherItemModels3D, "R3D_Settings_OtherItemModels3DTip".Translate());
+                st.SyncRetired();
                 Check(l, "R3D_Settings_UprightPlants".Translate(), ref st.uprightPlants);
                 if (st.uprightPlants)
                 {

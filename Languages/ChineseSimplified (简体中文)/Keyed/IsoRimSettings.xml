@@ -273,6 +273,10 @@
   <R3D_Settings_WeaponModels3DTip>有 3D 模型的武器在地上、货架、衣架和手中都显示模型。</R3D_Settings_WeaponModels3DTip>
   <R3D_Settings_ApparelModels3D>衣物使用 3D 模型</R3D_Settings_ApparelModels3D>
   <R3D_Settings_ApparelModels3DTip>地上、货架和传送带上的衣物显示为殖民者穿的 3D 衣服。关闭：由游戏贴图生成立体模型。</R3D_Settings_ApparelModels3DTip>
+  <R3D_Settings_FoodModels3D>食物、饮品和药物使用 3D 模型</R3D_Settings_FoodModels3D>
+  <R3D_Settings_FoodModels3DTip>套餐、啤酒、茶、饲料、虫胶和各种药物。关闭：由游戏贴图生成立体模型。</R3D_Settings_FoodModels3DTip>
+  <R3D_Settings_OtherItemModels3D>其他物品使用 3D 模型</R3D_Settings_OtherItemModels3D>
+  <R3D_Settings_OtherItemModels3DTip>仿生部件、器官、神经训练器、灵能物品、科技蓝图等。关闭：由游戏贴图生成立体模型。</R3D_Settings_OtherItemModels3DTip>
   <R3D_Settings_AimSide>瞄准：肩部横向</R3D_Settings_AimSide>
   <R3D_Settings_AimHeight>瞄准：肩部高度</R3D_Settings_AimHeight>
   <R3D_Settings_AimReach>瞄准：前伸</R3D_Settings_AimReach>
