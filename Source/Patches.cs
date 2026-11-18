@@ -758,15 +758,15 @@ namespace IsoRim
 
             // Culling (Cull): map blocks and moving model parts wholly off screen are not drawn.
             Patch("culling", AccessTools.Method(typeof(MapDrawer), "DrawMapMesh"), transpiler: nameof(CullDrawMapMesh_Transpiler));
-            // (MeshFill copies the game's FinalizeMesh and the engine's RebuildEngineStorage: watched here, before the
-            // first of our own patches on FinalizeMesh below, and only while nobody else has patched them: CopyWatch.AddNow.)
+            // (MeshFill copies the game's FinalizeMesh and the engine's RebuildEngineStorage: both watched here, whoever has
+            // patched them: CopyWatch.AddNow.)
             MethodInfo finalizeMesh = AccessTools.Method(typeof(LayerSubMesh), "FinalizeMesh");
             MethodInfo rebuildStorage = AccessTools.Method(typeof(Mesh), "RebuildEngineStorage");
-            if (finalizeMesh != null && Harmony.GetPatchInfo(finalizeMesh) == null)
+            if (finalizeMesh != null)
             {
                 CopyWatch.AddNow(finalizeMesh, MeshFill.GameHash, "IsoRim MeshFill, the order of sets in " + MeshFill.GameMethod);
             }
-            if (rebuildStorage != null && Harmony.GetPatchInfo(rebuildStorage) == null)
+            if (rebuildStorage != null)
             {
                 CopyWatch.AddNow(rebuildStorage, MeshFill.EngineHash, "IsoRim MeshFill, the vertex layout of " + MeshFill.EngineMethod);
             }

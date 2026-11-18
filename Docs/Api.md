@@ -2784,8 +2784,9 @@ if (IsoRim.Api.Version >= 70)
   differs; "the method this was copied from was not found" for a null method (your lookup found nothing); "could not be
   read (...)" when it has no IL body or its IL cannot be read. The same method, hash and note registered twice is one
   watch. `WatchCopy` never throws.
-- **What is hashed:** the method's IL as compiled (`MethodBody.GetILAsByteArray`), instruction by instruction: the opcode,
-  and its operand. Numbers, local and argument indexes, branch offsets and switch tables as their bytes. Metadata tokens
+- **What is hashed:** the method's IL as compiled (the runtime's own record of the body the assembly was built with;
+  on a host without that record, what reflection gives), instruction by instruction: the opcode, and its operand.
+  Numbers, local and argument indexes, branch offsets and switch tables as their bytes. Metadata tokens
   (calls, fields, types, `ldtoken`) as the name of what they refer to: types as namespace and name with generic arguments,
   nested types after `/`, generic parameters by position, no assembly names or versions; methods with their declaring
   type, generic arguments, parameter types and return type; fields with their declaring type and field type. Digits in

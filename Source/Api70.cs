@@ -39,7 +39,7 @@ namespace IsoRim
 
         /// <summary>
         /// (Version 70) The hash <see cref="WatchCopy"/> compares: 16 lowercase hex digits of a SHA-256 over the method's
-        /// IL as compiled (its MethodBody, not Harmony's patched copy), with each metadata token written as the name of the
+        /// IL as compiled (the body its assembly was built with, not Harmony's patched one), with each metadata token written as the name of the
         /// member, type or string it refers to, so a rebuild of the same source that only moves tokens gives the same hash.
         /// The same for every run and machine with the same build of that assembly. Null for a null method, a method without
         /// an IL body (abstract, extern) or one that cannot be read. The dev-mode debug action IsoRim, "Log copied method

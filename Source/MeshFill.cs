@@ -56,13 +56,14 @@ namespace IsoRim
     // A game update that renames ApplyWritableMeshData or WritableMeshData, or changes that signature: this turns
     // itself off with one log line (Look).
     //
-    // Watching the copy. Api.WatchCopy is NOT used for these two, on purpose: on the 1.7 host the IL reflection gives
-    // for a method changes with the Harmony patches on it (measured 2026-11-17: FinalizeMesh hashed bb9a84fedfce8099
-    // with no patch on it, 10da70301895a693 with IsoRim's three patches and d9bc6c5e0b4dbbc4 with another owner's
-    // added; RebuildEngineStorage, unpatched, stayed the same), and WatchCopy checks after loading, when FinalizeMesh
-    // carries our own patches at least. So both
-    // are checked by CopyWatch.AddNow (the same hash, the same warning) in Patches.ApplyAll before IsoRim's first patch
-    // on FinalizeMesh, each only while no one has patched it yet; if another mod got there first the watch is skipped.
+    // Watching the copy. Both are checked by CopyWatch.AddNow (the hash and the warning of Api.WatchCopy) in
+    // Patches.ApplyAll, whoever has patched them by then: the hash is of the body as compiled (CopyWatch.CompiledIL,
+    // the runtime's own record), which patches do not change. (Before 2026-11-18 the hash was of what reflection gives,
+    // and on the 1.7 host that follows the patches: FinalizeMesh hashed bb9a84fedfce8099 with no patch on it,
+    // 10da70301895a693 with IsoRim's three and d9bc6c5e0b4dbbc4 with another owner's added. The two were then checked
+    // only while unpatched, and skipped when another mod had patched first. On a host without the runtime's record
+    // the hash is reflection's again and follows the patches: a method another mod patched before this check then
+    // gives the warning though the game's code is as copied.)
     //
     // The proof at first use covers both sources whether watched or not (Proved): 36 small sub-meshes, each finalized
     // by the game's own body (every hook on it running) and its lists then written by this code through the same
@@ -82,8 +83,8 @@ namespace IsoRim
     {
         internal const string GameMethod = "Verse.LayerSubMesh.FinalizeMesh";               // copied: game 1.7.5011
         internal const string EngineMethod = "UnityEngine.Mesh.RebuildEngineStorage";       // copied: UnityStubs, Waylith 1.7.5011
-        // Api.CopyHash of the two when they were copied, taken with no Harmony patch on them (CopyWatch.AddNow says once
-        // if either has changed since; see "Watching the copy" above).
+        // Api.CopyHash of the two when they were copied (CopyWatch.AddNow says once if either has changed since; see
+        // "Watching the copy" above).
         internal const string GameHash = "bb9a84fedfce8099";
         internal const string EngineHash = "96e478f046948203";
 

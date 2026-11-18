@@ -12,8 +12,9 @@ namespace IsoRim
     // Api 70 (Api.WatchCopy, Api.CopyHash): an addon's copies of other methods, checked against the IL of the original once
     // the loading step they were registered in has finished. Nothing registered: nothing here runs.
     //
-    // The hash: SHA-256 over a text made from the method's IL bytes (MethodBase.GetMethodBody().GetILAsByteArray(): the IL
-    // as compiled, which Harmony leaves alone), instruction by instruction: the opcode, then its operand as follows.
+    // The hash: SHA-256 over a text made from the method's IL bytes as compiled (CompiledIL below: the body the assembly
+    // was built with, whatever Harmony patches the method carries now), instruction by instruction: the opcode, then its
+    // operand as follows.
     // - Numbers, local and argument indexes, branch offsets (relative, in bytes) and switch tables: their bytes as hex.
     // - Metadata tokens (methods, fields, types, ldtoken) resolved to names: type names are namespace.Name with generic
     //   arguments, nested types after "/", generic parameters as !n (type) or !!n (method), no assembly names or versions;
@@ -86,11 +87,10 @@ namespace IsoRim
             }
         }
 
-        // A watch checked now, not once the loading step has finished: for a copy of a method the caller is about to patch
-        // itself. On the 1.7 host the IL reflection gives for a method changes once Harmony has patched it (measured
-        // 2026-11-17: LayerSubMesh.FinalizeMesh hashed differently with IsoRim's patches on it and again with one more
-        // owner's), so a method that gets patched can only be compared before its first patch. The caller says whether it
-        // still is unpatched (Harmony.GetPatchInfo) and does not ask otherwise. Same warning as any other watch.
+        // A watch checked now, not once the loading step has finished (MeshFill's two, from Patches.ApplyAll). Same hash
+        // and same warning as any other watch: the body as compiled is read (CompiledIL), so the method may carry
+        // patches, the caller's own or anyone's. (Until 2026-11-18 the hash followed the patches and this had to run
+        // before the method's first patch; on a host without the runtime's reader it still follows them.)
         internal static void AddNow(MethodBase method, string expected, string note)
         {
             try
@@ -167,19 +167,24 @@ namespace IsoRim
         }
 
         [DebugAction("IsoRim", "Log copied method hashes", allowedGameStates = AllowedGameStates.Entry | AllowedGameStates.Playing)]
-        static void LogHashes()
+        internal static void LogHashes()
         {
             List<Watch> list;
             lock (Gate)
             {
                 list = new List<Watch>(All);
             }
+            // (Said here only: the choice of reading is silent at load.)
+            string reading = !ReflectionOnly && HasHostReader
+                ? "Method bodies are read as compiled, from the runtime's own record: patches do not change a hash."
+                : "Method bodies are read through reflection (this runtime gives no record of them as compiled): a patched method's hash follows its patches.";
             if (list.Count == 0)
             {
-                Log.Message("[IsoRim] No copied methods are watched (Api.WatchCopy).");
+                Log.Message("[IsoRim] No copied methods are watched (Api.WatchCopy).\n  " + reading);
                 return;
             }
             StringBuilder sb = new StringBuilder("[IsoRim] Copied methods watched (Api.WatchCopy): " + list.Count);
+            sb.Append("\n  ").Append(reading);
             for (int i = 0; i < list.Count; i++)
             {
                 Watch w = list[i];
@@ -189,6 +194,21 @@ namespace IsoRim
                   .Append(now != null && now == w.expected ? ", same)" : ", differs)");
             }
             Log.Message(sb.ToString());
+        }
+
+        // Harness (ProbeWatchCopy): every registered watch, in the order registered: its method (null: not found), the
+        // hash registered and the note.
+        internal static void Each(Action<MethodBase, string, string> visit)
+        {
+            List<Watch> list;
+            lock (Gate)
+            {
+                list = new List<Watch>(All);
+            }
+            for (int i = 0; i < list.Count; i++)
+            {
+                visit(list[i].method, list[i].expected, list[i].note);
+            }
         }
 
         // ---- the hash
@@ -226,6 +246,162 @@ namespace IsoRim
             }
         }
 
+        // ---- the IL as compiled
+        //
+        // On the 1.7 host Harmony patches a method by replacing its body in the runtime (WaylithClr.MethodBodyUpdater in
+        // System.Private.CoreLib), and reflection (MethodBase.GetMethodBody) then gives the replaced body: read that way,
+        // a method hashed differently with every set of patches on it (measured 2026-11-17 and 11-18, game 1.7.5013).
+        // The runtime keeps the body the assembly was built with, and gives it through
+        //     MethodBodyUpdater.TryGetDefaultMethodBody(MethodBase, Span<MethodBodyClause>, out MethodBodyView)
+        // (MethodBodyView.IL: ReadOnlySpan<byte>). That is the body the runtime's own transformer pipeline starts from
+        // when it rebuilds a method (MethodBodyTransformer's Pipeline.TryLoadInput, before any stage has run; Harmony is
+        // one stage of it and calls this reader itself only to decide whether it can patch a method). HostBody.Read is
+        // that call.
+        // - By name, never a typed reference: a host type or signature that goes away must not stop this class (or any
+        //   of IsoRim) from loading. A Span argument and an out struct read through a span cannot go through
+        //   MethodInfo.Invoke (byref-like values cannot be boxed), so one small method is emitted (DynamicMethod, once)
+        //   that makes the call with an empty clause span (the IL needs none) and returns the IL as a byte[], null when
+        //   the host says it has no body.
+        // - Decided once, at first use: the host has no such type or method, says IsSupported false, the shapes are not
+        //   those above, the emit fails, or a trial on this class's own Build (which nobody patches) throws or does not
+        //   give exactly the bytes reflection gives: Read stays null for the session, silently.
+        // - Per method: Read gives nothing or throws for it: reflection for that method.
+        // In each of those cases the reading is reflection's, as it always was before; nothing here throws to the caller.
+        static class HostBody
+        {
+            internal static readonly Func<MethodBase, byte[]> Read;     // null: reflection
+            internal static readonly double BuildMs;                    // harness: what deciding cost
+
+            static HostBody()
+            {
+                Read = Build(out BuildMs);
+            }
+
+            static Func<MethodBase, byte[]> Build(out double ms)
+            {
+                long start = System.Diagnostics.Stopwatch.GetTimestamp();
+                Func<MethodBase, byte[]> read = null;
+                try
+                {
+                    read = Emit();
+                    if (read != null)
+                    {
+                        MethodBase own = MethodBase.GetCurrentMethod();
+                        byte[] host = read(own);
+                        byte[] reflected = own.GetMethodBody().GetILAsByteArray();
+                        if (host == null || !((ReadOnlySpan<byte>)host).SequenceEqual(reflected))
+                        {
+                            read = null;
+                        }
+                    }
+                }
+                catch
+                {
+                    read = null;
+                }
+                ms = (System.Diagnostics.Stopwatch.GetTimestamp() - start) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+                return read;
+            }
+
+            static Func<MethodBase, byte[]> Emit()
+            {
+                Type updater = typeof(object).Assembly.GetType("WaylithClr.MethodBodyUpdater", false);
+                if (updater == null)
+                {
+                    return null;
+                }
+                PropertyInfo supported = updater.GetProperty("IsSupported", BindingFlags.Public | BindingFlags.Static);
+                if (supported != null && supported.PropertyType == typeof(bool) && !(bool)supported.GetValue(null))
+                {
+                    return null;
+                }
+                MethodInfo toArray = typeof(ReadOnlySpan<byte>).GetMethod("ToArray", Type.EmptyTypes);
+                foreach (MethodInfo m in updater.GetMethods(BindingFlags.Public | BindingFlags.Static))
+                {
+                    if (m.Name != "TryGetDefaultMethodBody" || m.ReturnType != typeof(bool))
+                    {
+                        continue;
+                    }
+                    ParameterInfo[] ps = m.GetParameters();
+                    if (ps.Length != 3 || ps[0].ParameterType != typeof(MethodBase) || !ps[2].ParameterType.IsByRef)
+                    {
+                        continue;
+                    }
+                    Type clauses = ps[1].ParameterType;                     // Span<MethodBodyClause>
+                    Type view = ps[2].ParameterType.GetElementType();       // MethodBodyView
+                    MethodInfo il = view.GetProperty("IL", BindingFlags.Public | BindingFlags.Instance)?.GetGetMethod();
+                    if (!clauses.IsGenericType || clauses.GetGenericTypeDefinition() != typeof(Span<>) || !view.IsValueType
+                        || il == null || il.ReturnType != typeof(ReadOnlySpan<byte>) || toArray == null)
+                    {
+                        continue;
+                    }
+                    // byte[] (MethodBase method) { Span<..> none = default; View body; ReadOnlySpan<byte> il;
+                    //     if (!TryGetDefaultMethodBody(method, none, out body)) return null; il = body.IL; return il.ToArray(); }
+                    DynamicMethod dm = new DynamicMethod("IsoRim_CompiledIL", typeof(byte[]), new[] { typeof(MethodBase) }, typeof(CopyWatch).Module, true);
+                    ILGenerator g = dm.GetILGenerator();
+                    LocalBuilder none = g.DeclareLocal(clauses);
+                    LocalBuilder body = g.DeclareLocal(view);
+                    LocalBuilder span = g.DeclareLocal(typeof(ReadOnlySpan<byte>));
+                    Label nothing = g.DefineLabel();
+                    g.Emit(OpCodes.Ldloca, none);
+                    g.Emit(OpCodes.Initobj, clauses);
+                    g.Emit(OpCodes.Ldarg_0);
+                    g.Emit(OpCodes.Ldloc, none);
+                    g.Emit(OpCodes.Ldloca, body);
+                    g.Emit(OpCodes.Call, m);
+                    g.Emit(OpCodes.Brfalse, nothing);
+                    g.Emit(OpCodes.Ldloca, body);
+                    g.Emit(OpCodes.Call, il);
+                    g.Emit(OpCodes.Stloc, span);
+                    g.Emit(OpCodes.Ldloca, span);
+                    g.Emit(OpCodes.Call, toArray);
+                    g.Emit(OpCodes.Ret);
+                    g.MarkLabel(nothing);
+                    g.Emit(OpCodes.Ldnull);
+                    g.Emit(OpCodes.Ret);
+                    return (Func<MethodBase, byte[]>)dm.CreateDelegate(typeof(Func<MethodBase, byte[]>));
+                }
+                return null;
+            }
+        }
+
+        // Harness (ProbeWatchCopy): reflection only, as on a host without the runtime's reader; whether the runtime's reader
+        // is in use; what deciding that cost; how the bodies were read so far.
+        internal static bool ReflectionOnly;
+        internal static bool HasHostReader => HostBody.Read != null;
+        internal static double HostReaderMs => HostBody.BuildMs;
+        internal static int HostReads, ReflectionReads;
+
+        // THE reading of a method's IL for the hash (Api.CopyHash, every watch, the debug action): as compiled where the
+        // runtime gives that (HostBody), else what reflection gives. Null: no IL body. Whether there is one is reflection's
+        // answer, as it always was: for some extern methods ([DllImport]) the runtime has IL of its own making where
+        // reflection has none (7 of the game's and the engine's 99,219 methods, measured 2026-11-18).
+        static byte[] CompiledIL(MethodBase method)
+        {
+            MethodBody reflected = method.GetMethodBody();
+            if (reflected == null)
+            {
+                return null;
+            }
+            if (!ReflectionOnly)
+            {
+                try
+                {
+                    byte[] il = HostBody.Read?.Invoke(method);
+                    if (il != null && il.Length > 0)
+                    {
+                        HostReads++;
+                        return il;
+                    }
+                }
+                catch
+                {
+                }
+            }
+            ReflectionReads++;
+            return reflected.GetILAsByteArray();
+        }
+
         internal static string Hash(MethodBase method, out string error)
         {
             error = null;
@@ -236,8 +412,7 @@ namespace IsoRim
             }
             try
             {
-                MethodBody body = method.GetMethodBody();
-                byte[] il = body?.GetILAsByteArray();
+                byte[] il = CompiledIL(method);
                 if (il == null)
                 {
                     error = "no IL body";
