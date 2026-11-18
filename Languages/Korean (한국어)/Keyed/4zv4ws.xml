@@ -145,11 +145,13 @@
   <R3D_Settings_InstantTurnTip>Q와 E를 누르면 회전 동작 없이 새로운 각도로 즉시 전환합니다. 시점 회전으로 어지러움을 느끼는 경우 도움이 될 수 있습니다.</R3D_Settings_InstantTurnTip>
   <R3D_Settings_FreeLook>자유 시점</R3D_Settings_FreeLook>
   <R3D_Settings_FreeLookTip>마우스를 드래그하여 카메라를 자유롭게 회전하고 기울일 수 있습니다(5°~89°). Q와 E를 누르면 다음 각도로 전환합니다. 기본값으로 지정되지 않은 카메라 초기화 키를 게임의 키보드 구성에서 지정할 수 있습니다.</R3D_Settings_FreeLookTip>
-  <R3D_Settings_LookMiddle>자유 시점: 가운데 버튼</R3D_Settings_LookMiddle>
+  <R3D_Settings_LookMiddle>자유 시점: 마우스 가운데 버튼</R3D_Settings_LookMiddle>
   <R3D_Settings_LookMiddleTip>{0}(을)를 누른 채로 드래그하세요. 누르고 있을 키는 게임의 키보드 구성에서 지정할 수 있습니다.</R3D_Settings_LookMiddleTip>
   <R3D_Settings_LookMiddleTipNoKey>누르고 있을 키는 게임의 키보드 구성에서 지정할 수 있습니다.</R3D_Settings_LookMiddleTipNoKey>
-  <R3D_Settings_LookRight>자유 시점: 오른쪽 버튼</R3D_Settings_LookRight>
+  <R3D_Settings_LookRight>자유 시점: 마우스 오른쪽 버튼</R3D_Settings_LookRight>
   <R3D_Settings_LookRightTip>선택된 대상이 없을 때 드래그하세요.</R3D_Settings_LookRightTip>
+   <R3D_Settings_LookMiddleOnly>자유 시점: 마우스 가운데 버튼 (키 없음)</R3D_Settings_LookMiddleOnly>
+  <R3D_Settings_LookMiddleOnlyTip>마우스 가운데 버튼으로 드래그하세요. {0}(으)로 지도를 이동할 수 있습니다.</R3D_Settings_LookMiddleOnlyTip>
   <R3D_Settings_LookSpeed>자유 시점 회전 속도</R3D_Settings_LookSpeed>
   <R3D_Settings_InvertY>상하 방향 반전</R3D_Settings_InvertY>
   <R3D_Settings_InvertYTip>위쪽으로 드래그하면 카메라가 위에서 내려다보는 방향으로 기울어집니다.</R3D_Settings_InvertYTip>
@@ -158,6 +160,8 @@
   <R3D_Settings_FpEyeHeight>1인칭 눈높이</R3D_Settings_FpEyeHeight>
   <R3D_Settings_MinZoom>최대 확대 배율</R3D_Settings_MinZoom>
   <R3D_Settings_MinZoomTip>마우스 휠로 카메라를 얼마나 가까이 확대할 수 있는지 설정합니다. 게임 자체 제한은 11입니다.</R3D_Settings_MinZoomTip>
+    <R3D_Settings_KeyPanSpeed>조작키 이동 속도</R3D_Settings_KeyPanSpeed>
+  <R3D_Settings_KeyPanSpeedTip>3D 환경에서 {0}로 카메라를 얼마나 빠르게 움직일지 설정합니다. ×1은 게임의 기본 속도입니다.</R3D_Settings_KeyPanSpeedTip>
   <R3D_Settings_Weather3D>3D 비와 눈</R3D_Settings_Weather3D>
   <R3D_Settings_Weather3DTip>비와 눈은 카메라 주변에 빗방울과 눈송이 형태로 내리며, 안개 및 옅은 안개는 카메라 앞에 표시됩니다.</R3D_Settings_Weather3DTip>
   <R3D_Settings_WeatherSize>  비와 눈 크기</R3D_Settings_WeatherSize>
@@ -363,6 +367,10 @@
   <R3D_Settings_WeaponModels3DTip>3D 모델이 있는 무기는 바닥, 선반, 거치대 및 손에 들고 있을 때 해당 모델로 표시됩니다.</R3D_Settings_WeaponModels3DTip>
   <R3D_Settings_ApparelModels3D>의류를 3D 모델로 표시</R3D_Settings_ApparelModels3D>
   <R3D_Settings_ApparelModels3DTip>바닥, 선반, 벨트에 놓인 의류를 정착민이 착용하는 3D 의류 모델로 표시합니다. 끄면 게임의 스프라이트를 입체화하여 표시합니다.</R3D_Settings_ApparelModels3DTip>
+  <R3D_Settings_FoodModels3D>음식, 음료 및 약품을 3D 모델로 표시</R3D_Settings_FoodModels3D>
+  <R3D_Settings_FoodModels3DTip>식사, 맥주, 차, 사료, 곤충 젤리, 그리고 고주스와 같은 약품을 3D 모델로 표시합니다.</R3D_Settings_FoodModels3DTip>
+  <R3D_Settings_OtherItemModels3D>기타 아이템을 3D 모델로 표시</R3D_Settings_OtherItemModels3D>
+  <R3D_Settings_OtherItemModels3DTip>생체공학, 장기, 교육 혈청, 초능력 물품, 기술청사진 등을 3D 모델로 표시합니다.</R3D_Settings_OtherItemModels3DTip>
   <R3D_Settings_AimSide>조준 위치: 어깨 좌우</R3D_Settings_AimSide>
   <R3D_Settings_AimHeight>조준 위치: 어깨 높이</R3D_Settings_AimHeight>
   <R3D_Settings_AimReach>조준 위치: 앞뒤 거리</R3D_Settings_AimReach>
@@ -374,6 +382,9 @@
   <R3D_Settings_TargetBox>조준 대상 표시</R3D_Settings_TargetBox>
   <R3D_Settings_TargetBoxTip>조준하거나 지정한 대상을 표시하는 3D 테두리입니다.</R3D_Settings_TargetBoxTip>
   <R3D_Settings_Ghosts3D>청사진에 완성된 구조물 모양 표시</R3D_Settings_Ghosts3D>
+  <R3D_Settings_PlaceGrid>배치 격자</R3D_Settings_PlaceGrid>
+  <R3D_Settings_PlaceGridTip>구조물이나 바닥을 설치할 때 포인터 주변에 격자선을 표시합니다.</R3D_Settings_PlaceGridTip>
+  <R3D_Settings_PlaceGridRange>격자 범위 (칸)</R3D_Settings_PlaceGridRange>
   <R3D_Settings_Ghosts3DTip>청사진, 건설 중인 구조물, 배치 미리보기를 투명한 3D 모델로 표시합니다.</R3D_Settings_Ghosts3DTip>
   <R3D_Settings_Damage3D>건물의 손상 흔적</R3D_Settings_Damage3D>
   <R3D_Settings_Explosions3D>3D 폭발 효과</R3D_Settings_Explosions3D>
