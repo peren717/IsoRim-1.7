@@ -155,6 +155,12 @@ namespace IsoRim
 
         private const int MaxDrops = 4000;
 
+        // The mesh holds only as many drops as fall now, rounded up to this many (never more than MaxDrops): the engine
+        // copies every corner of the mesh each time they are set, which is every frame, so drops that are not falling
+        // (a small box: zoomed in) cost a copy for nothing. The drops that fall are the same ones at the same places.
+        private const int DropStep = 250;
+        private static int capacity;   // drops the mesh holds now
+
         private static float[] seedX, seedZ, seedY, seedSpeed;
         private static Mesh mesh;
         private static Vector3[] verts;
@@ -433,6 +439,7 @@ namespace IsoRim
             // pack them together.
             float density = rain ? (n.IndexOf("Torrential", System.StringComparison.OrdinalIgnoreCase) >= 0 ? 0.03f : 0.02f) : 0.016f;
             int count = Mathf.Min(MaxDrops, Mathf.CeilToInt(span * span * top * density * amount));
+            Fit(count);
             float x0 = centre.x - r, z0 = centre.z - r;
 
             float t = Clock();
@@ -442,7 +449,7 @@ namespace IsoRim
             RoofGrid roofs = map.roofGrid;
             IntVec3 sizeMap = new IntVec3(map.Size.x, 0, Floors.DrawnRows(map));   // stacked floors: the ground rows only
 
-            for (int i = 0; i < MaxDrops; i++)
+            for (int i = 0; i < capacity; i++)
             {
                 int v = i * 4;
                 if (i >= count)
@@ -534,10 +541,24 @@ namespace IsoRim
                 seedY[i] = (float)rnd.NextDouble();
                 seedSpeed[i] = 0.8f + 0.4f * (float)rnd.NextDouble();
             }
-            verts = new Vector3[MaxDrops * 4];
-            int[] tris = new int[MaxDrops * 6];
-            Color32[] cols = new Color32[MaxDrops * 4];
-            for (int i = 0; i < MaxDrops; i++)
+            mesh = new Mesh();
+            capacity = 0;   // a new mesh holds nothing: Fit fills it whatever size the last one had
+        }
+
+        // The mesh made to hold count drops, rounded up to a DropStep: only when that changes (the camera's zoom, a
+        // weather fading in or out).
+        private static void Fit(int count)
+        {
+            int want = Mathf.Clamp((count + DropStep - 1) / DropStep * DropStep, DropStep, MaxDrops);
+            if (want == capacity)
+            {
+                return;
+            }
+            capacity = want;
+            verts = new Vector3[want * 4];
+            int[] tris = new int[want * 6];
+            Color32[] cols = new Color32[want * 4];
+            for (int i = 0; i < want; i++)
             {
                 int v = i * 4, k = i * 6;
                 tris[k] = v; tris[k + 1] = v + 1; tris[k + 2] = v + 2;
@@ -546,7 +567,7 @@ namespace IsoRim
                 cols[v] = cols[v + 3] = new Color32(255, 255, 255, 255);
                 cols[v + 1] = cols[v + 2] = new Color32(255, 255, 255, 90);
             }
-            mesh = new Mesh();
+            mesh.Clear();
             mesh.vertices = verts;
             mesh.colors32 = cols;
             mesh.SetTriangles(tris, 0);

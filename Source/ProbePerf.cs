@@ -244,6 +244,7 @@ namespace IsoRim
                 Find.TickManager.CurTimeSpeed = (TimeSpeed)heldSpeed;   // held against the harness's pauses
             }
             CullAbTick();
+            SliceTick();   // ProbeSlice
             if (camFrame >= 0)
             {
                 float f = camFrame / (float)camFrames;

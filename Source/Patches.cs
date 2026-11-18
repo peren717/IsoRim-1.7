@@ -743,15 +743,53 @@ namespace IsoRim
             Type lightingOverlay = AccessTools.TypeByName("Verse.SectionLayer_LightingOverlay");
             Patch("night and indoor light on raised things", lightingOverlay == null ? null : AccessTools.Method(lightingOverlay, "GenerateLightingOverlay"),
                 postfix: nameof(GenerateLightingOverlay_Postfix));
+            // Blocks that come into view with layers waiting are rebuilt a few a frame (SectionSlicer). Before the light
+            // below, so what is rebuilt at the start of the draw is lit this frame.
+            if (Patch("map blocks rebuilt a few a frame", AccessTools.Method(typeof(Section), "RegenerateDirtyLayers"),
+                prefix: nameof(SliceRebuild_Prefix), finalizer: nameof(SliceRebuild_Finalizer)))
+            {
+                Patch("map blocks rebuilt a few a frame", AccessTools.Method(typeof(MapDrawer), "DrawMapMesh"),
+                    prefix: nameof(SliceDrawMapMesh_Prefix), finalizer: nameof(SliceDrawMapMesh_Finalizer));
+                Patch("map blocks rebuilt a few a frame", AccessTools.Method(typeof(MapDrawer), nameof(MapDrawer.MapMeshDrawerUpdate_First)),
+                    prefix: nameof(SliceMeshUpdate_Prefix), finalizer: nameof(SliceMeshUpdate_Finalizer));
+            }
             Patch("night and indoor light on raised things", AccessTools.Method(typeof(MapDrawer), "DrawMapMesh"),
                 prefix: nameof(DrawMapMesh_Prefix));
 
             // Culling (Cull): map blocks and moving model parts wholly off screen are not drawn.
             Patch("culling", AccessTools.Method(typeof(MapDrawer), "DrawMapMesh"), transpiler: nameof(CullDrawMapMesh_Transpiler));
+            // (MeshFill copies the game's FinalizeMesh and the engine's RebuildEngineStorage: watched here, before the
+            // first of our own patches on FinalizeMesh below, and only while nobody else has patched them: CopyWatch.AddNow.)
+            MethodInfo finalizeMesh = AccessTools.Method(typeof(LayerSubMesh), "FinalizeMesh");
+            MethodInfo rebuildStorage = AccessTools.Method(typeof(Mesh), "RebuildEngineStorage");
+            if (finalizeMesh != null && Harmony.GetPatchInfo(finalizeMesh) == null)
+            {
+                CopyWatch.AddNow(finalizeMesh, MeshFill.GameHash, "IsoRim MeshFill, the order of sets in " + MeshFill.GameMethod);
+            }
+            if (rebuildStorage != null && Harmony.GetPatchInfo(rebuildStorage) == null)
+            {
+                CopyWatch.AddNow(rebuildStorage, MeshFill.EngineHash, "IsoRim MeshFill, the vertex layout of " + MeshFill.EngineMethod);
+            }
             Patch("culling", AccessTools.Method(typeof(LayerSubMesh), "FinalizeMesh"), postfix: nameof(CullFinalizeMesh_Postfix));
             // Roof clipping (RoofClip): models baked into the game's own layers carry texture coordinate 1, the rest of
             // the piece is filled up to one per vertex.
             Patch("things under roofs", AccessTools.Method(typeof(LayerSubMesh), "FinalizeMesh"), prefix: nameof(RoofFinalizeMesh_Prefix));
+            // Map sub-meshes written straight into the engine's storage (MeshFill): the last prefix on FinalizeMesh, after
+            // every hook that still changes the lists. A copy of the game's body and of the engine's layout: both watched.
+            try
+            {
+                MethodInfo finalize = AccessTools.Method(typeof(LayerSubMesh), "FinalizeMesh");
+                MethodInfo fill = AccessTools.Method(typeof(Patches), nameof(FillFinalizeMesh_Prefix));
+                if (finalize != null && fill != null)
+                {
+                    harmony.Patch(finalize, prefix: new HarmonyMethod(fill) { priority = Priority.Last });
+                    MeshFill.Hooked(finalize, fill);
+                }
+            }
+            catch (Exception e)
+            {
+                ModLog.Warn("[IsoRim] Could not hook LayerSubMesh.FinalizeMesh for writing meshes straight into the engine's storage: " + e.Message);
+            }
             Patch("culling", AccessTools.Method(typeof(DynamicDrawManager), "DrawDynamicThings"),
                 prefix: nameof(CullThings_Prefix), finalizer: nameof(CullThings_Finalizer));
             Patch("culling", AccessTools.Method(typeof(Thing), "DynamicDrawPhase"), prefix: nameof(CullThing_Prefix), postfix: nameof(CullThing_Postfix));
@@ -859,6 +897,11 @@ namespace IsoRim
             return Cull.DrawMapMeshTranspiler(instructions);
         }
 
+        public static bool FillFinalizeMesh_Prefix(LayerSubMesh __instance, MeshParts __0)
+        {
+            return !MeshFill.Finalize(__instance, __0);
+        }
+
         public static void RoofFinalizeMesh_Prefix(LayerSubMesh __instance)
         {
             RoofClip.Pad(__instance);
@@ -871,7 +914,7 @@ namespace IsoRim
             {
                 MeshGuard.CheckLayer(__instance);
             }
-            Cull.MeshFinalized(__0);
+            Cull.MeshFinalized(__instance, __0);
         }
 
         public static bool CullThing_Prefix(Thing __instance, DrawPhase phase)
@@ -898,6 +941,36 @@ namespace IsoRim
             Cull.ThingsEnd();
             PartBatches.Flush();
             return __exception;
+        }
+
+        public static bool SliceRebuild_Prefix(Section __instance, out long __state)
+        {
+            return SectionSlicer.Allow(__instance, out __state);
+        }
+
+        public static void SliceRebuild_Finalizer(long __state)
+        {
+            SectionSlicer.Done(__state);
+        }
+
+        public static void SliceMeshUpdate_Prefix()
+        {
+            SectionSlicer.BeginUpdate();
+        }
+
+        public static void SliceMeshUpdate_Finalizer()
+        {
+            SectionSlicer.EndUpdate();
+        }
+
+        public static void SliceDrawMapMesh_Prefix(MapDrawer __instance)
+        {
+            SectionSlicer.BeginDraw(__instance);
+        }
+
+        public static void SliceDrawMapMesh_Finalizer()
+        {
+            SectionSlicer.EndDraw();
         }
 
         public static void DrawMapMesh_Prefix()
@@ -1261,11 +1334,13 @@ namespace IsoRim
                 FullWalls.Reset();
                 FirstPerson.Reset();
                 TargetBox.Reset();
+                SectionSlicer.Forget();   // (blocks held back for the next frame: their map may be gone)
             }
         }
 
         public static void RegenerateEverythingNow_Prefix(MapDrawer __instance)
         {
+            ForeignPatches.MapBuilt();   // (a load or a new map: SectionSlicer and MeshFill look again at who else patches)
             try
             {
                 View3D.PrepareForFirstBuild(__instance);

@@ -56,11 +56,12 @@ namespace IsoRim
         internal const string Arg = "isorimseed";
 
         // The active seed: N from -isorimseed=N, null without it (or with a value that is not an integer: warned once).
-        internal static readonly int? Value = Read();
+        internal static readonly int? Value = Read(Arg);
 
-        private static int? Read()
+        // N from -arg=N; null without the argument, or with a value that is not a whole number (warned once).
+        internal static int? Read(string arg)
         {
-            if (!GenCommandLine.TryGetCommandLineArg(Arg, out string text))
+            if (!GenCommandLine.TryGetCommandLineArg(arg, out string text))
             {
                 return null;
             }
@@ -68,8 +69,31 @@ namespace IsoRim
             {
                 return n;
             }
-            Log.Warning("[IsoRim] -" + Arg + "=" + text + " is not a whole number: ignored.");
+            Log.Warning("[IsoRim] -" + arg + "=" + text + " is not a whole number: ignored.");
             return null;
+        }
+    }
+
+    // -isorimslice=N on the command line (test harnesses only, like -isorimseed: players never pass it; no setting, no
+    // Api): SectionSlicer stays on in a harness run (-isorimseed, the probe) and rebuilds exactly N waiting blocks a frame
+    // in place of a time budget's worth, so its own path can be run and repeated under the seed. Without the argument
+    // nothing changes. The parsed argument alone, as above.
+    internal static class SliceTestArg
+    {
+        internal const string Arg = "isorimslice";
+
+        // N (1 or more); null without the argument or with a value that is not a whole number above 0.
+        internal static readonly int? Blocks = Read();
+
+        private static int? Read()
+        {
+            int? n = QuickTestSeedArg.Read(Arg);
+            if (n != null && n.Value < 1)
+            {
+                Log.Warning("[IsoRim] -" + Arg + "=" + n.Value + " is not 1 or more: ignored.");
+                return null;
+            }
+            return n;
         }
     }
 

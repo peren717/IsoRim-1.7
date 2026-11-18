@@ -100,6 +100,8 @@ namespace IsoRim
 
         // Copies the corner colours of one rebuilt block of the game's lighting overlay. The mesh
         // starts with one vertex per corner of the (clipped) block, row by row from the south-west.
+        // Only corners that differ count as a change: a block rebuilt with the light it had (most rebuilds: something
+        // else in the block changed) does not send the whole map's texture to the GPU again.
         public void CopySection(CellRect rect, Color32[] meshColors)
         {
             if (meshColors == null)
@@ -112,6 +114,7 @@ namespace IsoRim
             {
                 return;
             }
+            bool changed = false;
             for (int j = 0; j < h; j++)
             {
                 int z = rect.minZ + j;
@@ -126,11 +129,20 @@ namespace IsoRim
                     int x = rect.minX + i;
                     if (x >= 0 && x < width)
                     {
-                        corners[dst + i] = meshColors[src + i];
+                        Color32 now = meshColors[src + i];
+                        Color32 was = corners[dst + i];
+                        if (was.r != now.r || was.g != now.g || was.b != now.b || was.a != now.a)
+                        {
+                            corners[dst + i] = now;
+                            changed = true;
+                        }
                     }
                 }
             }
-            dirty = true;
+            if (changed)
+            {
+                dirty = true;
+            }
         }
 
         // Sends changed corners to the GPU: at most once a frame, only when a block was rebuilt

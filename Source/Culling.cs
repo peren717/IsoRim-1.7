@@ -290,6 +290,46 @@ namespace IsoRim
             }
         }
 
+        // A map sub-mesh got new vertices. While the game's draw is rebuilding one block's waiting layers
+        // (SectionSlicer.Rebuilding) and the sub-mesh is one of that block's, only that block's box is worked out again:
+        // a zoom out brings in a hundred such blocks, and every one of them made every block in view measure itself
+        // again. At any other time whose sub-mesh it is is not known here: every box is worked out again, as before.
+        internal static void MeshFinalized(LayerSubMesh sm, MeshParts parts)
+        {
+            if ((parts & MeshParts.Verts) == MeshParts.None)
+            {
+                return;
+            }
+            Section section = SectionSlicer.Rebuilding;
+            if (section == null || !Owns(section, sm))
+            {
+                geometryStamp++;
+                return;
+            }
+            SectionBox box;
+            if (boxes.TryGetValue(section, out box))
+            {
+                box.stamp = 0;   // (never a geometry stamp: they start at 1)
+            }
+        }
+
+        private static bool Owns(Section section, LayerSubMesh sm)
+        {
+            List<SectionLayer> layers = layersOf(section);
+            for (int i = 0; i < layers.Count; i++)
+            {
+                List<LayerSubMesh> subs = layers[i].subMeshes;
+                for (int k = 0; k < subs.Count; k++)
+                {
+                    if (ReferenceEquals(subs[k], sm))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         private enum Shift : byte { None, Small, Card, Fog, SunShadow, Unknown }
 
         private class SectionBox
@@ -317,16 +357,14 @@ namespace IsoRim
         // Replaces "view.Overlaps(section.Bounds)" in MapDrawer.DrawMapMesh.
         public static bool SectionOverlaps(ref CellRect view, Section section)
         {
-            // A block of an upper floor (Floors) is drawn moved over the ground: tested where it shows.
             Vector3 shift;
-            if (!Floors.SectionDrawShift(section, out shift))
+            if (!Drawn(ref view, section, out shift))
             {
                 return false;
             }
-            bool overlaps = view.Overlaps(section.Bounds);
-            if (!overlaps || !On)
+            if (!On)
             {
-                return overlaps;
+                return true;
             }
             sectionsTested++;
             try
@@ -343,6 +381,13 @@ namespace IsoRim
                 Log.ErrorOnce("[IsoRim] Culling a map block failed: " + e, 93611301);
                 return true;
             }
+        }
+
+        // Whether the game's map draw reaches the block at all: its floor is shown and the game's view rect touches it.
+        // shift: where it shows in drawn space (a block of an upper floor (Floors) is drawn moved over the ground).
+        internal static bool Drawn(ref CellRect view, Section section, out Vector3 shift)
+        {
+            return Floors.SectionDrawShift(section, out shift) && view.Overlaps(section.Bounds);
         }
 
         // A section's measured box, or null when it must be drawn anyway (being rebuilt, or moved by an unknown shader).

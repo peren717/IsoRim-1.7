@@ -1850,6 +1850,9 @@ namespace IsoRim
                 case "ldcheck":
                     LdKey(key, a);   // ProbeLookDrag
                     break;
+                case "slicecheck":
+                    SliceKey(a);     // ProbeSlice
+                    break;
                 case "window":
                 case "campath":
                 case "spin":

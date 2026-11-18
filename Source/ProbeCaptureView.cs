@@ -582,8 +582,8 @@ namespace IsoRim
             }
         }
 
-        // How many pixels of two screenshots differ, and by how much at most (a channel, 0-255).
-        private static CvDiff CvCompare(string a, string b, bool iconsOnly = false)
+        // How many pixels of two screenshots differ (in a channel by more than over), and by how much at most (a channel, 0-255).
+        private static CvDiff CvCompare(string a, string b, bool iconsOnly = false, int over = 0)
         {
             CvDiff d = new CvDiff();
             if (!File.Exists(a) || !File.Exists(b))
@@ -614,7 +614,7 @@ namespace IsoRim
                         }
                     }
                     int m = Math.Max(Math.Abs(pa[i].r - pb[i].r), Math.Max(Math.Abs(pa[i].g - pb[i].g), Math.Abs(pa[i].b - pb[i].b)));
-                    if (m > 0)
+                    if (m > over)
                     {
                         d.pixels++;
                         d.max = Math.Max(d.max, m);

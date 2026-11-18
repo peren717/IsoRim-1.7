@@ -86,6 +86,27 @@ namespace IsoRim
             }
         }
 
+        // A watch checked now, not once the loading step has finished: for a copy of a method the caller is about to patch
+        // itself. On the 1.7 host the IL reflection gives for a method changes once Harmony has patched it (measured
+        // 2026-11-17: LayerSubMesh.FinalizeMesh hashed differently with IsoRim's patches on it and again with one more
+        // owner's), so a method that gets patched can only be compared before its first patch. The caller says whether it
+        // still is unpatched (Harmony.GetPatchInfo) and does not ask otherwise. Same warning as any other watch.
+        internal static void AddNow(MethodBase method, string expected, string note)
+        {
+            try
+            {
+                Watch w = new Watch { method = method, expected = (expected ?? "").Trim().ToLowerInvariant(), note = note };
+                lock (Gate)
+                {
+                    All.Add(w);
+                }
+                Check(w);
+            }
+            catch
+            {
+            }
+        }
+
         static void Flush()
         {
             List<Watch> now;

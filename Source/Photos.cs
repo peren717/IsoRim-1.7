@@ -427,6 +427,7 @@ namespace IsoRim
         private static void Shoot(Asked a)
         {
             Stopwatch watch = Stopwatch.StartNew();
+            SectionSlicer.Finish();   // blocks the shown view's draw held back this frame: built for the view first, as the game would have
             View3D.ViewFrame f = View3D.PhotoFrame(a.pose, a.width / (float)a.height);
             EnsureTarget(a.width, a.height);
             EnsureCamera();

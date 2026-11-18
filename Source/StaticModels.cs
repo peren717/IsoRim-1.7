@@ -153,10 +153,19 @@ namespace IsoRim
             mesh.normals.Add(n);
             buffer.values.Add(new Vector4(t.x, t.y, t.z, v.w));
         }
+        // A sub-mesh with a surface basis to set after its finalize (Upload). The one test for it: Upload works on exactly
+        // these, and MeshFill leaves exactly these to the game's body (a mesh set again right after a direct fill would be
+        // read back and built twice).
+        private static bool Buffered(LayerSubMesh mesh, out Buffer buffer)
+        {
+            buffer = null;
+            return surfaceCount != 0 && buffers.TryGetValue(mesh, out buffer) && mesh.verts.Count != 0;
+        }
+        internal static bool Uploads(LayerSubMesh mesh) => Buffered(mesh, out _);
         // Called by IsoRim's existing FinalizeMesh bridge. No addon patch or new Harmony target.
         internal static void Upload(LayerSubMesh mesh)
         {
-            if (surfaceCount == 0 || !buffers.TryGetValue(mesh, out Buffer buffer) || mesh.verts.Count == 0) return;
+            if (!Buffered(mesh, out Buffer buffer)) return;
             if (buffer.values.Count != mesh.verts.Count || mesh.normals.Count != mesh.verts.Count) { Fallback(mesh, buffer); return; }
             mesh.mesh.SetNormals(mesh.normals);
             mesh.mesh.SetTangents(buffer.values);
