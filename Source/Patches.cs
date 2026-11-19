@@ -249,9 +249,12 @@ namespace IsoRim
             // on a stacked floor the gas layer's own drawing gets its block's matrix.
             Patch("gas in 3D", AccessTools.DeclaredMethod(typeof(SectionLayer_Gas), "Regenerate"), postfix: nameof(Gas_Postfix));
             Patch("gas in 3D", AccessTools.DeclaredMethod(typeof(SectionLayer_Gas), "DrawLayer"), prefix: nameof(GasDraw_Prefix), finalizer: nameof(GasDraw_Finalizer));
-            // (the power overlay's conduits: SectionLayer_Things.Regenerate, shared with the other things layers, which
-            // LiftGround passes over)
-            Patch("bridge decks", AccessTools.Method(typeof(SectionLayer_ThingsPowerGrid), "Regenerate"), postfix: nameof(BridgeGround_Postfix));
+            // The power overlay's conduits. The power grid layer has no Regenerate of its own: it runs the one it inherits
+            // (game 1.7.5013: SectionLayer_Things.Regenerate, shared with the other things layers, which LiftGround passes
+            // over), and Harmony only patches a method where it is declared. So reflection is asked which Regenerate the
+            // layer runs, and that one is hooked where it is declared (GetDeclaredMember): the hook follows the game if a
+            // later version gives the layer a Regenerate of its own.
+            Patch("bridge decks", AccessTools.Method(typeof(SectionLayer_ThingsPowerGrid), "Regenerate")?.GetDeclaredMember(), postfix: nameof(BridgeGround_Postfix));
             Patch("bridge decks", FindMethod(typeof(SectionLayer_BridgeProps), "Regenerate"), postfix: nameof(BridgeProps_Postfix));
             Patch("bridge decks", AccessTools.Method(typeof(CellBoolDrawer), nameof(CellBoolDrawer.RegenerateMesh)), postfix: nameof(CellBool_Postfix));
             Patch("things on bridge decks", AccessTools.Method(typeof(Thing), nameof(Thing.DynamicDrawPhase)),

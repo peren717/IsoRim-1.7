@@ -266,12 +266,20 @@ namespace IsoRim
             {
                 return;
             }
+            // Every things layer comes here after each of its rebuilds (the power overlay's layer runs the Regenerate they
+            // all inherit: Patches). All but the power overlay's are passed over on this test first, the cheapest: they lift
+            // each thing as it prints (BeginPrint).
+            bool power = layer is SectionLayer_ThingsPowerGrid;
+            if (!power && layer is SectionLayer_Things)
+            {
+                return;
+            }
             bool terrain = layer.GetType() == typeof(SectionLayer_Terrain);
             bool nine = layer is SectionLayer_Snow || layer is SectionLayer_Sand;
             if (!terrain && !nine && !(layer.GetType().Name == "SectionLayer_Zones") && !(layer is SectionLayer_Plans)
-                && !(layer is SectionLayer_Gas) && !(layer is SectionLayer_ThingsPowerGrid))
+                && !(layer is SectionLayer_Gas) && !power)
             {
-                return;   // (the water-depth layer derives from the terrain's; the other things layers lift each thing, BeginPrint)
+                return;   // (the water-depth layer derives from the terrain's)
             }
             Map map = MapSections.MapOf(layer);
             if (map == null)
