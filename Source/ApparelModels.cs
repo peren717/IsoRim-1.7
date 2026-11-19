@@ -753,6 +753,10 @@ namespace IsoRim
         internal static bool GameDrew;
 
         // Hooks the worn-picture drawing of every bound shield's class (Patches.ApplyAll). Nothing when no shield is bound.
+        // A class may only inherit its DrawWornExtras (from another mod's shield class), and Harmony only patches a method
+        // where it is declared: reflection is asked which one the class runs, and that one is hooked where it is declared
+        // (GetDeclaredMember), once however many bound classes run it. The prefix then sorts the bound items from the
+        // others of those classes. A shield that cannot be hooked costs only itself: said once, the rest go on.
         internal static void Patch(Harmony h)
         {
             Build();
@@ -763,12 +767,21 @@ namespace IsoRim
                 {
                     continue;
                 }
-                ThingDef thing = DefDatabase<ThingDef>.GetNamedSilentFail(b.def.apparel);
-                System.Reflection.MethodInfo m = AccessTools.Method(thing.thingClass, nameof(Apparel.DrawWornExtras));
-                if (m != null && done.Add(m))
+                Type cls = null;
+                try
                 {
-                    h.Patch(m, prefix: new HarmonyMethod(typeof(ApparelModels), nameof(DrawWornExtras_Prefix)),
-                        finalizer: new HarmonyMethod(typeof(ApparelModels), nameof(DrawWornExtras_Finalizer)));
+                    cls = DefDatabase<ThingDef>.GetNamedSilentFail(b.def.apparel)?.thingClass;   // (there: Build bound it by this name)
+                    System.Reflection.MethodInfo m = cls != null ? AccessTools.Method(cls, nameof(Apparel.DrawWornExtras))?.GetDeclaredMember() : null;
+                    if (m != null && done.Add(m))
+                    {
+                        h.Patch(m, prefix: new HarmonyMethod(typeof(ApparelModels), nameof(DrawWornExtras_Prefix)),
+                            finalizer: new HarmonyMethod(typeof(ApparelModels), nameof(DrawWornExtras_Finalizer)));
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.Error("[IsoRim] Could not hook the bound shield " + b.def.defName + " (" + (cls != null ? cls.FullName : "no class")
+                        + "): its own worn picture stays on 3D figures: " + e);
                 }
             }
         }
