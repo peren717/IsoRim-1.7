@@ -7809,21 +7809,18 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_BogHound</defName>
     <thingDef>BogHound</thingDef>
-    <model>Models/animal_boghound.obj</model>
+    <model>Models/animal_boghound_blob.obj</model>
+    <!-- blob bog hound (2026-11-18): the wolf's family (legs carved out of the body), glides with a waddle; one model for
+         vanilla's three graphics (BogHound_A and its alternates _B, _C): white BogHound.png (dark mane baked) times the
+         vanilla colour (tintFromGraphic, as the warg). animal_boghound(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_boghound_leg.obj</legModel>
-    <legs>
-      <li>(-0.100, 0.320, 0.240)</li>
-      <li>(0.100, 0.320, 0.240)</li>
-      <li>(-0.100, 0.320, -0.280)</li>
-      <li>(0.100, 0.320, -0.280)</li>
-    </legs>
-    <legLength>0.320</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.90</stride>
-    <bodyCentre>0.567</bodyCentre>
-    <bodyHalfWidth>0.158</bodyHalfWidth>
-    <bodyHalfLength>0.626</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <tintFromGraphic>true</tintFromGraphic>
+    <bodyCentre>0.469</bodyCentre>
+    <bodyHalfWidth>0.272</bodyHalfWidth>
+    <bodyHalfLength>0.651</bodyHalfLength>
   </IsoRim.ModelDef>
   <!-- flying bird: kept 2D (user, 2026-10-15); model kept for later
   <IsoRim.ModelDef>
@@ -7847,21 +7844,17 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Badger</defName>
     <thingDef>Badger</thingDef>
-    <model>Models/animal_badger.obj</model>
+    <model>Models/animal_badger_blob.obj</model>
+    <!-- blob badger (2026-11-18): low flat body, legs fused into the body, striped face, glides with a waddle; colours baked
+         in Badger.png (vanilla gives a colour with CutoutComplex but ships no mask: the sprite is drawn as it is, so no
+         tintFromGraphic). animal_badger(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_badger_leg.obj</legModel>
-    <legs>
-      <li>(-0.120, 0.100, 0.150)</li>
-      <li>(0.120, 0.100, 0.150)</li>
-      <li>(-0.120, 0.100, -0.250)</li>
-      <li>(0.120, 0.100, -0.250)</li>
-    </legs>
-    <legLength>0.100</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.40</stride>
-    <bodyCentre>0.200</bodyCentre>
-    <bodyHalfWidth>0.158</bodyHalfWidth>
-    <bodyHalfLength>0.465</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.233</bodyCentre>
+    <bodyHalfWidth>0.198</bodyHalfWidth>
+    <bodyHalfLength>0.528</bodyHalfLength>
   </IsoRim.ModelDef>
   <!-- flying bird: kept 2D (user, 2026-10-15); model kept for later
   <IsoRim.ModelDef>
@@ -7904,21 +7897,16 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Mink</defName>
     <thingDef>Mink</thingDef>
-    <model>Models/animal_mink.obj</model>
+    <model>Models/animal_mink_blob.obj</model>
+    <!-- blob mink (2026-11-18): small arched body, curled tail, legs fused into the body, glides with a waddle; sprite
+         colours baked in Mink.png (vanilla is untinted). animal_mink(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_mink_leg.obj</legModel>
-    <legs>
-      <li>(-0.050, 0.075, 0.130)</li>
-      <li>(0.050, 0.075, 0.130)</li>
-      <li>(-0.050, 0.075, -0.170)</li>
-      <li>(0.050, 0.075, -0.170)</li>
-    </legs>
-    <legLength>0.075</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.35</stride>
-    <bodyCentre>0.161</bodyCentre>
-    <bodyHalfWidth>0.065</bodyHalfWidth>
-    <bodyHalfLength>0.484</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.245</bodyCentre>
+    <bodyHalfWidth>0.136</bodyHalfWidth>
+    <bodyHalfLength>0.460</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_PassengerShuttle</defName>
@@ -7960,21 +7948,22 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Moose</defName>
     <thingDef>Moose</thingDef>
-    <model>Models/animal_moose.obj</model>
+    <model>Models/animal_moose_male_blob.obj</model>
+    <femaleModel>Models/animal_moose_female_blob.obj</femaleModel>
+    <!-- blob moose (2026-11-18): the elk's family (oval body on tapered legs, one mesh), shoulder hump, glides with a waddle;
+         bull with palm antlers, cow (femaleModel; the vanilla draw sizes 3.2 : 3.0 are in the models); sprite colours baked
+         in MooseMale.png / MooseFemale.png (vanilla is untinted). Vanilla draws calves of both sexes with MooseFemale:
+         byBodyGraphic gives them the cow (juvenile males show the antlers, as vanilla). animal_moose(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_moose_leg.obj</legModel>
-    <legs>
-      <li>(-0.190, 0.620, 0.300)</li>
-      <li>(0.190, 0.620, 0.300)</li>
-      <li>(-0.190, 0.620, -0.440)</li>
-      <li>(0.190, 0.620, -0.440)</li>
-    </legs>
-    <legLength>0.620</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.55</stride>
-    <bodyCentre>1.210</bodyCentre>
-    <bodyHalfWidth>0.684</bodyHalfWidth>
-    <bodyHalfLength>1.168</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.635</bodyCentre>
+    <bodyHalfWidth>0.290</bodyHalfWidth>
+    <bodyHalfLength>0.981</bodyHalfLength>
+    <byBodyGraphic>
+      <li><path>Moose/MooseFemale</path><model>Models/animal_moose_female_blob.obj</model></li>
+    </byBodyGraphic>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Hippo</defName>
@@ -7998,59 +7987,47 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Muskox</defName>
     <thingDef>Muskox</thingDef>
-    <model>Models/animal_muskox.obj</model>
+    <model>Models/animal_muskox_blob.obj</model>
+    <!-- blob muskox (2026-11-18): the muffalo's family (legless wool dome), down-curved horns, glides with a waddle; sprite
+         colours baked in Muskox.png (vanilla is untinted). animal_muskox(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_muskox_leg.obj</legModel>
-    <legs>
-      <li>(-0.170, 0.420, 0.280)</li>
-      <li>(0.170, 0.420, 0.280)</li>
-      <li>(-0.170, 0.420, -0.400)</li>
-      <li>(0.170, 0.420, -0.400)</li>
-    </legs>
-    <legLength>0.420</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.00</stride>
-    <bodyCentre>0.746</bodyCentre>
-    <bodyHalfWidth>0.300</bodyHalfWidth>
-    <bodyHalfLength>0.893</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.541</bodyCentre>
+    <bodyHalfWidth>0.528</bodyHalfWidth>
+    <bodyHalfLength>0.943</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Mastodon</defName>
     <thingDef>Mastodon</thingDef>
-    <model>Models/animal_mastodon.obj</model>
+    <model>Models/animal_mastodon_blob.obj</model>
+    <!-- blob mastodon (2026-11-18): the elephant's family (round big body, legs carved out of the body), woolly, long curved
+         tusks, glides with a waddle; sprite and tusk colours baked in Mastodon.png (vanilla is untinted). Its cargo pack
+         (vanilla's MastodonPack overlay) is not shown in 3D, as the other pack animals. animal_mastodon(_leg).obj kept,
+         unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_mastodon_leg.obj</legModel>
-    <legs>
-      <li>(-0.317, 0.748, 0.484)</li>
-      <li>(0.317, 0.748, 0.484)</li>
-      <li>(-0.317, 0.748, -0.572)</li>
-      <li>(0.317, 0.748, -0.572)</li>
-    </legs>
-    <legLength>0.748</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.85</stride>
-    <bodyCentre>1.202</bodyCentre>
-    <bodyHalfWidth>0.439</bodyHalfWidth>
-    <bodyHalfLength>1.800</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.860</bodyCentre>
+    <bodyHalfWidth>0.689</bodyHalfWidth>
+    <bodyHalfLength>1.724</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Wolverine</defName>
     <thingDef>Wolverine</thingDef>
-    <model>Models/animal_wolverine.obj</model>
+    <model>Models/animal_wolverine_blob.obj</model>
+    <!-- blob wolverine (2026-11-18): low broad body, legs fused into the body, glides with a waddle; colours baked in
+         Wolverine.png (vanilla gives a colour with CutoutComplex but ships no mask: the sprite is drawn as it is, so no
+         tintFromGraphic). animal_wolverine(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_wolverine_leg.obj</legModel>
-    <legs>
-      <li>(-0.082, 0.123, 0.148)</li>
-      <li>(0.082, 0.123, 0.148)</li>
-      <li>(-0.082, 0.123, -0.205)</li>
-      <li>(0.082, 0.123, -0.205)</li>
-    </legs>
-    <legLength>0.123</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.41</stride>
-    <bodyCentre>0.259</bodyCentre>
-    <bodyHalfWidth>0.122</bodyHalfWidth>
-    <bodyHalfLength>0.513</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.327</bodyCentre>
+    <bodyHalfWidth>0.250</bodyHalfWidth>
+    <bodyHalfLength>0.617</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_HermitCrab</defName>
@@ -8147,21 +8124,16 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Tiger</defName>
     <thingDef>Tiger</thingDef>
-    <model>Models/animal_tiger.obj</model>
+    <model>Models/animal_tiger_blob.obj</model>
+    <!-- blob tiger (2026-11-18): the cat's family (legs fused into the body), long tail, glides with a waddle; stripes and
+         colours baked in Tiger.png (vanilla is untinted). animal_tiger(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_tiger_leg.obj</legModel>
-    <legs>
-      <li>(-0.140, 0.460, 0.320)</li>
-      <li>(0.140, 0.460, 0.320)</li>
-      <li>(-0.140, 0.460, -0.380)</li>
-      <li>(0.140, 0.460, -0.380)</li>
-    </legs>
-    <legLength>0.460</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.15</stride>
-    <bodyCentre>0.704</bodyCentre>
-    <bodyHalfWidth>0.183</bodyHalfWidth>
-    <bodyHalfLength>1.274</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.412</bodyCentre>
+    <bodyHalfWidth>0.242</bodyHalfWidth>
+    <bodyHalfLength>0.847</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Panda</defName>
@@ -8416,21 +8388,17 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Wolf_Great</defName>
     <thingDef>Wolf_Great</thingDef>
-    <model>Models/animal_wolf_great.obj</model>
+    <model>Models/animal_greatwolf_blob.obj</model>
+    <!-- blob greatwolf (2026-11-18): the wolf's family (legs carved out of the body), long low body with a round shaggy
+         shoulder mass, glides with a waddle; sprite colours baked in GreatWolf.png (vanilla is untinted).
+         animal_wolf_great(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_wolf_great_leg.obj</legModel>
-    <legs>
-      <li>(-0.140, 0.460, 0.240)</li>
-      <li>(0.140, 0.460, 0.240)</li>
-      <li>(-0.140, 0.460, -0.320)</li>
-      <li>(0.140, 0.460, -0.320)</li>
-    </legs>
-    <legLength>0.460</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.15</stride>
-    <bodyCentre>0.818</bodyCentre>
-    <bodyHalfWidth>0.314</bodyHalfWidth>
-    <bodyHalfLength>1.014</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.443</bodyCentre>
+    <bodyHalfWidth>0.271</bodyHalfWidth>
+    <bodyHalfLength>0.981</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Megavole</defName>
@@ -8471,21 +8439,17 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Cat_Scimitar</defName>
     <thingDef>Cat_Scimitar</thingDef>
-    <model>Models/animal_cat_scimitar.obj</model>
+    <model>Models/animal_cat_scimitar_blob.obj</model>
+    <!-- blob scimitar cat (2026-11-18): the cat's family (legs fused into the body), heavy shoulders, sabre teeth, glides
+         with a waddle; sprite colours baked in ScimitarCat.png (vanilla is untinted). animal_cat_scimitar(_leg).obj kept,
+         unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_cat_scimitar_leg.obj</legModel>
-    <legs>
-      <li>(-0.150, 0.380, 0.280)</li>
-      <li>(0.150, 0.380, 0.280)</li>
-      <li>(-0.150, 0.380, -0.320)</li>
-      <li>(0.150, 0.380, -0.320)</li>
-    </legs>
-    <legLength>0.380</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.00</stride>
-    <bodyCentre>0.700</bodyCentre>
-    <bodyHalfWidth>0.231</bodyHalfWidth>
-    <bodyHalfLength>0.773</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.402</bodyCentre>
+    <bodyHalfWidth>0.257</bodyHalfWidth>
+    <bodyHalfLength>0.814</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_AlphaThrumbo</defName>
