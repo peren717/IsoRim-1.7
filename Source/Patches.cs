@@ -234,6 +234,24 @@ namespace IsoRim
                 SectionLayer_IsoRimTrees.GrowthHooked = Patch("redrawing trees only when they change (without it: with every change in their block, as before)",
                     AccessTools.Method(typeof(Plant), nameof(Plant.TickLong)), postfix: nameof(PlantTickLong_Postfix));
             }
+            // (Api 82) Items stored on a building whose model has boards for them (ModelDef.itemShelves) stand in rows on
+            // the boards: their place is given where the game itself answers an item's centre, the narrowest method that
+            // does (GenThing.TrueCenter's private helper; nothing else reads it), so everything that asks the game follows.
+            // Only with this hook in are the boards used at all (ItemShelves.Hooked); without it stored items are drawn
+            // as before.
+            if (ShelfHookTestArg.Off)
+            {
+                Log.Message("[IsoRim] -" + ShelfHookTestArg.Arg + "=0: the hook that places stored items on a shelf's boards is left out (test harness).");
+            }
+            else
+            {
+                MethodInfo itemCentre = AccessTools.Method(typeof(GenThing), "ItemCenterAt", new[] { typeof(Thing) })?.GetDeclaredMember();
+                ItemShelves.Hooked = Patch("stored items on a shelf's boards (without it: all on its top, as before)", itemCentre, postfix: nameof(ItemCenterAt_Postfix));
+                if (ItemShelves.Hooked)
+                {
+                    CopyWatch.Add(itemCentre, ItemShelves.CountSourceHash, "IsoRim, ItemShelves.Count");
+                }
+            }
             // Rock marked for mining is tinted (MineMarks): marking or unmarking a cell redraws its block.
             Patch("tinting rock marked for mining", AccessTools.Method(typeof(DesignationManager), nameof(DesignationManager.AddDesignation)),
                 postfix: nameof(MineDesignation_Postfix));
@@ -1862,6 +1880,11 @@ namespace IsoRim
                 }
             }
             Vector3 lift = Floors.DrawnOffset(__0);   // on an upper floor (Floors)
+            if (__0 != null && __0.def.category == ThingCategory.Item)
+            {
+                // (Api 82) an item on a shelf's board: its label at its board (ItemShelves; 0 for every other item)
+                lift.y += ItemShelves.LabelRise(__0) / View3D.Squash;
+            }
             Attachments.Placed attached;
             if (Attachments.Any && __0 is Pawn && Attachments.Place(__0, false, null, out attached))
             {
@@ -2592,6 +2615,7 @@ namespace IsoRim
             if (__instance != null && __instance.def != null)
             {
                 SectionLayer_IsoRimBodies.ItemCame(__instance);
+                ShelfCellChanged(__instance);
             }
         }
 
@@ -2601,6 +2625,43 @@ namespace IsoRim
             if (__instance != null && __instance.def != null)
             {
                 SectionLayer_IsoRimBodies.ItemGoes(__instance);
+                ShelfCellChanged(__instance);
+            }
+        }
+
+        // (Api 82) An item came to a cell or is about to leave it: on a shelf with boards the cell's other items stand
+        // elsewhere now (ItemShelves.CellChanged marks the cell's block).
+        private static void ShelfCellChanged(Thing t)
+        {
+            try
+            {
+                ItemShelves.CellChanged(t, t.Map);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Marking a shelf's cell for a redraw failed: " + e, 93682005);
+            }
+        }
+
+        // (Api 82) GenThing.ItemCenterAt: where the game says a spawned item's middle is (its print, its per-frame drawing,
+        // labels, overlays, the pointer's nearest item). On a building with boards for items it is its place in its row
+        // (ItemShelves.Place: x and z; the game's y stays), over what the game, or another mod's patch of this method that
+        // ran before this one, answered. Default priority: a postfix of another mod that runs after this one can still
+        // change the answer. The 3D view off: the game's answer. On any thread the same answer: the game asks from its
+        // parallel pre-draw too (a corpse's body), and Place reads nothing that is written while the game draws.
+        public static void ItemCenterAt_Postfix(Thing __0, ref Vector3 __result)
+        {
+            if (!View3D.Active || __0 == null)
+            {
+                return;
+            }
+            try
+            {
+                ItemShelves.Place(__0, ref __result);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Placing a stored item on its shelf's board failed: " + e, 93682001);
             }
         }
 

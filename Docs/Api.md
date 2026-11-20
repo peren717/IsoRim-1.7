@@ -133,10 +133,11 @@ if (IsoRim.Api.Version >= 78) { /* ModelDef.hairDef, beardDef: a pack's model fo
 if (IsoRim.Api.Version >= 79) { /* spin parts on an axle: ModelDef.spinPivot, spinAxis, spinSource, spinDips; AddSpinAngle, RemoveSpinAngle (part 57) */ }
 if (IsoRim.Api.Version >= 80) { /* ModelDef.wingsInFlightOnly: wings drawn only in the air, growing from the hinge (part 58); no member */ }
 if (IsoRim.Api.Version >= 81) { /* ModelDef.slither, slitherWave: a legless body bent side to side while it moves (part 59); no member */ }
+if (IsoRim.Api.Version >= 82) { /* ModelDef.itemShelves: stored items on a storage building's boards; ItemRestHeight (part 60) */ }
 ```
 
 Members are never removed or changed in meaning within a version. Versions 2 to 7 are part 0, version 8 adds parts 1 and 2 below, version 9 part 3,
-version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`), version 72 part 51 (`HarnessSeed`), version 73 part 19 (`GlassOpacityFromModel`, `GlassOpacity`), version 74 part 52 (3D explosions), version 75 part 53 (textured faces on people), version 76 part 54 (photos), version 77 part 55 (first-person eye providers), version 78 part 56 (hair and beard models by XML, no member), version 79 part 57 (spin parts), version 80 part 58 (`wingsInFlightOnly`, no member), version 81 part 59 (`slither`, `slitherWave`, no member) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
+version 10 part 4 and the peek fade of `Api.DrawModel` (part 2), version 11 part 5, version 12 part 6, version 13 part 7, version 14 part 8, version 15 part 9, version 16 part 10, version 17 part 11, version 18 part 12, version 19 part 13, version 20 part 14, version 21 part 15, version 22 part 15 (opt-in face drawers), version 24 part M (young plants, sheet colours), version 25 part 16, version 26 part 17, version 27 part M (bobByState), version 28 part M (slots), version 29 part 18, version 30 part 19, version 31 part 20, version 32 part 21, version 33 part 22, version 34 part 23, version 35 part 24, version 36 part M (barAt), version 37 part 25, version 38 part M (female animals), version 39 part M (byGraphic), version 40 part 26, version 42 part 27, version 43 part 3 (`ApparelModelDef.shown`), version 44 part 28, version 45 part 29, version 46 part 30, version 47 part 31, version 48 part 32, version 49 part 33, version 50 part 34, version 51 part 35, version 52 part 36, version 53 part 37, version 54 part 38, version 55 part 39, version 56 part 40, version 57 part 40, version 58 part 41, version 59 part 1 (`AttachWeaponToBody`), version 60 part 35 (`fitKeepWidth`), version 61 part 42, version 63 part M (`barNormal`, `barMirror`), version 64 part 43 (`ReleaseFigureMaterial`), version 65 part 44 (`byBodyGraphic`, `ReadAnimalModel`), version 66 part 45, version 67 part 46 (`DrawSleeperBlanket`), version 68 part 47, version 69 part 48 (`smoothShading`), version 70 part 49 (`WatchCopy`, `CopyHash`), version 71 part 50 (`FirstPersonOn`), version 72 part 51 (`HarnessSeed`), version 73 part 19 (`GlassOpacityFromModel`, `GlassOpacity`), version 74 part 52 (3D explosions), version 75 part 53 (textured faces on people), version 76 part 54 (photos), version 77 part 55 (first-person eye providers), version 78 part 56 (hair and beard models by XML, no member), version 79 part 57 (spin parts), version 80 part 58 (`wingsInFlightOnly`, no member), version 81 part 59 (`slither`, `slitherWave`, no member), version 82 part 60 (`itemShelves`, `ItemRestHeight`) (Api 23 is claimed for hand attach points and is not out yet; 41 was skipped, so check `>= 42` for model rules). Part M is the model pack reference.
 
 ## Spaces
 
@@ -3354,6 +3355,95 @@ it on:
 IsoRim's own cobra (`Defs/Models.xml`) uses it. Version gate: no member; an older IsoRim does not know the fields, so add
 them by patch behind `minVersion` 81 (part M), or leave them out there (the body then glides straight).
 
+## Part 60: stored items on a storage building's boards (version 82)
+
+The game stores several items in one cell of a shelf and draws them over each other. IsoRim drew them all on the shelf's
+top (`surfaceHeight`). A ModelDef can now name the boards below the top that items also stand on:
+
+```xml
+<IsoRim.ModelDef>
+  <defName>R3D_MyRack</defName>
+  <thingDef>MyMod_Rack</thingDef>
+  <model>Models/my_rack.obj</model>
+  <surfaceHeight>1.10</surfaceHeight>      <!-- the top -->
+  <itemShelves>                            <!-- the boards under it, lowest first -->
+    <li><height>0.15</height></li>
+    <li><height>0.62</height><width>1.7</width><forward>-0.1</forward></li>
+  </itemShelves>
+</IsoRim.ModelDef>
+```
+
+- **Which buildings.** A storage building (the game's `Building_Storage`) drawn as its model. Its tiers are its top and
+  the listed boards, which must be listed lowest first and lie below the top (IsoRim warns once per def otherwise). A
+  missing or empty list: every item on the top, where the game puts it, exactly as before.
+- **Which tier.** The items of one cell, counted and ordered as the game does (its items by `thingIDNumber`), are split
+  evenly over the tiers; the upper tiers take the extra ones (two tiers: the top holds half rounded up, the board half
+  rounded down), and the items go to the top first. One item is on the top. Any number of tiers and of items per cell works
+  (the count is the game's, so a mod that changes `maxItemsInCell` is followed).
+- **Where on the tier.** Each tier's items of a cell stand in one row along the building's long side (a square one: its
+  width), from the left as seen from its front, turned with the building. The row is as long as the building, every cell
+  has its own share of it, and the `k` items of a cell stand at `(i + 0.5) / k` of that share, in the middle of the cell's
+  depth. So a full shelf is filled evenly along its whole width. This replaces the game's own places for several items in
+  a cell (the diagonal, the ring, the weapon row); the size the game gives them (0.8 for several in a cell) stays.
+- **Per board** (optional): `width` is the length of the row along the long side, centred on the building (default: the
+  whole length; each cell keeps to its share of it), `forward` moves the row toward the building's front (the side it
+  faces; negative: toward the back), for a stepped rack. Both, like `height`, are in model units before the footprint
+  fit, as `surfaceHeight` is, and are measured on the building as it stands, whatever extra `rotation` its model has.
+  The top's row has the same two as `itemTopWidth` and `itemTopForward` on the ModelDef (read only with a list). A
+  building deeper than wide has its rows from the front to the back, and `forward` moves them to its right.
+- **An item's centre never leaves its own cell.** Where an item's share of the row lies outside its own cell, its
+  centre stops at the cell's edge instead (0.001 inside), because the game and IsoRim take an item's cell from its
+  centre. That happens with a `width` longer than the building or a large `forward`, and also with a `width` shorter
+  than a building of three or more cells: the row is centred on the building, so the end cells' shares of it lie over
+  the middle cells. Items of one cell that stop at the same edge stand on one spot there. The item's body may still
+  reach over the edge, as any item's does. The pointer finds an item at the spot it is drawn at.
+- **Styles.** A model of another style inside the same def (`byStyle`) uses the def's boards. A style def of its own
+  (`ModelDef.style`) is another model with its own boards: things in that style use only the list that style def has,
+  and none if it has none (all on its top, exactly as before version 82). The thing's own def never lends its boards to
+  a style def's model.
+- **A shape in place of a model** (`shape` Box, Card, Tube; part 36) has no boards, whatever its def lists: its items
+  stay on its top (or the ground), as before.
+- **Only in the 3D view, and for every reader of the item's centre.** In 2D the game's places are untouched. With the
+  3D view on, the place is given as the game's own answer for an item's middle (`GenThing.TrueCenter`, `Thing.DrawPos`;
+  IsoRim hooks the game's private `GenThing.ItemCenterAt`). So everything that asks the game gets the row place, drawing
+  or not, IsoRim's code or another mod's: the print into the map mesh, items drawn every frame (books), stack labels,
+  overlays, the game's choice of the nearest item under the pointer. On a building with `itemShelves` IsoRim's postfix
+  (default priority) sets the answer's x and z over what the game, or **another mod's own patch of `ItemCenterAt`** that
+  ran before it, worked out; the y is kept. A postfix of another mod that runs after IsoRim's can still change them. A
+  building without the list is never touched. So do not add `itemShelves` to a building whose own mod lays its items
+  out itself.
+- **Corpses** are items to the game and follow the same rule, whoever draws the body: IsoRim's figure or model (placed
+  and raised by IsoRim on the main thread) or the game's own flat body (placed by the game's parallel pre-draw, off the
+  main thread). The answer is the same on every thread.
+- **The pointer** picks an item where it stands, ahead of the shelf (the game's own click order still takes a storage
+  building first and the item with the next click); an item under a board is picked through the shelf's open side, not
+  through the board. **The selection bracket is not narrowed**: it stays the rectangle of the item's cell on the ground,
+  as for every item. The target box keeps the item's whole cell as its base too (not narrowed to the item's place in
+  the row, not widened by its model) and reaches up to the item's top where it rests: its board's height and its own
+  (an item drawn as a model: its model's top on its board).
+- **Labels.** The label of an item on such a building (stack count, quality) is drawn at its board, in front of the
+  item; labels of items anywhere else stay where they were.
+- **Redraw.** An item coming to or leaving a cell redraws the cell's other items (also when the game draws the newcomer
+  every frame and marks nothing itself). A stack growing or shrinking moves nothing.
+- If the game's method is not found (a later game version), the boards are not used at all and everything is drawn as
+  before; the log says so once.
+
+### ItemRestHeight
+
+```csharp
+float IsoRim.Api.ItemRestHeight(Thing item)
+```
+
+How high a spawned item rests as IsoRim draws it, in cells over the ground of its cell: the top of the storage building
+it is stored on, or the board it stands on; the top of the work table or table it lies on (`BenchTops`); 0 on the
+ground, for anything that is not a spawned item, and while the 3D view is off. The item's own height is not in it. Where
+it stands on the map is `item.DrawPos` (x, z), which any thread may ask. `Api.SurfaceHeight(building)` (version 62) is
+still the building's top. `ItemRestHeight` itself: main thread only; cheap enough to ask every frame.
+
+IsoRim's own shelf and small shelf (`Defs/Models.xml`, their Techist models too) have one board, the lowest one. Version
+gate: an older IsoRim does not know the fields, so add them by patch behind `minVersion` 82 (part M), or leave them out
+there (all items on the top); call `ItemRestHeight` from a `NoInlining` method behind `Api.Version >= 82`.
+
 ## Part M: model packs (IsoRim.ModelDef)
 
 A model pack is an XML-only mod (or a mod with a small DLL) that adds `IsoRim.ModelDef`s binding OBJ models to other
@@ -3397,6 +3487,7 @@ mods' things.
 | `spinPivot`, `spinAxis`, `spinSource`, `spinDips` (79) | The spin part on an axle through a pivot, never stretched; what turns it (`Power`, `PowerOutput`, `WatermillAngle`, or an addon's `AddSpinAngle`); its lowest point kept under the ground (part 57). |
 | `tubeColor` (58) | With `shape` `Tube`: the tube's colour (part 41). |
 | `slither`, `slitherWave` (81) | Animals: the body bent side to side in a wave from head to tail while it moves; the reach at the tail and the wavelength, model units (part 59). Default 0: as before. |
+| `itemShelves`, `itemTopWidth`, `itemTopForward` (82) | Storage buildings: the boards under the top that stored items also stand on (`<li><height>`, optional `<width>`, `<forward>`), lowest first; the items of a cell are split over the boards and the top and stand in rows along the building (part 60). No list: all on the top, as before. |
 | `smoothShading` (69) | Mechs: the model and its parts lit by smooth normals as animals are; with `smoothTextured` its textured faces too (part 48). Default false: as before. |
 | `wallTop` (11), `cutaway` (20), `backHeight` (13), wing fields (14; `wingsInFlightOnly` 80), `doorLeafModel`, `doorLeafGather` (18), `crownTop`, `doorLeafRise` (6) | See their parts. |
 

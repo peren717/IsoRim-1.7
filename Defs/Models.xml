@@ -30,6 +30,13 @@
          <bookShelves><li>0.16</li></bookShelves> <bookSlots><li>0.3</li></bookSlots> <bookRow>0.1</bookRow>
                                               a bookcase: the books it holds stand on these shelves (heights),
                                               at these x (from the left seen from the front), at this z
+         <itemShelves><li><height>0.14</height></li></itemShelves>   (Api 82) a storage building: boards below its top
+                                              (surfaceHeight) that stored items also stand on, lowest first. The items of
+                                              a cell are split evenly over the boards and the top (the upper ones take
+                                              the extra) and stand in rows along the building. Optional per board:
+                                              <width> (the row's length, default the whole building) and <forward> (the
+                                              row moved toward the front); for the top: <itemTopWidth>, <itemTopForward>
+                                              A style def (<style>) has only the boards it lists itself.
        <match><li>Wreck</li></match> in place of <thingDef> covers every building or item whose
        name has one of these as a whole word (Car: AncientCar, not AncientCardboardBox) and that has no entry of its own (first match wins).
        <fallback>SmallPlants</fallback> in place of <thingDef> covers every plant that is
@@ -429,6 +436,11 @@
       <li><style>Techist_ShelfSmall</style><model>Models/techist_shelf_small.obj</model></li>
     </byStyle>
     <surfaceHeight>0.60</surfaceHeight>
+    <!-- (Api 82) stored items also stand on the lowest board (its top at 0.14 in shelf.obj, shelf_small.obj and both
+         Techist models), in rows along the shelf. The middle board of the plain models (0.38) is left out. -->
+    <itemShelves>
+      <li><height>0.14</height></li>
+    </itemShelves>
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
@@ -439,6 +451,11 @@
       <li><style>Techist_Shelf</style><model>Models/techist_shelf.obj</model></li>
     </byStyle>
     <surfaceHeight>0.60</surfaceHeight>
+    <!-- (Api 82) stored items also stand on the lowest board (its top at 0.14 in shelf.obj, shelf_small.obj and both
+         Techist models), in rows along the shelf. The middle board of the plain models (0.38) is left out. -->
+    <itemShelves>
+      <li><height>0.14</height></li>
+    </itemShelves>
   </IsoRim.ModelDef>
 
   <!-- Bookcase model: coop delivery 20261013-2015_bookcase. The books it holds are drawn on

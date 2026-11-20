@@ -107,6 +107,16 @@ namespace IsoRim
         internal static readonly bool Off = QuickTestSeedArg.Read(Arg) == 0;
     }
 
+    // -isorimshelfhook=0 on the command line (test harnesses only, as -isorimtreehook): the hook on the game's item centre
+    // (Patches: GenThing.ItemCenterAt) is left out, as when the game's method is not found, so a test can see that stored
+    // items are then drawn as before (ItemShelves.Hooked false). Without the argument nothing changes.
+    internal static class ShelfHookTestArg
+    {
+        internal const string Arg = "isorimshelfhook";
+
+        internal static readonly bool Off = QuickTestSeedArg.Read(Arg) == 0;
+    }
+
     public static class QuickTestSeed
     {
         internal const string Arg = QuickTestSeedArg.Arg;

@@ -168,7 +168,10 @@ namespace IsoRim
         // 81: Slither.cs: ModelDef.slither, slitherWave: a legless animal's body bent from side to side in a wave running from
         // head to tail while it moves (phase = the walk phase), drawn from the pawn's own bent copies of the model's meshes. First
         // user: the cobra. No member.
-        public static int Version => 81;
+        // 82: ItemShelves.cs: ModelDef.itemShelves (ModelItemShelf: height, width, forward), itemTopWidth, itemTopForward: a storage
+        // building's items split over its boards and its top and stood in rows along it (the game's own item centre answers
+        // their place); ItemRestHeight (Api82.cs). First users: the shelf and the small shelf.
+        public static int Version => 82;
 
         // ---- glass parts (Version 30)
 

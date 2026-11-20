@@ -200,7 +200,11 @@ namespace IsoRim
 
         // ---- picking what is under the pointer
 
-        // Things whose 3D shape the pointer is over, nearest the camera first.
+        // How far apart (cells of height) the pointer's line of sight is sampled.
+        internal const float PickStep = 0.08f;
+
+        // Things whose 3D shape the pointer is over, nearest the camera first. An item on a building's boards (ItemShelves,
+        // Api 82) is picked where it stands, ahead of that building.
         public static List<Thing> PickUnderPointer(Map map)
         {
             List<Thing> found = new List<Thing>();
@@ -210,37 +214,57 @@ namespace IsoRim
             }
             Vector2 mouse = Input.mousePosition;
             const float Top = 3.2f;
-            const float Step = 0.08f;
-            // On stacked floors (Floors) every floor the pointer works on, from the viewed one down to the one its ray lands on.
-            int lowest = Floors.PointerFloorAt(mouse);
-            for (int k = Floors.PointerTop; k >= lowest; k--)
+            const float Step = PickStep;
+            try
             {
-                float floorH;
-                int floorZ;
-                Floors.FloorPlane(k, out floorH, out floorZ);
-                for (float h = Top; h >= 0.1f; h -= Step)
+                // On stacked floors (Floors) every floor the pointer works on, from the viewed one down to the one its ray lands on.
+                int lowest = Floors.PointerFloorAt(mouse);
+                for (int k = Floors.PointerTop; k >= lowest; k--)
                 {
-                    Vector3 p = View3D.ScreenToHeight(mouse, h + floorH);
-                    IntVec3 c = new IntVec3(Mathf.FloorToInt(p.x), 0, Mathf.FloorToInt(p.z) + floorZ);
-                    if (!c.InBounds(map) || Floors.On && Floors.FloorOfRow(c.z) != k)
+                    float floorH;
+                    int floorZ;
+                    Floors.FloorPlane(k, out floorH, out floorZ);
+                    ItemShelves.PickStart();
+                    for (float h = Top; h >= 0.1f; h -= Step)
                     {
-                        continue;
-                    }
-                    List<Thing> things = map.thingGrid.ThingsListAtFast(c);
-                    for (int i = 0; i < things.Count; i++)
-                    {
-                        Thing t = things[i];
-                        if (found.Contains(t))
+                        Vector3 p = View3D.ScreenToHeight(mouse, h + floorH);
+                        IntVec3 c = new IntVec3(Mathf.FloorToInt(p.x), 0, Mathf.FloorToInt(p.z) + floorZ);
+                        if (!c.InBounds(map) || Floors.On && Floors.FloorOfRow(c.z) != k)
                         {
                             continue;
                         }
-                        float top = PickHeight(t);
-                        if (top >= h && h >= PickBottom(t))
+                        ItemShelves.PickSample(map, c, h);
+                        List<Thing> things = map.thingGrid.ThingsListAtFast(c);
+                        for (int i = 0; i < things.Count; i++)
                         {
-                            found.Add(t);
+                            Thing t = things[i];
+                            if (found.Contains(t))
+                            {
+                                continue;
+                            }
+                            float top = PickHeight(t);
+                            bool onItem;
+                            Building holder;
+                            if (ItemShelves.Pick(t, new Vector3(p.x, 0f, p.z + floorZ), h, top, out onItem, out holder))
+                            {
+                                if (onItem)
+                                {
+                                    int behind = found.IndexOf(holder);
+                                    found.Insert(behind >= 0 ? behind : found.Count, t);
+                                }
+                                continue;
+                            }
+                            if (top >= h && h >= PickBottom(t))
+                            {
+                                found.Add(t);
+                            }
                         }
                     }
                 }
+            }
+            finally
+            {
+                ItemShelves.PickStart();   // (nothing of the map kept, also when a test throws)
             }
             return found;
         }

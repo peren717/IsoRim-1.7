@@ -58,6 +58,7 @@ namespace IsoRim
             { "spinPivot", 79 }, { "spinAxis", 79 }, { "spinSource", 79 }, { "spinDips", 79 },
             { "wingsInFlightOnly", 80 },
             { "slither", 81 }, { "slitherWave", 81 },
+            { "itemShelves", 82 }, { "itemTopWidth", 82 }, { "itemTopForward", 82 },
         };
         private const int BaseVersion = 2;
 

@@ -1856,6 +1856,9 @@ namespace IsoRim
                 case "treecheck":
                     TreeKey(a, map); // ProbeTrees
                     break;
+                case "shelfcheck":
+                    ShelfKey(a, map); // ProbeShelves
+                    break;
                 case "window":
                 case "campath":
                 case "spin":

@@ -117,6 +117,7 @@ Common fields:
 | `barAt` | | Api 36: where the thing's fillable bars (a charge or fuel gauge drawn with `GenDraw.DrawFillableBar`) sit: one point `(x, height, z)`, model space facing north, turned and fitted with the model; the bar is centred there, flat, its size and orientation as the game or mod gives it. Unset: where the game puts it, on the model's top (`barHeight` for a progress bar's height) |
 | `barScale` | (1, 1) | Api 36: those bars resized, `(length, thickness)` in the bar's own frame (follows its rotation); margin scaled by the smaller factor. The background drawn is size + margin per side |
 | `slots` | | Api 28: one entry per sleeping slot, in the game's slot order: `<li><height>1.25</height></li>` is that slot's surface height (like `surfaceHeight`; -1 keeps it). For stacked beds (a bunk bed mod's levels): each sleeper lies on their own level. Missing or too short: `surfaceHeight` |
+| `itemShelves`, `itemTopWidth`, `itemTopForward` | | Api 82, storage buildings (shelves, racks): the boards under the top that stored items also stand on, lowest first: `<li><height>0.14</height></li>` (model units before the fit, like `surfaceHeight`). The items of a cell are split evenly over the boards and the top (the upper ones take the extra; one item: the top) and stand in rows along the building's long side, each cell's items inside that cell's share. Optional per board: `<width>` (the row's length, centred; default the whole building) and `<forward>` (the row moved toward the front); for the top: `itemTopWidth`, `itemTopForward`. An item's centre never leaves its own cell. A style def (`style`) has only its own list. No list: all on the top, as before. See "Items on a shelf's boards" below (Api part 60) |
 | `wallMounted`, `mountHeight` | false, -1 | Hung on the wall the thing faces. Build it in the cell in front of the wall, against the wall at z = +0.5 (north) |
 | `wallFit` | 0 | The model was built for walls this tall; its height follows the wall height setting |
 | `cutaway` | Auto | Api 20: whether the cut-away lowers this wall: `Auto` (built walls, low walls included), `Never` (e.g. a half wall that keeps its window), `Always` (also a block IsoRim would not count as a wall). Walls only; see `Docs/Api.md` |
@@ -273,7 +274,7 @@ half-set model), a new enough one gets the whole entry:
 
 `minVersion` by field: base fields and the plain binding 2; `hackedGlowOff`, `deadBellyUp`, `legFromHip`, `legLift`,
 `legYaw` 5; `rotationByFacing`, `byState`, `style`, `crownTop`, `doorLeafRise` 6; `wallTop` 11; `backHeight` 13; wing
-fields 14 (`wingsInFlightOnly` 80, Api part 58); `slither`, `slitherWave` 81 (a legless animal slithering, Api part 59); `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20; `immatureModels`, `immatureHide` 24; alien packs
+fields 14 (`wingsInFlightOnly` 80, Api part 58); `slither`, `slitherWave` 81 (a legless animal slithering, Api part 59); `itemShelves`, `itemTopWidth`, `itemTopForward` 82 (items on a shelf's boards, below; Api part 60); `aged` 15; `graphicPath` 16; `doorLeafGather` 18; `cutaway` 20; `immatureModels`, `immatureHide` 24; alien packs
 (`IsoRim.AlienModelDef`, `ApparelModelDef.aliens`) 25; `bobByState` 27; `slots` 28; any binding of a multi-cell supported door (not the
 game's `Building_MultiTileDoor`) 29, which draws it from its models (Api part 18); `glassTint`, `glassOpacity`, `glassGlow`
 and a door's `glassModel` 30 (Api part 19); `topThroughRoof`, `roofModel` 31 (Api part 20); `hoverHeight`, `hoverBob` 32 (Api part 21); `geneDef` and the other gene fields 35 (Api part 24); `hairDef`, `beardDef` 78 (hair and beard models, below; Api part 56); `barAt`, `barScale` 36 (Api part M); `femaleModel`, `femaleModels`, `femaleLegModel`, `femaleWingModel` 38 (female animals, below); `byGraphic` 39 (models by runtime sprite, below); `byBodyGraphic` 65 (animals by body graphic, below); `ApparelModelDef.shown` 43 (when a held shield's model shows: `Default`, `Weapon`, `Always`; Api part 3); `ApparelModelDef.byStyle` 56 (worn models by style; Api part 40); `bodyModels` in a `byStyle` entry 57 (worn style models per body type; Api part 40). The highest one used counts.
@@ -481,6 +482,46 @@ part and nothing is logged. `IsoRimPackGate.dll` is the file every pack ships (s
   keep theirs. A ghoul's own head and hair are unchanged.
 - Never put `hairDef` / `beardDef` into `Defs/`: an older IsoRim does not know the fields (an XML error). Always the
   two files above.
+
+## Items on a shelf's boards
+
+Api 82: a storage building (a shelf, a rack: the game's `Building_Storage`) shows the items stored in each of its cells
+on its boards and its top, not all on the top. List the boards below the top, lowest first; the top is `surfaceHeight`:
+
+```xml
+<IsoRim.ModelDef>
+  <defName>R3D_MyRack</defName>
+  <thingDef>MyMod_Rack</thingDef>
+  <model>Models/my_rack.obj</model>
+  <surfaceHeight>1.10</surfaceHeight>
+  <itemShelves>
+    <li><height>0.15</height></li>
+    <li><height>0.62</height></li>
+  </itemShelves>
+</IsoRim.ModelDef>
+```
+
+The items of a cell (as many as the game lets the building hold there) are split evenly over the tiers, the upper ones
+taking the extra, and on each tier they stand in a row along the building's long side, from the left as seen from its
+front. Measure each board's top in the OBJ (model units, y up) and list the boards lowest first, each below the top
+(IsoRim warns once per def otherwise). Leave about the height of what the building stores between a board and the one
+above it: an item taller than the gap sticks through the board above. `width` and `forward` per board (and
+`itemTopWidth`, `itemTopForward` for the top) shorten a row or move it toward the front, for a board that does not span
+the building or a stepped rack; an item's centre never leaves its own cell, so a row longer than the building or moved
+far stops at the cell's edge. On a building of three or more cells a row shorter than the building does the same in the
+end cells (the row is centred, so their shares of it lie over the middle cells), and the items of an end cell that stop
+at that edge stand on one spot.
+
+- **Styles.** A style model inside the def (`byStyle`) shares the def's boards. A style def of its own (`style`, a
+  separate ModelDef for one style of a thing) is another model: give it its own `itemShelves` if its model has boards.
+  Without a list of its own it has none, whatever the thing's own def lists, and its items lie on its top as before.
+- **Only for buildings whose items the game lays out.** On a building with `itemShelves` IsoRim's row replaces the
+  game's own place of each item (across the ground; the game's height value is kept) and also what another mod's own
+  patch of the game's item centre worked out before IsoRim's ran, for every reader of the item's centre while the 3D
+  view is on; a patch of another mod that runs after IsoRim's can still move the item again. Do not add the list to a
+  building whose own mod places or draws its stored items itself (a storage framework's shelves).
+- On an IsoRim older than 82 the fields are unknown (an XML error in `Defs/`), so add them by patch behind `minVersion`
+  82 (above); without them all items lie on the top.
 
 ## Spinning parts
 

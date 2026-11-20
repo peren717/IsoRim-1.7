@@ -420,6 +420,7 @@ namespace IsoRim
             Probe.Lap(1);
 
             RegenerateIfStateChanged();
+            ItemShelves.Sync();   // (Api 82) which shelves have boards, for this state of the view (read on any thread)
             RecachePawnsIfReadyChanged();
             FallbackLog.Frame();   // diagnostics: flips of the view and model settings, the fallback summary
             Probe.Lap(2);

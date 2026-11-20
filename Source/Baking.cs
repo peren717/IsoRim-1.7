@@ -378,8 +378,8 @@ namespace IsoRim
         }
 
         // The height of the raised building a thing sits on: items stored on a shelf rest on
-        // top of the shelf, items on a work table or a table on its top (BenchTops), and plants in a pot
-        // or a hydroponics basin grow from its rim.
+        // top of the shelf (or, where its model has boards for them, on its board: ItemShelves, Api 82), items on a
+        // work table or a table on its top (BenchTops), and plants in a pot or a hydroponics basin grow from its rim.
         public static float BaseUnder(Thing t, bool storageOnly)
         {
             Map map = t.Map;
@@ -400,6 +400,10 @@ namespace IsoRim
             if (f.shape == ModelShape.Card)
             {
                 return 0f;   // (Api 52) a card has no top to rest on: what is on it stays on the ground, as on a flat sprite
+            }
+            if (storageOnly && f.form == Form3D.Model)
+            {
+                return ItemShelves.RestOn(t, b, f);   // (Api 82) its top, or the board the item stands on
             }
             return (f.form == Form3D.Flat || f.form == Form3D.Block) ? 0f : f.form == Form3D.Model ? SurfaceOf(b, f) : f.height;
         }

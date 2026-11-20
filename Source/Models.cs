@@ -52,6 +52,16 @@ namespace IsoRim
         // fit); a missing list, a slot past its end or a height of -1 keeps surfaceHeight. More per-slot settings (offset,
         // facing, pose) go into the same entries later (ModelSlot).
         public List<ModelSlot> slots;
+        // (Api 82) A storage building's boards below its top that stored items rest on, lowest first (ItemShelves.cs):
+        // <li><height>0.14</height></li>. With the list, the items of each cell are split evenly over these boards and
+        // the top (surfaceHeight), the upper ones taking the extra items, and on each stand in one row along the
+        // building's long side. A missing or empty list: every item on the top where the game puts it, as before. A
+        // style def (ModelDef.style) is another model: things in that style have only the boards that def lists itself
+        // (none listed: none, all on its top), never the thing's own def's. A style model inside the thing's def
+        // (byStyle) has the def's boards. A def whose shape stands in for a model (shape) has none.
+        public List<ModelItemShelf> itemShelves;
+        public float itemTopWidth = -1f;    // (Api 82) with itemShelves: the row on the top, as ModelItemShelf.width
+        public float itemTopForward = 0f;   // (Api 82) with itemShelves: the row on the top, as ModelItemShelf.forward
         public Vector3 contentOffset = Vector3.zero; // those contents moved this far (x, z; model space, facing north)
                                             // from where the game draws them, to where the model holds them
         public float height = -1f;          // height in cells of the automatic shape; -1 lets the mod decide
@@ -812,6 +822,19 @@ namespace IsoRim
     public class ModelSlot
     {
         public float height = -1f;   // the slot's surface height (model units, before the fit, as surfaceHeight); -1 surfaceHeight
+    }
+
+    // (Api 82) One entry of ModelDef.itemShelves: one board below the top that stored items rest on (ItemShelves.cs).
+    // Lengths are model units before the footprint fit, as surfaceHeight; the row is measured on the building as it
+    // stands (along its long side, toward the side it faces), whatever extra turn its model has.
+    public class ModelItemShelf
+    {
+        public float height = 0f;    // the board's top, where the items rest
+        public float width = -1f;    // how long the row of items is along the building's long side, centred on the
+                                     // building; -1: the building's whole length. Each cell's items keep to that
+                                     // cell's share of it
+        public float forward = 0f;   // the row moved this far toward the building's front (the side it faces) from the
+                                     // middle of its cells; negative: toward the back (a stepped rack's lower rows)
     }
 
     // One entry of ModelDef.byState (and of bobByState, Api 27).
@@ -1703,6 +1726,7 @@ namespace IsoRim
             }
             Aged.Apply(entry, Aged.StrengthOf(md));   // ModelDef.aged: its body models old and rusty
             Beams.Tag(entry);   // (Api 33) beamFlicker / beamPulse onto its beam parts
+            ItemShelves.CheckBoards(entry);   // (Api 82) one warning for boards not listed lowest first, under the top
             return entry;
         }
 
@@ -1887,6 +1911,25 @@ namespace IsoRim
                 }
             }
             ModLog.Note("[IsoRim] " + models + " things have a hand-made 3D model.");
+        }
+
+        // (Api 82) Some style def (ModelDef.style) of this thing lists boards for stored items (ItemShelves' table of the
+        // defs with boards).
+        internal static bool StyleHasItemShelves(ThingDef def)
+        {
+            Dictionary<string, ModelEntry> forThing;
+            if (!styled.TryGetValue(def, out forThing))
+            {
+                return false;
+            }
+            foreach (ModelEntry own in forThing.Values)
+            {
+                if (ItemShelves.HasBoards(own.def))   // (the one test of "lists boards")
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         // Style defs (ModelDef.style), from any mod: each gets its own entry (StyledEntry), and its models, fitted from
