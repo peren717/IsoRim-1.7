@@ -1853,6 +1853,9 @@ namespace IsoRim
                 case "slicecheck":
                     SliceKey(a);     // ProbeSlice
                     break;
+                case "treecheck":
+                    TreeKey(a, map); // ProbeTrees
+                    break;
                 case "window":
                 case "campath":
                 case "spin":

@@ -94,12 +94,20 @@ namespace IsoRim
         // Called by ModelBaker.Bake for the real thing (not a ghost): which model to use, and noted.
         public static Model Choose(Thing t, ModelEntry entry, Model normal)
         {
+            return ModelNow(t, entry, normal, true);
+        }
+
+        // Which model the real thing takes now. With note (the bake, through ModelBaker.ModelNow) what was picked is kept
+        // for the checks that rebuild a block when the thing's state changes (Track); without it nothing is kept: the
+        // same rules asked for a thing as it is now (the tree layer comparing a tree with how it was baked).
+        internal static Model ModelNow(Thing t, ModelEntry entry, Model normal, bool note)
+        {
             // (Api 24) A plant's young stage (ModelDef.immatureModels / immatureHide): while it is not yet harvestable, as the
             // game's Plant.Graphic picks its immatureGraphic. The variant keeps its place in the list (its ID picks it).
             if (entry.immature != null && t is Plant plant)
             {
                 bool young = Immature(plant);
-                if (TrackYoung)
+                if (TrackYoung && note)
                 {
                     youngBaked[t.thingIDNumber] = young;   // (harness only)
                 }
@@ -140,7 +148,7 @@ namespace IsoRim
             // (Api 39) the model for the sprite the game draws the thing with now (GraphicModels)
             if (entry.byGraphic != null)
             {
-                Model byGraphic = GraphicModels.Choose(t, entry, null);
+                Model byGraphic = GraphicModels.ModelNow(t, entry, null, note);
                 if (byGraphic != null)
                 {
                     return byGraphic;
@@ -149,7 +157,10 @@ namespace IsoRim
             if (entry.byState != null)
             {
                 string key = StateOf(t);
-                stateBaked[t.thingIDNumber] = key ?? "";
+                if (note)
+                {
+                    stateBaked[t.thingIDNumber] = key ?? "";
+                }
                 Model own;
                 if (key != null && entry.byState.TryGetValue(key, out own))
                 {
@@ -162,7 +173,10 @@ namespace IsoRim
                 return normal;
             }
             bool empty = c.ParentIsEmpty;
-            baked[t.thingIDNumber] = empty;
+            if (note)
+            {
+                baked[t.thingIDNumber] = empty;
+            }
             return empty && entry.empty != null ? entry.empty : normal;
         }
 

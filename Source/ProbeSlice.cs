@@ -54,6 +54,16 @@ namespace IsoRim
             sliceTag = a.Length > 0 && a[0].Length > 0 ? a[0] : "main";
             sliceStage = 1;
             sliceWait = 0;
+            if (!SliceWheelHook())
+            {
+                Log.Message("[IsoRim probe] CHECK FAIL slicecheck " + sliceTag + ": the host's input pass was not found, no wheel");
+            }
+        }
+
+        // The wheel (and the pointer) fed through the game's input path: hooked once (also for ProbeTrees). False if the
+        // host's input pass was not found.
+        private static bool SliceWheelHook()
+        {
             if (!sliceHooked)
             {
                 sliceHooked = true;
@@ -62,16 +72,21 @@ namespace IsoRim
                 if (dispatch != null)
                 {
                     new Harmony("peren.isorim.probe.slice").Patch(dispatch, prefix: new HarmonyMethod(typeof(Probe), nameof(SliceScrollFeed)));
-                }
-                else
-                {
-                    Log.Message("[IsoRim probe] CHECK FAIL slicecheck " + sliceTag + ": the host's input pass was not found, no wheel");
+                    sliceWheel = true;
                 }
             }
+            return sliceWheel;
         }
+
+        private static bool sliceWheel;
+        private static Vector2? slicePointer;   // ProbeTrees: the pointer held at this screen point (queued every frame)
 
         public static void SliceScrollFeed()
         {
+            if (slicePointer.HasValue)
+            {
+                UnityEngine.InputSystem.InputSystem.QueueMouseMove(slicePointer.Value);
+            }
             if (slicePending != 0f)
             {
                 Vector2 centre = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);

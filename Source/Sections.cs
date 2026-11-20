@@ -22,6 +22,12 @@ namespace IsoRim
 
         private const int SectionSize = 17;
 
+        // A change flag no layer of the game or of IsoRim listens to: set on a block (Section.dirtyFlags) it only makes
+        // the game look at the block (Section.TryUpdate), where it then rebuilds just the layers already marked dirty.
+        // IsoRim's own marks of one layer use it: the walls (SectionLayer_IsoRimWalls.Mark) and a tree whose leaves or
+        // model changed (SectionLayer_IsoRimTrees.LongTicked).
+        internal const ulong OwnFlag = 1UL << 63;
+
         private static readonly List<Job> queue = new List<Job>();
         private static int head;
         private static bool looked;

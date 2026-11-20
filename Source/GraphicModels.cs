@@ -211,9 +211,19 @@ namespace IsoRim
         // StateModels.Choose: the model to build the real thing with; normal if no entry matches. Noted for Track.
         internal static Model Choose(Thing t, ModelEntry e, Model normal)
         {
+            return ModelNow(t, e, normal, true);
+        }
+
+        // The same answer, noted for Track only with note (the bake). Without it nothing is kept: a question about the
+        // thing as it is now (StateModels.ModelNow).
+        internal static Model ModelNow(Thing t, ModelEntry e, Model normal, bool note)
+        {
             int i = IndexFor(e, MatchedOf(t), t.Rotation);
-            baked[t.thingIDNumber] = i;
-            defs.Add(t.def);
+            if (note)
+            {
+                baked[t.thingIDNumber] = i;
+                defs.Add(t.def);
+            }
             return i >= 0 ? e.byGraphic[i].model : normal;
         }
 

@@ -2700,7 +2700,11 @@ namespace IsoRim
         // (Api 34) the shape pieces a wall drawn from a model stands in (ShapeModels.For), reused.
         private static readonly List<ShapeModels.Piece> shapePieces = new List<ShapeModels.Piece>();
 
-        private static bool BakeModel(SectionLayer layer, Thing thing, ModelEntry entry, float baseHeight)
+        // Which model a thing is baked with as it is now: its entry's pick, the piece or variant its kind asks for, and for
+        // the real thing (not a ghost) the model of its state. One place for the bake (BakeModel, note: what was picked
+        // is kept for the checks that rebuild a block when a thing's state changes, StateModels) and for the tree layer,
+        // which compares a tree with how it was baked (SectionLayer_IsoRimTrees, note false: nothing kept).
+        internal static Model ModelNow(Thing thing, ModelEntry entry, bool note)
         {
             ModelDef def = entry.def;
             Model m = entry.Pick(thing);
@@ -2720,9 +2724,23 @@ namespace IsoRim
             }
             if (Ghost.a <= 0f)
             {
-                m = StateModels.Choose(thing, entry, m);   // an opened mech capsule: its open model
-                m = StateModels.ForLight(thing, m);        // a lamp whose light is out: its glow faces unlit
+                m = StateModels.ModelNow(thing, entry, m, note);   // an opened mech capsule: its open model
+                m = StateModels.ForLight(thing, m);                // a lamp whose light is out: its glow faces unlit
             }
+            return m;
+        }
+
+        // A plant baked without its leaf parts: leafless now (cold, poison) unless its model keeps them (ModelDef.keepLeaves).
+        // One place for the bake (BakeModel) and for the tree layer's look (SectionLayer_IsoRimTrees).
+        public static bool Leafless(Plant plant, ModelDef def)
+        {
+            return plant.LeaflessNow && !def.keepLeaves;
+        }
+
+        private static bool BakeModel(SectionLayer layer, Thing thing, ModelEntry entry, float baseHeight)
+        {
+            ModelDef def = entry.def;
+            Model m = ModelNow(thing, entry, true);
             if (R3DMaterials.Solid == null || m == null)
             {
                 FallbackLog.BakeWhy = R3DMaterials.Solid == null
@@ -2758,7 +2776,7 @@ namespace IsoRim
             if (plant != null)
             {
                 scale *= GrowthScale(thing, def);
-                bare = (plant.LeaflessNow && !def.keepLeaves)
+                bare = Leafless(plant, def)
                     || (!CutTags.Enabled && plant.def.plant != null && plant.def.plant.IsTree && Cutaway.TreeThinned(thing.Map, thing.Position));
             }
 

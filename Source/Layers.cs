@@ -477,7 +477,7 @@ namespace IsoRim
         private static readonly AccessTools.FieldRef<MapDrawer, Section[,]> sectionsOf = AccessTools.FieldRefAccess<MapDrawer, Section[,]>("sections");
 
         // A change flag no layer listens to: it only makes the game look at the section, where this layer alone is dirty.
-        private const ulong OwnFlag = 1UL << 63;
+        private const ulong OwnFlag = MapSections.OwnFlag;
 
         // Marks just this layer of the block holding the cell to be redrawn (by the game, when the block is in view), not
         // the other layers of the block (MineMarks: a block marked for mining or unmarked).
@@ -580,10 +580,170 @@ namespace IsoRim
     // view, so moving the camera over a forest rebuilt one tree block after another, several a frame.
     // Only a change in a cell that holds one of these trees marks the layer now (Mark, from
     // MapDrawer.MapMeshDirty, and the spawn/despawn hooks); the game redraws it as before.
+    //
+    // Rebuilt only when its trees change. The game's rebuild of a block at the draw (Section.RegenerateDirtyLayers)
+    // leaves every layer it rebuilt marked dirty, and a layer left so is rebuilt again with the block's next change of
+    // any kind: for this layer that was one bake of all the block's trees (3.5 ms a block) for nothing, 30 to 68 blocks
+    // a zoom out. So the layer takes its own mark back when its bake is done (Settled). The two things its bake reads
+    // that the game marks nowhere get marks of their own instead, at the tree's own long tick (LongTicked): a wild
+    // tree's growth (Plant.TickLong marks the map only for a cultivated plant) and leaves coming back (a timer inside
+    // Plant.LeaflessNow); and the model picked for the tree, which a pack may bind to its state. Each tree baked is
+    // kept with how it was baked (shown), and the tick compares the tree with that.
     public class SectionLayer_IsoRimTrees : SectionLayer
     {
+        // How far a tree's drawn size (ModelBaker.GrowthScale) may run from the size it was baked at, as a share of
+        // that baked size, before the layer is marked: every mark shows the tree 8 % larger, at every age and for
+        // every def. (A fixed step would not: the game's tree defs are drawn at 0.3 to 3 times their model, so a step
+        // of 0.10 was a third of a young bonsai tree and a thirtieth of a grown pine.) Our own value (treerefresh,
+        // 2026-11-19). A growing tree gains 0.5 to 1.3 % of its size a game day, so it marks its layer at most every
+        // 6 to 16 days, and any other rebuild of its block bakes it as it is and starts the count again. Measured on
+        // a rainforest map with 4,900 such trees (2,100 growing) over 4 game days: no mark, beside 660 trees spawning
+        // or going; every 8 % crossed counted, whatever was baked, would be 250 a game day. The layer's rebuild
+        // without a reason, which this replaces, showed steps under 1.3 % (not visible).
+        internal const float GrowthShown = 0.08f;
+
+        // How a tree was baked: what LongTicked compares it with.
+        private struct Look
+        {
+            public float size;    // ModelBaker.GrowthScale
+            public bool bare;     // ModelBaker.Leafless
+            public Model model;   // ModelBaker.ModelNow
+        }
+
+        // The trees of the last bake by thingIDNumber (also one whose bake failed: it is asked for again only when it
+        // changes). Lives and dies with the layer: a map that goes, a load and a rebuild of everything start it anew.
+        private readonly Dictionary<int, Look> shown = new Dictionary<int, Look>();
+
+        // Each block's tree layer, for the tick (Section.GetLayer searches every layer and allocates).
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Section, SectionLayer_IsoRimTrees> ofSection
+            = new System.Runtime.CompilerServices.ConditionalWeakTable<Section, SectionLayer_IsoRimTrees>();
+
+        // True once the hook on Plant.TickLong is in (Patches). Without it nothing here changes: the layer keeps the
+        // mark the game's draw leaves on it, which is then what shows a wild tree growing, as before.
+        internal static bool GrowthHooked;
+
+        // Harness counters: bakes of any tree layer, marks for growth (shown with the block's next rebuild) and for a
+        // change of leaves or model (the block is looked at at once). built: this layer's bakes.
+        public static int Built, GrowthMarks, LookMarks;
+        internal int built;
+
         public SectionLayer_IsoRimTrees(Section section) : base(section)
         {
+            ofSection.AddOrUpdate(section, this);
+        }
+
+        // For the harness: the block's tree layer, and whether a tree of it is kept as baked.
+        internal static SectionLayer_IsoRimTrees Of(Section section)
+        {
+            SectionLayer_IsoRimTrees layer;
+            return section != null && ofSection.TryGetValue(section, out layer) ? layer : null;
+        }
+
+        // For the harness: whether the layer holds the tree as baked; how far its drawn size has run from the baked one
+        // (Drift: a share of the baked size), whether its leaves and model are still as baked, and whether it was baked bare.
+        internal bool Holds(Thing t, out float drift, out bool sameLook, out bool bare)
+        {
+            drift = 0f;
+            sameLook = true;
+            bare = false;
+            Look was;
+            ModelEntry entry = Forms.For(t.def).model;
+            if (entry == null || !shown.TryGetValue(t.thingIDNumber, out was))
+            {
+                return false;
+            }
+            Look now = LookOf(t, entry);
+            drift = Drift(was, now);
+            sameLook = now.bare == was.bare && ReferenceEquals(now.model, was.model);
+            bare = was.bare;
+            return true;
+        }
+
+        internal int ShownCount
+        {
+            get { return shown.Count; }
+        }
+
+        // How far the tree's drawn size has run from the baked one, as a share of the baked size (GrowthShown).
+        private static float Drift(Look was, Look now)
+        {
+            return Mathf.Abs(now.size - was.size) / Mathf.Max(was.size, 0.0001f);
+        }
+
+        // How the bake shows the tree now, by the bake's own functions.
+        private static Look LookOf(Thing t, ModelEntry entry)
+        {
+            return new Look { size = ModelBaker.GrowthScale(t, entry.def), bare = ModelBaker.Leafless((Plant)t, entry.def), model = ModelBaker.ModelNow(t, entry, false) };
+        }
+
+        // The layer shows the map as it is: nothing waits for it (see the class comment).
+        private void Settled()
+        {
+            if (GrowthHooked)
+            {
+                Dirty = false;
+            }
+        }
+
+        // Every plant's long tick while the 3D view is on (Patches.PlantTickLong_Postfix). A tree this layer baked that
+        // no longer looks as it was baked marks the layer. Grown by GrowthShown: only the layer is marked, and it is
+        // rebuilt with the block's next rebuild (in view: the next change in the block; off screen: when it comes into
+        // view after one), so growth alone never makes the game rebuild a block. Leaves gone or back, or another model:
+        // the block is looked at at once (MapSections.OwnFlag: the game rebuilds what is marked dirty in it, nothing
+        // else), as the game itself does when a plant loses its leaves. The tree is then kept as it looks now, so one
+        // change marks once. A tree the layer does not hold (spawned since: marked by the spawn) is left alone.
+        internal static void LongTicked(Plant plant)
+        {
+            PlantProperties props = plant.def.plant;
+            if (props == null || !props.IsTree || !plant.Spawned)
+            {
+                return;
+            }
+            try
+            {
+                if (!Handles(plant))
+                {
+                    return;
+                }
+                Map map = plant.Map;
+                if (map.mapDrawer == null || sectionsOf(map.mapDrawer) == null)
+                {
+                    return;
+                }
+                Section s = map.mapDrawer.SectionAt(plant.Position);
+                SectionLayer_IsoRimTrees layer;
+                Look was;
+                if (s == null || !ofSection.TryGetValue(s, out layer) || !layer.shown.TryGetValue(plant.thingIDNumber, out was))
+                {
+                    return;
+                }
+                ModelEntry entry = Forms.For(plant.def).model;
+                if (entry == null)
+                {
+                    return;
+                }
+                Look now = LookOf(plant, entry);
+                bool look = now.bare != was.bare || !ReferenceEquals(now.model, was.model);
+                if (!look && Drift(was, now) < GrowthShown)
+                {
+                    return;
+                }
+                layer.shown[plant.thingIDNumber] = now;
+                layer.Dirty = true;
+                if (look)
+                {
+                    s.dirtyFlags |= MapSections.OwnFlag;
+                    LookMarks++;
+                }
+                else
+                {
+                    GrowthMarks++;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[IsoRim] Noting how a tree has changed failed: " + e, 93611115);
+            }
         }
 
         private static readonly AccessTools.FieldRef<MapDrawer, Section[,]> sectionsOf = AccessTools.FieldRefAccess<MapDrawer, Section[,]>("sections");
@@ -652,10 +812,22 @@ namespace IsoRim
         public override void Regenerate()
         {
             ClearSubMeshes(MeshParts.All);
+            built++;
+            Built++;
+            bool keep = GrowthHooked;   // (without the hook nothing reads the trees as baked: none is kept, nothing more is asked)
+            if (keep)
+            {
+                shown.Clear();
+            }
             if (!View3D.Active)
             {
+                // Nothing to show and nothing kept. Turning the 3D view on rebuilds every map (View3D
+                // .RegenerateIfStateChanged: the shown one at once, the others when shown), and no mark is made while
+                // it is off (Mark's callers and LongTicked all test View3D.Active), so no mark can be lost here.
+                Settled();
                 return;
             }
+            bool whole = false;
             CutTags.Enabled = ShaderCut.On;   // (shader cut-away) leaves and twigs tagged, thinned in the vertex stage
             try
             {
@@ -671,6 +843,10 @@ namespace IsoRim
                             continue;
                         }
                         ThingForm form = Forms.For(t.def);
+                        if (keep)
+                        {
+                            shown[t.thingIDNumber] = LookOf(t, form.model);   // as the bake below reads it (the same functions)
+                        }
                         if (!ModelBaker.Bake(this, t, form.model, Forms.BaseUnder(t, false)))
                         {
                             FallbackLog.BakeFailed(t, false);   // the tree is left out (its sprite is held back by TakePrintFrom)
@@ -678,6 +854,7 @@ namespace IsoRim
                     }
                 }
                 CutTags.Finish(this);
+                whole = true;
             }
             catch (Exception e)
             {
@@ -688,6 +865,10 @@ namespace IsoRim
                 CutTags.Enabled = false;
             }
             FinalizeMesh(MeshParts.All);
+            if (whole)
+            {
+                Settled();   // (a bake that failed leaves the mark as it was: the layer is tried again as before)
+            }
         }
     }
 

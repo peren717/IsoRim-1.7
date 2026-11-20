@@ -97,6 +97,16 @@ namespace IsoRim
         }
     }
 
+    // -isorimtreehook=0 on the command line (test harnesses only, like -isorimseed: players never pass it; no setting, no
+    // Api): the hook that notes a tree's growth (Patches: Plant.TickLong) is left out, as when the game's method is not
+    // found, so a test can see that the tree layer then behaves as before. Without the argument nothing changes.
+    internal static class TreeHookTestArg
+    {
+        internal const string Arg = "isorimtreehook";
+
+        internal static readonly bool Off = QuickTestSeedArg.Read(Arg) == 0;
+    }
+
     public static class QuickTestSeed
     {
         internal const string Arg = QuickTestSeedArg.Arg;

@@ -222,6 +222,18 @@ namespace IsoRim
             // its cell for the cell texture (IsoCellMap.FogDirty_Postfix).
             Patch("redrawing trees as they change", AccessTools.Method(typeof(MapDrawer), nameof(MapDrawer.MapMeshDirty), new[] { typeof(IntVec3), typeof(ulong), typeof(bool), typeof(bool) }),
                 postfix: nameof(TreesDirty_Postfix));
+            // A wild tree's growth and leaves coming back are marked nowhere by the game: noted at the plant's own long
+            // tick. Only with this hook in does the tree layer stop being rebuilt with every change in its block
+            // (SectionLayer_IsoRimTrees.GrowthHooked); without it the trees are redrawn as before.
+            if (TreeHookTestArg.Off)
+            {
+                Log.Message("[IsoRim] -" + TreeHookTestArg.Arg + "=0: the hook that notes a tree's growth is left out (test harness).");
+            }
+            else
+            {
+                SectionLayer_IsoRimTrees.GrowthHooked = Patch("redrawing trees only when they change (without it: with every change in their block, as before)",
+                    AccessTools.Method(typeof(Plant), nameof(Plant.TickLong)), postfix: nameof(PlantTickLong_Postfix));
+            }
             // Rock marked for mining is tinted (MineMarks): marking or unmarking a cell redraws its block.
             Patch("tinting rock marked for mining", AccessTools.Method(typeof(DesignationManager), nameof(DesignationManager.AddDesignation)),
                 postfix: nameof(MineDesignation_Postfix));
@@ -2600,6 +2612,15 @@ namespace IsoRim
         public static void MineUndesignation_Postfix(DesignationManager __instance, Designation des)
         {
             MineMarks.Changed(__instance.map, des);
+        }
+
+        // Plant.TickLong has run (every plant, every 2000 ticks): with the 3D view off, this one test.
+        public static void PlantTickLong_Postfix(Plant __instance)
+        {
+            if (View3D.Active)
+            {
+                SectionLayer_IsoRimTrees.LongTicked(__instance);
+            }
         }
 
         public static void TreesDirty_Postfix(MapDrawer __instance, IntVec3 loc, ulong dirtyFlags)
