@@ -4189,6 +4189,60 @@
   </IsoRim.ModelDef>
 
   <IsoRim.ModelDef>
+    <defName>R3D_Animal_Macaw</defName>
+    <thingDef>Macaw</thingDef>
+    <model>Models/animal_macaw_blob.obj</model>
+    <!-- blob macaw (2026-11-20; 2D until then): the duck's family (legs fused into the body), the body leaning up, big
+         round head with the hooked beak, the long tail one flat paddle, glides; colours painted in Macaw.png (the vanilla
+         sprite is untinted). The folded wings are part of the body; the wing models are drawn only in flight
+         (wingsInFlightOnly, Api 80), as the goose. -->
+    <animal>true</animal>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <wingModel>Models/animal_macaw_wing.obj</wingModel>
+    <wings>
+      <li>(-0.112, 0.311, 0.098)</li>
+      <li>(0.112, 0.311, 0.098)</li>
+    </wings>
+    <wingsInFlightOnly>true</wingsInFlightOnly>
+    <wingFold>90</wingFold>
+    <wingDroop>0</wingDroop>
+    <wingFlap>65</wingFlap>
+    <wingBeat>3.75</wingBeat>
+    <bodyCentre>0.215</bodyCentre>
+    <bodyHalfWidth>0.136</bodyHalfWidth>
+    <bodyHalfLength>0.305</bodyHalfLength>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
+    <defName>R3D_Animal_Swan</defName>
+    <thingDef>Swan</thingDef>
+    <model>Models/animal_swan_blob.obj</model>
+    <!-- blob swan (2026-11-20; 2D until then): the goose's family (legs fused into the body), long S neck, glides; colours
+         painted in Swan.png (the vanilla sprite is untinted). The folded wings are part of the body; the wing models are
+         drawn only in flight (wingsInFlightOnly, Api 80), as the goose. No handling of its own in the water (vanilla's
+         swimming graphic is not modelled), as the duck and the goose. -->
+    <animal>true</animal>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <wingModel>Models/animal_swan_wing.obj</wingModel>
+    <wings>
+      <li>(-0.132, 0.343, 0.168)</li>
+      <li>(0.132, 0.343, 0.168)</li>
+    </wings>
+    <wingsInFlightOnly>true</wingsInFlightOnly>
+    <wingFold>90</wingFold>
+    <wingDroop>0</wingDroop>
+    <wingFlap>65</wingFlap>
+    <wingBeat>3.75</wingBeat>
+    <bodyCentre>0.211</bodyCentre>
+    <bodyHalfWidth>0.235</bodyHalfWidth>
+    <bodyHalfLength>0.396</bodyHalfLength>
+  </IsoRim.ModelDef>
+
+  <IsoRim.ModelDef>
     <defName>R3D_Animal_Turkey</defName>
     <thingDef>Turkey</thingDef>
     <model>Models/animal_turkey_tom_blob.obj</model>
@@ -7731,21 +7785,18 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_PrairieDog</defName>
     <thingDef>PrairieDog</thingDef>
-    <model>Models/animal_prairiedog.obj</model>
+    <model>Models/animal_prairiedog_blob.obj</model>
+    <!-- blob prairie dog (2026-11-20): the squirrel's family (legless plump body with a flattened underside, tiny paws
+         under it, thin tail on the ground), glides with a waddle; colours baked in PrairieDog.png (vanilla gives a colour
+         with CutoutComplex but ships no mask: the sprite is drawn as it is, so no tintFromGraphic).
+         animal_prairiedog(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_prairiedog_leg.obj</legModel>
-    <legs>
-      <li>(-0.060, 0.070, 0.090)</li>
-      <li>(0.060, 0.070, 0.090)</li>
-      <li>(-0.065, 0.070, -0.100)</li>
-      <li>(0.065, 0.070, -0.100)</li>
-    </legs>
-    <legLength>0.070</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.30</stride>
-    <bodyCentre>0.152</bodyCentre>
-    <bodyHalfWidth>0.083</bodyHalfWidth>
-    <bodyHalfLength>0.337</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.163</bodyCentre>
+    <bodyHalfWidth>0.119</bodyHalfWidth>
+    <bodyHalfLength>0.373</bodyHalfLength>
   </IsoRim.ModelDef>
   <!-- flying bird: kept 2D (user, 2026-10-15); model kept for later
   <IsoRim.ModelDef>
@@ -7807,21 +7858,17 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Porcupine</defName>
     <thingDef>Porcupine</thingDef>
-    <model>Models/animal_porcupine.obj</model>
+    <model>Models/animal_porcupine_blob.obj</model>
+    <!-- blob porcupine (2026-11-20): small round body, legs carved out of the body, the quills one smooth mass with a few
+         large points, glides with a waddle; colours baked in Porcupine.png (vanilla gives a colour with CutoutComplex but
+         ships no mask: the sprite is drawn as it is, so no tintFromGraphic). animal_porcupine(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_porcupine_leg.obj</legModel>
-    <legs>
-      <li>(-0.090, 0.075, 0.120)</li>
-      <li>(0.090, 0.075, 0.120)</li>
-      <li>(-0.090, 0.075, -0.120)</li>
-      <li>(0.090, 0.075, -0.120)</li>
-    </legs>
-    <legLength>0.075</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.30</stride>
-    <bodyCentre>0.307</bodyCentre>
-    <bodyHalfWidth>0.210</bodyHalfWidth>
-    <bodyHalfLength>0.395</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.220</bodyCentre>
+    <bodyHalfWidth>0.130</bodyHalfWidth>
+    <bodyHalfLength>0.336</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_BogHound</defName>
@@ -7895,21 +7942,17 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Armadillo</defName>
     <thingDef>Armadillo</thingDef>
-    <model>Models/animal_armadillo.obj</model>
+    <model>Models/animal_armadillo_blob.obj</model>
+    <!-- blob armadillo (2026-11-20): the tortoise's idea (a banded loaf shell standing on the ground, small low head, short
+         tail), glides with a waddle; colours baked in Armadillo.png (vanilla gives a colour with CutoutComplex but ships
+         no mask: the sprite is drawn as it is, so no tintFromGraphic). animal_armadillo(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_armadillo_leg.obj</legModel>
-    <legs>
-      <li>(-0.100, 0.070, 0.120)</li>
-      <li>(0.100, 0.070, 0.120)</li>
-      <li>(-0.100, 0.070, -0.120)</li>
-      <li>(0.100, 0.070, -0.120)</li>
-    </legs>
-    <legLength>0.070</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.30</stride>
-    <bodyCentre>0.225</bodyCentre>
-    <bodyHalfWidth>0.148</bodyHalfWidth>
-    <bodyHalfLength>0.399</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.226</bodyCentre>
+    <bodyHalfWidth>0.240</bodyHalfWidth>
+    <bodyHalfLength>0.371</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Mink</defName>
@@ -7940,8 +7983,9 @@
   </IsoRim.ModelDef>
 
   <!-- Coverage batch C (2026-10-15): the next 15 most common Odyssey animals without a model (Animals.cs), by summed
-       biome commonality, flying animals left out (they stay 2D). Seal, SeaLion, LavaSnail and SeaTurtle are legless
-       like the Cobra. Generated by tools/make_animals_c.py. -->
+       biome commonality, flying animals left out of this batch (the duck, goose, macaw and swan now have models whose
+       wings show in flight, see R3D_Animal_Goose; the other flying birds are still 2D). LavaSnail and SeaTurtle are
+       legless like the Cobra (Seal and SeaLion are legless blobs now). Generated by tools/make_animals_c.py. -->
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Bullfrog</defName>
     <thingDef>Bullfrog</thingDef>
@@ -7985,21 +8029,18 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Hippo</defName>
     <thingDef>Hippo</thingDef>
-    <model>Models/animal_hippo.obj</model>
+    <model>Models/animal_hippo_blob.obj</model>
+    <!-- blob hippo (2026-11-20): the rhino's family (round big body, legs carved out of the body), no horn, huge broad
+         muzzle, glides with a waddle; sprite colours baked in Hippo.png (vanilla is untinted). No handling of its own in
+         the water (vanilla's swimming graphic is not modelled), as the duck and the goose. animal_hippo(_leg).obj kept,
+         unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_hippo_leg.obj</legModel>
-    <legs>
-      <li>(-0.197, 0.246, 0.205)</li>
-      <li>(0.197, 0.246, 0.205)</li>
-      <li>(-0.197, 0.246, -0.410)</li>
-      <li>(0.197, 0.246, -0.410)</li>
-    </legs>
-    <legLength>0.246</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.61</stride>
-    <bodyCentre>0.533</bodyCentre>
-    <bodyHalfWidth>0.307</bodyHalfWidth>
-    <bodyHalfLength>0.905</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.595</bodyCentre>
+    <bodyHalfWidth>0.585</bodyHalfWidth>
+    <bodyHalfLength>1.010</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Muskox</defName>
@@ -8091,22 +8132,38 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Seal</defName>
     <thingDef>Seal</thingDef>
-    <model>Models/animal_seal.obj</model>
+    <model>Models/animal_seal_blob.obj</model>
+    <!-- blob seal (2026-11-20): the pinniped build (a smooth body lying flat on the ground, the flippers flat pads in the
+         same shell; legless as before: no leg models), glides with a waddle; sprite colours baked in Seal.png (vanilla is
+         untinted). No handling of its own in the water (vanilla's swimming graphic is not modelled), as the duck and the
+         goose. animal_seal.obj kept, unused. -->
     <animal>true</animal>
-    <stride>0.45</stride>
-    <bodyCentre>0.173</bodyCentre>
-    <bodyHalfWidth>0.184</bodyHalfWidth>
-    <bodyHalfLength>0.509</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.212</bodyCentre>
+    <bodyHalfWidth>0.229</bodyHalfWidth>
+    <bodyHalfLength>0.594</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_SeaLion</defName>
     <thingDef>SeaLion</thingDef>
-    <model>Models/animal_sealion.obj</model>
+    <model>Models/animal_sealion_male_blob.obj</model>
+    <femaleModel>Models/animal_sealion_female_blob.obj</femaleModel>
+    <!-- blob sea lion (2026-11-20): the pinniped build (chest up, long upright neck, the flippers flat pads in the same
+         shell; legless as before: no leg models), glides with a waddle; bull (thick neck, grey-brown), cow (femaleModel:
+         slimmer and lower, tan); sprite colours baked in SeaLionMale.png / SeaLionFemale.png (vanilla is untinted).
+         Vanilla gives every life stage a male and a female graphic (the pups already by sex), so femaleModel covers the
+         young too (no byBodyGraphic: that is for the moose, whose calves are all drawn as cows). No handling of its own in
+         the water (vanilla's swimming graphics are not modelled), as the duck and the goose. animal_sealion.obj kept,
+         unused. -->
     <animal>true</animal>
-    <stride>0.69</stride>
-    <bodyCentre>0.518</bodyCentre>
-    <bodyHalfWidth>0.301</bodyHalfWidth>
-    <bodyHalfLength>0.712</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.233</bodyCentre>
+    <bodyHalfWidth>0.269</bodyHalfWidth>
+    <bodyHalfLength>0.677</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_LavaSnail</defName>
@@ -8155,21 +8212,17 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Panda</defName>
     <thingDef>Panda</thingDef>
-    <model>Models/animal_panda.obj</model>
+    <model>Models/animal_panda_blob.obj</model>
+    <!-- blob panda (2026-11-20): the bear's family (legs carved out of the body), short body, big round head carried low,
+         glides with a waddle; white coat and black blocks baked in Panda.png (vanilla is untinted).
+         animal_panda(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_panda_leg.obj</legModel>
-    <legs>
-      <li>(-0.190, 0.400, 0.240)</li>
-      <li>(0.190, 0.400, 0.240)</li>
-      <li>(-0.190, 0.400, -0.400)</li>
-      <li>(0.190, 0.400, -0.400)</li>
-    </legs>
-    <legLength>0.400</legLength>
-    <legSwing>26</legSwing>
-    <stride>1.00</stride>
-    <bodyCentre>0.762</bodyCentre>
-    <bodyHalfWidth>0.292</bodyHalfWidth>
-    <bodyHalfLength>0.790</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.444</bodyCentre>
+    <bodyHalfWidth>0.416</bodyHalfWidth>
+    <bodyHalfLength>0.654</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_SeaTurtle</defName>
@@ -8333,7 +8386,9 @@
   </IsoRim.ModelDef>
 
   <!-- Coverage batch D (2026-10-15): the remaining non-flying Odyssey animals without a model (Animals.cs); flying
-       animals stay 2D. Walrus, Larva and HiveQueen are legless like the Cobra. Generated by tools/make_animals_d.py. -->
+       animals were not part of it (the duck, goose, macaw and swan now have models whose wings show in flight, see
+       R3D_Animal_Goose; the other flying birds are still 2D). Larva and HiveQueen are legless like the Cobra (the
+       Walrus is a legless blob now). Generated by tools/make_animals_d.py. -->
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Otter</defName>
     <thingDef>Otter</thingDef>
@@ -8376,31 +8431,33 @@
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Walrus</defName>
     <thingDef>Walrus</thingDef>
-    <model>Models/animal_walrus.obj</model>
+    <model>Models/animal_walrus_blob.obj</model>
+    <!-- blob walrus (2026-11-20): the pinniped build (a heavy wedge lying on the ground, big head with the whisker pad, two
+         tusks, the flippers flat pads in the same shell; legless as before: no leg models), glides with a waddle; sprite
+         and tusk colours baked in Walrus.png (vanilla is untinted). No handling of its own in the water (vanilla's
+         swimming graphic is not modelled), as the duck and the goose. animal_walrus.obj kept, unused. -->
     <animal>true</animal>
-    <stride>0.70</stride>
-    <bodyCentre>0.533</bodyCentre>
-    <bodyHalfWidth>0.399</bodyHalfWidth>
-    <bodyHalfLength>0.841</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.405</bodyCentre>
+    <bodyHalfWidth>0.342</bodyHalfWidth>
+    <bodyHalfLength>0.727</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Gorilla</defName>
     <thingDef>Gorilla</thingDef>
-    <model>Models/animal_gorilla.obj</model>
+    <model>Models/animal_gorilla_blob.obj</model>
+    <!-- blob gorilla (2026-11-20): the monkey's family (legs blended into the body), knuckle-walking (a massive upright
+         torso over two thick arms, low rump), glides with a waddle; sprite colours baked in Gorilla.png (vanilla is
+         untinted). animal_gorilla(_leg).obj kept, unused. -->
     <animal>true</animal>
-    <legModel>Models/animal_gorilla_leg.obj</legModel>
-    <legs>
-      <li>(-0.280, 0.380, 0.260)</li>
-      <li>(0.280, 0.380, 0.260)</li>
-      <li>(-0.200, 0.380, -0.260)</li>
-      <li>(0.200, 0.380, -0.260)</li>
-    </legs>
-    <legLength>0.380</legLength>
-    <legSwing>26</legSwing>
-    <stride>0.85</stride>
-    <bodyCentre>0.689</bodyCentre>
-    <bodyHalfWidth>0.349</bodyHalfWidth>
-    <bodyHalfLength>0.560</bodyHalfLength>
+    <smoothTextured>true</smoothTextured>
+    <bodyAnims>true</bodyAnims>
+    <waddle>true</waddle>
+    <bodyCentre>0.645</bodyCentre>
+    <bodyHalfWidth>0.463</bodyHalfWidth>
+    <bodyHalfLength>0.676</bodyHalfLength>
   </IsoRim.ModelDef>
   <IsoRim.ModelDef>
     <defName>R3D_Animal_Wolf_Great</defName>
